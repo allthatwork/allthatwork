@@ -7,13 +7,17 @@ import type {
 	ApplicationTimelineEntry,
 	Contact,
 	InterviewDetails,
+	TargetingQuestion,
+	TargetingQuestionStatus,
+	TargetingReview,
 } from "@reactive-resume/schema/applications/data";
 import { ORPCError } from "@orpc/client";
-import { and, arrayContains, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, arrayContains, desc, eq, getTableColumns, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { lintResumeForAts } from "@reactive-resume/resume/ats";
 import { copyCoverLetterStyle } from "@reactive-resume/resume/cover-letter";
+import { targetingFitOf } from "@reactive-resume/schema/applications/data";
 import { coverLetterSchema } from "@reactive-resume/schema/cover-letter/data";
 import { generateId } from "@reactive-resume/utils/string";
 import { requestRunCancellation } from "../agent/cancellation";
@@ -117,6 +121,16 @@ type EditableFields = {
 	jobDescription?: string | null | undefined;
 	postingSource?: import("@reactive-resume/schema/applications/data").PostingSource | null | undefined;
 	notes?: string | null | undefined;
+	foundBy?: string | null | undefined;
+	searchFit?: number | null | undefined;
+	searchNotes?: string | null | undefined;
+	searchAt?: Date | null | undefined;
+	targetingNotes?: string | null | undefined;
+	targetingReviews?: TargetingReview[] | undefined;
+	targetingPrimaryLane?: string | null | undefined;
+	targetingSecondaryLane?: string | null | undefined;
+	targetingAt?: Date | null | undefined;
+	targetingQuestions?: TargetingQuestion[] | undefined;
 	resumeFileUrl?: string | null | undefined;
 	resumeFileName?: string | null | undefined;
 	coverLetterUrl?: string | null | undefined;
@@ -129,6 +143,105 @@ type EditableFields = {
 	requirements?: string[] | undefined;
 	tags?: string[] | undefined;
 };
+
+/**
+ * Sets the targeting fit from the reviews when they're written, and dates the search and targeting assessments when
+ * they're written without a date: saving a search fit or search notes
+ * sets `searchAt`, and saving any targeting field sets `targetingAt`. An explicit date (a backfill's) wins, and
+ * clearing the fields leaves the date alone.
+ */
+export function stampAssessments<T extends EditableFields>(fields: T, now: Date): T & { targetingFit?: number | null } {
+	const written = (...values: unknown[]) => values.some((value) => value !== undefined && value !== null);
+	return {
+		...fields,
+		// The targeting fit follows the reviews; nobody sets it directly.
+		...(fields.targetingReviews !== undefined ? { targetingFit: targetingFitOf(fields.targetingReviews) } : {}),
+		...(fields.searchAt === undefined && written(fields.searchFit, fields.searchNotes) ? { searchAt: now } : {}),
+		...(fields.targetingAt === undefined &&
+		written(
+			fields.targetingNotes,
+			fields.targetingReviews?.length ? fields.targetingReviews : undefined,
+			fields.targetingPrimaryLane,
+			fields.targetingSecondaryLane,
+			fields.targetingQuestions?.length ? fields.targetingQuestions : undefined,
+		)
+			? { targetingAt: now }
+			: {}),
+	};
+}
+
+const questionKey = (question: Pick<TargetingQuestion, "question">) =>
+	question.question.trim().replace(/\s+/g, " ").toLowerCase();
+
+/** How a topic was settled on some application: what a question with that topic arriving elsewhere takes over. */
+export type SettledTopic = Pick<TargetingQuestion, "status" | "answer" | "factId" | "answeredAt"> & {
+	answeredOn: NonNullable<TargetingQuestion["answeredOn"]>;
+};
+
+/**
+ * A new list of targeting questions over the saved one. Questions the user answered or set aside stay exactly as they
+ * are, and an incoming question matching one of them (same id, same text, or same topic) is dropped. Open ones are
+ * replaced by the new list. An incoming question whose topic was already settled on another application arrives
+ * settled the same way, marked with where.
+ */
+export function mergeTargetingQuestions(
+	current: TargetingQuestion[],
+	incoming: TargetingQuestion[],
+	elsewhere: ReadonlyMap<string, SettledTopic> = new Map(),
+): TargetingQuestion[] {
+	const settled = current.filter((question) => question.status !== "open");
+	const settledIds = new Set(settled.map((question) => question.id));
+	const settledText = new Set(settled.map(questionKey));
+	const settledTopics = new Set(settled.flatMap((question) => (question.topic ? [question.topic] : [])));
+	const fresh = incoming
+		.filter(
+			(question) =>
+				!settledIds.has(question.id) &&
+				!settledText.has(questionKey(question)) &&
+				!(question.topic && settledTopics.has(question.topic)),
+		)
+		.map((question) => {
+			const prior = question.topic && question.status === "open" ? elsewhere.get(question.topic) : undefined;
+			return prior ? { ...question, ...prior } : question;
+		});
+	return [...settled, ...fresh];
+}
+
+/** Topics answered or set aside on the user's other applications, with how. */
+async function settledTopicsElsewhere(client: DbOrTx, userId: string, exceptId?: string) {
+	const rows = await client
+		.select({
+			id: schema.application.id,
+			company: schema.application.company,
+			questions: schema.application.targetingQuestions,
+		})
+		.from(schema.application)
+		.where(
+			and(
+				eq(schema.application.userId, userId),
+				sql`jsonb_path_exists(${schema.application.targetingQuestions}, '$[*] ? (@.topic != null && @.status != "open")')`,
+			),
+		);
+	const settled = new Map<string, SettledTopic>();
+	for (const row of rows) {
+		if (row.id === exceptId) continue;
+		for (const question of row.questions) {
+			if (!question.topic || question.status === "open" || question.answeredOn || settled.has(question.topic)) continue;
+			settled.set(question.topic, {
+				status: question.status,
+				answer: question.answer,
+				factId: question.factId,
+				answeredAt: question.answeredAt,
+				answeredOn: { applicationId: row.id, company: row.company },
+			});
+		}
+	}
+	return settled;
+}
+
+// The list leaves out the targeting note, which can run to tens of kilobytes, and returns null in its place;
+// getById returns it.
+const { targetingNotes: _targetingNotes, ...listColumns } = getTableColumns(schema.application);
 
 // All reads/writes filter on userId — the single ownership guard every route funnels through.
 async function requireOwned(id: string, userId: string) {
@@ -442,7 +555,7 @@ const stripUserId = <T extends { userId: string; activity?: ApplicationTimelineE
 export const applicationService = {
 	list: async (input: { userId: string; status?: ApplicationStatus; tags?: string[] }) => {
 		const rows = await db
-			.select()
+			.select(listColumns)
 			.from(schema.application)
 			.where(
 				and(
@@ -453,7 +566,7 @@ export const applicationService = {
 			)
 			.orderBy(desc(schema.application.updatedAt));
 
-		return rows.map(stripUserId);
+		return rows.map((row) => stripUserId({ ...row, targetingNotes: null }));
 	},
 
 	getById: async (input: { id: string; userId: string }) => {
@@ -471,7 +584,8 @@ export const applicationService = {
 				stageEnteredAt?: string | undefined;
 			},
 	) => {
-		const { userId, status, stageEnteredAt, closedReason, resumeFile, coverLetterFile, ...fields } = input;
+		const { userId, status, stageEnteredAt, closedReason, resumeFile, coverLetterFile, ...given } = input;
+		const fields = stampAssessments(given, new Date());
 		const id = generateId();
 		const initialStatus = status ?? "saved";
 		const activity = [stageEntry(initialStatus, stageEnteredAt)];
@@ -492,6 +606,15 @@ export const applicationService = {
 						activity,
 						appliedAt: appliedAtFromTimeline(activity, new Date()),
 						...fields,
+						...(fields.targetingQuestions?.length
+							? {
+									targetingQuestions: mergeTargetingQuestions(
+										[],
+										fields.targetingQuestions,
+										await settledTopicsElsewhere(tx, userId),
+									),
+								}
+							: {}),
 						...uploadedFields,
 					})
 					.returning();
@@ -518,7 +641,9 @@ export const applicationService = {
 			input.items.map((item) => item.resumeId),
 		);
 
-		const values = input.items.map(({ status, stageEnteredAt, ...fields }) => {
+		const now = new Date();
+		const values = input.items.map(({ status, stageEnteredAt, ...given }) => {
+			const fields = stampAssessments(given, now);
 			const initialStatus = status ?? ("saved" as ApplicationStatus);
 			const activity = [stageEntry(initialStatus, stageEnteredAt)];
 			return {
@@ -533,6 +658,12 @@ export const applicationService = {
 
 		return db.transaction(async (tx) => {
 			await lockDirectoryOwner(tx, input.userId);
+			const settled = values.some((value) => value.targetingQuestions?.length)
+				? await settledTopicsElsewhere(tx, input.userId)
+				: new Map<string, SettledTopic>();
+			for (const value of values)
+				if (value.targetingQuestions?.length)
+					value.targetingQuestions = mergeTargetingQuestions([], value.targetingQuestions, settled);
 			const rows = await tx.insert(schema.application).values(values).returning();
 			for (const row of rows) await linkApplicationDirectory(tx, row);
 			return { imported: rows.length };
@@ -551,7 +682,8 @@ export const applicationService = {
 	) => {
 		const existing = await requireOwned(input.id, input.userId);
 
-		const { id, userId, status, stageEnteredAt, closedReason, resumeFile, coverLetterFile, ...fields } = input;
+		const { id, userId, status, stageEnteredAt, closedReason, resumeFile, coverLetterFile, ...given } = input;
+		const fields = stampAssessments(given, new Date());
 		if (
 			(existing.sentResumeVersionId && fields.resumeId !== undefined && fields.resumeId !== existing.resumeId) ||
 			(existing.sentCoverLetterVersionId &&
@@ -604,6 +736,15 @@ export const applicationService = {
 					.update(schema.application)
 					.set({
 						...fields,
+						...(fields.targetingQuestions !== undefined
+							? {
+									targetingQuestions: mergeTargetingQuestions(
+										current.targetingQuestions,
+										fields.targetingQuestions,
+										await settledTopicsElsewhere(tx, userId, id),
+									),
+								}
+							: {}),
 						...(fields.company !== undefined && fields.company !== current.company && fields.companyId === undefined
 							? { companyId: null }
 							: {}),
@@ -656,6 +797,87 @@ export const applicationService = {
 		if (!updated) throw new ORPCError("NOT_FOUND");
 		return stripUserId(updated);
 	},
+
+	/**
+	 * Answers, sets aside or reopens one targeting question. Answering or setting it aside does the same to open questions
+	 * with its topic on the user's other applications. Reopening clears the answer here only; a saved fact stays in
+	 * Knowledge.
+	 */
+	updateQuestion: (input: {
+		id: string;
+		userId: string;
+		questionId: string;
+		status: TargetingQuestionStatus;
+		answer?: string | null | undefined;
+		factId?: string | null | undefined;
+	}) =>
+		db.transaction(async (tx) => {
+			// One user's questions change together, so two answers to the same topic can't cross.
+			await lockApplicationUser(tx, input.userId);
+			const [current] = await tx
+				.select()
+				.from(schema.application)
+				.where(and(eq(schema.application.id, input.id), eq(schema.application.userId, input.userId)))
+				.for("update");
+			if (!current) throw new ORPCError("NOT_FOUND");
+			if (!current.targetingQuestions.some((question) => question.id === input.questionId))
+				throw new ORPCError("NOT_FOUND", { message: "That question isn't on this application." });
+			const open = input.status === "open";
+			const targetingQuestions = current.targetingQuestions.map((question) =>
+				question.id !== input.questionId
+					? question
+					: {
+							...question,
+							status: input.status,
+							answer: open ? null : (input.answer ?? question.answer),
+							factId: open ? null : (input.factId ?? question.factId),
+							answeredAt: open ? null : new Date().toISOString(),
+							answeredOn: null,
+						},
+			);
+			const [updated] = await tx
+				.update(schema.application)
+				.set({ targetingQuestions })
+				.where(and(eq(schema.application.id, input.id), eq(schema.application.userId, input.userId)))
+				.returning();
+			if (!updated) throw new ORPCError("NOT_FOUND");
+
+			// The same topic on the user's other applications is the same question: close it there too.
+			const closed = targetingQuestions.find((question) => question.id === input.questionId);
+			if (!open && closed?.topic) {
+				const others = await tx
+					.select({ id: schema.application.id, questions: schema.application.targetingQuestions })
+					.from(schema.application)
+					.where(
+						and(
+							eq(schema.application.userId, input.userId),
+							sql`${schema.application.id} <> ${input.id}`,
+							sql`${schema.application.targetingQuestions} @> ${JSON.stringify([{ topic: closed.topic, status: "open" }])}::jsonb`,
+						),
+					)
+					.for("update");
+				for (const other of others) {
+					await tx
+						.update(schema.application)
+						.set({
+							targetingQuestions: other.questions.map((question) =>
+								question.topic === closed.topic && question.status === "open"
+									? {
+											...question,
+											status: closed.status,
+											answer: closed.answer,
+											factId: closed.factId,
+											answeredAt: closed.answeredAt,
+											answeredOn: { applicationId: current.id, company: current.company },
+										}
+									: question,
+							),
+						})
+						.where(eq(schema.application.id, other.id));
+				}
+			}
+			return stripUserId(updated);
+		}),
 
 	addNote: async (input: { id: string; userId: string; text: string; date?: string | undefined }) => {
 		// Append in a single statement (activity || [event]) so concurrent notes can't drop each

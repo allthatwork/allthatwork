@@ -170,6 +170,10 @@ export function Swap({ id, children, className }: { id: string; children: ReactN
 export const tabLabel = (tab: WorkspaceTab) =>
 	({
 		fit: t({ message: "Fit", context: "Application workspace tab: how well a job fits your experience" }),
+		questions: t({
+			message: "Questions",
+			context: "Application workspace tab: questions for you from targeting the resume",
+		}),
 		apply: t`Apply`,
 		prepare: t`Prepare`,
 		practise: t`Practise`,

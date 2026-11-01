@@ -29,20 +29,24 @@ import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
 import { daysInStage } from "../next-step";
+import { applicationsListQueryOptions } from "../queries";
 import { getClosedReasonLabel, getNextStage, getStageColor, getStageLabel, PIPELINE } from "../stages";
+import { foundBySuggestions, foundOnSuggestions } from "../suggestions";
 import { useApplicationActions, useInvalidateApplications } from "../use-application-actions";
 import { ApplicationNotes } from "./application-notes";
 import { Activity } from "./detail/activity";
+import { SearchSection, TargetingSection } from "./detail/assessments";
 import { CloseDialog } from "./detail/close-dialog";
 import { Contacts } from "./detail/contacts";
+import { InlineFact } from "./detail/inline-fact";
 import { NextStepCard } from "./detail/next-step-card";
 import { SentDocuments } from "./detail/sent-documents";
 import { InterviewDialog } from "./interview-dialog";
 import { ViewPostingButton } from "./posting-dialog";
+import { SuggestionCombobox } from "./suggestion-combobox";
 import { useClosingValue } from "@/hooks/use-closing-value";
 import { useConfirm } from "@/hooks/use-confirm";
 import { getOrpcErrorMessage } from "@/libs/error-message";
-import { isImeComposing } from "@/libs/keyboard";
 import { orpc } from "@/libs/orpc/client";
 
 type DetailSheetProps = {
@@ -78,6 +82,7 @@ export function ApplicationDetailSheet({ application, onOpenChange, onEditDetail
 					<Detail
 						key={current.id}
 						application={current}
+						targetingNotes={data?.targetingNotes}
 						onEditDetails={onEditDetails}
 						onDeleted={() => onOpenChange(false)}
 					/>
@@ -89,12 +94,16 @@ export function ApplicationDetailSheet({ application, onOpenChange, onEditDetail
 
 type DetailProps = {
 	application: Application;
+	targetingNotes: string | null | undefined;
 	onEditDetails: (application: Application) => void;
 	onDeleted: () => void;
 };
 
-function Detail({ application, onEditDetails, onDeleted }: DetailProps) {
+function Detail({ application, targetingNotes, onEditDetails, onDeleted }: DetailProps) {
 	const { i18n } = useLingui();
+	// The pick lists come from the values already used across all applications.
+	const { data: applications = [] } = useQuery(applicationsListQueryOptions());
+	const { data: profile } = useQuery(orpc.career.profile.queryOptions());
 	const confirm = useConfirm();
 	const { moveTo, close, remove } = useApplicationActions();
 	const [interview, setInterview] = useState<{ open: boolean; entry: InterviewTimelineEntry | null }>({
@@ -243,7 +252,19 @@ function Detail({ application, onEditDetails, onDeleted }: DetailProps) {
 						onScheduleInterview={(entry) => setInterview({ open: true, entry })}
 					/>
 					<SentDocuments application={application} disabled={remove.isPending} />
-					<Facts application={application} locale={i18n.locale} />
+					<Facts
+						application={application}
+						locale={i18n.locale}
+						foundOn={foundOnSuggestions(applications)}
+						foundBy={foundBySuggestions(applications)}
+					/>
+					<SearchSection application={application} locale={i18n.locale} />
+					<TargetingSection
+						application={application}
+						targetingNotes={targetingNotes}
+						lanes={profile?.lanes ?? []}
+						locale={i18n.locale}
+					/>
 					<Tags application={application} />
 					<ApplicationNotes application={application} />
 					<Activity application={application} onOpenInterview={(entry) => setInterview({ open: true, entry })} />
@@ -288,8 +309,10 @@ function Detail({ application, onEditDetails, onDeleted }: DetailProps) {
 	);
 }
 
-/** Salary, Source, Applied and Contact. Salary and source edit in place. */
-function Facts({ application, locale }: { application: Application; locale: string }) {
+type FactsProps = { application: Application; locale: string; foundOn: string[]; foundBy: string[] };
+
+/** Salary, Found on, Found by, Applied and Contact. All but Applied edit in place. */
+function Facts({ application, locale, foundOn, foundBy }: FactsProps) {
 	const invalidate = useInvalidateApplications();
 	const update = useMutation({
 		...orpc.applications.update.mutationOptions(),
@@ -309,10 +332,17 @@ function Facts({ application, locale }: { application: Application; locale: stri
 				value={application.salary}
 				onSave={(salary) => update.mutate({ id: application.id, salary })}
 			/>
-			<InlineFact
-				label={t`Source`}
+			<ChoiceFact
+				label={t`Found on`}
 				value={application.source}
+				suggestions={foundOn}
 				onSave={(source) => update.mutate({ id: application.id, source })}
+			/>
+			<ChoiceFact
+				label={t`Found by`}
+				value={application.foundBy}
+				suggestions={foundBy}
+				onSave={(value) => update.mutate({ id: application.id, foundBy: value })}
 			/>
 			<div className="grid gap-0.5">
 				<dt className="text-xs font-semibold text-ink-3 uppercase">
@@ -320,7 +350,7 @@ function Facts({ application, locale }: { application: Application; locale: stri
 				</dt>
 				<dd className="text-sm font-medium">{application.status === "saved" ? "—" : applied}</dd>
 			</div>
-			<div className="grid gap-0.5">
+			<div className="col-span-2 grid gap-0.5">
 				<dt className="text-xs font-semibold text-ink-3 uppercase">
 					<Trans>Contact</Trans>
 				</dt>
@@ -336,53 +366,37 @@ function Facts({ application, locale }: { application: Application; locale: stri
 	);
 }
 
-type InlineFactProps = { label: string; value: string | null; onSave: (value: string | null) => void };
+type ChoiceFactProps = {
+	label: string;
+	value: string | null;
+	suggestions: readonly string[];
+	onSave: (value: string | null) => void;
+};
 
-/** A fact that edits in place: click to type, Enter or leaving saves, Esc cancels. */
-function InlineFact({ label, value, onSave }: InlineFactProps) {
+/** A fact picked from the values already in use, or typed new; the whole list shows when it opens. */
+function ChoiceFact({ label, value, suggestions, onSave }: ChoiceFactProps) {
 	const id = useId();
-	const [draft, setDraft] = useState<string | null>(null);
-
-	const commit = () => {
-		if (draft === null) return;
-		const next = draft.trim() || null;
-		if (next !== (value ?? null)) onSave(next);
-		setDraft(null);
-	};
-
 	return (
-		<div className="grid gap-0.5">
+		<div className="grid min-w-0 gap-0.5">
 			<dt className="text-xs font-semibold text-ink-3 uppercase">
 				<label htmlFor={id}>{label}</label>
 			</dt>
-			<dd>
-				{draft === null ? (
-					<button
-						id={id}
-						type="button"
-						onClick={() => setDraft(value ?? "")}
-						className="w-full truncate rounded-md text-start text-sm font-medium hover:bg-hover"
-					>
-						{value || "—"}
-					</button>
-				) : (
-					<Input
-						id={id}
-						autoFocus
-						value={draft}
-						className="h-8"
-						onChange={(event) => setDraft(event.target.value)}
-						onBlur={commit}
-						onKeyDown={(event) => {
-							if (isImeComposing(event)) return;
-							if (event.key === "Enter") commit();
-							if (event.key === "Escape") {
-								event.stopPropagation();
-								setDraft(null);
-							}
-						}}
-					/>
-				)}
+			<dd className="min-w-0">
+				<SuggestionCombobox
+					id={id}
+					value={value}
+					suggestions={suggestions}
+					placeholder="—"
+					onChange={(next) => {
+						if (next !== value) onSave(next);
+					}}
+					render={
+						<button
+							type="button"
+							className="w-full truncate rounded-md text-start text-sm font-medium hover:bg-hover"
+						/>
+					}
+				/>
 			</dd>
 		</div>
 	);

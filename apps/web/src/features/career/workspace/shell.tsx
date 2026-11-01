@@ -23,6 +23,7 @@ import { cn } from "@reactive-resume/utils/style";
 import { useOverlayHistory, useSavedItems } from "../hooks";
 import { CountdownChip, Eyebrow, minutesUntil, tabLabel, useCareerTime, useNow } from "../shared";
 import { ApplyTab } from "./apply";
+import { AssessmentContext, FitSummary } from "./assessments";
 import { CoachSheet } from "./coach-sheet";
 import { DebriefTab } from "./debrief";
 import { FitTab } from "./fit";
@@ -30,6 +31,7 @@ import { ApplicationKnowledge } from "./knowledge";
 import { MessagesTab } from "./messages";
 import { PractiseTab } from "./practise";
 import { PrepareTab } from "./prepare";
+import { QuestionsTab } from "./questions";
 import { SavedTab } from "./saved";
 import { ApplicationNotes } from "@/features/applications/components/application-notes";
 import { InterviewDialog } from "@/features/applications/components/interview-dialog";
@@ -66,6 +68,7 @@ export type WorkspaceTabProps = {
 const DAY = 86_400_000;
 const archiveKinds = {
 	fit: "fit",
+	questions: null,
 	apply: "answers",
 	prepare: "briefing",
 	practise: "practice",
@@ -182,6 +185,7 @@ export function Workspace({ applicationId, tab: requested, search }: WorkspacePr
 	const newestReply = saved.data?.find((item) => item.data.kind === "reply");
 	const unreadMessages =
 		newestReply?.data.kind === "reply" && newestReply.data.changes.length > 0 && !newestReply.data.applied ? 1 : 0;
+	const openQuestions = application.targetingQuestions.filter((question) => question.status === "open").length;
 	const editOpen = search.edit === "interview";
 	if (editOpen && !editing) setEditing({ id: interview?.id ?? null });
 	if (!editOpen && editing) setEditing(null);
@@ -242,6 +246,7 @@ export function Workspace({ applicationId, tab: requested, search }: WorkspacePr
 										{minutes <= 60 ? t`${minutes} min` : t`${Math.round(minutes / 60)} h`}
 									</TabBadge>
 								)}
+								{value === "questions" && openQuestions > 0 && <TabBadge tone="accent">{openQuestions}</TabBadge>}
 								{value === "messages" && unreadMessages > 0 && <TabBadge tone="info">{unreadMessages}</TabBadge>}
 								{value === "saved" && (saved.data?.length ?? 0) > 0 && (
 									<TabBadge tone="plain">{saved.data?.length}</TabBadge>
@@ -347,6 +352,8 @@ function TabBody({ tab, ...props }: WorkspaceTabProps & { tab: WorkspaceTab }) {
 	switch (tab) {
 		case "fit":
 			return <FitTab {...props} />;
+		case "questions":
+			return <QuestionsTab {...props} />;
 		case "apply":
 			return <ApplyTab {...props} />;
 		case "prepare":
@@ -414,6 +421,7 @@ function WorkspaceHeader({ application, onAskCoach }: WorkspaceHeaderProps) {
 						</span>
 						{application.location && <span>· {application.location}</span>}
 						{sent && <span>· {t`Applied ${date(application.appliedAt)}`}</span>}
+						<FitSummary application={application} />
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -454,7 +462,7 @@ type ContextColumnProps = {
 	onEdit: () => void;
 };
 
-/** NEXT STEP, WHO YOU'LL MEET, WHAT YOU SENT and NOTES: the job at a glance beside every tab. */
+/** NEXT STEP, WHO YOU'LL MEET, WHAT YOU SENT, SEARCH, TARGETING and NOTES: the job at a glance beside every tab. */
 function ContextColumn({ application, interview, now, onEdit }: ContextColumnProps) {
 	const { i18n } = useLingui();
 	const { day, date, time } = useCareerTime();
@@ -641,6 +649,8 @@ function ContextColumn({ application, interview, now, onEdit }: ContextColumnPro
 					)}
 				</section>
 			)}
+
+			<AssessmentContext application={application} />
 
 			<section className="grid gap-1.5">
 				<ApplicationNotes key={application.id} application={application} />

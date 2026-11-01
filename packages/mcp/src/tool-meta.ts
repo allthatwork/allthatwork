@@ -14,6 +14,8 @@ import {
 	contactSchema,
 	interviewDetailsSchema,
 	interviewKindSchema,
+	targetingQuestionSchema,
+	targetingReviewSchema,
 } from "@reactive-resume/schema/applications/data";
 import { coverLetterDocumentSchema } from "@reactive-resume/schema/cover-letter/data";
 import { templateSchema } from "@reactive-resume/schema/templates";
@@ -202,10 +204,84 @@ const applicationMutableFieldsSchema = {
 		.describe("Why a closed application ended: accepted, not-selected, withdrew, accepted-other or no-response."),
 	location: z.string().nullable().optional(),
 	salary: z.string().nullable().optional(),
-	source: z.string().nullable().optional(),
+	source: z
+		.string()
+		.nullable()
+		.optional()
+		.describe("Found on: where the posting was found, such as Greenhouse, Ashby, LinkedIn or Indeed."),
+	foundBy: z
+		.string()
+		.max(100)
+		.nullable()
+		.optional()
+		.describe("Found by: who or what found the job, such as a search agent's name, In-app search, Referral or Me."),
 	sourceUrl: httpUrlSchema.nullable().optional(),
 	jobDescription: z.string().max(20_000).nullable().optional(),
-	notes: z.string().nullable().optional(),
+	notes: z
+		.string()
+		.nullable()
+		.optional()
+		.describe("The user's own notes. Search and targeting output has its own fields."),
+	searchFit: z
+		.number()
+		.int()
+		.min(0)
+		.max(100)
+		.nullable()
+		.optional()
+		.describe("The job search's fit for the posting, 0-100, before any resume was made for it."),
+	searchNotes: z
+		.string()
+		.max(20_000)
+		.nullable()
+		.optional()
+		.describe("The job search's assessment of the posting (strengths, gaps, unknowns). Replaces the previous one."),
+	searchAt: z
+		.string()
+		.datetime({ offset: true })
+		.nullable()
+		.optional()
+		.describe("When the search assessed the posting, ISO 8601. Defaults to now when search fields are written."),
+	targetingNotes: z
+		.string()
+		.max(200_000)
+		.nullable()
+		.optional()
+		.describe(
+			"The whole targeting note (Markdown) from targeting a resume at this posting. Replaces the previous one.",
+		),
+	targetingReviews: z
+		.array(targetingReviewSchema)
+		.max(100)
+		.optional()
+		.describe(
+			"Every reviewer's read per round: round, reviewer (A, B…), model, status (ran or skipped), fit 0-100, verdict, reason when skipped. Sets targetingFit to the median of the latest round's reviewers that ran.",
+		),
+	targetingPrimaryLane: z
+		.string()
+		.max(100)
+		.nullable()
+		.optional()
+		.describe("The kind of role the targeted resume aims at, such as Platform / reliability."),
+	targetingSecondaryLane: z
+		.string()
+		.max(100)
+		.nullable()
+		.optional()
+		.describe("A second lane the targeted resume also covers."),
+	targetingAt: z
+		.string()
+		.datetime({ offset: true })
+		.nullable()
+		.optional()
+		.describe("When the resume was targeted, ISO 8601. Defaults to now when targeting fields are written."),
+	targetingQuestions: z
+		.array(targetingQuestionSchema)
+		.max(50)
+		.optional()
+		.describe(
+			"Questions for the user from targeting: id, question, proposedFact (blanks as <placeholders>), boundary, factGroup. Merged on write: answered and set-aside questions are kept, open ones replaced.",
+		),
 	resumeId: z.string().nullable().optional(),
 	coverLetterId: z.string().nullable().optional().describe("The saved cover letter sent with the application."),
 	resumeFileUrl: z.string().nullable().optional(),
@@ -664,7 +740,7 @@ const BASE_TOOL_META = {
 	[T.listApplications]: {
 		title: "List Applications",
 		description:
-			"List job applications for the authenticated account, including contacts, notes, document URLs, and timeline. Use this before reading or updating existing applications.",
+			"List job applications for the authenticated account, including contacts, notes, search fit and notes, targeting fit and lanes, document URLs, and timeline. The full targeting note comes back null; read one application for it. Use this before reading or updating existing applications.",
 		outputSchema: toWireObjectSchema(applicationDto.list.output),
 		inputSchema: wireInput(
 			z.strictObject({

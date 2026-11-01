@@ -46,6 +46,7 @@ vi.mock("drizzle-orm", () => ({
 	arrayContains: (...a: unknown[]) => a,
 	desc: (x: unknown) => x,
 	eq: (...a: unknown[]) => a,
+	getTableColumns: (table: object) => ({ ...table }),
 	inArray: (...a: unknown[]) => a,
 	isNull: (x: unknown) => x,
 	sql: Object.assign((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values }), {
@@ -68,7 +69,7 @@ vi.mock("../directory/links", () => ({
 	lockDirectoryOwner: async () => {},
 }));
 
-const { applicationService } = await import("./service");
+const { applicationService, mergeTargetingQuestions, stampAssessments } = await import("./service");
 
 const existing = {
 	id: "app-1",
@@ -123,6 +124,123 @@ beforeEach(() => {
 		key: "uploads/user-1/pictures/new.pdf",
 	});
 	setSelectResults([{ ...existing }]);
+});
+
+describe("mergeTargetingQuestions", () => {
+	const question = (
+		id: string,
+		text: string,
+		status: "open" | "answered" | "dismissed" = "open",
+		topic: string | null = null,
+	) => ({
+		id,
+		topic,
+		question: text,
+		proposedFact: "",
+		boundary: "",
+		factGroup: null,
+		status,
+		answer: status === "open" ? null : "Saved",
+		factId: status === "answered" ? `fact-${id}` : null,
+		answeredAt: status === "open" ? null : "2026-10-31T12:00:00.000Z",
+		answeredOn: null,
+	});
+
+	it("keeps answered and set-aside questions, replaces open ones, and adds new ones after", () => {
+		const current = [
+			question("a", "Any Go?", "answered"),
+			question("b", "Any Thanos?"),
+			question("c", "On-call?", "dismissed"),
+		];
+		const incoming = [question("a", "Any Go?"), question("d", "ClickHouse scale?"), question("c2", " on-call? ")];
+		expect(mergeTargetingQuestions(current, incoming).map((q) => [q.id, q.status])).toEqual([
+			["a", "answered"],
+			["c", "dismissed"],
+			["d", "open"],
+		]);
+	});
+
+	it("drops a new question whose topic is already answered here, whatever its wording", () => {
+		const current = [question("a", "Any T-Cloud result?", "answered", "intact/t-cloud")];
+		const incoming = [question("b", "For the 20+ T-Cloud teams, what improved?", "open", "intact/t-cloud")];
+		expect(mergeTargetingQuestions(current, incoming).map((q) => q.id)).toEqual(["a"]);
+	});
+
+	it("closes a new question whose topic was settled on another application, saying where", () => {
+		const elsewhere = new Map([
+			[
+				"intact/t-cloud",
+				{
+					status: "answered" as const,
+					answer: "Onboarded 20+ teams.",
+					factId: "fact-1",
+					answeredAt: "2026-10-31T12:00:00.000Z",
+					answeredOn: { applicationId: "app-temporal", company: "Temporal" },
+				},
+			],
+		]);
+		const [merged] = mergeTargetingQuestions(
+			[],
+			[question("b", "T-Cloud outcome?", "open", "intact/t-cloud")],
+			elsewhere,
+		);
+		expect(merged).toMatchObject({
+			status: "answered",
+			answer: "Onboarded 20+ teams.",
+			factId: "fact-1",
+			answeredOn: { company: "Temporal" },
+		});
+	});
+
+	it("drops every open question when the new list is empty", () => {
+		expect(mergeTargetingQuestions([question("a", "Any Go?"), question("b", "Done?", "answered")], [])).toEqual([
+			question("b", "Done?", "answered"),
+		]);
+	});
+});
+
+describe("stampAssessments", () => {
+	const now = new Date("2026-10-31T12:00:00Z");
+
+	it("sets the targeting fit from the reviews, and clears it when they're emptied", () => {
+		const reviews = [
+			{ round: 1, reviewer: "B", model: "m", status: "ran" as const, fit: 72, verdict: "Yes", reason: null },
+			{ round: 1, reviewer: "C", model: "m", status: "ran" as const, fit: 78, verdict: "Yes", reason: null },
+		];
+		expect(stampAssessments({ targetingReviews: reviews }, now)).toMatchObject({ targetingFit: 75, targetingAt: now });
+		expect(stampAssessments({ targetingReviews: [] }, now)).toEqual({ targetingReviews: [], targetingFit: null });
+	});
+
+	it("dates search and targeting fields written without a date", () => {
+		expect(stampAssessments({ searchFit: 88 }, now)).toEqual({ searchFit: 88, searchAt: now });
+		expect(stampAssessments({ targetingPrimaryLane: "Platform" }, now)).toEqual({
+			targetingPrimaryLane: "Platform",
+			targetingAt: now,
+		});
+	});
+
+	it("keeps an explicit date, and leaves dates alone when nothing is written or the fields are cleared", () => {
+		const searchAt = new Date("2026-10-14T00:00:00Z");
+		expect(stampAssessments({ searchNotes: "Fit", searchAt }, now)).toEqual({ searchNotes: "Fit", searchAt });
+		expect(stampAssessments({ notes: "Mine" }, now)).toEqual({ notes: "Mine" });
+		expect(stampAssessments({ searchFit: null, targetingNotes: null }, now)).toEqual({
+			searchFit: null,
+			targetingNotes: null,
+		});
+	});
+});
+
+describe("applicationService.list", () => {
+	it("returns the targeting note as null, so the list stays small", async () => {
+		const row = { ...existing, targetingNotes: undefined, targetingFit: 72, searchFit: 88 };
+		dbMock.select.mockReset();
+		dbMock.select.mockReturnValueOnce({ from: () => ({ where: () => ({ orderBy: () => Promise.resolve([row]) }) }) });
+
+		const [listed] = await applicationService.list({ userId: "user-1" });
+
+		expect(listed).toMatchObject({ targetingNotes: null, targetingFit: 72, searchFit: 88 });
+		expect(listed).not.toHaveProperty("userId");
+	});
 });
 
 describe("applicationService.create", () => {

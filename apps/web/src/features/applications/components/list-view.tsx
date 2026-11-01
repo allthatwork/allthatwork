@@ -28,7 +28,7 @@ import { formatRelativeTime } from "@/libs/locale";
 import { D2, EASE, EXIT } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
-type SortKey = "role" | "next" | "updated";
+type SortKey = "role" | "next" | "fit" | "updated";
 type Sort = { key: SortKey; direction: "asc" | "desc" };
 
 const nextStepTime = (application: Application) => {
@@ -39,6 +39,8 @@ const nextStepTime = (application: Application) => {
 const compare: Record<SortKey, (a: Application, b: Application) => number> = {
 	role: (a, b) => a.role.localeCompare(b.role) || a.company.localeCompare(b.company),
 	next: (a, b) => nextStepTime(a) - nextStepTime(b),
+	// No fit sorts below every fit, so it lands last when sorting highest first.
+	fit: (a, b) => (a.searchFit ?? -1) - (b.searchFit ?? -1),
 	updated: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
 };
 
@@ -103,7 +105,7 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 		setSort((current) =>
 			current.key === key
 				? { key, direction: current.direction === "asc" ? "desc" : "asc" }
-				: { key, direction: key === "updated" ? "desc" : "asc" },
+				: { key, direction: key === "updated" || key === "fit" ? "desc" : "asc" },
 		);
 
 	const header = (key: SortKey, label: string, className?: string) => (
@@ -136,6 +138,7 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 							</th>
 							{header("role", t`Role`)}
 							{header("next", t`Next step`)}
+							{header("fit", t`Fit`, "max-md:hidden")}
 							<th scope="col" className="px-2 text-start font-medium max-lg:hidden">
 								<Trans>Stage</Trans>
 							</th>
@@ -153,7 +156,7 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 					return (
 						<tbody key={status} aria-labelledby={groupId}>
 							<tr>
-								<th scope="colgroup" colSpan={6} className="pt-3 text-start">
+								<th scope="colgroup" colSpan={7} className="pt-3 text-start">
 									<button
 										type="button"
 										id={groupId}
@@ -287,6 +290,13 @@ function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen
 					<Icon name={next.icon} size={16} className="shrink-0" />
 					<span className="truncate">{next.title}</span>
 				</span>
+			</td>
+			<td className="px-2 text-[13px] whitespace-nowrap text-ink-2 tabular-nums max-md:hidden">
+				{application.searchFit === null ? (
+					<span className="text-ink-3">—</span>
+				) : (
+					<span title={t`Search fit`}>{application.searchFit}%</span>
+				)}
 			</td>
 			<td className="px-2 max-lg:hidden">
 				<span className="flex items-center gap-1.5 text-ink-2">

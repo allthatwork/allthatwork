@@ -248,6 +248,11 @@ msgstr ""
 msgid "{0, plural, one {# proposed edit} other {# proposed edits}}"
 msgstr "{0, plural, one {# முன்மொழியப்பட்ட திருத்தம்} other {# முன்மொழியப்பட்ட திருத்தங்கள்}}"
 
+#. placeholder {0}: open.length
+#: src/features/career/workspace/questions.tsx
+msgid "{0, plural, one {# question for you} other {# questions for you}}"
+msgstr ""
+
 #. placeholder {0}: summary.madePrivate
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "{0, plural, one {# resume was public and came in private. Share it again from the resume.} other {# resumes were public and came in private. Share them again from each resume.}}"
@@ -576,7 +581,9 @@ msgid "{0} sections and {1} entries found."
 msgstr "{0} பிரிவுகள் மற்றும் {1} உள்ளீடுகள் கண்டறியப்பட்டன."
 
 #. placeholder {0}: report.skippedChecks
+#. placeholder {0}: review.reviewer
 #: src/features/ats-checker/report/score-header.tsx
+#: src/features/career/workspace/assessments.tsx
 msgid "{0} skipped"
 msgstr "{0} தவிர்க்கப்பட்டன"
 
@@ -879,6 +886,10 @@ msgstr "{proposed, plural, one {# முன்மொழியப்பட்ட�
 msgid "{sections, plural, one {# section} other {# sections}}"
 msgstr "{sections, plural, one {# பிரிவு} other {# பிரிவுகள்}}"
 
+#: src/features/career/workspace/questions.tsx
+msgid "{shared, plural, one {Also asked on # other application. Answering here answers it there too.} other {Also asked on # other applications. Answering here answers them too.}}"
+msgstr ""
+
 #: src/features/applications/components/application-detail-sheet.tsx
 msgid "{since, plural, =0 {since today} one {for # day} other {for # days}}"
 msgstr "{since, plural, =0 {இன்று முதல்} one {# நாளுக்கு} other {# நாட்களுக்கு}}"
@@ -952,6 +963,10 @@ msgstr ""
 
 #: src/features/career/knowledge/groups.tsx
 msgid "{updated, plural, one {Switched # fact in {group} on.} other {Switched # facts in {group} on.}}"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "{value} (not in Preferences)"
 msgstr ""
 
 #: src/features/career/offers.tsx
@@ -1348,6 +1363,10 @@ msgstr "சேர்"
 msgid "Add “{0}”"
 msgstr "\"{0}\" சேர்"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Add “{typed}”"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Add a fact to {group}"
 msgstr ""
@@ -1364,6 +1383,10 @@ msgstr "ஒரு முக்கிய வார்த்தையைச் ச
 #: src/components/input/url-input.tsx
 msgid "Add a label to the URL"
 msgstr "URL-க்கு ஒரு லேபிளைச் சேர்க்கவும்"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Add a lane, then Enter"
+msgstr ""
 
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Add a link"
@@ -1652,6 +1675,10 @@ msgstr "தன்னார்வத்தைச் சேர்க்கவு�
 msgid "Add what happened before you can save."
 msgstr "சேமிப்பதற்கு முன் என்ன நடந்தது என்பதைச் சேர்க்கவும்."
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Add your lanes in Preferences"
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "Add your name"
 msgstr "உங்கள் பெயரைச் சேர்க்கவும்"
@@ -1846,6 +1873,10 @@ msgstr ""
 msgid "All proposed facts have matches. Review them in Duplicates below."
 msgstr ""
 
+#: src/features/career/workspace/questions.tsx
+msgid "All questions answered"
+msgstr ""
+
 #: src/features/auth/pages/consent.tsx
 msgid "Allow access"
 msgstr "அணுகலை அனுமதிக்கவும்"
@@ -1968,6 +1999,11 @@ msgstr "பதில் நகலெடுக்கப்பட்டது"
 msgid "Answer in your own words"
 msgstr "உங்கள் சொந்த வார்த்தைகளில் பதிலளிக்கவும்"
 
+#. placeholder {0}: question.answeredOn.company
+#: src/features/career/workspace/questions.tsx
+msgid "answered on {0}"
+msgstr ""
+
 #: src/features/career/workspace/saved.tsx
 msgid "Answers"
 msgstr "பதில்கள்"
@@ -1999,6 +2035,10 @@ msgstr "இணைப்பைக் கொண்டுள்ள எவரும�
 #: src/features/applications/components/application-notes.tsx
 msgid "Anything to remember about this job"
 msgstr "இந்த வேலையைப் பற்றி நினைவில் கொள்ள வேண்டியவை"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Anything to remember instead? Saved to Knowledge so later resumes don't ask again (optional)."
+msgstr ""
 
 #: src/features/assistant/provider-setup.tsx
 #: src/features/settings/ai/providers.tsx
@@ -2698,6 +2738,7 @@ msgstr "மென்பொருள் உங்கள் விண்ணப்�
 #: src/features/career/knowledge/stories.tsx
 #: src/features/career/schedule-sheet.tsx
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/new-document-dialog.tsx
 #: src/features/resume/builder/password-dialog.tsx
@@ -2985,6 +3026,10 @@ msgstr "மற்றொரு கோப்பைத் தேர்ந்தெ�
 msgid "Choose color"
 msgstr "நிறத்தைத் தேர்ந்தெடுங்கள்"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Choose or type…"
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Choose the zip"
 msgstr ""
@@ -3007,6 +3052,7 @@ msgstr "Claude Desktop"
 
 #: src/features/applications/components/detail/next-step-card.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Clear"
 msgstr "அழி"
@@ -3868,6 +3914,10 @@ msgstr "மறுபெயரிட முடியவில்லை."
 msgid "Couldn't rename the passkey."
 msgstr "கடவுச்சொல்லை மறுபெயரிட முடியவில்லை."
 
+#: src/features/career/workspace/questions.tsx
+msgid "Couldn't reopen it."
+msgstr ""
+
 #: src/features/settings/ai/api-keys.tsx
 msgid "Couldn't revoke the key."
 msgstr "சாவியைத் திரும்பப் பெற முடியவில்லை."
@@ -3886,6 +3936,7 @@ msgid "Couldn't save that change. Try again."
 msgstr "அந்த மாற்றத்தைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
 
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Couldn't save that to Knowledge."
 msgstr "அதை அறிவுத் தளத்தில் சேமிக்க முடியவில்லை."
 
@@ -3971,6 +4022,7 @@ msgid "Couldn't save your preferences."
 msgstr "உங்கள் விருப்பங்களைச் சேமிக்க முடியவில்லை."
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/detail/sent-documents.tsx
 msgid "Couldn't save."
 msgstr "சேமிக்க முடியவில்லை."
@@ -4660,6 +4712,7 @@ msgstr "{0} ஐ அனுப்ப வேண்டாம்"
 msgid "Donate"
 msgstr "நன்கொடை அளிக்கவும்"
 
+#: src/features/career/workspace/questions.tsx
 #: src/features/resume/editor/write/rich-text-editor.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
 #: src/features/settings/ai/api-keys.tsx
@@ -4966,6 +5019,10 @@ msgstr "நேர்காணலைத் திருத்து..."
 msgid "Edit keyword"
 msgstr "முக்கியச்சொல்லைத் திருத்து"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Edit lanes in Preferences"
+msgstr ""
+
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Edit link"
 msgstr "இணைப்பைத் திருத்து"
@@ -5245,6 +5302,10 @@ msgstr "{0}-க்காக ஆலோசகர் எழுதிய அனை�
 #: src/features/homepage/hero.tsx
 msgid "Everything you’ve done, on one page."
 msgstr "நீங்கள் செய்த அனைத்தும், ஒரு பக்கத்தில்."
+
+#: src/features/career/workspace/questions.tsx
+msgid "Evidence targeting looked for and couldn't find in your Knowledge. Answer in your own words and save it to Knowledge. A gap means it isn't recorded yet, not that you can't do it."
+msgstr ""
 
 #: src/features/homepage/footer.tsx
 msgid "Evolved from"
@@ -5584,6 +5645,7 @@ msgstr "ஃபின்னிஷ்"
 msgid "First run"
 msgstr "முதல் இயக்கம்"
 
+#: src/features/applications/components/list-view.tsx
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5734,6 +5796,10 @@ msgstr "எடுத்துக்காட்டாக, இந்த ரெஸ
 msgid "For example: “{0}: I did … at … in 2024, and it led to …”"
 msgstr "எடுத்துக்காட்டாக: “{0}: 2024-இல் … நிறுவனத்தில் … செய்தேன், அதனால் … ஏற்பட்டது”"
 
+#: src/features/career/workspace/questions.tsx
+msgid "For example: No hands-on Go; read and reviewed Go code only."
+msgstr ""
+
 #: src/features/resume/share/download-tab.tsx
 msgid "For LibreOffice and other open-source editors. Layout is simplified."
 msgstr "LibreOffice மற்றும் பிற திறந்த மூல எடிட்டர்களுக்கு. தளவமைப்பு எளிமைப்படுத்தப்பட்டுள்ளது."
@@ -5787,6 +5853,30 @@ msgstr "வடிவமைத்தல்"
 #: src/features/career/today.tsx
 msgid "Found {0}"
 msgstr "{0} அன்று கண்டறியப்பட்டது"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Found by"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found by {foundBy}"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found by {foundBy} on {source}"
+msgstr ""
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Found on"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found on {source}"
+msgstr ""
 
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Found the role and company on the page. Review the details before saving."
@@ -5973,6 +6063,15 @@ msgstr "டாஷ்போர்டுக்கு செல்லவும்"
 msgid "Go to…"
 msgstr "… க்குச் செல்லவும்"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Goes to Knowledge"
+msgstr ""
+
+#. placeholder {0}: question.factGroup
+#: src/features/career/workspace/questions.tsx
+msgid "Goes to Knowledge · <0>{0}</0>"
+msgstr ""
+
 #. Authentication provider display name in account settings
 #. Brand name label for Google social sign-in button
 #: src/features/auth/components/social-auth.tsx
@@ -5991,6 +6090,10 @@ msgstr "கிரேக்கம்"
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Green"
 msgstr "பச்சை"
+
+#: src/features/applications/components/application-form-sheet.tsx
+msgid "Greenhouse, LinkedIn…"
+msgstr ""
 
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Greeting"
@@ -6267,6 +6370,10 @@ msgstr "இந்த {kind} மற்றும் {0} வேலை இடுக�
 msgid "I can see this {kind}. Suggestions come back as edits you can accept one by one."
 msgstr "என்னால் இதை {kind} பார்க்க முடிகிறது. நீங்கள் ஒவ்வொன்றாக ஏற்றுக்கொள்ளக்கூடிய திருத்தங்களாக பரிந்துரைகள் மீண்டும் வருகின்றன."
 
+#: src/features/career/workspace/questions.tsx
+msgid "I don't have this"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "I interviewed 14 customers, mapped three drop-off points and prototyped a shorter setup with engineering."
 msgstr "14 வாடிக்கையாளர்களை நேர்காணல் செய்தேன், மூன்று விலகல் புள்ளிகளை வரைபடமாக்கினேன், பொறியியல் குழுவுடன் சுருக்கமான அமைவு முறைக்கு முன்மாதிரி உருவாக்கினேன்."
@@ -6488,6 +6595,10 @@ msgstr ""
 #: src/features/homepage/sections.tsx
 msgid "In good company"
 msgstr "நல்ல நிறுவனத்தில்"
+
+#: src/features/career/workspace/questions.tsx
+msgid "in Knowledge"
+msgstr ""
 
 #: src/features/career/knowledge/import-comparison.tsx
 msgid "In Knowledge"
@@ -6863,6 +6974,10 @@ msgstr "நேர்மையாக இருங்கள்"
 msgid "Keep it under 2.5 MB, usually by removing or shrinking images."
 msgstr "பொதுவாக படங்களை நீக்கியோ சுருக்கியோ அதை 2.5 MB க்கும் குறைவாக வைத்திருங்கள்."
 
+#: src/features/career/workspace/questions.tsx
+msgid "Keep it within the record:"
+msgstr ""
+
 #: src/features/homepage/write.tsx
 #: src/features/resume/editor/write/improve.tsx
 msgid "Keep mine"
@@ -7014,6 +7129,10 @@ msgstr "லேபிள், எ.கா. பணியமர்த்துபவ�
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Landscape"
 msgstr "கிடைமட்டப் படலம்"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Lanes"
+msgstr ""
 
 #. Menu item that opens language selection submenu
 #: src/features/command-palette/pages/navigation.tsx
@@ -7367,10 +7486,6 @@ msgstr ""
 #: src/features/career/knowledge/import.tsx
 msgid "LinkedIn exports and JSON are read in your browser. We read LinkedIn's profile files, and connections can optionally be imported into Directory. Messages are ignored. Only selected facts and contacts are saved to your account."
 msgstr ""
-
-#: src/features/applications/components/application-form-sheet.tsx
-msgid "LinkedIn, Referral…"
-msgstr "LinkedIn, பரிந்துரை…"
 
 #: src/features/settings/account/auth-hooks.ts
 msgid "Linking your {providerName} account..."
@@ -7735,6 +7850,10 @@ msgstr "MCP"
 #: src/features/settings/ai/mcp.tsx
 msgid "MCP server"
 msgstr "MCP சேவையகம்"
+
+#: src/features/applications/components/application-form-sheet.tsx
+msgid "Me, Referral…"
+msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
 msgid "median to first reply"
@@ -8437,6 +8556,10 @@ msgstr "புகைப்படம் இல்லை. பெரும்பா
 msgid "No postings found. Try different keywords."
 msgstr "வேலை வாய்ப்புகள் இல்லை. வெவ்வேறு முக்கிய வார்த்தைகளை முயற்சிக்கவும்."
 
+#: src/features/career/workspace/questions.tsx
+msgid "No questions for you"
+msgstr ""
+
 #: src/features/applications/stages.ts
 msgid "No response"
 msgstr "பதில் இல்லை"
@@ -8508,6 +8631,7 @@ msgstr "எண். {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
 msgstr "இல்லை"
@@ -9022,6 +9146,7 @@ msgid "Optional for local Ollama"
 msgstr "உள்ளூர் Ollama சேவைக்கு விருப்பத்தேர்வு"
 
 #: src/components/ui/combobox.tsx
+#: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/documents/trash-page.tsx
 msgid "Options"
@@ -9696,6 +9821,11 @@ msgstr "முந்தைய மாதம்"
 msgid "Primary Color"
 msgstr "முதன்மை நிறம்"
 
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Primary lane"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 msgid "Print"
 msgstr "அச்சிடுக"
@@ -9893,6 +10023,11 @@ msgstr "கேள்வி அகற்றப்பட்டது"
 msgid "Questions"
 msgstr "கேள்விகள்"
 
+#: src/features/career/shared.tsx
+msgctxt "Application workspace tab: questions for you from targeting the resume"
+msgid "Questions"
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "Questions copied"
 msgstr "கேள்விகள் நகலெடுக்கப்பட்டன"
@@ -10004,6 +10139,10 @@ msgstr "ரெஸ்யூமைப் படித்தது"
 #: src/features/homepage/faq.tsx
 msgid "Read the self-hosting guide"
 msgstr "சுய ஹோஸ்டிங் வழிகாட்டியைப் படிக்கவும்"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Read the targeting note"
+msgstr ""
 
 #: src/features/auth/pages/consent.tsx
 msgid "Read your documents and job applications."
@@ -10419,6 +10558,7 @@ msgid "Rename…"
 msgstr "மறுபெயரிடுங்கள்…"
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Reopen"
 msgstr "மீண்டும் திறக்கவும்"
 
@@ -10733,6 +10873,10 @@ msgstr "தேர்ந்தெடுத்த ரெஸ்யூமையு�
 msgid "Review writing"
 msgstr "விமர்சனம் எழுதுதல்"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Reviewers · round {round}"
+msgstr ""
+
 #: src/features/career/workspace/debrief.tsx
 msgid "Reviewing needs an AI connection. <0>Add one in Settings</0>. What you write here stays in this browser until then."
 msgstr "மதிப்பாய்வுக்கு AI இணைப்பு தேவை. <0>அமைப்புகளில் ஒன்றைச் சேர்க்கவும்</0>. அதுவரை நீங்கள் இங்கே எழுதுவது இந்த உலாவியிலேயே இருக்கும்."
@@ -10826,6 +10970,10 @@ msgstr "சுழற்சி"
 msgid "Rotation isn't supported by PDF rendering."
 msgstr "PDF ரெண்டரிங் மூலம் சுழற்சி ஆதரிக்கப்படவில்லை."
 
+#: src/features/career/workspace/assessments.tsx
+msgid "Round {round}: {scores}"
+msgstr ""
+
 #. placeholder {0}: fieldLabel(field)
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Row {row}, {0}: “{value}” is invalid."
@@ -10912,6 +11060,10 @@ msgstr "சேமித்து இணைக்கவும்"
 msgid "Save and prepare resume"
 msgstr "சேமித்து ரெஸ்யூமே தயார் செய்யவும்"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Save and set aside"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Save and test"
 msgstr "சேமித்து சோதிக்கவும்"
@@ -10979,6 +11131,7 @@ msgid "Save these offer terms to compare"
 msgstr "ஒப்பிட இந்தச் சலுகை விதிமுறைகளைச் சேமிக்கவும்"
 
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Save to Knowledge"
 msgstr "அறிவுத் தளத்தில் சேமி"
 
@@ -11144,10 +11297,17 @@ msgid "Screening"
 msgstr "முதற்கட்டத் தேர்வு"
 
 #: src/features/applications/components/add-application-dialog.tsx
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
 #: src/features/documents/documents-page.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search"
 msgstr "தேடல்"
+
+#. placeholder {0}: application.searchFit
+#: src/features/career/workspace/assessments.tsx
+msgid "Search {0}%"
+msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
 msgid "Search and enhanced reading"
@@ -11194,6 +11354,19 @@ msgstr "உண்மைகளைத் தேடு"
 msgid "Search failed"
 msgstr "தேடல் தோல்வியடைந்தது"
 
+#: src/features/applications/components/application-card.tsx
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-view.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Search fit"
+msgstr ""
+
+#. placeholder {0}: application.searchFit
+#: src/features/applications/components/application-card.tsx
+msgid "Search fit {0}%"
+msgstr ""
+
 #. Accessible label for icon picker search input
 #. Placeholder text in icon picker search input
 #: src/components/input/icon-picker.tsx
@@ -11211,6 +11384,15 @@ msgstr "வேலை விண்ணப்பங்கள் மற்றும�
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Search job postings"
 msgstr "வேலை இடுகைகளைத் தேடுங்கள்"
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Search notes"
+msgstr ""
+
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Search or add…"
+msgstr ""
 
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search or run…"
@@ -11260,6 +11442,11 @@ msgstr "இணையத்தில் தேடுகிறது"
 #: src/features/assistant/conversation.tsx
 msgid "Searching the web…"
 msgstr "இணையத்தில் தேடுகிறது…"
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Secondary lane"
+msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 #: src/features/settings/ai/web-access.tsx
@@ -11457,6 +11644,19 @@ msgstr "பின்தொடர்வதை அமைக்கவும்…"
 msgid "Set a password"
 msgstr "கடவுச்சொல்லை அமைக்கவும்"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside"
+msgstr ""
+
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside without saving"
+msgstr ""
+
+#. placeholder {0}: question.answer
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside: {0}"
+msgstr ""
+
 #: src/features/career/knowledge/budget.tsx
 msgid "Set it"
 msgstr ""
@@ -11594,6 +11794,10 @@ msgstr "பக்கத்தில் {title} ஐக் காட்டு"
 msgid "Show again"
 msgstr "மீண்டும் காட்டு"
 
+#: src/features/career/workspace/assessments.tsx
+msgid "Show all"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Show all groups"
 msgstr ""
@@ -11613,6 +11817,10 @@ msgstr ""
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Show heading"
 msgstr "தலைப்பைக் காட்டு"
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Show less"
+msgstr ""
 
 #: src/features/resume/editor/write/fields.tsx
 msgid "Show link in title"
@@ -11853,6 +12061,10 @@ msgstr "முக்கிய உள்ளடக்கத்துக்கு �
 msgid "Skip to the page"
 msgstr "பக்கத்திற்கு செல்க"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "skipped"
+msgstr ""
+
 #: src/libs/locale.ts
 msgid "Slovak"
 msgstr "ஸ்லோவாக்"
@@ -11950,9 +12162,6 @@ msgstr "வரிசைப்படுத்து"
 msgid "Sort by date"
 msgstr "தேதியின்படி வரிசைப்படுத்து"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-#: src/features/applications/components/application-form-sheet.tsx
-#: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/routes/dashboard/settings/route.tsx
 msgid "Source"
@@ -12288,6 +12497,10 @@ msgstr "மூலத்திலிருந்தும் வேலையி�
 msgid "Suggested reply · edit before sending"
 msgstr "பரிந்துரைக்கப்பட்ட மறுமொழி · அனுப்பும் முன் திருத்தவும்"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Suggested wording:"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "<0>models.dev</0> இலிருந்து பரிந்துரைகள். நீங்கள் எந்த மாதிரி ஐடியையும் உள்ளிடலாம்."
@@ -12483,6 +12696,25 @@ msgstr "இலக்குப் பதவிகள்"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Target roles, locations, pay and what matters to you. Off keeps yours."
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting"
+msgstr ""
+
+#. placeholder {0}: application.targetingFit
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting {0}%"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting fit"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Targeting note"
 msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
@@ -12776,6 +13008,10 @@ msgstr "திறவுகோல்"
 #: src/features/settings/ai/providers.tsx
 msgid "The key is encrypted on the server and never shown again. Saving tests the connection."
 msgstr "விசை சேவையகத்தில் குறியாக்கம் செய்யப்பட்டு மீண்டும் காட்டப்படாது. சேமித்தல் இணைப்பைச் சோதிக்கிறது."
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "The kinds of role you aim resumes at, such as Platform / reliability. An application's primary and secondary lane are picked from these."
+msgstr ""
 
 #: src/routes/builder/letter/-components/share-sheet.tsx
 msgid "The letter as it is"
@@ -13632,6 +13868,10 @@ msgstr "உறுதிப்படுத்த <0>{CONFIRMATION}</0> என உ
 msgid "Type a command or search…"
 msgstr "ஒரு கட்டளையை உள்ளிடவும் அல்லது தேடவும்…"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Type a name to add it."
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Type instead"
 msgstr "பதிலாகத் தட்டச்சு செய்"
@@ -13927,6 +14167,10 @@ msgstr "நிலையான தலைப்பைப் பயன்படு�
 #: src/features/career/workspace/apply.tsx
 msgid "Use these answers"
 msgstr "இந்தப் பதில்களைப் பயன்படுத்து"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Use this"
+msgstr ""
 
 #: src/features/settings/preferences.tsx
 msgid "Use this device's timezone ({device})"
@@ -14299,6 +14543,10 @@ msgstr "நான் என்ன வடிவங்களை பதிவிற
 msgid "What goes in it?"
 msgstr "அதில் என்ன நடக்கிறது?"
 
+#: src/features/career/workspace/questions.tsx
+msgid "What happened, in your own words. It's saved to Knowledge as written."
+msgstr ""
+
 #: src/features/career/coach.tsx
 msgid "What interview answers should I practise?"
 msgstr "நான் எந்த நேர்காணல் பதில்களைப் பயிற்சி செய்ய வேண்டும்?"
@@ -14350,6 +14598,10 @@ msgstr "வெற்றி எப்படி இருக்கும், எ�
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "What the file-level check found in the PDF you'd send. It ran in this tab; nothing was uploaded."
 msgstr "PDF இல் நீங்கள் அனுப்ப விரும்பும் கோப்பு நிலை சரிபார்ப்பு என்ன. இது இந்த தாவலில் இயங்கியது; எதுவும் பதிவேற்றப்படவில்லை."
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "What the search found: strengths, gaps, unknowns"
+msgstr ""
 
 #: src/features/applications/components/interview-dialog.tsx
 msgid "What they asked you to prepare"
@@ -14408,6 +14660,10 @@ msgstr "அது எதற்கு?"
 #: src/features/resume/editor/check/writing-tab.tsx
 msgid "What's working"
 msgstr "என்ன வேலை செய்கிறது"
+
+#: src/features/career/workspace/questions.tsx
+msgid "When a resume is targeted at this job, what it looked for and couldn't find in your Knowledge shows up here as questions. Each answer is saved to Knowledge, so the next resume can use it."
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "When an application has been at Applied with no reply for the days below, Applications suggests a short follow-up and its next step turns amber."
@@ -14761,6 +15017,7 @@ msgid "Your AI connection"
 msgstr "உங்கள் AI இணைப்பு"
 
 #: src/features/career/workspace/practise.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Your answer"
 msgstr "உங்கள் பதில்"
 

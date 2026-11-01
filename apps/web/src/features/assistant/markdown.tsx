@@ -1,12 +1,31 @@
+import type { Options } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+type MarkdownNode = { type: string; children?: MarkdownNode[] };
+
+/** Reads raw HTML as text, so `<tool>` placeholders in a note show as written instead of vanishing as tags. */
+function remarkHtmlAsText() {
+	const walk = (node: MarkdownNode) => {
+		if (node.type === "html") node.type = "text";
+		node.children?.forEach(walk);
+	};
+	return (tree: MarkdownNode) => walk(tree);
+}
+
+type AssistantMarkdownProps = {
+	text: string;
+	/** Show angle-bracket text such as `<tool>` literally instead of dropping it as HTML. */
+	literalHtml?: boolean;
+};
+
 /** The assistant's reply as Markdown. Memoized on the text, so finished replies stop re-rendering while one streams. */
-export const AssistantMarkdown = function AssistantMarkdown({ text }: { text: string }) {
+export const AssistantMarkdown = function AssistantMarkdown({ text, literalHtml = false }: AssistantMarkdownProps) {
+	const plugins: NonNullable<Options["remarkPlugins"]> = literalHtml ? [remarkGfm, remarkHtmlAsText] : [remarkGfm];
 	return (
 		<ReactMarkdown
 			skipHtml
-			remarkPlugins={[remarkGfm]}
+			remarkPlugins={plugins}
 			components={{
 				p: ({ children }) => <p className="my-2 leading-relaxed first:mt-0 last:mb-0">{children}</p>,
 				ul: ({ children }) => <ul className="my-2 ms-5 list-disc space-y-1">{children}</ul>,

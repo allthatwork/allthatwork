@@ -7,6 +7,7 @@ import {
 	postingSourceSchema,
 	STAGES,
 } from "@reactive-resume/schema/applications/data";
+import { parseFit } from "./suggestions";
 
 // Minimal RFC-4180-ish CSV parser: handles quoted fields, escaped quotes (""), commas and
 // newlines inside quotes, and \r\n. Enough for spreadsheet exports; not a full streaming parser.
@@ -66,6 +67,11 @@ type ParsedApplication = {
 	location?: string;
 	salary?: string;
 	source?: string;
+	foundBy?: string;
+	searchFit?: number;
+	searchNotes?: string;
+	targetingPrimaryLane?: string;
+	targetingSecondaryLane?: string;
 	notes?: string;
 	sourceUrl?: string;
 	jobDescription?: string;
@@ -114,6 +120,12 @@ const HEADER_ALIASES: Record<string, keyof CsvApplication> = {
 	"salary range": "salary",
 	compensation: "salary",
 	source: "source",
+	"found on": "source",
+	"found by": "foundBy",
+	"search fit": "searchFit",
+	"search notes": "searchNotes",
+	"primary lane": "targetingPrimaryLane",
+	"secondary lane": "targetingSecondaryLane",
 	notes: "notes",
 	note: "notes",
 	url: "sourceUrl",
@@ -140,9 +152,14 @@ export const CSV_FIELDS: readonly CsvField[] = [
 	"location",
 	"salary",
 	"source",
+	"foundBy",
 	"sourceUrl",
 	"jobDescription",
 	"postingSource",
+	"searchFit",
+	"searchNotes",
+	"targetingPrimaryLane",
+	"targetingSecondaryLane",
 	"notes",
 	"tags",
 	"contactName",
@@ -198,7 +215,11 @@ export type CsvMapResult = {
 	/** The source rows left out (no company or role), to download and fix. */
 	skippedRows: string[][];
 	contactsSkipped: number;
-	invalidValues: { row: number; field: "status" | "stageEnteredAt" | "postingSource"; value: string }[];
+	invalidValues: {
+		row: number;
+		field: "status" | "stageEnteredAt" | "postingSource" | "searchFit";
+		value: string;
+	}[];
 	headers: string[];
 	recognized: string[];
 };
@@ -261,6 +282,10 @@ export function mapCsvToApplications(table: string[][], mapping?: readonly (CsvF
 				} catch {
 					invalid.push({ row: index + 2, field, value });
 				}
+			} else if (field === "searchFit") {
+				const fit = parseFit(value);
+				if (typeof fit === "number") record[field] = fit;
+				else invalid.push({ row: index + 2, field, value });
 			} else if (field === "jobDescription") record.jobDescription = value.slice(0, 20_000);
 			else record[field] = value as never;
 		});
@@ -328,9 +353,15 @@ export function exportApplicationsCsv(applications: readonly Application[]): str
 		"Location",
 		"Salary",
 		"Source",
+		"Found By",
 		"URL",
 		"Job Description",
 		"Posting Source",
+		"Search Fit",
+		"Search Notes",
+		"Targeting Fit",
+		"Primary Lane",
+		"Secondary Lane",
 		"Tags",
 		"Contacts",
 		"Notes",
@@ -361,9 +392,15 @@ export function exportApplicationsCsv(applications: readonly Application[]): str
 			application.location ?? "",
 			application.salary ?? "",
 			application.source ?? "",
+			application.foundBy ?? "",
 			application.sourceUrl ?? "",
 			application.jobDescription ?? "",
 			application.postingSource ? JSON.stringify(application.postingSource) : "",
+			application.searchFit === null ? "" : String(application.searchFit),
+			application.searchNotes ?? "",
+			application.targetingFit === null ? "" : String(application.targetingFit),
+			application.targetingPrimaryLane ?? "",
+			application.targetingSecondaryLane ?? "",
 			application.tags.length > 0 ? JSON.stringify(application.tags) : "",
 			application.contacts
 				.map(({ name, role, type }) => {

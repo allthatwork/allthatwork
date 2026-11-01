@@ -1,4 +1,5 @@
 import type { Application } from "../types";
+import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
@@ -13,7 +14,7 @@ type ApplicationCardProps = {
 	dragging?: boolean;
 };
 
-/** A board card: the company's initial, role and company, and the next step (warn when it's overdue). */
+/** A board card: the company's initial, role and company, the next step (warn when it's overdue) and the search fit. */
 export function ApplicationCard({ application, onClick, withMenu = false, dragging = false }: ApplicationCardProps) {
 	const { i18n } = useLingui();
 	const noReplyDays = useNoReplyDays();
@@ -53,6 +54,15 @@ export function ApplicationCard({ application, onClick, withMenu = false, draggi
 			>
 				<Icon name={next.icon} size={15} className="shrink-0" />
 				<span className="truncate">{next.title}</span>
+				{application.searchFit !== null && (
+					<span
+						title={t`Search fit`}
+						aria-label={t`Search fit ${application.searchFit}%`}
+						className="ms-auto shrink-0 rounded bg-sunken px-1.5 py-0.5 text-[11px] font-medium text-ink-2 tabular-nums"
+					>
+						{application.searchFit}%
+					</span>
+				)}
 			</span>
 		</div>
 	);

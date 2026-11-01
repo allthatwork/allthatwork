@@ -176,6 +176,7 @@ export async function generateCareer(input: GenerateInput) {
 		application.jobDescription,
 		...(application.requirements ?? []),
 		application.notes,
+		application.searchNotes,
 		...textValues(context.interview),
 		...textValues(task.task === "reply" ? { message } : taskInput),
 	].join("\n");
@@ -235,6 +236,9 @@ export async function generateCareer(input: GenerateInput) {
 			posting: application.jobDescription?.slice(0, 12_000),
 			requirements: take(application.requirements ?? [], 6_000),
 			notes: application.notes?.slice(0, 3_000),
+			// The job search's and the resume targeting's own assessments; the targeting note's opening carries its summary.
+			search: { fit: application.searchFit, notes: application.searchNotes?.slice(0, 3_000) },
+			targeting: { fit: application.targetingFit, notes: application.targetingNotes?.slice(0, 6_000) },
 			contacts: take(application.contacts, 3_000),
 		},
 		interview: context.interview,

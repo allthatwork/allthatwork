@@ -5,6 +5,8 @@ import type {
 	ApplicationTimelineEntry,
 	Contact,
 	PostingSource,
+	TargetingQuestion,
+	TargetingReview,
 } from "@reactive-resume/schema/applications/data";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import * as pg from "drizzle-orm/pg-core";
@@ -61,6 +63,22 @@ export const application = pg.pgTable(
 		matchScore: pg.integer("match_score"),
 		aiMetadata: pg.jsonb("ai_metadata").$type<AiMetadata>(),
 		notes: pg.text("notes"),
+		// Who or what found the job (a search agent, the in-app search, a referral, the user). `source` is where.
+		foundBy: pg.text("found_by"),
+		// The search's own assessment, kept apart from the user's notes: its fit (0-100) and what it wrote, and when.
+		searchFit: pg.smallint("search_fit"),
+		searchNotes: pg.text("search_notes"),
+		searchAt: pg.timestamp("search_at", { withTimezone: true }),
+		// What targeting the resume produced: the whole targeting note, its fit (0-100) and the lanes it aimed at.
+		targetingNotes: pg.text("targeting_notes"),
+		// Set by the server from targeting_reviews: the median of the latest round's reviewers that ran.
+		targetingFit: pg.smallint("targeting_fit"),
+		targetingReviews: pg.jsonb("targeting_reviews").notNull().$type<TargetingReview[]>().default([]),
+		targetingPrimaryLane: pg.text("targeting_primary_lane"),
+		targetingSecondaryLane: pg.text("targeting_secondary_lane"),
+		targetingAt: pg.timestamp("targeting_at", { withTimezone: true }),
+		// What targeting asked the user, answered into Knowledge from the workspace's Questions tab.
+		targetingQuestions: pg.jsonb("targeting_questions").notNull().$type<TargetingQuestion[]>().default([]),
 		// An uploaded resume file (PDF) sent with this application, distinct from the live
 		// resumeId link. Stored as the storage URL + original filename for display.
 		resumeFileUrl: pg.text("resume_file_url"),

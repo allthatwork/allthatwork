@@ -145,6 +145,21 @@ function PreferencesForm({ initial }: PreferencesFormProps) {
 			</div>
 
 			<div className="grid gap-1.5">
+				<ChipField
+					label={t`Lanes`}
+					placeholder={t`Add a lane, then Enter`}
+					value={draft.lanes}
+					onChange={(lanes) => change({ lanes })}
+				/>
+				<p className="text-xs text-ink-3">
+					<Trans>
+						The kinds of role you aim resumes at, such as Platform / reliability. An application's primary and secondary
+						lane are picked from these.
+					</Trans>
+				</p>
+			</div>
+
+			<div className="grid gap-1.5">
 				<label htmlFor={`${id}-priorities`} className="text-xs font-medium text-ink-2">
 					<Trans>What matters to you</Trans>
 				</label>

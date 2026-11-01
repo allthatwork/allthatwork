@@ -248,6 +248,11 @@ msgstr ""
 msgid "{0, plural, one {# proposed edit} other {# proposed edits}}"
 msgstr "{0, plural, one {# প্রস্তাবিত সম্পাদনা} other {# প্রস্তাবিত সম্পাদনা}}"
 
+#. placeholder {0}: open.length
+#: src/features/career/workspace/questions.tsx
+msgid "{0, plural, one {# question for you} other {# questions for you}}"
+msgstr ""
+
 #. placeholder {0}: summary.madePrivate
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "{0, plural, one {# resume was public and came in private. Share it again from the resume.} other {# resumes were public and came in private. Share them again from each resume.}}"
@@ -576,7 +581,9 @@ msgid "{0} sections and {1} entries found."
 msgstr "{0} বিভাগ এবং {1} এন্ট্রি পাওয়া গেছে।"
 
 #. placeholder {0}: report.skippedChecks
+#. placeholder {0}: review.reviewer
 #: src/features/ats-checker/report/score-header.tsx
+#: src/features/career/workspace/assessments.tsx
 msgid "{0} skipped"
 msgstr "{0}টি বাদ দেওয়া হয়েছে"
 
@@ -879,6 +886,10 @@ msgstr "{proposed, plural, one {# প্রস্তাবিত} other {# প�
 msgid "{sections, plural, one {# section} other {# sections}}"
 msgstr "{sections, plural, one {# বিভাগ} other {# বিভাগ}}"
 
+#: src/features/career/workspace/questions.tsx
+msgid "{shared, plural, one {Also asked on # other application. Answering here answers it there too.} other {Also asked on # other applications. Answering here answers them too.}}"
+msgstr ""
+
 #: src/features/applications/components/application-detail-sheet.tsx
 msgid "{since, plural, =0 {since today} one {for # day} other {for # days}}"
 msgstr "{since, plural, =0 {আজ থেকে} one {# দিনের জন্য} other {# দিনের জন্য}}"
@@ -952,6 +963,10 @@ msgstr ""
 
 #: src/features/career/knowledge/groups.tsx
 msgid "{updated, plural, one {Switched # fact in {group} on.} other {Switched # facts in {group} on.}}"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "{value} (not in Preferences)"
 msgstr ""
 
 #: src/features/career/offers.tsx
@@ -1348,6 +1363,10 @@ msgstr "যোগ করুন"
 msgid "Add “{0}”"
 msgstr "\"{0}\" যোগ করুন"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Add “{typed}”"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Add a fact to {group}"
 msgstr ""
@@ -1364,6 +1383,10 @@ msgstr "একটি কীওয়ার্ড যোগ করুন..."
 #: src/components/input/url-input.tsx
 msgid "Add a label to the URL"
 msgstr "URL‑এর জন্য একটি লেবেল যোগ করুন"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Add a lane, then Enter"
+msgstr ""
 
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Add a link"
@@ -1652,6 +1675,10 @@ msgstr "স্বেচ্ছাসেবী যোগ করুন"
 msgid "Add what happened before you can save."
 msgstr "সংরক্ষণ করার আগে কী ঘটেছিল তা যোগ করুন।"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Add your lanes in Preferences"
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "Add your name"
 msgstr "আপনার নাম যোগ করুন"
@@ -1846,6 +1873,10 @@ msgstr ""
 msgid "All proposed facts have matches. Review them in Duplicates below."
 msgstr ""
 
+#: src/features/career/workspace/questions.tsx
+msgid "All questions answered"
+msgstr ""
+
 #: src/features/auth/pages/consent.tsx
 msgid "Allow access"
 msgstr "অ্যাক্সেসের অনুমতি দিন"
@@ -1968,6 +1999,11 @@ msgstr "উত্তর কপি করা হয়েছে"
 msgid "Answer in your own words"
 msgstr "নিজের ভাষায় উত্তর দিন"
 
+#. placeholder {0}: question.answeredOn.company
+#: src/features/career/workspace/questions.tsx
+msgid "answered on {0}"
+msgstr ""
+
 #: src/features/career/workspace/saved.tsx
 msgid "Answers"
 msgstr "উত্তর"
@@ -1999,6 +2035,10 @@ msgstr "লিঙ্ক সহ যে কেউ আপনার জীবনব�
 #: src/features/applications/components/application-notes.tsx
 msgid "Anything to remember about this job"
 msgstr "এই কাজ সম্পর্কে কিছু মনে রাখা"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Anything to remember instead? Saved to Knowledge so later resumes don't ask again (optional)."
+msgstr ""
 
 #: src/features/assistant/provider-setup.tsx
 #: src/features/settings/ai/providers.tsx
@@ -2698,6 +2738,7 @@ msgstr "সফ্টওয়্যার আপনার জীবনবৃত�
 #: src/features/career/knowledge/stories.tsx
 #: src/features/career/schedule-sheet.tsx
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/new-document-dialog.tsx
 #: src/features/resume/builder/password-dialog.tsx
@@ -2985,6 +3026,10 @@ msgstr "অন্য ফাইল নির্বাচন করুন"
 msgid "Choose color"
 msgstr "রঙ চয়ন করুন"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Choose or type…"
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Choose the zip"
 msgstr ""
@@ -3007,6 +3052,7 @@ msgstr "Claude Desktop"
 
 #: src/features/applications/components/detail/next-step-card.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Clear"
 msgstr "সাফ করুন"
@@ -3868,6 +3914,10 @@ msgstr "নাম পরিবর্তন করা যায়নি।"
 msgid "Couldn't rename the passkey."
 msgstr "পাসকিটির নাম পরিবর্তন করা যায়নি।"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Couldn't reopen it."
+msgstr ""
+
 #: src/features/settings/ai/api-keys.tsx
 msgid "Couldn't revoke the key."
 msgstr "চাবিটি প্রত্যাহার করা যায়নি।"
@@ -3886,6 +3936,7 @@ msgid "Couldn't save that change. Try again."
 msgstr "সেই পরিবর্তনটি সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন"
 
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Couldn't save that to Knowledge."
 msgstr "এটি জ্ঞানভান্ডারে সংরক্ষণ করা যায়নি।"
 
@@ -3971,6 +4022,7 @@ msgid "Couldn't save your preferences."
 msgstr "আপনার পছন্দসমূহ সংরক্ষণ করা যায়নি।"
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/detail/sent-documents.tsx
 msgid "Couldn't save."
 msgstr "বাঁচাতে পারিনি।"
@@ -4660,6 +4712,7 @@ msgstr "{0} পাঠাবেন না"
 msgid "Donate"
 msgstr "দান করুন"
 
+#: src/features/career/workspace/questions.tsx
 #: src/features/resume/editor/write/rich-text-editor.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
 #: src/features/settings/ai/api-keys.tsx
@@ -4966,6 +5019,10 @@ msgstr "সাক্ষাৎকার সম্পাদনা করুন..."
 msgid "Edit keyword"
 msgstr "সম্পাদনা কীওয়ার্ড"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Edit lanes in Preferences"
+msgstr ""
+
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Edit link"
 msgstr "লিঙ্ক সম্পাদনা করুন"
@@ -5245,6 +5302,10 @@ msgstr "{0}-এর জন্য কোচ যা যা লিখেছে, ন�
 #: src/features/homepage/hero.tsx
 msgid "Everything you’ve done, on one page."
 msgstr "আপনি যা কিছু করেছেন, এক পৃষ্ঠায়।"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Evidence targeting looked for and couldn't find in your Knowledge. Answer in your own words and save it to Knowledge. A gap means it isn't recorded yet, not that you can't do it."
+msgstr ""
 
 #: src/features/homepage/footer.tsx
 msgid "Evolved from"
@@ -5584,6 +5645,7 @@ msgstr "ফিনিশ"
 msgid "First run"
 msgstr "প্রথমবার চালানো"
 
+#: src/features/applications/components/list-view.tsx
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5734,6 +5796,10 @@ msgstr "যেমন, এই জীবনবৃত্তান্তটি ক�
 msgid "For example: “{0}: I did … at … in 2024, and it led to …”"
 msgstr "উদাহরণ: “{0}: 2024 সালে … -এ আমি … করেছি, এবং এর ফলে …”"
 
+#: src/features/career/workspace/questions.tsx
+msgid "For example: No hands-on Go; read and reviewed Go code only."
+msgstr ""
+
 #: src/features/resume/share/download-tab.tsx
 msgid "For LibreOffice and other open-source editors. Layout is simplified."
 msgstr "LibreOffice এবং অন্যান্য ওপেন-সোর্স এডিটরের জন্য। বিন্যাস সরলীকৃত।"
@@ -5787,6 +5853,30 @@ msgstr "ফরম্যাটিং"
 #: src/features/career/today.tsx
 msgid "Found {0}"
 msgstr "{0} পাওয়া গেছে"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Found by"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found by {foundBy}"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found by {foundBy} on {source}"
+msgstr ""
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Found on"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found on {source}"
+msgstr ""
 
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Found the role and company on the page. Review the details before saving."
@@ -5973,6 +6063,15 @@ msgstr "ড্যাশবোর্ডে যান"
 msgid "Go to…"
 msgstr "… এ যান"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Goes to Knowledge"
+msgstr ""
+
+#. placeholder {0}: question.factGroup
+#: src/features/career/workspace/questions.tsx
+msgid "Goes to Knowledge · <0>{0}</0>"
+msgstr ""
+
 #. Authentication provider display name in account settings
 #. Brand name label for Google social sign-in button
 #: src/features/auth/components/social-auth.tsx
@@ -5991,6 +6090,10 @@ msgstr "গ্রিক"
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Green"
 msgstr "সবুজ"
+
+#: src/features/applications/components/application-form-sheet.tsx
+msgid "Greenhouse, LinkedIn…"
+msgstr ""
 
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Greeting"
@@ -6267,6 +6370,10 @@ msgstr "আমি এই {kind} এবং {0} চাকরির পোস্ট
 msgid "I can see this {kind}. Suggestions come back as edits you can accept one by one."
 msgstr "আমি এই {kind} দেখতে পাচ্ছি। প্রস্তাবনাগুলি সম্পাদনা হিসাবে ফিরে আসে আপনি একে একে গ্রহণ করতে পারেন।"
 
+#: src/features/career/workspace/questions.tsx
+msgid "I don't have this"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "I interviewed 14 customers, mapped three drop-off points and prototyped a shorter setup with engineering."
 msgstr "আমি 14 জন গ্রাহকের সাক্ষাৎকার নিয়েছি, তিনটি ড্রপ-অফ পয়েন্ট চিহ্নিত করেছি এবং ইঞ্জিনিয়ারিংয়ের সাথে একটি ছোট সেটআপের প্রোটোটাইপ বানিয়েছি।"
@@ -6488,6 +6595,10 @@ msgstr ""
 #: src/features/homepage/sections.tsx
 msgid "In good company"
 msgstr "ভালো কোম্পানিতে"
+
+#: src/features/career/workspace/questions.tsx
+msgid "in Knowledge"
+msgstr ""
 
 #: src/features/career/knowledge/import-comparison.tsx
 msgid "In Knowledge"
@@ -6863,6 +6974,10 @@ msgstr "সৎ থাকুন"
 msgid "Keep it under 2.5 MB, usually by removing or shrinking images."
 msgstr "সাধারণত ছবি সরিয়ে বা ছোট করে এটি ২.৫ MB-এর নিচে রাখুন।"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Keep it within the record:"
+msgstr ""
+
 #: src/features/homepage/write.tsx
 #: src/features/resume/editor/write/improve.tsx
 msgid "Keep mine"
@@ -7014,6 +7129,10 @@ msgstr "লেবেল, যেমন নিয়োগকারী"
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Landscape"
 msgstr "ল্যান্ডস্কেপ"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Lanes"
+msgstr ""
 
 #. Menu item that opens language selection submenu
 #: src/features/command-palette/pages/navigation.tsx
@@ -7367,10 +7486,6 @@ msgstr ""
 #: src/features/career/knowledge/import.tsx
 msgid "LinkedIn exports and JSON are read in your browser. We read LinkedIn's profile files, and connections can optionally be imported into Directory. Messages are ignored. Only selected facts and contacts are saved to your account."
 msgstr ""
-
-#: src/features/applications/components/application-form-sheet.tsx
-msgid "LinkedIn, Referral…"
-msgstr "LinkedIn, রেফারেল…"
 
 #: src/features/settings/account/auth-hooks.ts
 msgid "Linking your {providerName} account..."
@@ -7735,6 +7850,10 @@ msgstr "MCP"
 #: src/features/settings/ai/mcp.tsx
 msgid "MCP server"
 msgstr "MCP সার্ভার"
+
+#: src/features/applications/components/application-form-sheet.tsx
+msgid "Me, Referral…"
+msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
 msgid "median to first reply"
@@ -8437,6 +8556,10 @@ msgstr "ছবি নেই। বেশিরভাগ ATS ফটোগুল�
 msgid "No postings found. Try different keywords."
 msgstr "কোন কাজের পোস্টিং পাওয়া যায়নি. বিভিন্ন কীওয়ার্ড চেষ্টা করুন।"
 
+#: src/features/career/workspace/questions.tsx
+msgid "No questions for you"
+msgstr ""
+
 #: src/features/applications/stages.ts
 msgid "No response"
 msgstr "কোন সাড়া নেই"
@@ -8508,6 +8631,7 @@ msgstr "নম্বর {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
 msgstr "কোনোটিই নয়"
@@ -9022,6 +9146,7 @@ msgid "Optional for local Ollama"
 msgstr "স্থানীয় Ollama এর জন্য ঐচ্ছিক"
 
 #: src/components/ui/combobox.tsx
+#: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/documents/trash-page.tsx
 msgid "Options"
@@ -9696,6 +9821,11 @@ msgstr "আগের মাস"
 msgid "Primary Color"
 msgstr "প্রাথমিক রঙ"
 
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Primary lane"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 msgid "Print"
 msgstr "প্রিন্ট"
@@ -9893,6 +10023,11 @@ msgstr "প্রশ্ন সরানো হয়েছে"
 msgid "Questions"
 msgstr "প্রশ্ন"
 
+#: src/features/career/shared.tsx
+msgctxt "Application workspace tab: questions for you from targeting the resume"
+msgid "Questions"
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "Questions copied"
 msgstr "প্রশ্নগুলো কপি করা হয়েছে"
@@ -10004,6 +10139,10 @@ msgstr "জীবনবৃত্তান্ত পড়া হয়েছে"
 #: src/features/homepage/faq.tsx
 msgid "Read the self-hosting guide"
 msgstr "স্ব-হোস্টিং গাইড পড়ুন"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Read the targeting note"
+msgstr ""
 
 #: src/features/auth/pages/consent.tsx
 msgid "Read your documents and job applications."
@@ -10419,6 +10558,7 @@ msgid "Rename…"
 msgstr "নাম পরিবর্তন করুন..."
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Reopen"
 msgstr "আবার খুলুন"
 
@@ -10733,6 +10873,10 @@ msgstr "নির্বাচিত জীবনবৃত্তান্ত ও 
 msgid "Review writing"
 msgstr "পর্যালোচনা লেখা"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Reviewers · round {round}"
+msgstr ""
+
 #: src/features/career/workspace/debrief.tsx
 msgid "Reviewing needs an AI connection. <0>Add one in Settings</0>. What you write here stays in this browser until then."
 msgstr "পর্যালোচনার জন্য একটি এআই সংযোগ প্রয়োজন। <0>সেটিংসে একটি যোগ করুন</0>। ততক্ষণ পর্যন্ত এখানে যা লিখবেন তা এই ব্রাউজারেই থাকবে।"
@@ -10826,6 +10970,10 @@ msgstr "রোটেশন"
 msgid "Rotation isn't supported by PDF rendering."
 msgstr "ঘূর্ণন PDF রেন্ডারিং দ্বারা সমর্থিত নয়৷"
 
+#: src/features/career/workspace/assessments.tsx
+msgid "Round {round}: {scores}"
+msgstr ""
+
 #. placeholder {0}: fieldLabel(field)
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Row {row}, {0}: “{value}” is invalid."
@@ -10912,6 +11060,10 @@ msgstr "সংরক্ষণ করুন এবং লিঙ্ক করু�
 msgid "Save and prepare resume"
 msgstr "সংরক্ষণ করুন এবং জীবনবৃত্তান্ত প্রস্তুত করুন"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Save and set aside"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Save and test"
 msgstr "সংরক্ষণ করুন এবং পরীক্ষা করুন"
@@ -10979,6 +11131,7 @@ msgid "Save these offer terms to compare"
 msgstr "তুলনা করতে অফারের এই শর্তগুলো সংরক্ষণ করুন"
 
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Save to Knowledge"
 msgstr "জ্ঞানভান্ডারে সংরক্ষণ করুন"
 
@@ -11144,10 +11297,17 @@ msgid "Screening"
 msgstr "স্ক্রীনিং"
 
 #: src/features/applications/components/add-application-dialog.tsx
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
 #: src/features/documents/documents-page.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search"
 msgstr "অনুসন্ধান"
+
+#. placeholder {0}: application.searchFit
+#: src/features/career/workspace/assessments.tsx
+msgid "Search {0}%"
+msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
 msgid "Search and enhanced reading"
@@ -11194,6 +11354,19 @@ msgstr "তথ্য খুঁজুন"
 msgid "Search failed"
 msgstr "অনুসন্ধান ব্যর্থ হয়েছে"
 
+#: src/features/applications/components/application-card.tsx
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-view.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Search fit"
+msgstr ""
+
+#. placeholder {0}: application.searchFit
+#: src/features/applications/components/application-card.tsx
+msgid "Search fit {0}%"
+msgstr ""
+
 #. Accessible label for icon picker search input
 #. Placeholder text in icon picker search input
 #: src/components/input/icon-picker.tsx
@@ -11211,6 +11384,15 @@ msgstr "চাকরির আবেদন এবং সহকারী থে�
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Search job postings"
 msgstr "চাকরির পোস্টিং অনুসন্ধান করুন"
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Search notes"
+msgstr ""
+
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Search or add…"
+msgstr ""
 
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search or run…"
@@ -11260,6 +11442,11 @@ msgstr "ওয়েবে খোঁজা হচ্ছে"
 #: src/features/assistant/conversation.tsx
 msgid "Searching the web…"
 msgstr "ওয়েবে অনুসন্ধান করা হচ্ছে..."
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Secondary lane"
+msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 #: src/features/settings/ai/web-access.tsx
@@ -11457,6 +11644,19 @@ msgstr "একটি ফলো-আপ সেট করুন..."
 msgid "Set a password"
 msgstr "একটি পাসওয়ার্ড সেট করুন"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside"
+msgstr ""
+
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside without saving"
+msgstr ""
+
+#. placeholder {0}: question.answer
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside: {0}"
+msgstr ""
+
 #: src/features/career/knowledge/budget.tsx
 msgid "Set it"
 msgstr ""
@@ -11594,6 +11794,10 @@ msgstr "পৃষ্ঠায় {title} দেখান"
 msgid "Show again"
 msgstr "আবার দেখান"
 
+#: src/features/career/workspace/assessments.tsx
+msgid "Show all"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Show all groups"
 msgstr ""
@@ -11613,6 +11817,10 @@ msgstr ""
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Show heading"
 msgstr "শিরোনাম দেখান"
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Show less"
+msgstr ""
 
 #: src/features/resume/editor/write/fields.tsx
 msgid "Show link in title"
@@ -11853,6 +12061,10 @@ msgstr "মূল বিষয়বস্তুতে যান"
 msgid "Skip to the page"
 msgstr "পাতা এড়িয়ে যান"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "skipped"
+msgstr ""
+
 #: src/libs/locale.ts
 msgid "Slovak"
 msgstr "স্লোভাক"
@@ -11950,9 +12162,6 @@ msgstr "সাজান"
 msgid "Sort by date"
 msgstr "তারিখ অনুযায়ী সাজান"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-#: src/features/applications/components/application-form-sheet.tsx
-#: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/routes/dashboard/settings/route.tsx
 msgid "Source"
@@ -12288,6 +12497,10 @@ msgstr "উত্স এবং কাজ থেকে প্রস্তাব�
 msgid "Suggested reply · edit before sending"
 msgstr "প্রস্তাবিত জবাব · পাঠানোর আগে সম্পাদনা করুন"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Suggested wording:"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "<0>models.dev</0> থেকে প্রস্তাবনা। আপনি যেকোনো মডেল আইডিও লিখতে পারেন।"
@@ -12483,6 +12696,25 @@ msgstr "লক্ষ্য পদ"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Target roles, locations, pay and what matters to you. Off keeps yours."
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting"
+msgstr ""
+
+#. placeholder {0}: application.targetingFit
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting {0}%"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting fit"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Targeting note"
 msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
@@ -12776,6 +13008,10 @@ msgstr "চাবি"
 #: src/features/settings/ai/providers.tsx
 msgid "The key is encrypted on the server and never shown again. Saving tests the connection."
 msgstr "কীটি সার্ভারে এনক্রিপ্ট করা হয়েছে এবং আর কখনও দেখানো হয় না। সেভিং কানেকশন পরীক্ষা করে।"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "The kinds of role you aim resumes at, such as Platform / reliability. An application's primary and secondary lane are picked from these."
+msgstr ""
 
 #: src/routes/builder/letter/-components/share-sheet.tsx
 msgid "The letter as it is"
@@ -13632,6 +13868,10 @@ msgstr "নিশ্চিত করতে <0>{CONFIRMATION}</0> টাইপ �
 msgid "Type a command or search…"
 msgstr "কমান্ড টাইপ করুন অথবা অনুসন্ধান করুন…"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Type a name to add it."
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Type instead"
 msgstr "বরং টাইপ করুন"
@@ -13927,6 +14167,10 @@ msgstr "স্ট্যান্ডার্ড শিরোনাম ব্য�
 #: src/features/career/workspace/apply.tsx
 msgid "Use these answers"
 msgstr "এই উত্তরগুলো ব্যবহার করুন"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Use this"
+msgstr ""
 
 #: src/features/settings/preferences.tsx
 msgid "Use this device's timezone ({device})"
@@ -14299,6 +14543,10 @@ msgstr "আমি কি ফরম্যাট ডাউনলোড করত�
 msgid "What goes in it?"
 msgstr "এতে কী যায়?"
 
+#: src/features/career/workspace/questions.tsx
+msgid "What happened, in your own words. It's saved to Knowledge as written."
+msgstr ""
+
 #: src/features/career/coach.tsx
 msgid "What interview answers should I practise?"
 msgstr "ইন্টারভিউয়ের কোন উত্তরগুলো আমার অনুশীলন করা উচিত?"
@@ -14350,6 +14598,10 @@ msgstr "সাফল্য দেখতে কেমন, কোন চ্যা�
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "What the file-level check found in the PDF you'd send. It ran in this tab; nothing was uploaded."
 msgstr "আপনি যে PDF পাঠাবেন তাতে ফাইল-স্তরের চেকটি কী পাওয়া গেছে। এটা এই ট্যাবে রান; কিছুই আপলোড করা হয়নি।"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "What the search found: strengths, gaps, unknowns"
+msgstr ""
 
 #: src/features/applications/components/interview-dialog.tsx
 msgid "What they asked you to prepare"
@@ -14408,6 +14660,10 @@ msgstr "এটা কি জন্য?"
 #: src/features/resume/editor/check/writing-tab.tsx
 msgid "What's working"
 msgstr "কি কাজ করছে"
+
+#: src/features/career/workspace/questions.tsx
+msgid "When a resume is targeted at this job, what it looked for and couldn't find in your Knowledge shows up here as questions. Each answer is saved to Knowledge, so the next resume can use it."
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "When an application has been at Applied with no reply for the days below, Applications suggests a short follow-up and its next step turns amber."
@@ -14761,6 +15017,7 @@ msgid "Your AI connection"
 msgstr "আপনার এআই সংযোগ"
 
 #: src/features/career/workspace/practise.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Your answer"
 msgstr "আপনার উত্তর"
 

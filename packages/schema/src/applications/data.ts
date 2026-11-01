@@ -46,6 +46,78 @@ export const applicationClosedReasonSchema = z.enum([
 	"no-response",
 ]);
 
+/**
+ * One reviewer's read of a targeted resume in one review round: its fit and whether it would schedule a call, or why
+ * it was skipped. The targeting fit is the median of the latest round's reviewers that ran.
+ */
+export const targetingReviewSchema = z.object({
+	round: z.number().int().min(1).max(99),
+	/** The reviewer's slot, such as A or B. */
+	reviewer: z.string().trim().min(1).max(40),
+	model: z.string().max(200).default(""),
+	status: z.enum(["ran", "skipped"]).default("ran"),
+	fit: z.number().int().min(0).max(100).nullable().default(null),
+	/** Would they schedule a call, in their words. */
+	verdict: z.string().max(1000).default(""),
+	/** Why a skipped reviewer didn't run. */
+	reason: z.string().max(1000).nullable().default(null),
+});
+export type TargetingReview = z.infer<typeof targetingReviewSchema>;
+
+/** The median fit of the latest round's reviewers that ran, rounded; null without one. */
+export function targetingFitOf(reviews: readonly TargetingReview[]): number | null {
+	const latest = Math.max(0, ...reviews.map((review) => review.round));
+	const fits = reviews
+		.filter((review) => review.round === latest && review.status === "ran" && review.fit !== null)
+		.map((review) => review.fit as number)
+		.sort((a, b) => a - b);
+	if (fits.length === 0) return null;
+	const middle = Math.floor(fits.length / 2);
+	const median =
+		fits.length % 2 ? (fits[middle] as number) : ((fits[middle - 1] as number) + (fits[middle] as number)) / 2;
+	return Math.round(median);
+}
+
+/** Where a question from targeting stands: still to answer, answered (with the fact it saved), or set aside. */
+export const targetingQuestionStatusSchema = z.enum(["open", "answered", "dismissed"]);
+export type TargetingQuestionStatus = z.infer<typeof targetingQuestionStatusSchema>;
+
+/**
+ * A question targeting the resume left for the user: evidence the build looked for and couldn't find in Knowledge,
+ * with a proposed fact to confirm or complete (its `<placeholders>` are the blanks) and the Knowledge group it belongs
+ * in. Answering saves a fact; the build reads Knowledge, so it stops asking.
+ */
+export const targetingQuestionSchema = z.object({
+	id: z.string().trim().min(1).max(100),
+	/**
+	 * What the question is about, as a short stable key such as `intact/t-cloud-outcome`. Questions with the same topic
+	 * on different applications are one question: answering it closes them all, and a topic already answered isn't
+	 * asked again.
+	 */
+	topic: z.string().trim().min(1).max(100).nullable().default(null),
+	question: z.string().trim().min(1).max(4000),
+	proposedFact: z.string().max(4000).default(""),
+	/** What the record does and doesn't establish, so the answer doesn't overclaim. */
+	boundary: z.string().max(4000).default(""),
+	/** The Knowledge group the answer goes into, such as `professional-experience/acme/achievements`. */
+	factGroup: z.string().max(200).nullable().default(null),
+	status: targetingQuestionStatusSchema.default("open"),
+	/** The fact text saved, or why it was set aside. */
+	answer: z.string().max(4000).nullable().default(null),
+	/** The Knowledge fact the answer saved, if any. */
+	factId: z.string().max(255).nullable().default(null),
+	answeredAt: z.iso.datetime({ offset: true }).nullable().default(null),
+	/** The application where it was answered or set aside, when that was another one with the same topic. */
+	answeredOn: z
+		.object({ applicationId: z.string().max(255), company: z.string().max(500) })
+		.nullable()
+		.default(null),
+});
+export type TargetingQuestion = z.infer<typeof targetingQuestionSchema>;
+
+/** Found by, for applications tracked from the app's own job search. */
+export const FOUND_BY_IN_APP_SEARCH = "In-app search";
+
 export type ApplicationClosedReason = z.infer<typeof applicationClosedReasonSchema>;
 
 // Ordered stage metadata shared by the API (validation) and the web board (columns/colors).

@@ -7,6 +7,7 @@ import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as tables from "@reactive-resume/db/schema";
 import { buildMarkdown } from "@reactive-resume/resume/markdown";
+import { FOUND_BY_IN_APP_SEARCH } from "@reactive-resume/schema/applications/data";
 import {
 	careerProfileDataSchema,
 	careerImportFactsInputSchema,
@@ -1637,7 +1638,8 @@ export const careerService = {
 				jobDescription: opportunity.description || opportunity.snippet,
 				status: "saved",
 				activity: [{ id: generateId(), type: "stage", stage: "saved", at: new Date() }],
-				...(matches.length ? { notes: `Matched: ${matches.join(" · ")}` } : {}),
+				foundBy: FOUND_BY_IN_APP_SEARCH,
+				...(matches.length ? { searchNotes: `Matched: ${matches.join(" · ")}`, searchAt: new Date() } : {}),
 			});
 			await tx
 				.update(tables.careerOpportunity)
