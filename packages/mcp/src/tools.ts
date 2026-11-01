@@ -17,13 +17,16 @@ import { TOOL_META } from "./tool-meta";
 
 // ── Shared Helpers ───────────────���──────────────────────────────
 
-function coerceFollowUpAt(input: Record<string, unknown>): Record<string, unknown> {
-	if (!("followUpAt" in input)) return input;
+// MCP clients send dates as ISO strings; the API DTOs take Dates.
+const APPLICATION_DATE_FIELDS = ["followUpAt", "searchAt", "targetingAt"] as const;
 
-	const followUpAt = input.followUpAt;
-	if (followUpAt === undefined || followUpAt === null || followUpAt instanceof Date) return input;
-
-	return { ...input, followUpAt: new Date(String(followUpAt)) };
+function coerceApplicationDates(input: Record<string, unknown>): Record<string, unknown> {
+	const output = { ...input };
+	for (const field of APPLICATION_DATE_FIELDS) {
+		const value = output[field];
+		if (value !== undefined && value !== null && !(value instanceof Date)) output[field] = new Date(String(value));
+	}
+	return output;
 }
 
 function buildResumeShareUrl(username: string, slug: string): string {
@@ -435,7 +438,7 @@ export function registerTools(
 		withErrorHandling(
 			"creating application",
 			async (params: z.infer<(typeof TOOL_META)[typeof T.createApplication]["inputSchema"]>) => {
-				const id = await client.applications.create(applicationDto.create.input.parse(coerceFollowUpAt(params)));
+				const id = await client.applications.create(applicationDto.create.input.parse(coerceApplicationDates(params)));
 				return json({ id });
 			},
 		),
@@ -447,7 +450,7 @@ export function registerTools(
 		withErrorHandling(
 			"updating application",
 			async (params: z.infer<(typeof TOOL_META)[typeof T.updateApplication]["inputSchema"]>) =>
-				json(await client.applications.update(applicationDto.update.input.parse(coerceFollowUpAt(params)))),
+				json(await client.applications.update(applicationDto.update.input.parse(coerceApplicationDates(params)))),
 		),
 	);
 
@@ -534,7 +537,7 @@ export function registerTools(
 			async (params: z.infer<(typeof TOOL_META)[typeof T.importApplications]["inputSchema"]>) =>
 				json(
 					await client.applications.import(
-						applicationDto.import.input.parse({ items: params.items.map(coerceFollowUpAt) }),
+						applicationDto.import.input.parse({ items: params.items.map(coerceApplicationDates) }),
 					),
 				),
 		),

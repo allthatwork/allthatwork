@@ -14,6 +14,7 @@ import { toast } from "@reactive-resume/ui/components/toast";
 import { cn } from "@reactive-resume/utils/style";
 import { latest, useDefaultProvider, useGenerate, useSavedItems, useWorkspace } from "../hooks";
 import { PrivacyLine, StatusPill, Swap, Working, workingSteps } from "../shared";
+import { FitTabScores } from "./assessments";
 import { AiProviderLoadState } from "@/features/settings/integrations/ai-provider-load-state";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
@@ -52,7 +53,17 @@ export function AiNotice({ className }: AiNoticeProps) {
 }
 
 /** W1–W3: each requirement from the posting against the user's evidence, with gaps closed in place. */
-export function FitTab({ application, version }: WorkspaceTabProps) {
+/** The search's and the targeting's fits, then this tab's own check against Knowledge. */
+export function FitTab(props: WorkspaceTabProps) {
+	return (
+		<>
+			<FitTabScores application={props.application} />
+			<FitCheck {...props} />
+		</>
+	);
+}
+
+function FitCheck({ application, version }: WorkspaceTabProps) {
 	const queryClient = useQueryClient();
 	const saved = useSavedItems(application.id);
 	const workspace = useWorkspace(application.id);

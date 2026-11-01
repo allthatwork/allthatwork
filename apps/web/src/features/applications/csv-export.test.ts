@@ -40,6 +40,17 @@ const application: Application = {
 	coverLetterName: null,
 	followUpAt: null,
 	followUpNote: null,
+	foundBy: null,
+	searchFit: null,
+	searchNotes: null,
+	searchAt: null,
+	targetingNotes: null,
+	targetingFit: null,
+	targetingReviews: [],
+	targetingPrimaryLane: null,
+	targetingSecondaryLane: null,
+	targetingAt: null,
+	targetingQuestions: [],
 };
 
 function exportedRecord(value: Application) {
@@ -63,6 +74,27 @@ describe("application CSV export", () => {
 			postingSource: source,
 		});
 	});
+	it("round-trips found by, the search fit, search notes and lanes; the targeting fit is export only", () => {
+		const value = {
+			...application,
+			foundBy: "Dorel",
+			searchFit: 88,
+			searchNotes: "Strong platform fit.\nGaps: Go.",
+			targetingFit: 0,
+			targetingPrimaryLane: "Platform / reliability",
+			targetingSecondaryLane: "AI agents",
+		};
+		expect(mapCsvToApplications(parseCsv(exportApplicationsCsv([value]))).rows[0]).toMatchObject({
+			source: "Referral",
+			foundBy: "Dorel",
+			searchFit: 88,
+			searchNotes: value.searchNotes,
+			targetingPrimaryLane: "Platform / reliability",
+			targetingSecondaryLane: "AI agents",
+		});
+		expect(exportApplicationsCsv([value])).toContain(',"0",');
+	});
+
 	it("round-trips quoted Unicode, commas and multiline notes through existing import fields", () => {
 		const csv = exportApplicationsCsv([application]);
 		expect(csv.startsWith("\uFEFF")).toBe(true);

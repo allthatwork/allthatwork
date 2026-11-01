@@ -150,6 +150,7 @@ export async function findPosting(
 			jobDescription: table.jobDescription,
 			requirements: table.requirements,
 			notes: table.notes,
+			searchNotes: table.searchNotes,
 		})
 		.from(table)
 		.where(and(eq(table.userId, userId), selectedId ? eq(table.id, selectedId) : eq(table.resumeId, documentId)))
@@ -160,7 +161,12 @@ export async function findPosting(
 	const text =
 		application.jobDescription?.trim() ||
 		(application.requirements.length > 0 ? application.requirements.map((item) => `- ${item}`).join("\n") : "");
-	return { role: application.role, company: application.company, text, notes: application.notes?.trim() ?? "" };
+	// The job search's assessment used to sit in the notes; it rides along, labelled, now that it has its own field.
+	const searchNotes = application.searchNotes?.trim();
+	const notes = [application.notes?.trim(), searchNotes && `The job search's assessment: ${searchNotes}`]
+		.filter(Boolean)
+		.join("\n\n");
+	return { role: application.role, company: application.company, text, notes };
 }
 
 /**

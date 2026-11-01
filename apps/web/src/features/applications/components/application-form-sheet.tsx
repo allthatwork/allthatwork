@@ -21,15 +21,15 @@ import {
 } from "@reactive-resume/ui/components/sheet";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { toast } from "@reactive-resume/ui/components/toast";
-import { applicationsListQueryKey } from "../queries";
+import { applicationsListQueryKey, applicationsListQueryOptions } from "../queries";
+import { foundBySuggestions, foundOnSuggestions } from "../suggestions";
 import { FileAttachmentField } from "./file-attachment-field";
+import { SuggestionCombobox } from "./suggestion-combobox";
 import { Combobox } from "@/components/ui/combobox";
 import { useClosingValue } from "@/hooks/use-closing-value";
 import { isImeComposing } from "@/libs/keyboard";
 import { orpc } from "@/libs/orpc/client";
 
-// Preset source suggestions surfaced via a <datalist>; the field itself stays free-text.
-const SOURCE_OPTIONS = ["LinkedIn", "Indeed", "Company Website", "Referral", "Recruiter", "Other"];
 // Mirrors the server-side cap on `applications.ai.autofill`.
 const MAX_JOB_DESCRIPTION_CHARS = 20_000;
 // ponytail: a paste shorter than this is a snippet, not a posting — don't burn an AI call on it.
@@ -42,6 +42,8 @@ const emptyForm = () => ({
 	location: "",
 	salary: "",
 	source: "",
+	// Added by hand, so found by the user unless they say otherwise.
+	foundBy: "Me",
 	status: "saved" as ApplicationStatus,
 	resumeId: "",
 	tags: [] as string[],
@@ -67,6 +69,7 @@ function toForm(app: Application): FormState {
 		location: app.location ?? "",
 		salary: app.salary ?? "",
 		source: app.source ?? "",
+		foundBy: app.foundBy ?? "",
 		status: app.status,
 		resumeId: app.resumeId ?? "",
 		tags: app.tags,
@@ -89,6 +92,7 @@ function toPayload(form: FormState) {
 		location: form.location.trim() || null,
 		salary: form.salary.trim() || null,
 		source: form.source.trim() || null,
+		foundBy: form.foundBy.trim() || null,
 		resumeId: form.resumeId || null,
 		tags: form.tags,
 		sourceUrl: form.sourceUrl.trim() || null,
@@ -215,6 +219,7 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 	const resumeOptions = (resumes ?? []).map((resume) => ({ value: resume.id, label: resume.name }));
 
 	const { data: allTags } = useQuery(orpc.applications.tags.queryOptions());
+	const { data: applications = [] } = useQuery(applicationsListQueryOptions());
 
 	// Same gate as the rest of the AI surfaces: at least one enabled provider that tested green.
 	const { data: providers } = useQuery(orpc.aiProviders.list.queryOptions());
@@ -355,24 +360,31 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 					</div>
 
 					<div className="grid grid-cols-2 gap-3">
-						<Field label={t`Source`}>
+						<Field label={t`Found on`}>
 							{(id) => (
-								<>
-									<Input
-										id={id}
-										value={form.source}
-										list="application-sources"
-										placeholder={t`LinkedIn, Referral…`}
-										onChange={(event) => set("source", event.target.value)}
-									/>
-									<datalist id="application-sources">
-										{SOURCE_OPTIONS.map((option) => (
-											<option key={option} value={option} />
-										))}
-									</datalist>
-								</>
+								<SuggestionCombobox
+									id={id}
+									value={form.source || null}
+									suggestions={foundOnSuggestions(applications)}
+									placeholder={t`Greenhouse, LinkedIn…`}
+									onChange={(value) => set("source", value ?? "")}
+								/>
 							)}
 						</Field>
+						<Field label={t`Found by`}>
+							{(id) => (
+								<SuggestionCombobox
+									id={id}
+									value={form.foundBy || null}
+									suggestions={foundBySuggestions(applications)}
+									placeholder={t`Me, Referral…`}
+									onChange={(value) => set("foundBy", value ?? "")}
+								/>
+							)}
+						</Field>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
 						<Field label={t`Stage`}>
 							{(id) => (
 								<Combobox

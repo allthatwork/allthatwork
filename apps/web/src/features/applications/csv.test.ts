@@ -10,6 +10,15 @@ describe("parseCsv", () => {
 });
 
 describe("mapCsvToApplications", () => {
+	it("reads Found on and Found by columns and refuses a fit outside 0 to 100", () => {
+		const table = parseCsv("Company,Role,Found On,Found By,Search Fit\nAcme,Engineer,Ashby,Muse,91%\nBeta,SRE,,,0.9");
+		const result = mapCsvToApplications(table);
+		expect(result.rows).toEqual([
+			{ company: "Acme", role: "Engineer", source: "Ashby", foundBy: "Muse", searchFit: 91 },
+		]);
+		expect(result.invalidValues).toEqual([{ row: 3, field: "searchFit", value: "0.9" }]);
+	});
+
 	it("maps aliased headers and coerces status/tags", () => {
 		const csv =
 			'Company,Job Title,Stage,Stage Date,Salary,Tags,Contact Name,Contact Email,Contact Phone\nStripe,Frontend,Interview,2026-07-01,$180k,"remote;react",Jane Doe,jane@example.com,+1 555 0100';

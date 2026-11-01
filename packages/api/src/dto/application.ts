@@ -10,10 +10,15 @@ import {
 	interviewDetailsSchema,
 	interviewKindSchema,
 	postingSourceSchema,
+	targetingQuestionSchema,
+	targetingQuestionStatusSchema,
+	targetingReviewSchema,
 } from "@reactive-resume/schema/applications/data";
 import { paginationShape } from "../pagination";
 
 const MAX_APPLICATION_JOB_DESCRIPTION_CHARS = 20_000;
+const MAX_APPLICATION_SEARCH_NOTES_CHARS = 20_000;
+const MAX_APPLICATION_TARGETING_NOTES_CHARS = 200_000;
 const MAX_APPLICATION_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
 const applicationDocumentKindSchema = z.enum(["resume", "cover-letter"]);
@@ -58,7 +63,66 @@ const applicationSchema = createSelectSchema(schema.application, {
 		.nullable()
 		.describe("The version of the linked letter saved when the application was sent."),
 	requirements: z.array(z.string()).describe("What the posting asks for, as read when the application was added."),
-	source: z.string().trim().nullable(),
+	source: z
+		.string()
+		.trim()
+		.nullable()
+		.describe("Found on: where the posting was found (Greenhouse, LinkedIn, Indeed…)."),
+	foundBy: z
+		.string()
+		.trim()
+		.max(100)
+		.nullable()
+		.describe("Who or what found the job: a search agent, the in-app search, a referral, a recruiter or the user."),
+	searchFit: z
+		.number()
+		.int()
+		.min(0)
+		.max(100)
+		.nullable()
+		.describe("The job search's fit for this posting, 0-100, from before any resume was made for it."),
+	searchNotes: z
+		.string()
+		.max(MAX_APPLICATION_SEARCH_NOTES_CHARS)
+		.nullable()
+		.describe("The job search's assessment of the posting. The user's own notes stay in `notes`."),
+	searchAt: z.date().nullable().describe("When the search assessed the posting. Set on save when omitted."),
+	targetingNotes: z
+		.string()
+		.max(MAX_APPLICATION_TARGETING_NOTES_CHARS)
+		.nullable()
+		.describe(
+			"The whole targeting note (Markdown) written when the resume was targeted at this posting. Lists return null here to stay small; read one application for it.",
+		),
+	targetingFit: z
+		.number()
+		.int()
+		.min(0)
+		.max(100)
+		.nullable()
+		.describe(
+			"The fit after targeting the resume, 0-100: the median of the latest review round's reviewers that ran. Set by the server from `targetingReviews`.",
+		),
+	targetingReviews: z
+		.array(targetingReviewSchema)
+		.max(100)
+		.describe(
+			"Every reviewer's read of the targeted resume, per round: reviewer, model, ran or skipped (with the reason), fit and verdict. Writing it sets `targetingFit`.",
+		),
+	targetingPrimaryLane: z
+		.string()
+		.trim()
+		.max(100)
+		.nullable()
+		.describe("The kind of role the targeted resume aims at, such as Platform / reliability."),
+	targetingSecondaryLane: z.string().trim().max(100).nullable().describe("A second lane the resume also covers."),
+	targetingAt: z.date().nullable().describe("When the resume was targeted. Set on save when omitted."),
+	targetingQuestions: z
+		.array(targetingQuestionSchema)
+		.max(50)
+		.describe(
+			"Questions targeting left for the user, each with a proposed fact and its Knowledge group. Writing the list merges it: questions already answered or set aside are kept as they are, open ones are replaced.",
+		),
 	sourceUrl: httpUrlSchema.nullable(),
 	jobDescription: z.string().max(MAX_APPLICATION_JOB_DESCRIPTION_CHARS).nullable(),
 	postingSource: postingSourceSchema.nullable(),
@@ -101,6 +165,16 @@ const editableSchema = applicationSchema.pick({
 	jobDescription: true,
 	postingSource: true,
 	notes: true,
+	foundBy: true,
+	searchFit: true,
+	searchNotes: true,
+	searchAt: true,
+	targetingNotes: true,
+	targetingReviews: true,
+	targetingPrimaryLane: true,
+	targetingSecondaryLane: true,
+	targetingAt: true,
+	targetingQuestions: true,
 	resumeFileUrl: true,
 	resumeFileName: true,
 	coverLetterUrl: true,
@@ -178,6 +252,23 @@ export const applicationDto = {
 		input: z.object({
 			id: z.string(),
 			kind: applicationDocumentKindSchema,
+		}),
+		output: applicationSchema.omit({ userId: true }),
+	},
+
+	updateQuestion: {
+		input: z.object({
+			id: z.string(),
+			questionId: z.string().min(1).max(100),
+			status: targetingQuestionStatusSchema.describe("open reopens it; answered and dismissed close it."),
+			answer: z
+				.string()
+				.trim()
+				.max(4000)
+				.nullable()
+				.optional()
+				.describe("The fact text saved, or why it was set aside."),
+			factId: z.string().max(255).nullable().optional().describe("The Knowledge fact the answer saved."),
 		}),
 		output: applicationSchema.omit({ userId: true }),
 	},

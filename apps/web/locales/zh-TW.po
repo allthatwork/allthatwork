@@ -248,6 +248,11 @@ msgstr ""
 msgid "{0, plural, one {# proposed edit} other {# proposed edits}}"
 msgstr "{0, plural, one {# 建議編輯} other {# 提議的編輯}}"
 
+#. placeholder {0}: open.length
+#: src/features/career/workspace/questions.tsx
+msgid "{0, plural, one {# question for you} other {# questions for you}}"
+msgstr ""
+
 #. placeholder {0}: summary.madePrivate
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "{0, plural, one {# resume was public and came in private. Share it again from the resume.} other {# resumes were public and came in private. Share them again from each resume.}}"
@@ -576,7 +581,9 @@ msgid "{0} sections and {1} entries found."
 msgstr "找到 {0} 部分和 {1} 條目。"
 
 #. placeholder {0}: report.skippedChecks
+#. placeholder {0}: review.reviewer
 #: src/features/ats-checker/report/score-header.tsx
+#: src/features/career/workspace/assessments.tsx
 msgid "{0} skipped"
 msgstr "{0} 項已跳過"
 
@@ -879,6 +886,10 @@ msgstr "{proposed, plural, one {# 提議} other {# 提議}}"
 msgid "{sections, plural, one {# section} other {# sections}}"
 msgstr "{sections, plural, one {#款} other {#款}}"
 
+#: src/features/career/workspace/questions.tsx
+msgid "{shared, plural, one {Also asked on # other application. Answering here answers it there too.} other {Also asked on # other applications. Answering here answers them too.}}"
+msgstr ""
+
 #: src/features/applications/components/application-detail-sheet.tsx
 msgid "{since, plural, =0 {since today} one {for # day} other {for # days}}"
 msgstr "{since, plural, =0 {從今天起} one {# 日} other {# 天}}"
@@ -952,6 +963,10 @@ msgstr ""
 
 #: src/features/career/knowledge/groups.tsx
 msgid "{updated, plural, one {Switched # fact in {group} on.} other {Switched # facts in {group} on.}}"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "{value} (not in Preferences)"
 msgstr ""
 
 #: src/features/career/offers.tsx
@@ -1348,6 +1363,10 @@ msgstr "新增"
 msgid "Add “{0}”"
 msgstr "新增“{0}”"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Add “{typed}”"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Add a fact to {group}"
 msgstr ""
@@ -1364,6 +1383,10 @@ msgstr "新增關鍵字..."
 #: src/components/input/url-input.tsx
 msgid "Add a label to the URL"
 msgstr "為此 URL 新增標籤"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Add a lane, then Enter"
+msgstr ""
 
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Add a link"
@@ -1652,6 +1675,10 @@ msgstr "新增志工服務"
 msgid "Add what happened before you can save."
 msgstr "請先填寫發生了什麼，才能儲存。"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Add your lanes in Preferences"
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "Add your name"
 msgstr "添加您的名字"
@@ -1846,6 +1873,10 @@ msgstr ""
 msgid "All proposed facts have matches. Review them in Duplicates below."
 msgstr ""
 
+#: src/features/career/workspace/questions.tsx
+msgid "All questions answered"
+msgstr ""
+
 #: src/features/auth/pages/consent.tsx
 msgid "Allow access"
 msgstr "允許存取"
@@ -1968,6 +1999,11 @@ msgstr "已複製回答"
 msgid "Answer in your own words"
 msgstr "用您自己的話回答"
 
+#. placeholder {0}: question.answeredOn.company
+#: src/features/career/workspace/questions.tsx
+msgid "answered on {0}"
+msgstr ""
+
 #: src/features/career/workspace/saved.tsx
 msgid "Answers"
 msgstr "回答"
@@ -1999,6 +2035,10 @@ msgstr "知道該連結的任何人都可以查看您的簡歷。"
 #: src/features/applications/components/application-notes.tsx
 msgid "Anything to remember about this job"
 msgstr "關於這份工作有什麼需要記住的"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Anything to remember instead? Saved to Knowledge so later resumes don't ask again (optional)."
+msgstr ""
 
 #: src/features/assistant/provider-setup.tsx
 #: src/features/settings/ai/providers.tsx
@@ -2698,6 +2738,7 @@ msgstr "軟體可以讀取您的履歷嗎？"
 #: src/features/career/knowledge/stories.tsx
 #: src/features/career/schedule-sheet.tsx
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/new-document-dialog.tsx
 #: src/features/resume/builder/password-dialog.tsx
@@ -2985,6 +3026,10 @@ msgstr "選擇另一個文件"
 msgid "Choose color"
 msgstr "選擇顏色"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Choose or type…"
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Choose the zip"
 msgstr ""
@@ -3007,6 +3052,7 @@ msgstr "Claude Desktop"
 
 #: src/features/applications/components/detail/next-step-card.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Clear"
 msgstr "清除"
@@ -3868,6 +3914,10 @@ msgstr "無法重新命名。"
 msgid "Couldn't rename the passkey."
 msgstr "無法重命名密鑰。"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Couldn't reopen it."
+msgstr ""
+
 #: src/features/settings/ai/api-keys.tsx
 msgid "Couldn't revoke the key."
 msgstr "無法撤銷金鑰。"
@@ -3886,6 +3936,7 @@ msgid "Couldn't save that change. Try again."
 msgstr "無法儲存該變更。再試一次。"
 
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Couldn't save that to Knowledge."
 msgstr "無法儲存到知識庫。"
 
@@ -3971,6 +4022,7 @@ msgid "Couldn't save your preferences."
 msgstr "無法儲存您的偏好。"
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/detail/sent-documents.tsx
 msgid "Couldn't save."
 msgstr "無法保存。"
@@ -4660,6 +4712,7 @@ msgstr "不要發送 {0}"
 msgid "Donate"
 msgstr "捐"
 
+#: src/features/career/workspace/questions.tsx
 #: src/features/resume/editor/write/rich-text-editor.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
 #: src/features/settings/ai/api-keys.tsx
@@ -4966,6 +5019,10 @@ msgstr "編輯訪談..."
 msgid "Edit keyword"
 msgstr "編輯關鍵字"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Edit lanes in Preferences"
+msgstr ""
+
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Edit link"
 msgstr "編輯連結"
@@ -5245,6 +5302,10 @@ msgstr "教練為 {0} 撰寫的所有內容，最新的在前。"
 #: src/features/homepage/hero.tsx
 msgid "Everything you’ve done, on one page."
 msgstr "您所做的一切都在一頁上。"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Evidence targeting looked for and couldn't find in your Knowledge. Answer in your own words and save it to Knowledge. A gap means it isn't recorded yet, not that you can't do it."
+msgstr ""
 
 #: src/features/homepage/footer.tsx
 msgid "Evolved from"
@@ -5584,6 +5645,7 @@ msgstr "芬蘭語"
 msgid "First run"
 msgstr "首次執行"
 
+#: src/features/applications/components/list-view.tsx
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5734,6 +5796,10 @@ msgstr "例如，記下您把這份履歷投給了哪些公司，或是職缺描
 msgid "For example: “{0}: I did … at … in 2024, and it led to …”"
 msgstr "例如：「{0}：2024 年我在……做了……，帶來了……」"
 
+#: src/features/career/workspace/questions.tsx
+msgid "For example: No hands-on Go; read and reviewed Go code only."
+msgstr ""
+
 #: src/features/resume/share/download-tab.tsx
 msgid "For LibreOffice and other open-source editors. Layout is simplified."
 msgstr "適用於 LibreOffice 及其他開源編輯器。版面已簡化。"
@@ -5787,6 +5853,30 @@ msgstr "格式化"
 #: src/features/career/today.tsx
 msgid "Found {0}"
 msgstr "找到於 {0}"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Found by"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found by {foundBy}"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found by {foundBy} on {source}"
+msgstr ""
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Found on"
+msgstr ""
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Found on {source}"
+msgstr ""
 
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Found the role and company on the page. Review the details before saving."
@@ -5973,6 +6063,15 @@ msgstr "前往儀表板"
 msgid "Go to…"
 msgstr "前往…"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Goes to Knowledge"
+msgstr ""
+
+#. placeholder {0}: question.factGroup
+#: src/features/career/workspace/questions.tsx
+msgid "Goes to Knowledge · <0>{0}</0>"
+msgstr ""
+
 #. Authentication provider display name in account settings
 #. Brand name label for Google social sign-in button
 #: src/features/auth/components/social-auth.tsx
@@ -5991,6 +6090,10 @@ msgstr "希臘語"
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Green"
 msgstr "綠色"
+
+#: src/features/applications/components/application-form-sheet.tsx
+msgid "Greenhouse, LinkedIn…"
+msgstr ""
 
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Greeting"
@@ -6267,6 +6370,10 @@ msgstr "我可以看到此 {kind} 和 {0} 職位發布。建議以編輯形式�
 msgid "I can see this {kind}. Suggestions come back as edits you can accept one by one."
 msgstr "我可以看到這個{kind}。建議以編輯形式返回，您可以一一接受。"
 
+#: src/features/career/workspace/questions.tsx
+msgid "I don't have this"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "I interviewed 14 customers, mapped three drop-off points and prototyped a shorter setup with engineering."
 msgstr "我訪談了 14 位客戶，找出三個流失點，並與工程團隊一起做出更短設定流程的原型。"
@@ -6488,6 +6595,10 @@ msgstr ""
 #: src/features/homepage/sections.tsx
 msgid "In good company"
 msgstr "在好的公司裡"
+
+#: src/features/career/workspace/questions.tsx
+msgid "in Knowledge"
+msgstr ""
 
 #: src/features/career/knowledge/import-comparison.tsx
 msgid "In Knowledge"
@@ -6863,6 +6974,10 @@ msgstr "保持誠實"
 msgid "Keep it under 2.5 MB, usually by removing or shrinking images."
 msgstr "將檔案控制在 2.5 MB 以內，通常可透過移除或縮小圖片來達成。"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Keep it within the record:"
+msgstr ""
+
 #: src/features/homepage/write.tsx
 #: src/features/resume/editor/write/improve.tsx
 msgid "Keep mine"
@@ -7014,6 +7129,10 @@ msgstr "標籤，例如招聘人員"
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Landscape"
 msgstr "橫向"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Lanes"
+msgstr ""
 
 #. Menu item that opens language selection submenu
 #: src/features/command-palette/pages/navigation.tsx
@@ -7367,10 +7486,6 @@ msgstr ""
 #: src/features/career/knowledge/import.tsx
 msgid "LinkedIn exports and JSON are read in your browser. We read LinkedIn's profile files, and connections can optionally be imported into Directory. Messages are ignored. Only selected facts and contacts are saved to your account."
 msgstr ""
-
-#: src/features/applications/components/application-form-sheet.tsx
-msgid "LinkedIn, Referral…"
-msgstr "LinkedIn、推薦…"
 
 #: src/features/settings/account/auth-hooks.ts
 msgid "Linking your {providerName} account..."
@@ -7735,6 +7850,10 @@ msgstr "MCP"
 #: src/features/settings/ai/mcp.tsx
 msgid "MCP server"
 msgstr "MCP伺服器"
+
+#: src/features/applications/components/application-form-sheet.tsx
+msgid "Me, Referral…"
+msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
 msgid "median to first reply"
@@ -8437,6 +8556,10 @@ msgstr "沒有照片。大多數ATS忽略照片；有些地區預計會出現這
 msgid "No postings found. Try different keywords."
 msgstr "沒有找到招聘資訊。嘗試不同的關鍵字。"
 
+#: src/features/career/workspace/questions.tsx
+msgid "No questions for you"
+msgstr ""
+
 #: src/features/applications/stages.ts
 msgid "No response"
 msgstr "沒有回應"
@@ -8508,6 +8631,7 @@ msgstr "編號：{number}·{name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
 msgstr "沒有任何"
@@ -9022,6 +9146,7 @@ msgid "Optional for local Ollama"
 msgstr "本地選配 Ollama"
 
 #: src/components/ui/combobox.tsx
+#: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/documents/trash-page.tsx
 msgid "Options"
@@ -9696,6 +9821,11 @@ msgstr "上個月"
 msgid "Primary Color"
 msgstr "主要顏色"
 
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Primary lane"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 msgid "Print"
 msgstr "列印"
@@ -9893,6 +10023,11 @@ msgstr "已移除問題"
 msgid "Questions"
 msgstr "問題"
 
+#: src/features/career/shared.tsx
+msgctxt "Application workspace tab: questions for you from targeting the resume"
+msgid "Questions"
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "Questions copied"
 msgstr "已複製問題"
@@ -10004,6 +10139,10 @@ msgstr "讀取簡歷"
 #: src/features/homepage/faq.tsx
 msgid "Read the self-hosting guide"
 msgstr "閱讀自架指南"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Read the targeting note"
+msgstr ""
 
 #: src/features/auth/pages/consent.tsx
 msgid "Read your documents and job applications."
@@ -10419,6 +10558,7 @@ msgid "Rename…"
 msgstr "重命名..."
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Reopen"
 msgstr "重新開放"
 
@@ -10733,6 +10873,10 @@ msgstr "在各自的編輯器中檢查所選的履歷和求職信。"
 msgid "Review writing"
 msgstr "評論寫作"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Reviewers · round {round}"
+msgstr ""
+
 #: src/features/career/workspace/debrief.tsx
 msgid "Reviewing needs an AI connection. <0>Add one in Settings</0>. What you write here stays in this browser until then."
 msgstr "評論需要 AI 連線。<0>在設定中新增</0>。在此之前，您在這裡寫的內容會保留在此瀏覽器中。"
@@ -10826,6 +10970,10 @@ msgstr "旋轉"
 msgid "Rotation isn't supported by PDF rendering."
 msgstr "PDF 渲染不支援旋轉。"
 
+#: src/features/career/workspace/assessments.tsx
+msgid "Round {round}: {scores}"
+msgstr ""
+
 #. placeholder {0}: fieldLabel(field)
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Row {row}, {0}: “{value}” is invalid."
@@ -10912,6 +11060,10 @@ msgstr "儲存並連結"
 msgid "Save and prepare resume"
 msgstr "保存並準備履歷"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Save and set aside"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Save and test"
 msgstr "儲存並測試"
@@ -10979,6 +11131,7 @@ msgid "Save these offer terms to compare"
 msgstr "儲存這些錄取條件以進行比較"
 
 #: src/features/career/workspace/fit.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Save to Knowledge"
 msgstr "儲存到知識庫"
 
@@ -11144,10 +11297,17 @@ msgid "Screening"
 msgstr "初步篩選"
 
 #: src/features/applications/components/add-application-dialog.tsx
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
 #: src/features/documents/documents-page.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search"
 msgstr "搜尋"
+
+#. placeholder {0}: application.searchFit
+#: src/features/career/workspace/assessments.tsx
+msgid "Search {0}%"
+msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
 msgid "Search and enhanced reading"
@@ -11194,6 +11354,19 @@ msgstr "搜尋事實"
 msgid "Search failed"
 msgstr "搜尋失敗"
 
+#: src/features/applications/components/application-card.tsx
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-view.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Search fit"
+msgstr ""
+
+#. placeholder {0}: application.searchFit
+#: src/features/applications/components/application-card.tsx
+msgid "Search fit {0}%"
+msgstr ""
+
 #. Accessible label for icon picker search input
 #. Placeholder text in icon picker search input
 #: src/components/input/icon-picker.tsx
@@ -11211,6 +11384,15 @@ msgstr "從「應徵紀錄」和助理中搜尋，並讀取內建閱讀器無法
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Search job postings"
 msgstr "搜尋職位資訊"
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Search notes"
+msgstr ""
+
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Search or add…"
+msgstr ""
 
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search or run…"
@@ -11260,6 +11442,11 @@ msgstr "正在搜尋網路"
 #: src/features/assistant/conversation.tsx
 msgid "Searching the web…"
 msgstr "正在網路上搜尋..."
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Secondary lane"
+msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 #: src/features/settings/ai/web-access.tsx
@@ -11457,6 +11644,19 @@ msgstr "設定後續..."
 msgid "Set a password"
 msgstr "設定密碼"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside"
+msgstr ""
+
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside without saving"
+msgstr ""
+
+#. placeholder {0}: question.answer
+#: src/features/career/workspace/questions.tsx
+msgid "Set aside: {0}"
+msgstr ""
+
 #: src/features/career/knowledge/budget.tsx
 msgid "Set it"
 msgstr ""
@@ -11594,6 +11794,10 @@ msgstr "頁面顯示{title}"
 msgid "Show again"
 msgstr "再次顯示"
 
+#: src/features/career/workspace/assessments.tsx
+msgid "Show all"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Show all groups"
 msgstr ""
@@ -11613,6 +11817,10 @@ msgstr ""
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Show heading"
 msgstr "顯示標題"
+
+#: src/features/career/workspace/assessments.tsx
+msgid "Show less"
+msgstr ""
 
 #: src/features/resume/editor/write/fields.tsx
 msgid "Show link in title"
@@ -11853,6 +12061,10 @@ msgstr "跳至主要內容"
 msgid "Skip to the page"
 msgstr "跳至頁面"
 
+#: src/features/applications/components/detail/assessments.tsx
+msgid "skipped"
+msgstr ""
+
 #: src/libs/locale.ts
 msgid "Slovak"
 msgstr "斯洛伐克語"
@@ -11950,9 +12162,6 @@ msgstr "種類"
 msgid "Sort by date"
 msgstr "依日期排序"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-#: src/features/applications/components/application-form-sheet.tsx
-#: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/routes/dashboard/settings/route.tsx
 msgid "Source"
@@ -12288,6 +12497,10 @@ msgstr "從來源和工作中建議。隨時更改。"
 msgid "Suggested reply · edit before sending"
 msgstr "建議回覆 · 傳送前請編輯"
 
+#: src/features/career/workspace/questions.tsx
+msgid "Suggested wording:"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "來自 <0>models.dev</0> 的建議。你也可以輸入任何模型 ID。"
@@ -12483,6 +12696,25 @@ msgstr "目標職位"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Target roles, locations, pay and what matters to you. Off keeps yours."
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting"
+msgstr ""
+
+#. placeholder {0}: application.targetingFit
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting {0}%"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/career/workspace/assessments.tsx
+msgid "Targeting fit"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Targeting note"
 msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
@@ -12776,6 +13008,10 @@ msgstr "關鍵"
 #: src/features/settings/ai/providers.tsx
 msgid "The key is encrypted on the server and never shown again. Saving tests the connection."
 msgstr "密鑰在伺服器上加密並且不會再次顯示。儲存測試連線。"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "The kinds of role you aim resumes at, such as Platform / reliability. An application's primary and secondary lane are picked from these."
+msgstr ""
 
 #: src/routes/builder/letter/-components/share-sheet.tsx
 msgid "The letter as it is"
@@ -13632,6 +13868,10 @@ msgstr "輸入 <0>{CONFIRMATION}</0> 進行確認"
 msgid "Type a command or search…"
 msgstr "輸入指令或搜尋…"
 
+#: src/features/applications/components/suggestion-combobox.tsx
+msgid "Type a name to add it."
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Type instead"
 msgstr "改用輸入"
@@ -13927,6 +14167,10 @@ msgstr "使用標準標題"
 #: src/features/career/workspace/apply.tsx
 msgid "Use these answers"
 msgstr "使用這些回答"
+
+#: src/features/career/workspace/questions.tsx
+msgid "Use this"
+msgstr ""
 
 #: src/features/settings/preferences.tsx
 msgid "Use this device's timezone ({device})"
@@ -14299,6 +14543,10 @@ msgstr "我可以下載哪些格式？"
 msgid "What goes in it?"
 msgstr "裡面有什麼？"
 
+#: src/features/career/workspace/questions.tsx
+msgid "What happened, in your own words. It's saved to Knowledge as written."
+msgstr ""
+
 #: src/features/career/coach.tsx
 msgid "What interview answers should I practise?"
 msgstr "我應該練習哪些面試回答？"
@@ -14350,6 +14598,10 @@ msgstr "成功是什麼樣子、哪個挑戰最重要，以及下一步。"
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "What the file-level check found in the PDF you'd send. It ran in this tab; nothing was uploaded."
 msgstr "文件級檢查在您發送的 PDF 中發現的內容。它在此選項卡中運行；沒有上傳任何內容。"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "What the search found: strengths, gaps, unknowns"
+msgstr ""
 
 #: src/features/applications/components/interview-dialog.tsx
 msgid "What they asked you to prepare"
@@ -14408,6 +14660,10 @@ msgstr "這是做什麼用的？"
 #: src/features/resume/editor/check/writing-tab.tsx
 msgid "What's working"
 msgstr "什麼在起作用"
+
+#: src/features/career/workspace/questions.tsx
+msgid "When a resume is targeted at this job, what it looked for and couldn't find in your Knowledge shows up here as questions. Each answer is saved to Knowledge, so the next resume can use it."
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "When an application has been at Applied with no reply for the days below, Applications suggests a short follow-up and its next step turns amber."
@@ -14761,6 +15017,7 @@ msgid "Your AI connection"
 msgstr "您的 AI 連線"
 
 #: src/features/career/workspace/practise.tsx
+#: src/features/career/workspace/questions.tsx
 msgid "Your answer"
 msgstr "您的回答"
 

@@ -143,6 +143,22 @@ export const crudRouter = {
 			applicationService.removeDocument({ id: input.id, userId: context.user.id, kind: input.kind }),
 		),
 
+	updateQuestion: protectedProcedure
+		.route({
+			method: "PATCH",
+			path: "/applications/{id}/questions/{questionId}",
+			tags: ["Applications"],
+			operationId: "updateApplicationQuestion",
+			summary: "Answer, set aside or reopen a targeting question",
+			description:
+				"Marks one of the application's targeting questions answered (with the fact it saved), dismissed or open again. Save the fact itself through the career facts API first. Requires authentication.",
+			successDescription: "The updated application.",
+		})
+		.input(applicationDto.updateQuestion.input)
+		.use(resumeMutationRateLimit)
+		.output(applicationDto.updateQuestion.output)
+		.handler(({ input, context }) => applicationService.updateQuestion({ ...input, userId: context.user.id })),
+
 	addNote: protectedProcedure
 		.route({
 			method: "POST",

@@ -6,6 +6,8 @@ import {
 	applicationTimelineEntrySchema,
 	contactSchema,
 	postingSourceSchema,
+	targetingQuestionSchema,
+	targetingReviewSchema,
 } from "@reactive-resume/schema/applications/data";
 import {
 	careerSourceSchema,
@@ -81,6 +83,23 @@ export const applicationRecord = z.object({
 	matchScore: z.number().int().min(0).max(100).nullable().catch(null).default(null),
 	aiMetadata: aiMetadataSchema.nullable().catch(null).default(null),
 	notes: nullableText(200_000),
+	foundBy: nullableText(100),
+	searchFit: z.number().int().min(0).max(100).nullable().catch(null).default(null),
+	searchNotes: nullableText(20_000),
+	searchAt: nullableStamp,
+	targetingNotes: nullableText(200_000),
+	targetingFit: z.number().int().min(0).max(100).nullable().catch(null).default(null),
+	targetingReviews: z.array(targetingReviewSchema).max(100).catch([]).default([]),
+	targetingPrimaryLane: nullableText(100),
+	targetingSecondaryLane: nullableText(100),
+	targetingAt: nullableStamp,
+	// Fact ids don't survive the import (Knowledge comes in after applications), so the links are dropped.
+	targetingQuestions: z
+		.array(targetingQuestionSchema)
+		.max(50)
+		.catch([])
+		.default([])
+		.transform((questions) => questions.map((question) => ({ ...question, factId: null }))),
 	resumeFileUrl: fileUrl,
 	resumeFileName: nullableText(500),
 	coverLetterUrl: fileUrl,

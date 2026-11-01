@@ -91,6 +91,7 @@ import { StoriesPage } from "./stories";
 
 const profile = () => ({
 	targetRoles: [],
+	lanes: [],
 	locations: [],
 	priorities: "",
 	minBase: { amount: 95000, currency: "EUR", period: "year" },

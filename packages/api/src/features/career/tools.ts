@@ -22,6 +22,8 @@ type CareerToolsInput = {
 
 const TABS: Record<WorkspaceTab, string> = {
 	fit: "checking how the role fits: its requirements against their evidence",
+	questions:
+		"answering the questions targeting left: evidence their Knowledge lacks for this posting. Help them recall specifics; never invent a result",
 	apply: "writing answers for the application form",
 	prepare: "preparing for the next interview round",
 	practise:

@@ -2,7 +2,16 @@ import z from "zod";
 import { timezoneSchema } from "@reactive-resume/utils/timezone";
 
 /** The workspace tabs of one application, in the order a search happens. */
-export const WORKSPACE_TABS = ["fit", "apply", "prepare", "practise", "debrief", "messages", "saved"] as const;
+export const WORKSPACE_TABS = [
+	"fit",
+	"questions",
+	"apply",
+	"prepare",
+	"practise",
+	"debrief",
+	"messages",
+	"saved",
+] as const;
 export const workspaceTabSchema = z.enum(WORKSPACE_TABS);
 export type WorkspaceTab = z.infer<typeof workspaceTabSchema>;
 
@@ -37,6 +46,8 @@ const payPeriodSchema = z.enum(["hour", "month", "year"]);
 /** Preferences: what the user is looking for, used by discovery, Fit, Offers and the coach. */
 export const careerProfileDataSchema = z.object({
 	targetRoles: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
+	/** The kinds of role a resume is aimed at, such as Platform / reliability: the choices for an application's lanes. */
+	lanes: z.array(z.string().trim().min(1).max(100)).max(20).default([]),
 	locations: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
 	/** "What matters to you", in the user's own words. */
 	priorities: z.string().max(4000).default(""),

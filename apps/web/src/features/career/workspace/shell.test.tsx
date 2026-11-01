@@ -97,6 +97,17 @@ const application: Application = {
 	coverLetterName: null,
 	followUpAt: null,
 	followUpNote: null,
+	foundBy: null,
+	searchFit: null,
+	searchNotes: null,
+	searchAt: null,
+	targetingNotes: null,
+	targetingFit: null,
+	targetingReviews: [],
+	targetingPrimaryLane: null,
+	targetingSecondaryLane: null,
+	targetingAt: null,
+	targetingQuestions: [],
 };
 const current: CareerWorkspace = {
 	...EMPTY_WORKSPACE,

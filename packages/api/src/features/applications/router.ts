@@ -9,6 +9,7 @@ export const applicationsRouter = {
 	update: crudRouter.update,
 	attachDocument: crudRouter.attachDocument,
 	removeDocument: crudRouter.removeDocument,
+	updateQuestion: crudRouter.updateQuestion,
 	addNote: crudRouter.addNote,
 	addInterview: crudRouter.addInterview,
 	updateInterview: crudRouter.updateInterview,
