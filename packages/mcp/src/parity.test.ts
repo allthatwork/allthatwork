@@ -21,6 +21,7 @@ let client: Client;
 let server: McpServer;
 const calls = {
 	career: { importFacts: vi.fn() },
+	applications: { updateQuestion: vi.fn() },
 	directory: { companies: vi.fn() },
 	auth: { deleteAccount: vi.fn() },
 	resume: { listVersions: vi.fn(), getById: vi.fn() },
@@ -60,6 +61,62 @@ beforeEach(async () => {
 afterEach(async () => {
 	await client?.close();
 	await server?.close();
+});
+
+it("exposes answering a targeting question", async () => {
+	const at = new Date(0);
+	calls.applications.updateQuestion.mockResolvedValueOnce({
+		id: "app-1",
+		company: "Example",
+		companyId: null,
+		role: "SRE",
+		location: null,
+		salary: null,
+		status: "saved",
+		closedReason: null,
+		resumeId: null,
+		coverLetterId: null,
+		sentResumeVersionId: null,
+		sentCheckScore: null,
+		sentCoverLetterVersionId: null,
+		source: null,
+		tags: [],
+		sourceUrl: null,
+		jobDescription: null,
+		postingSource: null,
+		requirements: [],
+		matchScore: null,
+		aiMetadata: null,
+		notes: null,
+		foundBy: null,
+		searchFit: null,
+		searchNotes: null,
+		searchAt: null,
+		targetingNotes: null,
+		targetingFit: null,
+		targetingReviews: [],
+		targetingPrimaryLane: null,
+		targetingSecondaryLane: null,
+		targetingAt: null,
+		targetingQuestions: [],
+		resumeFileUrl: null,
+		resumeFileName: null,
+		coverLetterUrl: null,
+		coverLetterName: null,
+		followUpAt: null,
+		followUpNote: null,
+		contacts: [],
+		activity: [],
+		appliedAt: at,
+		createdAt: at,
+		updatedAt: at,
+	});
+	const args = { id: "app-1", questionId: "q1", status: "answered", answer: "Onboarded 20+ teams.", factId: "fact-1" };
+	const result = await client.callTool({ name: "api_applications_update_question", arguments: args });
+	expect(result.isError).toBeFalsy();
+	expect(calls.applications.updateQuestion).toHaveBeenCalledWith(args);
+	const { tools } = await client.listTools();
+	expect(tools.find((tool) => tool.name === "api_applications_update_question")?.description).toContain("topic");
 });
 
 it("exposes reviewed fact imports through the API-derived MCP contract", async () => {
