@@ -63,6 +63,7 @@ const PARITY_PROCEDURES = {
 	"documents.copyForJob": router.documents.copyForJob,
 	"applications.ai.searchPostings": router.applications.ai.searchPostings,
 	"applications.ai.parsePosting": router.applications.ai.parsePosting,
+	"applications.updateQuestion": router.applications.updateQuestion,
 	"ai.parsePdf": router.ai.parsePdf,
 	"ai.parseDocx": router.ai.parseDocx,
 	"ai.atsReview": router.ai.atsReview,

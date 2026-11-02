@@ -24,6 +24,8 @@ import { MCP_TOOL_NAME as T } from "./mcp-tool-names";
 
 // Contracts remain derived from the allowlisted API procedures in parity.ts.
 export const PARITY_TOOL_DESCRIPTIONS: Record<string, string> = {
+	"applications.updateQuestion":
+		"Answer, set aside or reopen one of an application's targeting questions (from read_application's targetingQuestions). Save the answer as a Knowledge fact with api_career_save_fact first and pass its id as factId. Answering or setting a question aside does the same to open questions with its topic on the user's other applications; reopening affects this application only.",
 	"agent.threads.start":
 		"Start a document, application, or general career conversation using a tested saved AI provider. For scope=document, choose exactly one resumeId or coverLetterId. For scope=application, provide applicationId. For scope=career, omit document and application IDs.",
 	"career.profile":
