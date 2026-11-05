@@ -6,6 +6,7 @@ import {
 	applicationTimelineEntrySchema,
 	contactSchema,
 	postingSourceSchema,
+	targetingBuildStatusSchema,
 	targetingQuestionSchema,
 	targetingReviewSchema,
 } from "@reactive-resume/schema/applications/data";
@@ -87,6 +88,7 @@ export const applicationRecord = z.object({
 	searchFit: z.number().int().min(0).max(100).nullable().catch(null).default(null),
 	searchNotes: nullableText(20_000),
 	searchAt: nullableStamp,
+	targetingBuildStatus: targetingBuildStatusSchema.nullable().catch(null).default(null),
 	targetingNotes: nullableText(200_000),
 	targetingFit: z.number().int().min(0).max(100).nullable().catch(null).default(null),
 	targetingReviews: z.array(targetingReviewSchema).max(100).catch([]).default([]),

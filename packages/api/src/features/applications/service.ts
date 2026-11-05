@@ -7,6 +7,7 @@ import type {
 	ApplicationTimelineEntry,
 	Contact,
 	InterviewDetails,
+	TargetingBuildStatus,
 	TargetingQuestion,
 	TargetingQuestionStatus,
 	TargetingReview,
@@ -125,6 +126,7 @@ type EditableFields = {
 	searchFit?: number | null | undefined;
 	searchNotes?: string | null | undefined;
 	searchAt?: Date | null | undefined;
+	targetingBuildStatus?: TargetingBuildStatus | null | undefined;
 	targetingNotes?: string | null | undefined;
 	targetingReviews?: TargetingReview[] | undefined;
 	targetingPrimaryLane?: string | null | undefined;

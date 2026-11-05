@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { targetingFitOf, targetingReviewSchema } from "./data";
+import { TARGETING_BUILD_STATUSES, targetingBuildStatusSchema, targetingFitOf, targetingReviewSchema } from "./data";
 
 const review = (round: number, reviewer: string, fit: number | null, status: "ran" | "skipped" = "ran") =>
 	targetingReviewSchema.parse({ round, reviewer, fit, status });
@@ -25,5 +25,14 @@ describe("targetingFitOf", () => {
 	it("is null with no reviews, or when the latest round has no fit", () => {
 		expect(targetingFitOf([])).toBeNull();
 		expect(targetingFitOf([review(1, "B", 70), review(2, "A", null, "skipped")])).toBeNull();
+	});
+});
+
+describe("targetingBuildStatusSchema", () => {
+	it("accepts build, building, built and failed, and rejects unknown values", () => {
+		for (const status of TARGETING_BUILD_STATUSES) {
+			expect(targetingBuildStatusSchema.parse(status)).toBe(status);
+		}
+		expect(targetingBuildStatusSchema.safeParse("pending").success).toBe(false);
 	});
 });

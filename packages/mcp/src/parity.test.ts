@@ -92,6 +92,7 @@ it("exposes answering a targeting question", async () => {
 		searchFit: null,
 		searchNotes: null,
 		searchAt: null,
+		targetingBuildStatus: null,
 		targetingNotes: null,
 		targetingFit: null,
 		targetingReviews: [],

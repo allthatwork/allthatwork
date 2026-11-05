@@ -44,6 +44,7 @@ const application: Application = {
 	searchFit: null,
 	searchNotes: null,
 	searchAt: null,
+	targetingBuildStatus: null,
 	targetingNotes: null,
 	targetingFit: null,
 	targetingReviews: [],
@@ -74,12 +75,13 @@ describe("application CSV export", () => {
 			postingSource: source,
 		});
 	});
-	it("round-trips found by, the search fit, search notes and lanes; the targeting fit is export only", () => {
+	it("round-trips found by, the search fit, search notes, build status and lanes; the targeting fit is export only", () => {
 		const value = {
 			...application,
 			foundBy: "Dorel",
 			searchFit: 88,
 			searchNotes: "Strong platform fit.\nGaps: Go.",
+			targetingBuildStatus: "built" as const,
 			targetingFit: 0,
 			targetingPrimaryLane: "Platform / reliability",
 			targetingSecondaryLane: "AI agents",
@@ -89,6 +91,7 @@ describe("application CSV export", () => {
 			foundBy: "Dorel",
 			searchFit: 88,
 			searchNotes: value.searchNotes,
+			targetingBuildStatus: "built",
 			targetingPrimaryLane: "Platform / reliability",
 			targetingSecondaryLane: "AI agents",
 		});

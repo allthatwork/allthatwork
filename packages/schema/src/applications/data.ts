@@ -46,6 +46,11 @@ export const applicationClosedReasonSchema = z.enum([
 	"no-response",
 ]);
 
+/** Where building the targeted resume package stands; null when not queued or built. */
+export const TARGETING_BUILD_STATUSES = ["build", "building", "built", "failed"] as const;
+export const targetingBuildStatusSchema = z.enum(TARGETING_BUILD_STATUSES);
+export type TargetingBuildStatus = z.infer<typeof targetingBuildStatusSchema>;
+
 /**
  * One reviewer's read of a targeted resume in one review round: its fit and whether it would schedule a call, or why
  * it was skipped. The targeting fit is the median of the latest round's reviewers that ran.

@@ -18,6 +18,7 @@ import { toast } from "@reactive-resume/ui/components/toast";
 import { cn } from "@reactive-resume/utils/style";
 import { useInvalidateApplications } from "../../use-application-actions";
 import { ApplicationNotes } from "../application-notes";
+import { BuildStatusControl } from "../build-status";
 import { AssistantMarkdown } from "@/features/assistant/markdown";
 import { orpc } from "@/libs/orpc/client";
 
@@ -176,7 +177,31 @@ export function TargetingSection({ application, targetingNotes, lanes, locale }:
 			</div>
 			<dl className="grid grid-cols-2 gap-x-4 gap-y-3">
 				<ReadOnlyFact label={t`Targeting fit`}>{percent(application.targetingFit)}</ReadOnlyFact>
-				<div />
+				<div className="grid min-w-0 gap-0.5">
+					<dt className="text-xs font-semibold text-ink-3 uppercase">
+						<Trans>Build status</Trans>
+					</dt>
+					<dd className="flex min-h-6 flex-wrap items-center gap-2">
+						<BuildStatusControl application={application} />
+						{application.targetingBuildStatus === "failed" && (
+							<Button variant="secondary" size="sm" onClick={() => save({ targetingBuildStatus: "build" })}>
+								<Icon name="arrow-clockwise" size={14} />
+								<Trans>Retry build</Trans>
+							</Button>
+						)}
+						{application.targetingBuildStatus === "built" && (
+							<Button variant="ghost" size="sm" onClick={() => save({ targetingBuildStatus: "build" })}>
+								<Icon name="arrow-clockwise" size={14} />
+								<Trans>Rebuild</Trans>
+							</Button>
+						)}
+						{application.targetingBuildStatus === "building" && (
+							<Button variant="ghost" size="sm" onClick={() => save({ targetingBuildStatus: null })}>
+								<Trans>Cancel</Trans>
+							</Button>
+						)}
+					</dd>
+				</div>
 				<LaneSelect
 					label={t`Primary lane`}
 					value={application.targetingPrimaryLane}

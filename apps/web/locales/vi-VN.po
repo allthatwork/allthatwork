@@ -2660,6 +2660,22 @@ msgstr ""
 msgid "Bring in documents, applications and Knowledge from an Export everything zip, made in Reactive Resume or {APP_NAME}."
 msgstr ""
 
+#: src/features/applications/components/build-status.tsx
+#: src/features/applications/components/list-view.tsx
+msgid "Build"
+msgstr ""
+
+#. placeholder {0}: application.role
+#. placeholder {1}: application.company
+#: src/features/applications/components/build-status.tsx
+msgid "Build resume for {0} at {1}"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Build status"
+msgstr ""
+
 #: src/features/homepage/ui.tsx
 msgid "Build your resume"
 msgstr "Xây dựng sơ yếu lý lịch của bạn"
@@ -2668,6 +2684,14 @@ msgstr "Xây dựng sơ yếu lý lịch của bạn"
 #: src/features/command-palette/index.tsx
 msgid "Builder Command Palette"
 msgstr "Bảng lệnh Builder"
+
+#: src/features/applications/components/build-status.tsx
+msgid "Building"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Built"
+msgstr ""
 
 #: src/features/homepage/sheet.tsx
 msgid "Built a shared design system used by six product teams, cutting UI review time by 40%."
@@ -2727,6 +2751,7 @@ msgstr "Phần mềm có đọc được sơ yếu lý lịch của bạn không
 #: src/dialogs/auth/enable-two-factor.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/detail/close-dialog.tsx
 #: src/features/applications/components/detail/contacts.tsx
 #: src/features/applications/components/export-applications-sheet.tsx
@@ -5454,6 +5479,7 @@ msgstr ""
 msgid "Facts, stories and preferences that are switched on in Knowledge"
 msgstr "Dữ kiện, câu chuyện và mong muốn đang bật trong Kiến thức"
 
+#: src/features/applications/components/build-status.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Failed"
 msgstr "Thất bại"
@@ -5645,6 +5671,7 @@ msgstr "Tiếng Phần Lan"
 msgid "First run"
 msgstr "Lần chạy đầu tiên"
 
+#: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
@@ -10037,6 +10064,14 @@ msgstr "Đã sao chép câu hỏi"
 msgid "Questions to ask"
 msgstr "Câu hỏi nên đặt"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Queue for resume build"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Queued for build (click to unqueue)"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "R"
 msgstr "R"
@@ -10259,6 +10294,10 @@ msgstr "Lý do"
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Reasoning"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Rebuild"
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
@@ -10745,6 +10784,14 @@ msgstr "sơ yếu lý lịch + thư"
 msgid "Resume attached"
 msgstr "Đã đính kèm sơ yếu lý lịch"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build failed or stopped"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build in progress"
+msgstr ""
+
 #: src/features/resume/preview/resume-accessible-text.tsx
 msgid "Resume content"
 msgstr "Nội dung sơ yếu lý lịch"
@@ -10767,6 +10814,10 @@ msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Resume length and reminders. Off keeps yours."
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume package built"
 msgstr ""
 
 #: src/routes/builder/$resumeId/-components/page-canvas.tsx
@@ -10813,6 +10864,10 @@ msgstr "Đã lấy {0}. Độ tươi của nguồn gốc không được biết 
 #: src/routes/dashboard/applications/index.tsx
 msgid "Retry"
 msgstr "Thử lại"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Retry build"
+msgstr ""
 
 #: src/features/applications/components/application-notes.tsx
 msgid "Retry save"

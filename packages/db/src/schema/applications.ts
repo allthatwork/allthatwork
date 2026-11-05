@@ -5,6 +5,7 @@ import type {
 	ApplicationTimelineEntry,
 	Contact,
 	PostingSource,
+	TargetingBuildStatus,
 	TargetingQuestion,
 	TargetingReview,
 } from "@reactive-resume/schema/applications/data";
@@ -70,6 +71,7 @@ export const application = pg.pgTable(
 		searchNotes: pg.text("search_notes"),
 		searchAt: pg.timestamp("search_at", { withTimezone: true }),
 		// What targeting the resume produced: the whole targeting note, its fit (0-100) and the lanes it aimed at.
+		targetingBuildStatus: pg.text("targeting_build_status").$type<TargetingBuildStatus>(),
 		targetingNotes: pg.text("targeting_notes"),
 		// Set by the server from targeting_reviews: the median of the latest round's reviewers that ran.
 		targetingFit: pg.smallint("targeting_fit"),

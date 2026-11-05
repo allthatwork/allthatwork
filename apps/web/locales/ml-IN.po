@@ -2660,6 +2660,22 @@ msgstr ""
 msgid "Bring in documents, applications and Knowledge from an Export everything zip, made in Reactive Resume or {APP_NAME}."
 msgstr ""
 
+#: src/features/applications/components/build-status.tsx
+#: src/features/applications/components/list-view.tsx
+msgid "Build"
+msgstr ""
+
+#. placeholder {0}: application.role
+#. placeholder {1}: application.company
+#: src/features/applications/components/build-status.tsx
+msgid "Build resume for {0} at {1}"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Build status"
+msgstr ""
+
 #: src/features/homepage/ui.tsx
 msgid "Build your resume"
 msgstr "നിങ്ങളുടെ റെസ്യൂമെ നിർമ്മിക്കുക"
@@ -2668,6 +2684,14 @@ msgstr "നിങ്ങളുടെ റെസ്യൂമെ നിർമ്മ�
 #: src/features/command-palette/index.tsx
 msgid "Builder Command Palette"
 msgstr "ബിൽഡർ കമാൻഡ് പാലറ്റ്"
+
+#: src/features/applications/components/build-status.tsx
+msgid "Building"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Built"
+msgstr ""
 
 #: src/features/homepage/sheet.tsx
 msgid "Built a shared design system used by six product teams, cutting UI review time by 40%."
@@ -2727,6 +2751,7 @@ msgstr "സോഫ്റ്റ്‌വെയറിന് നിങ്ങളു�
 #: src/dialogs/auth/enable-two-factor.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/detail/close-dialog.tsx
 #: src/features/applications/components/detail/contacts.tsx
 #: src/features/applications/components/export-applications-sheet.tsx
@@ -5454,6 +5479,7 @@ msgstr ""
 msgid "Facts, stories and preferences that are switched on in Knowledge"
 msgstr "അറിവിൽ ഓണാക്കിയ വസ്തുതകൾ, കഥകൾ, പ്രിഫറൻസുകൾ"
 
+#: src/features/applications/components/build-status.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Failed"
 msgstr "പരാജയപ്പെട്ടു"
@@ -5645,6 +5671,7 @@ msgstr "ഫിന്നിഷ്"
 msgid "First run"
 msgstr "ആദ്യ റൺ"
 
+#: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
@@ -10037,6 +10064,14 @@ msgstr "ചോദ്യങ്ങൾ പകർത്തി"
 msgid "Questions to ask"
 msgstr "ചോദിക്കേണ്ട ചോദ്യങ്ങൾ"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Queue for resume build"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Queued for build (click to unqueue)"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "R"
 msgstr "R"
@@ -10259,6 +10294,10 @@ msgstr "കാരണം"
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Reasoning"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Rebuild"
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
@@ -10745,6 +10784,14 @@ msgstr "റെസ്യൂമെ + കത്ത്"
 msgid "Resume attached"
 msgstr "റെസ്യൂമെ അറ്റാച്ച് ചെയ്തു"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build failed or stopped"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build in progress"
+msgstr ""
+
 #: src/features/resume/preview/resume-accessible-text.tsx
 msgid "Resume content"
 msgstr "റെസ്യൂമെ ഉള്ളടക്കം"
@@ -10767,6 +10814,10 @@ msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Resume length and reminders. Off keeps yours."
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume package built"
 msgstr ""
 
 #: src/routes/builder/$resumeId/-components/page-canvas.tsx
@@ -10813,6 +10864,10 @@ msgstr "{0} വീണ്ടെടുത്തു. റിപ്പോർട്ട
 #: src/routes/dashboard/applications/index.tsx
 msgid "Retry"
 msgstr "വീണ്ടും ശ്രമിക്കുക"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Retry build"
+msgstr ""
 
 #: src/features/applications/components/application-notes.tsx
 msgid "Retry save"

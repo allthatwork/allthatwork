@@ -95,6 +95,7 @@ const application = (id: string, status: Application["status"]): Application => 
 	searchFit: null,
 	searchNotes: null,
 	searchAt: null,
+	targetingBuildStatus: null,
 	targetingNotes: null,
 	targetingFit: null,
 	targetingReviews: [],

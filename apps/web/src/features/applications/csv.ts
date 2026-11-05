@@ -1,11 +1,17 @@
 import type { Application } from "./types";
-import type { ApplicationStatus, Contact, PostingSource } from "@reactive-resume/schema/applications/data";
+import type {
+	ApplicationStatus,
+	Contact,
+	PostingSource,
+	TargetingBuildStatus,
+} from "@reactive-resume/schema/applications/data";
 import {
 	applicationStatusSchema,
 	contactSchema,
 	INTERVIEW_KINDS,
 	postingSourceSchema,
 	STAGES,
+	targetingBuildStatusSchema,
 } from "@reactive-resume/schema/applications/data";
 import { parseFit } from "./suggestions";
 
@@ -70,6 +76,7 @@ type ParsedApplication = {
 	foundBy?: string;
 	searchFit?: number;
 	searchNotes?: string;
+	targetingBuildStatus?: TargetingBuildStatus;
 	targetingPrimaryLane?: string;
 	targetingSecondaryLane?: string;
 	notes?: string;
@@ -124,6 +131,7 @@ const HEADER_ALIASES: Record<string, keyof CsvApplication> = {
 	"found by": "foundBy",
 	"search fit": "searchFit",
 	"search notes": "searchNotes",
+	"build status": "targetingBuildStatus",
 	"primary lane": "targetingPrimaryLane",
 	"secondary lane": "targetingSecondaryLane",
 	notes: "notes",
@@ -158,6 +166,7 @@ export const CSV_FIELDS: readonly CsvField[] = [
 	"postingSource",
 	"searchFit",
 	"searchNotes",
+	"targetingBuildStatus",
 	"targetingPrimaryLane",
 	"targetingSecondaryLane",
 	"notes",
@@ -217,7 +226,7 @@ export type CsvMapResult = {
 	contactsSkipped: number;
 	invalidValues: {
 		row: number;
-		field: "status" | "stageEnteredAt" | "postingSource" | "searchFit";
+		field: "status" | "stageEnteredAt" | "postingSource" | "searchFit" | "targetingBuildStatus";
 		value: string;
 	}[];
 	headers: string[];
@@ -285,6 +294,10 @@ export function mapCsvToApplications(table: string[][], mapping?: readonly (CsvF
 			} else if (field === "searchFit") {
 				const fit = parseFit(value);
 				if (typeof fit === "number") record[field] = fit;
+				else invalid.push({ row: index + 2, field, value });
+			} else if (field === "targetingBuildStatus") {
+				const parsed = targetingBuildStatusSchema.safeParse(value.toLowerCase());
+				if (parsed.success) record.targetingBuildStatus = parsed.data;
 				else invalid.push({ row: index + 2, field, value });
 			} else if (field === "jobDescription") record.jobDescription = value.slice(0, 20_000);
 			else record[field] = value as never;
@@ -359,6 +372,7 @@ export function exportApplicationsCsv(applications: readonly Application[]): str
 		"Posting Source",
 		"Search Fit",
 		"Search Notes",
+		"Build Status",
 		"Targeting Fit",
 		"Primary Lane",
 		"Secondary Lane",
@@ -398,6 +412,7 @@ export function exportApplicationsCsv(applications: readonly Application[]): str
 			application.postingSource ? JSON.stringify(application.postingSource) : "",
 			application.searchFit === null ? "" : String(application.searchFit),
 			application.searchNotes ?? "",
+			application.targetingBuildStatus ?? "",
 			application.targetingFit === null ? "" : String(application.targetingFit),
 			application.targetingPrimaryLane ?? "",
 			application.targetingSecondaryLane ?? "",

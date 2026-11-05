@@ -15043,6 +15043,23 @@
 												],
 												"description": "When the search assessed the posting. Set on save when omitted."
 											},
+											"targetingBuildStatus": {
+												"anyOf": [
+													{
+														"enum": [
+															"build",
+															"building",
+															"built",
+															"failed"
+														],
+														"type": "string"
+													},
+													{
+														"type": "null"
+													}
+												],
+												"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+											},
 											"targetingNotes": {
 												"anyOf": [
 													{
@@ -15607,6 +15624,7 @@
 											"searchFit",
 											"searchNotes",
 											"searchAt",
+											"targetingBuildStatus",
 											"targetingNotes",
 											"targetingFit",
 											"targetingReviews",
@@ -15925,6 +15943,23 @@
 											}
 										],
 										"description": "When the search assessed the posting. Set on save when omitted."
+									},
+									"targetingBuildStatus": {
+										"anyOf": [
+											{
+												"enum": [
+													"build",
+													"building",
+													"built",
+													"failed"
+												],
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
 									},
 									"targetingNotes": {
 										"anyOf": [
@@ -16555,6 +16590,23 @@
 											}
 										],
 										"description": "When the search assessed the posting. Set on save when omitted."
+									},
+									"targetingBuildStatus": {
+										"anyOf": [
+											{
+												"enum": [
+													"build",
+													"building",
+													"built",
+													"failed"
+												],
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
 									},
 									"targetingNotes": {
 										"anyOf": [
@@ -17648,6 +17700,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -18212,6 +18281,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -18519,6 +18589,23 @@
 											}
 										],
 										"description": "When the search assessed the posting. Set on save when omitted."
+									},
+									"targetingBuildStatus": {
+										"anyOf": [
+											{
+												"enum": [
+													"build",
+													"building",
+													"built",
+													"failed"
+												],
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
 									},
 									"targetingNotes": {
 										"anyOf": [
@@ -19146,6 +19233,23 @@
 											}
 										],
 										"description": "When the search assessed the posting. Set on save when omitted."
+									},
+									"targetingBuildStatus": {
+										"anyOf": [
+											{
+												"enum": [
+													"build",
+													"building",
+													"built",
+													"failed"
+												],
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
 									},
 									"targetingNotes": {
 										"anyOf": [
@@ -19919,6 +20023,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -20483,6 +20604,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -20864,6 +20986,23 @@
 										],
 										"description": "When the search assessed the posting. Set on save when omitted."
 									},
+									"targetingBuildStatus": {
+										"anyOf": [
+											{
+												"enum": [
+													"build",
+													"building",
+													"built",
+													"failed"
+												],
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+									},
 									"targetingNotes": {
 										"anyOf": [
 											{
@@ -21490,6 +21629,23 @@
 											}
 										],
 										"description": "When the search assessed the posting. Set on save when omitted."
+									},
+									"targetingBuildStatus": {
+										"anyOf": [
+											{
+												"enum": [
+													"build",
+													"building",
+													"built",
+													"failed"
+												],
+												"type": "string"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
 									},
 									"targetingNotes": {
 										"anyOf": [
@@ -22263,6 +22419,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -22827,6 +23000,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -23133,6 +23307,23 @@
 														}
 													],
 													"description": "When the search assessed the posting. Set on save when omitted."
+												},
+												"targetingBuildStatus": {
+													"anyOf": [
+														{
+															"enum": [
+																"build",
+																"building",
+																"built",
+																"failed"
+															],
+															"type": "string"
+														},
+														{
+															"type": "null"
+														}
+													],
+													"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
 												},
 												"targetingNotes": {
 													"anyOf": [
@@ -24027,6 +24218,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -24591,6 +24799,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -25032,6 +25241,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -25596,6 +25822,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -26096,6 +26323,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -26660,6 +26904,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -27125,6 +27370,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -27689,6 +27951,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -28227,6 +28490,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -28791,6 +29071,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -29327,6 +29608,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -29891,6 +30189,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -30425,6 +30724,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -30989,6 +31305,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -31459,6 +31776,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -32023,6 +32357,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -32471,6 +32806,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -33035,6 +33387,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -33503,6 +33856,23 @@
 											],
 											"description": "When the search assessed the posting. Set on save when omitted."
 										},
+										"targetingBuildStatus": {
+											"anyOf": [
+												{
+													"enum": [
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+										},
 										"targetingNotes": {
 											"anyOf": [
 												{
@@ -34067,6 +34437,7 @@
 										"searchFit",
 										"searchNotes",
 										"searchAt",
+										"targetingBuildStatus",
 										"targetingNotes",
 										"targetingFit",
 										"targetingReviews",
@@ -42274,6 +42645,23 @@
 														],
 														"description": "When the search assessed the posting. Set on save when omitted."
 													},
+													"targetingBuildStatus": {
+														"anyOf": [
+															{
+																"enum": [
+																	"build",
+																	"building",
+																	"built",
+																	"failed"
+																],
+																"type": "string"
+															},
+															{
+																"type": "null"
+															}
+														],
+														"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
+													},
 													"targetingNotes": {
 														"anyOf": [
 															{
@@ -42838,6 +43226,7 @@
 													"searchFit",
 													"searchNotes",
 													"searchAt",
+													"targetingBuildStatus",
 													"targetingNotes",
 													"targetingFit",
 													"targetingReviews",
@@ -119684,6 +120073,23 @@
 														}
 													],
 													"description": "When the search assessed the posting. Set on save when omitted."
+												},
+												"targetingBuildStatus": {
+													"anyOf": [
+														{
+															"enum": [
+																"build",
+																"building",
+																"built",
+																"failed"
+															],
+															"type": "string"
+														},
+														{
+															"type": "null"
+														}
+													],
+													"description": "Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built."
 												},
 												"targetingNotes": {
 													"anyOf": [
