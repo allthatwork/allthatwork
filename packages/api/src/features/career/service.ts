@@ -36,6 +36,7 @@ import {
 } from "@reactive-resume/utils/knowledge";
 import { generateId } from "@reactive-resume/utils/string";
 import { requestRunCancellation } from "../agent/cancellation";
+import { snapshotSentAnswers } from "../applications/answers";
 import { applicationService, recordSentResume } from "../applications/service";
 import { linkApplicationDirectory } from "../directory/links";
 import { matchPosting } from "./matching";
@@ -1574,7 +1575,7 @@ export const careerService = {
 				});
 		});
 	},
-	/** Copies the workspace's answers into Saved when the application is marked as applied: what was sent. */
+	/** Copies the workspace's answers into Saved once the application has been sent (moves out of Saved do it too). */
 	snapshotAnswers: (userId: string, applicationId: string) =>
 		db.transaction(async (tx) => {
 			const [application] = await tx
@@ -1587,34 +1588,7 @@ export const careerService = {
 				throw new ORPCError("BAD_REQUEST", {
 					message: "Mark the application as applied before recording sent answers.",
 				});
-			const [existing] = await tx
-				.select({ id: tables.careerArtifact.id })
-				.from(tables.careerArtifact)
-				.where(
-					and(
-						eq(tables.careerArtifact.applicationId, applicationId),
-						eq(tables.careerArtifact.userId, userId),
-						sql`${tables.careerArtifact.data}->>'kind' = 'answers'`,
-					),
-				);
-			if (existing) return;
-			const [workspace] = await tx
-				.select()
-				.from(tables.careerWorkspace)
-				.where(and(eq(tables.careerWorkspace.applicationId, applicationId), eq(tables.careerWorkspace.userId, userId)));
-			const answers = careerWorkspaceSchema
-				.parse({ ...EMPTY_WORKSPACE, ...workspace?.data })
-				.answers.filter((answer) => answer.answer.trim());
-			if (!answers.length) return;
-			await tx.insert(tables.careerArtifact).values({
-				userId,
-				applicationId,
-				interviewId: null,
-				title: "Application answers",
-				data: { kind: "answers", answers },
-				evidence: { factIds: [...new Set(answers.flatMap((answer) => answer.factIds))], storyIds: [] },
-				inputVersion: hash(JSON.stringify(answers)),
-			});
+			await snapshotSentAnswers(tx, userId, applicationId);
 		}),
 	/** Saves a discovered role to Applications at Saved, with the posting link and why it matched. */
 	trackOpportunity: (userId: string, id: string) => {

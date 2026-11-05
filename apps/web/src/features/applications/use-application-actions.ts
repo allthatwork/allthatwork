@@ -12,7 +12,10 @@ import { getStageLabel } from "./stages";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
 
-/** Refreshes everything that shows applications: the list, the open one, stats, tags and documents' job lines. */
+/**
+ * Refreshes everything that shows applications: the list, the open one, stats, tags, documents' job lines and the
+ * workspace's Saved items.
+ */
 export function useInvalidateApplications() {
 	const queryClient = useQueryClient();
 
@@ -21,6 +24,8 @@ export function useInvalidateApplications() {
 		void queryClient.invalidateQueries({ queryKey: orpc.applications.stats.queryKey() });
 		void queryClient.invalidateQueries({ queryKey: orpc.applications.tags.queryKey() });
 		void queryClient.invalidateQueries({ queryKey: orpc.documents.list.key() });
+		// A move out of Saved copies the written answers into the workspace's Saved items.
+		void queryClient.invalidateQueries({ queryKey: orpc.career.savedItems.key() });
 		if (id) void queryClient.invalidateQueries({ queryKey: orpc.applications.getById.queryKey({ input: { id } }) });
 	};
 }

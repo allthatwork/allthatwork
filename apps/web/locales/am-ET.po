@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "የሥራ ማመልከቻ ተዘግቷል"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "የሥራ ማመልከቻ ቀን"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "አረጋግጥ"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "ማመልከቻ መቅረቡን ያረጋግጡ"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "የይለፍ ቃል ያረጋግጡ"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "ማስገባቱን ያረጋግጡ እና በትክክል የላኳቸውን ሰነዶች ይምረጡ። የእነሱ የአሁኑ ስሪቶች ይቀመጣሉ።"
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "ይህን ገጽ፡ {0} ማንበብ አልተቻለም"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "ማስገባትን መመዝገብ አልተቻለም። እንደገና ይሞክሩ።"
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "የሽፋን ደብዳቤ ከውጭ መጥቷል።"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "የሽፋን ደብዳቤ ገብቷል (አማራጭ)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "ቁጥር {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "የመመዝገቢያ ገጽ"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "የትምህርት ማስረጃ ገብቷል (አማራጭ)"
 
@@ -12827,16 +12811,6 @@ msgstr "ርዕሰ ጉዳይ"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "በአሠሪው የማመልከቻ ገጽ በኩል ራስዎ ያስገቡ።"
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "የተያያዘው የሽፋን ደብዳቤ፡ {0} ገብቷል።"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "ተያይዟል የትምህርት ማስረጃ፡ {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

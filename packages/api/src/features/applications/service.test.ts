@@ -64,6 +64,8 @@ vi.mock("../storage/service", () => ({
 	uploadFile: uploadFileMock,
 }));
 
+// Saving the written answers runs against a real database in the career integration tests.
+vi.mock("./answers", () => ({ snapshotSentAnswers: async () => {} }));
 vi.mock("../directory/links", () => ({
 	linkApplicationDirectory: async (_tx: unknown, row: unknown) => row,
 	lockDirectoryOwner: async () => {},

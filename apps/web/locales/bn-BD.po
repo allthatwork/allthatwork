@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "চাকরির আবেদন বন্ধ"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "চাকরির আবেদনের তারিখ"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "নিশ্চিত করুন"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "আবেদন নিশ্চিত করুন"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "পাসওয়ার্ড নিশ্চিত করুন"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "জমা নিশ্চিত করুন এবং আপনি আসলে যে নথিগুলি পাঠিয়েছেন তা চয়ন করুন৷ তাদের বর্তমান সংস্করণ সংরক্ষণ করা হবে."
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "এই পৃষ্ঠাটি পড়া যায়নি: {0}"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "জমা রেকর্ড করা যায়নি. আবার চেষ্টা করুন"
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "কভার লেটার আমদানি করা হয়েছে"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "কভার লেটার জমা দেওয়া (ঐচ্ছিক)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "নম্বর {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "জীবনবৃত্তান্ত পাতা"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "জীবনবৃত্তান্ত জমা দেওয়া (ঐচ্ছিক)"
 
@@ -12827,16 +12811,6 @@ msgstr "বিষয়"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "নিয়োগকর্তার আবেদন পাতার মাধ্যমে নিজেই জমা দিন।"
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "জমা দেওয়া সংযুক্ত কভার লেটার: {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "জমা দেওয়া সংযুক্ত জীবনবৃত্তান্ত: {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

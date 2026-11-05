@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "ពាក្យសុំការងារត្រូវបានបិទ"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "កាលបរិច្ឆេទនៃការដាក់ពាក្យការងារ"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "អះអាង"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "បញ្ជាក់ថាបានដាក់ពាក្យ"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "បញ្ជាក់ពាក្យសម្ងាត់"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "បញ្ជាក់ការបញ្ជូន ហើយជ្រើសរើសឯកសារដែលអ្នកបានផ្ញើពិតប្រាកដ។ កំណែបច្ចុប្បន្នរបស់ពួកគេនឹងត្រូវបានរក្សាទុក។"
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "មិនអាចអានទំព័រនេះបានទេ៖ {0
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "មិនអាចកត់ត្រាការដាក់ស្នើបានទេ។ ព្យាយាមម្តងទៀត។"
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "លិខិតគម្របបាននាំចូល"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "បាន​ដាក់​ស្នើ​លិខិត​គម្រប (ជា​ជម្រើស)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "លេខ {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "ទំព័រប្រវត្តិរូបសង្ខេប"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "ប្រវត្តិរូបសង្ខេបត្រូវបានដាក់ជូន (ជាជម្រើស)"
 
@@ -12827,16 +12811,6 @@ msgstr "ប្រធានបទ"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "ដាក់ស្នើតាមរយៈទំព័រដាក់ពាក្យរបស់និយោជកដោយខ្លួនឯង។"
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "បានដាក់ស្នើលិខិតគម្រប៖ {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "បានបញ្ជូនប្រវត្តិរូបសង្ខេប៖ {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

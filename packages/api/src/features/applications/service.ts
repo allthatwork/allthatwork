@@ -29,6 +29,7 @@ import { linkApplicationDirectory, lockDirectoryOwner } from "../directory/links
 import { resumeService } from "../resume/service";
 import { writeVersion } from "../resume/version-history";
 import { getStorageService, uploadFile } from "../storage/service";
+import { snapshotSentAnswers } from "./answers";
 
 function timelineDate(value: Date | string): Date {
 	return value instanceof Date ? value : new Date(value);
@@ -760,6 +761,8 @@ export const applicationService = {
 					.returning();
 
 				if (!updated) throw new ORPCError("NOT_FOUND");
+				if (current.status === "saved" && SENT_STAGES.has(updated.status))
+					await snapshotSentAnswers(tx, userId, updated.id);
 				return stripUserId(await recordSentResume(await linkApplicationDirectory(tx, updated), tx));
 			});
 			if (fields.resumeFileUrl !== undefined || fields.coverLetterUrl !== undefined || resumeFile || coverLetterFile) {
@@ -1096,6 +1099,19 @@ export const applicationService = {
 
 		return db.transaction(async (tx) => {
 			await lockApplicationUser(tx, input.userId);
+			// Rows leaving Saved for a sent stage get their written answers saved, like a single move.
+			const wasSaved =
+				input.status !== undefined && SENT_STAGES.has(input.status)
+					? new Set(
+							(
+								await tx
+									.select({ id: schema.application.id })
+									.from(schema.application)
+									.where(and(scope, eq(schema.application.status, "saved")))
+									.for("update")
+							).map((row) => row.id),
+						)
+					: new Set<string>();
 			const rows = await tx
 				.update(schema.application)
 				.set({
@@ -1108,7 +1124,10 @@ export const applicationService = {
 				.where(scope)
 				.returning();
 
-			for (const row of rows) await recordSentResume(row, tx);
+			for (const row of rows) {
+				if (wasSaved.has(row.id)) await snapshotSentAnswers(tx, input.userId, row.id);
+				await recordSentResume(row, tx);
+			}
 			return { updated: rows.length };
 		});
 	},

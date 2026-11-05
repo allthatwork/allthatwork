@@ -245,6 +245,23 @@ it("submits the visible draft immediately and pauses autosave until submission f
 	});
 });
 
+it("shows the last checklist item done once the application is applied, however it was marked", async () => {
+	// Marked from the board or the details sheet: the stored ticks never included the last item.
+	api.data.workspace = { ...EMPTY_WORKSPACE, checklist: [0] };
+	mount(<ApplyTab {...props} application={{ ...application, status: "applied" }} />);
+	expect(screen.queryByRole("button", { name: "Mark as applied" })).toBeNull();
+	const last = screen.getByText("Mark the application as applied to keep the versions you sent.").closest("label");
+	expect(within(last as HTMLElement).getByRole("checkbox")).toHaveAttribute("aria-checked", "true");
+	expect(screen.getByRole("progressbar", { name: "Checklist progress" })).toHaveAttribute("aria-valuenow", "2");
+});
+
+it("leaves the last checklist item undone while the application is saved, whatever is stored", async () => {
+	api.data.workspace = { ...EMPTY_WORKSPACE, checklist: [4] };
+	mount(<ApplyTab {...props} />);
+	expect(screen.getByRole("button", { name: "Mark as applied" })).toBeEnabled();
+	expect(screen.getByRole("progressbar", { name: "Checklist progress" })).toHaveAttribute("aria-valuenow", "0");
+});
+
 it("blocks submission until an over-limit draft is shortened", async () => {
 	const answer = { id: "answer", question: "Why this role?", answer: "x".repeat(6001), factIds: [] };
 	api.data.workspace = { ...EMPTY_WORKSPACE, answers: [answer] };

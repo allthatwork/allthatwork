@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "ಉದ್ಯೋಗ ಅರ್ಜಿಯನ್ನು ಮುಚ್ಚಲಾಗಿದೆ"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "ಉದ್ಯೋಗ ಅರ್ಜಿ ದಿನಾಂಕ"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "ದೃಢೀಕರಿಸಿ"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "ಅರ್ಜಿ ಸಲ್ಲಿಸಿರುವುದನ್ನು ದೃಢೀಕರಿಸಿ"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "ಪಾಸ್ವರ್ಡ್ ಅನ್ನು ದೃಢೀಕರಿಸಿ"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "ಸಲ್ಲಿಕೆಯನ್ನು ದೃಢೀಕರಿಸಿ ಮತ್ತು ನೀವು ನಿಜವಾಗಿಯೂ ಕಳುಹಿಸಿದ ದಾಖಲೆಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ. ಅವರ ಪ್ರಸ್ತುತ ಆವೃತ್ತಿಗಳನ್ನು ಉಳಿಸಲಾಗುತ್ತದೆ."
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "ಈ ಪುಟವನ್ನು ಓದಲಾಗಲಿಲ್ಲ: {0}"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "ಸಲ್ಲಿಕೆಯನ್ನು ರೆಕಾರ್ಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "ಕವರ್ ಲೆಟರ್ ಆಮದು ಮಾಡಲಾಗಿದೆ"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "ಕವರ್ ಲೆಟರ್ ಸಲ್ಲಿಸಲಾಗಿದೆ (ಐಚ್ಛಿಕ)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "ಸಂ. {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "ರೆಸ್ಯೂಮ್ ಪುಟ"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "ರೆಸ್ಯೂಮ್ ಸಲ್ಲಿಸಲಾಗಿದೆ (ಐಚ್ಛಿಕ)"
 
@@ -12827,16 +12811,6 @@ msgstr "ವಿಷಯ"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "ಉದ್ಯೋಗದಾತರ ಅರ್ಜಿ ಪುಟದ ಮೂಲಕ ನೀವೇ ಸಲ್ಲಿಸಿ."
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "ಲಗತ್ತಿಸಲಾದ ಕವರ್ ಲೆಟರ್ ಅನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ: {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "ಲಗತ್ತಿಸಲಾದ ರೆಸ್ಯೂಮೆಯನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ: {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"
