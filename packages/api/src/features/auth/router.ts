@@ -4,6 +4,7 @@ import { createSelectSchema } from "drizzle-zod";
 import z from "zod";
 import { accountAuth, auth } from "@reactive-resume/auth/config";
 import * as schema from "@reactive-resume/db/schema";
+import { boardPaySchema } from "@reactive-resume/schema/boards";
 import {
 	aiLimitsSchema,
 	careerProfileDataSchema,
@@ -245,6 +246,18 @@ export const authRouter = {
 					contacts: directoryDto.contacts.output,
 					employment: directoryDto.contact.output.shape.employment,
 					notes: directoryDto.contact.output.shape.notes,
+					boards: z
+						.array(
+							z.object({
+								companyId: z.string(),
+								ats: z.string(),
+								region: z.string(),
+								slug: z.string(),
+								source: z.string(),
+								confirmedAt: z.coerce.date(),
+							}),
+						)
+						.describe("Job boards watched for Directory companies."),
 				}),
 				aiContentReports: z.array(createSelectSchema(schema.aiContentReport)),
 				career: z.object({
@@ -263,7 +276,7 @@ export const authRouter = {
 						}),
 					),
 					attachments: z.array(createSelectSchema(schema.agentAttachment)),
-					opportunities: z.array(createSelectSchema(schema.careerOpportunity)),
+					opportunities: z.array(createSelectSchema(schema.careerOpportunity, { pay: z.array(boardPaySchema) })),
 					jobs: z.array(createSelectSchema(schema.careerJob)),
 					transcripts: z.array(createSelectSchema(schema.careerTranscript)),
 					workspaces: z.array(createSelectSchema(schema.careerWorkspace, { data: careerWorkspaceSchema })),

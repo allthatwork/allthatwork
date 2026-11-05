@@ -3,6 +3,7 @@ import { aiProvidersRouter } from "../features/ai-providers/router";
 import { aiRouter } from "../features/ai/router";
 import { applicationsRouter } from "../features/applications/router";
 import { authRouter } from "../features/auth/router";
+import { boardsRouter } from "../features/boards/router";
 import { careerRouter } from "../features/career/router";
 import { coverLettersRouter } from "../features/cover-letters/router";
 import { directoryRouter } from "../features/directory/router";
@@ -19,6 +20,7 @@ export default {
 	agent: agentRouter,
 	applications: applicationsRouter,
 	auth: authRouter,
+	boards: boardsRouter,
 	career: careerRouter,
 	coverLetters: coverLettersRouter,
 	documents: documentsRouter,

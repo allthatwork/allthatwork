@@ -80,6 +80,19 @@ export const careerRouter = {
 		.input(careerScheduleInputSchema.extend({ id: z.string().optional() }))
 		.output(careerScheduleSchema)
 		.handler(({ context, input }) => careerJobs.save(context.user.id, input)),
+	runSchedule: protectedProcedure
+		.route({
+			method: "POST",
+			path: "/career/schedules/{id}/run",
+			tags: ["Career"],
+			operationId: "runCareerSchedule",
+			summary: "Run board checks now",
+			description:
+				"Queues a run of the account's board checks schedule now, beside its own times. The scheduler starts it within a minute. Only board checks can be run this way.",
+		})
+		.input(id)
+		.output(z.void())
+		.handler(({ context, input }) => careerJobs.runNow(context.user.id, input.id)),
 	deleteSchedule: protectedProcedure
 		.route({
 			method: "DELETE",

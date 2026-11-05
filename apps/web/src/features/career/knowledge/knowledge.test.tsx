@@ -93,6 +93,7 @@ const profile = () => ({
 	targetRoles: [],
 	lanes: [],
 	locations: [],
+	excludeTitles: [],
 	priorities: "",
 	minBase: { amount: 95000, currency: "EUR", period: "year" },
 	maxOfficeDays: 2,
@@ -210,6 +211,17 @@ it("rejects salary shorthand without autosaving a different number, and accepts 
 		),
 	);
 	expect(input.getAttribute("aria-invalid")).toBeNull();
+});
+
+it("saves words to leave out of found role titles", async () => {
+	mount(<PreferencesPage />);
+	const input = await screen.findByRole("textbox", { name: "Leave out titles with" });
+	fireEvent.change(input, { target: { value: "Intern" } });
+	fireEvent.keyDown(input, { key: "Enter" });
+	fireEvent.blur(screen.getByRole("spinbutton", { name: "Notice period" }));
+	await waitFor(() =>
+		expect(api.saveProfile).toHaveBeenCalledWith(expect.objectContaining({ excludeTitles: ["Intern"] })),
+	);
 });
 
 it("lets an existing office-day requirement return to unspecified", async () => {

@@ -43568,13 +43568,51 @@
 															"at"
 														]
 													}
+												},
+												"boards": {
+													"type": "array",
+													"items": {
+														"type": "object",
+														"properties": {
+															"companyId": {
+																"type": "string"
+															},
+															"ats": {
+																"type": "string"
+															},
+															"region": {
+																"type": "string"
+															},
+															"slug": {
+																"type": "string"
+															},
+															"source": {
+																"type": "string"
+															},
+															"confirmedAt": {
+																"type": "string",
+																"format": "date-time",
+																"x-native-type": "date"
+															}
+														},
+														"required": [
+															"companyId",
+															"ats",
+															"region",
+															"slug",
+															"source",
+															"confirmedAt"
+														]
+													},
+													"description": "Job boards watched for Directory companies."
 												}
 											},
 											"required": [
 												"companies",
 												"contacts",
 												"employment",
-												"notes"
+												"notes",
+												"boards"
 											]
 										},
 										"aiContentReports": {
@@ -43659,6 +43697,16 @@
 														"locations": {
 															"type": "array",
 															"maxItems": 20,
+															"items": {
+																"type": "string",
+																"minLength": 1,
+																"maxLength": 200
+															},
+															"default": []
+														},
+														"excludeTitles": {
+															"type": "array",
+															"maxItems": 50,
 															"items": {
 																"type": "string",
 																"minLength": 1,
@@ -45222,12 +45270,43 @@
 																			},
 																			"query": {
 																				"type": "string"
+																			},
+																			"source": {
+																				"enum": [
+																					"search",
+																					"boards"
+																				],
+																				"type": "string"
+																			},
+																			"failed": {
+																				"type": "array",
+																				"items": {
+																					"type": "string"
+																				}
 																			}
 																		},
 																		"required": [
 																			"type",
 																			"count",
 																			"query"
+																		]
+																	},
+																	{
+																		"type": "object",
+																		"properties": {
+																			"type": {
+																				"const": "boards-failed"
+																			},
+																			"failed": {
+																				"type": "array",
+																				"items": {
+																					"type": "string"
+																				}
+																			}
+																		},
+																		"required": [
+																			"type",
+																			"failed"
 																		]
 																	},
 																	{
@@ -45755,6 +45834,104 @@
 																		"type": "null"
 																	}
 																]
+															},
+															"source": {
+																"type": "string"
+															},
+															"companyId": {
+																"anyOf": [
+																	{
+																		"type": "string"
+																	},
+																	{
+																		"type": "null"
+																	}
+																]
+															},
+															"postingId": {
+																"anyOf": [
+																	{
+																		"type": "string"
+																	},
+																	{
+																		"type": "null"
+																	}
+																]
+															},
+															"pay": {
+																"type": "array",
+																"items": {
+																	"type": "object",
+																	"properties": {
+																		"min": {
+																			"anyOf": [
+																				{
+																					"type": "number",
+																					"minimum": 0
+																				},
+																				{
+																					"type": "null"
+																				}
+																			]
+																		},
+																		"max": {
+																			"anyOf": [
+																				{
+																					"type": "number",
+																					"minimum": 0
+																				},
+																				{
+																					"type": "null"
+																				}
+																			]
+																		},
+																		"currency": {
+																			"type": "string",
+																			"pattern": "^[A-Z]{3}$"
+																		},
+																		"period": {
+																			"enum": [
+																				"hour",
+																				"month",
+																				"year"
+																			],
+																			"type": "string"
+																		}
+																	},
+																	"required": [
+																		"min",
+																		"max",
+																		"currency",
+																		"period"
+																	]
+																}
+															},
+															"remote": {
+																"type": "boolean"
+															},
+															"postedAt": {
+																"anyOf": [
+																	{
+																		"type": "string",
+																		"format": "date-time",
+																		"x-native-type": "date"
+																	},
+																	{
+																		"type": "null"
+																	}
+																]
+															},
+															"closedAt": {
+																"anyOf": [
+																	{
+																		"type": "string",
+																		"format": "date-time",
+																		"x-native-type": "date"
+																	},
+																	{
+																		"type": "null"
+																	}
+																]
 															}
 														},
 														"required": [
@@ -45771,7 +45948,14 @@
 															"firstSeenAt",
 															"lastSeenAt",
 															"dismissedAt",
-															"trackedApplicationId"
+															"trackedApplicationId",
+															"source",
+															"companyId",
+															"postingId",
+															"pay",
+															"remote",
+															"postedAt",
+															"closedAt"
 														]
 													}
 												},
@@ -47741,6 +47925,905 @@
 				]
 			}
 		},
+		"/directory/companies/{companyId}/boards": {
+			"get": {
+				"operationId": "companyJobBoards",
+				"summary": "List a company's job boards",
+				"description": "The Greenhouse, Ashby and Lever boards this account watches for a Directory company, and boards its applications' posting links point at that aren't watched yet.",
+				"tags": [
+					"Job boards"
+				],
+				"parameters": [
+					{
+						"name": "companyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"watched": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"ats": {
+														"enum": [
+															"greenhouse",
+															"ashby",
+															"lever"
+														],
+														"type": "string"
+													},
+													"region": {
+														"enum": [
+															"us",
+															"eu"
+														],
+														"type": "string"
+													},
+													"slug": {
+														"type": "string"
+													},
+													"url": {
+														"type": "string"
+													},
+													"id": {
+														"type": "string"
+													},
+													"source": {
+														"enum": [
+															"posting",
+															"link",
+															"guess"
+														],
+														"type": "string"
+													},
+													"confirmedAt": {
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													},
+													"name": {
+														"anyOf": [
+															{
+																"type": "string"
+															},
+															{
+																"type": "null"
+															}
+														]
+													},
+													"jobCount": {
+														"anyOf": [
+															{
+																"type": "integer",
+																"minimum": -9007199254740991,
+																"maximum": 9007199254740991
+															},
+															{
+																"type": "null"
+															}
+														]
+													},
+													"fetchedAt": {
+														"anyOf": [
+															{
+																"type": "string",
+																"format": "date-time",
+																"x-native-type": "date"
+															},
+															{
+																"type": "null"
+															}
+														]
+													},
+													"error": {
+														"anyOf": [
+															{
+																"type": "string"
+															},
+															{
+																"type": "null"
+															}
+														],
+														"description": "Why the last check failed; its last postings are kept."
+													}
+												},
+												"required": [
+													"ats",
+													"region",
+													"slug",
+													"url",
+													"id",
+													"source",
+													"confirmedAt",
+													"name",
+													"jobCount",
+													"fetchedAt",
+													"error"
+												]
+											}
+										},
+										"detected": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"ats": {
+														"enum": [
+															"greenhouse",
+															"ashby",
+															"lever"
+														],
+														"type": "string"
+													},
+													"region": {
+														"enum": [
+															"us",
+															"eu"
+														],
+														"type": "string"
+													},
+													"slug": {
+														"type": "string"
+													},
+													"url": {
+														"type": "string"
+													}
+												},
+												"required": [
+													"ats",
+													"region",
+													"slug",
+													"url"
+												]
+											},
+											"description": "Boards named by the company's posting links on file, not yet watched."
+										}
+									},
+									"required": [
+										"watched",
+										"detected"
+									]
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl \"https://allthat.work/api/openapi/directory/companies/<companyId>/boards\" --header \"x-api-key: <api-key>\""
+					}
+				]
+			},
+			"post": {
+				"operationId": "watchJobBoard",
+				"summary": "Watch a company's job board",
+				"description": "Confirms a board for a company. Its open roles that pass the Preferences screen land in New roles once; after that, board checks bring only roles first seen later.",
+				"tags": [
+					"Job boards"
+				],
+				"parameters": [
+					{
+						"name": "companyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"ats": {
+										"enum": [
+											"greenhouse",
+											"ashby",
+											"lever"
+										],
+										"type": "string"
+									},
+									"region": {
+										"enum": [
+											"us",
+											"eu"
+										],
+										"type": "string",
+										"default": "us"
+									},
+									"slug": {
+										"type": "string",
+										"pattern": "^[\\w][\\w.-]{0,99}$"
+									},
+									"source": {
+										"enum": [
+											"posting",
+											"link",
+											"guess"
+										],
+										"type": "string"
+									}
+								},
+								"required": [
+									"ats",
+									"slug",
+									"source"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "string"
+										},
+										"added": {
+											"type": "integer",
+											"minimum": -9007199254740991,
+											"maximum": 9007199254740991,
+											"description": "Open roles that passed and landed in New roles."
+										}
+									},
+									"required": [
+										"id",
+										"added"
+									]
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request POST \"https://allthat.work/api/openapi/directory/companies/<companyId>/boards\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"ats\": \"greenhouse\",\n  \"slug\": \"<string>\",\n  \"source\": \"posting\"\n}'"
+					}
+				]
+			}
+		},
+		"/directory/companies/{companyId}/boards/from-link": {
+			"post": {
+				"operationId": "jobBoardsFromLink",
+				"summary": "Find job boards from a careers link",
+				"description": "Reads a pasted board, posting or careers page link and returns the boards it points at, each read once to show its name and open roles. Nothing is saved.",
+				"tags": [
+					"Job boards"
+				],
+				"parameters": [
+					{
+						"name": "companyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1
+						}
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"link": {
+										"type": "string",
+										"maxLength": 2048,
+										"format": "uri"
+									}
+								},
+								"required": [
+									"link"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"ats": {
+												"enum": [
+													"greenhouse",
+													"ashby",
+													"lever"
+												],
+												"type": "string"
+											},
+											"region": {
+												"enum": [
+													"us",
+													"eu"
+												],
+												"type": "string"
+											},
+											"slug": {
+												"type": "string"
+											},
+											"url": {
+												"type": "string"
+											},
+											"name": {
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "null"
+													}
+												],
+												"description": "The board's own name, when its API gives one (Greenhouse)."
+											},
+											"jobCount": {
+												"type": "integer",
+												"minimum": -9007199254740991,
+												"maximum": 9007199254740991
+											},
+											"sample": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"description": "A few of its open roles' titles."
+											}
+										},
+										"required": [
+											"ats",
+											"region",
+											"slug",
+											"url",
+											"name",
+											"jobCount",
+											"sample"
+										]
+									}
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request POST \"https://allthat.work/api/openapi/directory/companies/<companyId>/boards/from-link\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"link\": \"<string>\"\n}'"
+					}
+				]
+			}
+		},
+		"/directory/companies/{companyId}/boards/guess": {
+			"post": {
+				"operationId": "guessJobBoards",
+				"summary": "Guess a company's job board",
+				"description": "Tries board names made from the company's name on Greenhouse, Ashby and Lever. A guess can land on an unrelated company's board, so confirm one before watching it. Nothing is saved.",
+				"tags": [
+					"Job boards"
+				],
+				"parameters": [
+					{
+						"name": "companyId",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"ats": {
+												"enum": [
+													"greenhouse",
+													"ashby",
+													"lever"
+												],
+												"type": "string"
+											},
+											"region": {
+												"enum": [
+													"us",
+													"eu"
+												],
+												"type": "string"
+											},
+											"slug": {
+												"type": "string"
+											},
+											"url": {
+												"type": "string"
+											},
+											"name": {
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "null"
+													}
+												],
+												"description": "The board's own name, when its API gives one (Greenhouse)."
+											},
+											"jobCount": {
+												"type": "integer",
+												"minimum": -9007199254740991,
+												"maximum": 9007199254740991
+											},
+											"sample": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"description": "A few of its open roles' titles."
+											}
+										},
+										"required": [
+											"ats",
+											"region",
+											"slug",
+											"url",
+											"name",
+											"jobCount",
+											"sample"
+										]
+									}
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request POST \"https://allthat.work/api/openapi/directory/companies/<companyId>/boards/guess\" --header \"x-api-key: <api-key>\""
+					}
+				]
+			}
+		},
+		"/directory/boards/{id}": {
+			"delete": {
+				"operationId": "unwatchJobBoard",
+				"summary": "Stop watching a job board",
+				"tags": [
+					"Job boards"
+				],
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK"
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request DELETE \"https://allthat.work/api/openapi/directory/boards/<id>\" --header \"x-api-key: <api-key>\""
+					}
+				]
+			}
+		},
+		"/directory/boards/suggestions": {
+			"get": {
+				"operationId": "jobBoardSuggestions",
+				"summary": "Companies worth watching",
+				"description": "Companies with contacts and no watched board, most contacts first. Where a posting link on file names the board, its matching open roles are counted.",
+				"tags": [
+					"Job boards"
+				],
+				"parameters": [],
+				"responses": {
+					"200": {
+						"description": "OK",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string"
+											},
+											"name": {
+												"type": "string"
+											},
+											"website": {
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
+											"contacts": {
+												"type": "integer",
+												"minimum": -9007199254740991,
+												"maximum": 9007199254740991
+											},
+											"board": {
+												"anyOf": [
+													{
+														"type": "object",
+														"properties": {
+															"ats": {
+																"enum": [
+																	"greenhouse",
+																	"ashby",
+																	"lever"
+																],
+																"type": "string"
+															},
+															"region": {
+																"enum": [
+																	"us",
+																	"eu"
+																],
+																"type": "string"
+															},
+															"slug": {
+																"type": "string"
+															},
+															"url": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"ats",
+															"region",
+															"slug",
+															"url"
+														]
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
+											"openRoles": {
+												"anyOf": [
+													{
+														"type": "integer",
+														"minimum": -9007199254740991,
+														"maximum": 9007199254740991
+													},
+													{
+														"type": "null"
+													}
+												],
+												"description": "Open roles matching target roles and places; null when unknown."
+											}
+										},
+										"required": [
+											"id",
+											"name",
+											"website",
+											"contacts",
+											"board",
+											"openRoles"
+										]
+									}
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl \"https://allthat.work/api/openapi/directory/boards/suggestions\" --header \"x-api-key: <api-key>\""
+					}
+				]
+			}
+		},
 		"/career/voice/transcripts": {
 			"get": {
 				"operationId": "listCareerTranscripts",
@@ -48524,6 +49607,7 @@
 									"kind": {
 										"enum": [
 											"discovery",
+											"boards",
 											"prepare",
 											"follow-up"
 										],
@@ -48808,6 +49892,81 @@
 				]
 			}
 		},
+		"/career/schedules/{id}/run": {
+			"post": {
+				"operationId": "runCareerSchedule",
+				"summary": "Run board checks now",
+				"description": "Queues a run of the account's board checks schedule now, beside its own times. The scheduler starts it within a minute. Only board checks can be run this way.",
+				"tags": [
+					"Career"
+				],
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OK"
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request POST \"https://allthat.work/api/openapi/career/schedules/<id>/run\" --header \"x-api-key: <api-key>\""
+					}
+				]
+			}
+		},
 		"/career/schedules/{id}": {
 			"delete": {
 				"operationId": "deleteCareerSchedule",
@@ -48944,12 +50103,43 @@
 															},
 															"query": {
 																"type": "string"
+															},
+															"source": {
+																"enum": [
+																	"search",
+																	"boards"
+																],
+																"type": "string"
+															},
+															"failed": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																}
 															}
 														},
 														"required": [
 															"type",
 															"count",
 															"query"
+														]
+													},
+													{
+														"type": "object",
+														"properties": {
+															"type": {
+																"const": "boards-failed"
+															},
+															"failed": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																}
+															}
+														},
+														"required": [
+															"type",
+															"failed"
 														]
 													},
 													{
@@ -49313,6 +50503,126 @@
 													}
 												]
 											},
+											"source": {
+												"type": "string"
+											},
+											"companyId": {
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
+											"postingId": {
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
+											"pay": {
+												"type": "array",
+												"items": {
+													"type": "object",
+													"properties": {
+														"min": {
+															"anyOf": [
+																{
+																	"type": "number",
+																	"minimum": 0
+																},
+																{
+																	"type": "null"
+																}
+															]
+														},
+														"max": {
+															"anyOf": [
+																{
+																	"type": "number",
+																	"minimum": 0
+																},
+																{
+																	"type": "null"
+																}
+															]
+														},
+														"currency": {
+															"type": "string",
+															"pattern": "^[A-Z]{3}$"
+														},
+														"period": {
+															"enum": [
+																"hour",
+																"month",
+																"year"
+															],
+															"type": "string"
+														}
+													},
+													"required": [
+														"min",
+														"max",
+														"currency",
+														"period"
+													]
+												}
+											},
+											"remote": {
+												"type": "boolean"
+											},
+											"postedAt": {
+												"anyOf": [
+													{
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
+											"closedAt": {
+												"anyOf": [
+													{
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
+											"contacts": {
+												"type": "array",
+												"items": {
+													"type": "object",
+													"properties": {
+														"id": {
+															"type": "string"
+														},
+														"name": {
+															"type": "string"
+														},
+														"position": {
+															"type": "string"
+														}
+													},
+													"required": [
+														"id",
+														"name",
+														"position"
+													]
+												}
+											},
 											"matches": {
 												"type": "array",
 												"items": {
@@ -49344,6 +50654,14 @@
 											"lastSeenAt",
 											"dismissedAt",
 											"trackedApplicationId",
+											"source",
+											"companyId",
+											"postingId",
+											"pay",
+											"remote",
+											"postedAt",
+											"closedAt",
+											"contacts",
 											"matches",
 											"unknowns"
 										]
@@ -49615,6 +50933,16 @@
 											},
 											"default": []
 										},
+										"excludeTitles": {
+											"type": "array",
+											"maxItems": 50,
+											"items": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 200
+											},
+											"default": []
+										},
 										"priorities": {
 											"type": "string",
 											"maxLength": 4000,
@@ -49792,6 +51120,16 @@
 										},
 										"default": []
 									},
+									"excludeTitles": {
+										"type": "array",
+										"maxItems": 50,
+										"items": {
+											"type": "string",
+											"minLength": 1,
+											"maxLength": 200
+										},
+										"default": []
+									},
 									"priorities": {
 										"type": "string",
 										"maxLength": 4000,
@@ -49906,6 +51244,16 @@
 										"locations": {
 											"type": "array",
 											"maxItems": 20,
+											"items": {
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 200
+											},
+											"default": []
+										},
+										"excludeTitles": {
+											"type": "array",
+											"maxItems": 50,
 											"items": {
 												"type": "string",
 												"minLength": 1,

@@ -8,3 +8,4 @@ export * from "./web-access";
 export * from "./ai-content-report";
 
 export * from "./directory";
+export * from "./boards";

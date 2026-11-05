@@ -49,6 +49,8 @@ export const careerProfileDataSchema = z.object({
 	/** The kinds of role a resume is aimed at, such as Platform / reliability: the choices for an application's lanes. */
 	lanes: z.array(z.string().trim().min(1).max(100)).max(20).default([]),
 	locations: z.array(z.string().trim().min(1).max(200)).max(20).default([]),
+	/** "Leave out titles with": found roles whose title has one of these are hidden. */
+	excludeTitles: z.array(z.string().trim().min(1).max(200)).max(50).default([]),
 	/** "What matters to you", in the user's own words. */
 	priorities: z.string().max(4000).default(""),
 	minBase: z
@@ -409,7 +411,17 @@ export type GenerateTask = z.infer<typeof generateTaskSchema>;
  * read, so a later release can show the same notices in the reader's language (and any times in their timezone).
  */
 export const careerNoticeSchema = z.discriminatedUnion("type", [
-	z.object({ type: z.literal("opportunities"), count: z.number().int().min(1), query: z.string() }),
+	z.object({
+		type: z.literal("opportunities"),
+		count: z.number().int().min(1),
+		query: z.string(),
+		/** Board checks: their roles came from watched companies' job boards, not a search. */
+		source: z.enum(["search", "boards"]).optional(),
+		/** Board checks: companies whose board couldn't be read this run (their last postings are kept). */
+		failed: z.array(z.string()).optional(),
+	}),
+	/** A board check found nothing new, and some boards couldn't be read. */
+	z.object({ type: z.literal("boards-failed"), failed: z.array(z.string()) }),
 	z.object({ type: z.literal("briefing"), company: z.string(), role: z.string() }),
 	z.object({ type: z.literal("followup"), company: z.string(), role: z.string() }),
 	z.object({ type: z.literal("schedule-failed"), reason: z.enum(["stopped", "failed"]) }),
@@ -419,7 +431,8 @@ export const careerNoticeSchema = z.discriminatedUnion("type", [
 export type CareerNotice = z.infer<typeof careerNoticeSchema>;
 
 export const careerScheduleInputSchema = careerScopeSchema.extend({
-	kind: z.enum(["discovery", "prepare", "follow-up"]),
+	/** boards: the job boards of companies watched in the Directory, one schedule per account. */
+	kind: z.enum(["discovery", "boards", "prepare", "follow-up"]),
 	query: z.string().trim().max(500).default(""),
 	interviewId: z.string().nullable().default(null),
 	/** Prepare only: when the briefing runs relative to the interview. */

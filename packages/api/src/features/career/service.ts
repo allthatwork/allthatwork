@@ -8,6 +8,7 @@ import { db } from "@reactive-resume/db/client";
 import * as tables from "@reactive-resume/db/schema";
 import { buildMarkdown } from "@reactive-resume/resume/markdown";
 import { FOUND_BY_IN_APP_SEARCH } from "@reactive-resume/schema/applications/data";
+import { formatBoardPay, boardSourceName } from "@reactive-resume/schema/boards";
 import {
 	careerProfileDataSchema,
 	careerImportFactsInputSchema,
@@ -36,6 +37,7 @@ import {
 import { generateId } from "@reactive-resume/utils/string";
 import { requestRunCancellation } from "../agent/cancellation";
 import { applicationService, recordSentResume } from "../applications/service";
+import { linkApplicationDirectory } from "../directory/links";
 import { matchPosting } from "./matching";
 import { noticeText } from "./notices";
 
@@ -1628,19 +1630,32 @@ export const careerService = {
 			const [profile] = await tx.select().from(tables.careerProfile).where(eq(tables.careerProfile.userId, userId));
 			const { matches } = matchPosting(opportunity, careerProfileDataSchema.parse(profile?.data ?? {}));
 			const applicationId = generateId();
-			await tx.insert(tables.application).values({
-				id: applicationId,
-				userId,
-				company: opportunity.company || new URL(opportunity.url).hostname.replace(/^www\./, ""),
-				role: opportunity.role,
-				location: opportunity.location || null,
-				sourceUrl: opportunity.url,
-				jobDescription: opportunity.description || opportunity.snippet,
-				status: "saved",
-				activity: [{ id: generateId(), type: "stage", stage: "saved", at: new Date() }],
-				foundBy: FOUND_BY_IN_APP_SEARCH,
-				...(matches.length ? { searchNotes: `Matched: ${matches.join(" · ")}`, searchAt: new Date() } : {}),
-			});
+			const board = opportunity.source === "board";
+			const [created] = await tx
+				.insert(tables.application)
+				.values({
+					id: applicationId,
+					userId,
+					company: opportunity.company || new URL(opportunity.url).hostname.replace(/^www\./, ""),
+					role: opportunity.role,
+					location: opportunity.location || null,
+					sourceUrl: opportunity.url,
+					jobDescription: opportunity.description || opportunity.snippet,
+					status: "saved",
+					activity: [{ id: generateId(), type: "stage", stage: "saved", at: new Date() }],
+					foundBy: FOUND_BY_IN_APP_SEARCH,
+					...(matches.length ? { searchNotes: `Matched: ${matches.join(" · ")}`, searchAt: new Date() } : {}),
+					// A board find carries its pay, its company in the Directory and the board it came from.
+					...(board
+						? {
+								companyId: opportunity.companyId,
+								salary: formatBoardPay(opportunity.pay) || null,
+								source: boardSourceName(opportunity.url),
+							}
+						: {}),
+				})
+				.returning();
+			if (board && created) await linkApplicationDirectory(tx, created);
 			await tx
 				.update(tables.careerOpportunity)
 				.set({ trackedApplicationId: applicationId })

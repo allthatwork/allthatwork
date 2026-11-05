@@ -9,7 +9,20 @@ export function noticeText(notice: CareerNotice): { title: string; body: string 
 		case "opportunities":
 			return {
 				title: notice.count === 1 ? "1 new role to review" : `${notice.count} new roles to review`,
-				body: `Found by your search for “${notice.query}”. Review them before tracking any.`,
+				body:
+					notice.source === "boards"
+						? [
+								"From the job boards of companies you watch. Review them before tracking any.",
+								notice.failed?.length ? `Couldn't check ${notice.failed.join(", ")} this time.` : "",
+							]
+								.filter(Boolean)
+								.join(" ")
+						: `Found by your search for “${notice.query}”. Review them before tracking any.`,
+			};
+		case "boards-failed":
+			return {
+				title: "Some job boards couldn't be checked",
+				body: `Couldn't read the job board of ${notice.failed.join(", ")}. Their last postings are kept, and the next run tries again.`,
 			};
 		case "briefing":
 			return { title: `Your ${notice.company} briefing is ready`, body: `${notice.company} · ${notice.role}` };

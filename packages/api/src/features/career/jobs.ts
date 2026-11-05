@@ -1,16 +1,19 @@
-import type { careerScheduleInputSchema } from "@reactive-resume/schema/career";
+import type { CareerNotice, careerScheduleInputSchema } from "@reactive-resume/schema/career";
 import type z from "zod";
 import { ORPCError } from "@orpc/client";
-import { and, asc, desc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as tables from "@reactive-resume/db/schema";
 import { sendCareerNotification } from "@reactive-resume/email/transport";
 import { env } from "@reactive-resume/env/server";
+import { directoryKey } from "@reactive-resume/schema/directory";
 import { APP_NAME } from "@reactive-resume/utils/brand";
 import { generateId } from "@reactive-resume/utils/string";
 import { STALE_AGENT_RUN_TTL_MS } from "../agent/runs";
 import { aiProvidersService } from "../ai-providers/service";
 import { readOpenPosting, searchJobPostings } from "../applications/posting";
+import { hasExcludedWord, passesScreen } from "../boards/screen";
+import { checkBoards, saveFoundRoles } from "../boards/service";
 import { webAccessService } from "../web-access/credentials";
 import { generateCareer } from "./generate";
 import { matchPosting } from "./matching";
@@ -20,6 +23,7 @@ import { canonicalOpportunityUrl, nextCareerRun, parseListingTitle, plainSnippet
 import { careerService, requireCareerApplication } from "./service";
 
 const CAREER_URL = "/dashboard/career";
+const DIRECTORY_URL = "/dashboard/directory";
 const workspaceUrl = (applicationId: string | null, tab?: string) =>
 	applicationId ? `/dashboard/applications/${encodeURIComponent(applicationId)}${tab ? `/${tab}` : ""}` : CAREER_URL;
 
@@ -48,7 +52,17 @@ export const careerJobs = {
 			input.nextRunAt = prepareRunAt(new Date(interview.at), input.lead ?? "24h", input.timezone);
 		if (input.kind === "discovery" && !input.query)
 			throw new ORPCError("BAD_REQUEST", { message: "Supply a public job-search query." });
-		if (input.kind !== "discovery" && !input.applicationId)
+		// Board checks cover every watched board, so one schedule is enough.
+		if (input.kind === "boards") {
+			Object.assign(input, { query: "", applicationId: null, interviewId: null, lead: null, aiProviderId: null });
+			const [other] = await db
+				.select({ id: tables.careerSchedule.id })
+				.from(tables.careerSchedule)
+				.where(and(eq(tables.careerSchedule.userId, userId), eq(tables.careerSchedule.kind, "boards")));
+			if (other && other.id !== input.id)
+				throw new ORPCError("CONFLICT", { message: "You already have a board checks schedule. Edit that one." });
+		}
+		if (input.kind !== "discovery" && input.kind !== "boards" && !input.applicationId)
 			throw new ORPCError("BAD_REQUEST", { message: "Choose an application." });
 		if (input.kind === "prepare" && !input.interviewId)
 			throw new ORPCError("BAD_REQUEST", { message: "Choose an interview round." });
@@ -104,6 +118,25 @@ export const careerJobs = {
 			return row;
 		});
 	},
+	/** Board checks only: queue a run now, beside the schedule's own times. The runner picks it up within a minute. */
+	runNow: async (userId: string, id: string) => {
+		assertRunner();
+		const [schedule] = await db
+			.select()
+			.from(tables.careerSchedule)
+			.where(and(eq(tables.careerSchedule.id, id), eq(tables.careerSchedule.userId, userId)));
+		if (!schedule) throw new ORPCError("NOT_FOUND");
+		if (schedule.kind !== "boards")
+			throw new ORPCError("BAD_REQUEST", { message: "Only board checks can be run now." });
+		if (!schedule.enabled) throw new ORPCError("BAD_REQUEST", { message: "Turn this schedule on first." });
+		const [pending] = await db
+			.select({ id: tables.careerJob.id })
+			.from(tables.careerJob)
+			.where(and(eq(tables.careerJob.scheduleId, id), sql`${tables.careerJob.status} in ('queued', 'running')`))
+			.limit(1);
+		if (!pending)
+			await db.insert(tables.careerJob).values({ userId, scheduleId: id, dueAt: new Date() }).onConflictDoNothing();
+	},
 	delete: async (userId: string, id: string) => {
 		await db
 			.delete(tables.careerSchedule)
@@ -123,17 +156,72 @@ export const careerJobs = {
 			.set({ readAt: new Date() })
 			.where(and(eq(tables.careerNotification.id, id), eq(tables.careerNotification.userId, userId)));
 	},
-	/** Each role with the preferences its posting matches and what it leaves out; the posting text stays here. */
+	/**
+	 * Each open role with the preferences its posting matches, what it leaves out, and the company's Directory
+	 * contacts; the posting text stays here. Titles with a left-out word are hidden, and so are board finds that no
+	 * longer pass the screen after a Preferences change.
+	 */
 	opportunities: async (userId: string) => {
-		const [rows, profile] = await Promise.all([
+		const [rows, profile, companies, contacts] = await Promise.all([
 			db
 				.select()
 				.from(tables.careerOpportunity)
-				.where(and(eq(tables.careerOpportunity.userId, userId), isNull(tables.careerOpportunity.dismissedAt)))
+				.where(
+					and(
+						eq(tables.careerOpportunity.userId, userId),
+						isNull(tables.careerOpportunity.dismissedAt),
+						isNull(tables.careerOpportunity.closedAt),
+					),
+				)
 				.orderBy(desc(tables.careerOpportunity.lastSeenAt)),
 			careerService.profile(userId),
+			db
+				.select({ id: tables.company.id, key: tables.company.normalizedKey })
+				.from(tables.company)
+				.where(eq(tables.company.userId, userId)),
+			db
+				.select({
+					id: tables.contact.id,
+					name: tables.contact.name,
+					position: tables.contact.position,
+					companyId: tables.contact.companyId,
+				})
+				.from(tables.contact)
+				.where(and(eq(tables.contact.userId, userId), isNotNull(tables.contact.companyId)))
+				.orderBy(asc(tables.contact.name)),
 		]);
-		return rows.map(({ description, ...row }) => ({ ...row, ...matchPosting({ ...row, description }, profile) }));
+		const companyByKey = new Map(companies.map((row) => [row.key, row.id]));
+		const byCompany = new Map<string, { id: string; name: string; position: string }[]>();
+		for (const { companyId, ...person } of contacts) {
+			if (!companyId) continue;
+			const people = byCompany.get(companyId) ?? [];
+			if (people.length < 5) people.push(person);
+			byCompany.set(companyId, people);
+		}
+		const contactsOf = (companyId: string | null) => (companyId ? (byCompany.get(companyId) ?? []) : []);
+		return rows
+			.filter(
+				(row) =>
+					!hasExcludedWord(row.role, profile.excludeTitles) &&
+					(row.source !== "board" ||
+						row.trackedApplicationId !== null ||
+						passesScreen(
+							{
+								title: row.role,
+								location: row.location,
+								remote: row.remote,
+								workplace: null,
+								pay: row.pay,
+								description: row.description,
+							},
+							profile,
+						)),
+			)
+			.map(({ description, ...row }) => ({
+				...row,
+				...matchPosting({ ...row, description }, profile),
+				contacts: contactsOf(row.companyId ?? companyByKey.get(directoryKey(row.company)) ?? null),
+			}));
 	},
 	dismissOpportunity: async (userId: string, id: string) => {
 		await db
@@ -318,6 +406,7 @@ async function execute(job: typeof tables.careerJob.$inferSelect) {
 		interviewId: schedule.interviewId,
 	});
 	const results = schedule.kind === "discovery" ? await discover(job.userId, schedule.query) : [];
+	const boards = schedule.kind === "boards" ? await checkBoards(job.userId) : null;
 	if (schedule.kind === "prepare") {
 		if (!application || !schedule.interviewId) throw new Error("Preparation application unavailable.");
 		const [saved] = await db
@@ -405,8 +494,10 @@ async function execute(job: typeof tables.careerJob.$inferSelect) {
 				.returning();
 			if (inserted && posting && !existing) changed++;
 		}
+		if (boards) changed = await saveFoundRoles(tx, job.userId, boards.found);
+		const finds = schedule.kind === "discovery" || schedule.kind === "boards";
 		// New roles all wait in one list, so the newest "new roles" notice replaces older unread ones.
-		if (schedule.kind === "discovery" && changed)
+		if (finds && changed)
 			await tx
 				.update(tables.careerNotification)
 				.set({ readAt: new Date() })
@@ -417,22 +508,41 @@ async function execute(job: typeof tables.careerJob.$inferSelect) {
 						isNull(tables.careerNotification.readAt),
 					),
 				);
-		if (schedule.kind !== "discovery" || changed)
+		const failed = boards?.failed ?? [];
+		const notice: CareerNotice | null =
+			schedule.kind === "discovery"
+				? changed
+					? { type: "opportunities", count: changed, query: schedule.query }
+					: null
+				: boards
+					? changed
+						? {
+								type: "opportunities",
+								count: changed,
+								query: "",
+								source: "boards",
+								...(failed.length ? { failed } : {}),
+							}
+						: failed.length
+							? { type: "boards-failed", failed }
+							: null
+					: {
+							type: schedule.kind === "prepare" ? "briefing" : "followup",
+							company: application?.company ?? "",
+							role: application?.role ?? "",
+						};
+		if (notice)
 			await tx
 				.insert(tables.careerNotification)
 				.values({
 					userId: job.userId,
 					applicationId: schedule.applicationId,
 					key: job.id,
-					notice:
-						schedule.kind === "discovery"
-							? { type: "opportunities", count: changed, query: schedule.query }
-							: {
-									type: schedule.kind === "prepare" ? "briefing" : "followup",
-									company: application?.company ?? "",
-									role: application?.role ?? "",
-								},
-					url: workspaceUrl(schedule.applicationId, schedule.kind === "prepare" ? "prepare" : undefined),
+					notice,
+					url:
+						notice.type === "boards-failed"
+							? DIRECTORY_URL
+							: workspaceUrl(schedule.applicationId, schedule.kind === "prepare" ? "prepare" : undefined),
 				})
 				.onConflictDoNothing();
 		await tx
