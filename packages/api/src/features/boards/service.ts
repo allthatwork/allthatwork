@@ -362,8 +362,8 @@ async function candidate(ref: BoardRef, signal: AbortSignal): Promise<BoardCandi
 
 const refKey = (ref: BoardRef) => `${ref.ats}:${boardApiHost(ref)}:${ref.slug.toLowerCase()}`;
 
-/** Boards named by the company's own posting links on file (its applications' posting addresses). */
-async function detectedRefs(userId: string, companyIds: string[]) {
+/** Boards named by the companies' own posting links on file (their applications' posting addresses); all: every company. */
+async function detectedRefs(userId: string, companyIds: string[] | "all") {
 	if (!companyIds.length) return new Map<string, BoardRef[]>();
 	const rows = await db
 		.select({ companyId: tables.application.companyId, url: tables.application.sourceUrl })
@@ -371,7 +371,9 @@ async function detectedRefs(userId: string, companyIds: string[]) {
 		.where(
 			and(
 				eq(tables.application.userId, userId),
-				inArray(tables.application.companyId, companyIds),
+				companyIds === "all"
+					? isNotNull(tables.application.companyId)
+					: inArray(tables.application.companyId, companyIds),
 				isNotNull(tables.application.sourceUrl),
 			),
 		);
@@ -386,12 +388,69 @@ async function detectedRefs(userId: string, companyIds: string[]) {
 	return new Map([...byCompany].map(([id, refs]) => [id, [...refs.values()]]));
 }
 
+/** Open roles on boards already stored (shared), without reading them again: null for one never read. */
+async function storedJobCounts(refs: BoardRef[]) {
+	const counts = new Map<string, number | null>();
+	if (!refs.length) return counts;
+	const rows = await db
+		.select({
+			ats: tables.jobBoard.ats,
+			host: tables.jobBoard.host,
+			slug: tables.jobBoard.slug,
+			jobCount: tables.jobBoard.jobCount,
+		})
+		.from(tables.jobBoard)
+		.where(
+			inArray(
+				tables.jobBoard.slug,
+				refs.map((ref) => ref.slug),
+			),
+		);
+	for (const row of rows) counts.set(refKey(refOf(row)), row.jobCount);
+	return counts;
+}
+
+export type CompanyJobs = {
+	/** Watched boards, earliest confirmed first, with their open roles at the last check. */
+	watching: (BoardRef & { jobCount: number | null })[];
+	/** The first board a posting link on file points at that isn't watched, to confirm. */
+	found: BoardRef | null;
+};
+
 export const boardsService = {
+	/** Every company's Jobs state for the Directory list, in one go: watched boards and one found to confirm. */
+	jobsByCompany: async (userId: string) => {
+		const [watched, detected] = await Promise.all([watchedBy(userId), detectedRefs(userId, "all")]);
+		const jobs = new Map<string, CompanyJobs>();
+		const entry = (companyId: string) => {
+			let found = jobs.get(companyId);
+			if (!found) {
+				found = { watching: [], found: null };
+				jobs.set(companyId, found);
+			}
+			return found;
+		};
+		const watchedKeys = new Set<string>();
+		for (const { watch, board } of watched.toSorted(
+			(a, b) => a.watch.confirmedAt.getTime() - b.watch.confirmedAt.getTime(),
+		)) {
+			entry(watch.companyId).watching.push({ ...refOf(board), jobCount: board.jobCount });
+			watchedKeys.add(`${watch.companyId}|${refKey(refOf(board))}`);
+		}
+		for (const [companyId, refs] of detected) {
+			const ref = refs.find((item) => !watchedKeys.has(`${companyId}|${refKey(item)}`));
+			if (ref) entry(companyId).found = ref;
+		}
+		return jobs;
+	},
+
 	/** A company's watched boards, and boards its posting links point at that aren't watched yet. */
 	company: async (userId: string, companyId: string) => {
 		await ownedCompany(db, userId, companyId);
 		const [watched, detected] = await Promise.all([watchedBy(userId, companyId), detectedRefs(userId, [companyId])]);
 		const watchedKeys = new Set(watched.map(({ board }) => refKey(refOf(board))));
+		const unwatched = (detected.get(companyId) ?? []).filter((ref) => !watchedKeys.has(refKey(ref)));
+		const counts = await storedJobCounts(unwatched);
 		return {
 			watched: watched.map(({ watch, board }) => ({
 				id: watch.id,
@@ -404,9 +463,7 @@ export const boardsService = {
 				error: board.error,
 				url: boardPageUrl(refOf(board)),
 			})),
-			detected: (detected.get(companyId) ?? [])
-				.filter((ref) => !watchedKeys.has(refKey(ref)))
-				.map((ref) => ({ ...ref, url: boardPageUrl(ref) })),
+			detected: unwatched.map((ref) => ({ ...ref, url: boardPageUrl(ref), jobCount: counts.get(refKey(ref)) ?? null })),
 		};
 	},
 
@@ -460,7 +517,9 @@ export const boardsService = {
 		await ownedCompany(db, userId, input.companyId);
 		const board = await refreshBoard(await boardRow(input));
 		if (!board.fetchedAt)
-			throw new ORPCError("BAD_REQUEST", { message: "Couldn't read this job board. Check the link and try again." });
+			throw new ORPCError("BAD_REQUEST", {
+				message: "Couldn't read this company's jobs page. Check the link and try again.",
+			});
 		const watched = await db.transaction(async (tx) => {
 			await lockDirectoryOwner(tx, userId);
 			await tx

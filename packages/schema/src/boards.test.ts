@@ -83,6 +83,6 @@ describe("formatBoardPay and boardSourceName", () => {
 
 	it("names the board's ATS", () => {
 		expect(boardSourceName("https://jobs.ashbyhq.com/linear/1")).toBe("Ashby");
-		expect(boardSourceName("https://acme.example/jobs?gh_jid=1")).toBe("Job board");
+		expect(boardSourceName("https://acme.example/jobs?gh_jid=1")).toBe("Careers page");
 	});
 });

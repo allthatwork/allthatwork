@@ -86,9 +86,9 @@ export const careerRouter = {
 			path: "/career/schedules/{id}/run",
 			tags: ["Career"],
 			operationId: "runCareerSchedule",
-			summary: "Run board checks now",
+			summary: "Check watched companies now",
 			description:
-				"Queues a run of the account's board checks schedule now, beside its own times. The scheduler starts it within a minute. Only board checks can be run this way.",
+				"Queues a run of the account's Watched companies schedule (kind boards) now, beside its own times. The scheduler starts it within a minute. Only that schedule can be run this way.",
 		})
 		.input(id)
 		.output(z.void())

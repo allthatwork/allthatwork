@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import * as schema from "@reactive-resume/db/schema";
 import { interviewParticipantSchema } from "@reactive-resume/schema/applications/data";
 import { directoryKey } from "@reactive-resume/schema/directory";
+import { contactNames } from "@reactive-resume/schema/directory-names";
 
 export async function lockDirectoryOwner(tx: DbOrTx, userId: string) {
 	const [owner] = await tx
@@ -80,6 +81,8 @@ export async function linkApplicationDirectory(tx: DbOrTx, row: Application) {
 		link: {
 			contactId?: string | undefined;
 			name: string;
+			firstName?: string | undefined;
+			lastName?: string | undefined;
 			role?: string | undefined;
 			email?: string | undefined;
 			phone?: string | undefined;
@@ -89,6 +92,10 @@ export async function linkApplicationDirectory(tx: DbOrTx, row: Application) {
 		sourceId: string,
 	) => {
 		if (link.contactId) return ownedContact(tx, row.userId, link.contactId);
+		// Name parts from a new person's form; without them (older clients) the name is the first name.
+		const parts = contactNames(link);
+		const names = parts?.name && parts.name.length <= 200 ? parts : null;
+		const name = names?.name ?? link.name;
 		const [existing] = await tx
 			.select()
 			.from(schema.contact)
@@ -96,7 +103,7 @@ export async function linkApplicationDirectory(tx: DbOrTx, row: Application) {
 				and(
 					eq(schema.contact.userId, row.userId),
 					eq(schema.contact.companyId, company.id),
-					eq(schema.contact.normalizedKey, directoryKey(link.name)),
+					eq(schema.contact.normalizedKey, directoryKey(name)),
 				),
 			);
 		const sources = [...(existing?.sources ?? [])];
@@ -116,8 +123,10 @@ export async function linkApplicationDirectory(tx: DbOrTx, row: Application) {
 						...values,
 						userId: row.userId,
 						companyId: company.id,
-						name: link.name,
-						normalizedKey: directoryKey(link.name),
+						firstName: names?.firstName ?? link.name,
+						lastName: names?.lastName ?? "",
+						name,
+						normalizedKey: directoryKey(name),
 					})
 					.returning();
 		if (!saved) throw new ORPCError("INTERNAL_SERVER_ERROR");

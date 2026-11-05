@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { m } from "motion/react";
 import { useId, useMemo, useState } from "react";
 import { interviewDetailsSchema, interviewParticipantSchema } from "@reactive-resume/schema/applications/data";
+import { contactFullName } from "@reactive-resume/schema/directory-names";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@reactive-resume/ui/components/dialog";
 import { Icon } from "@reactive-resume/ui/components/icon";
@@ -83,7 +84,16 @@ type Draft = {
 	/** Not shown any more; kept so saving doesn't reset it. */
 	audience: InterviewTimelineEntry["audience"];
 	timezone: string;
-	participants: { id: string; contactId?: string | undefined; name: string; role: string; profileUrl: string }[];
+	/** A new person has first and last name; a Directory contact keeps its name, read-only. */
+	participants: {
+		id: string;
+		contactId?: string | undefined;
+		name: string;
+		firstName: string;
+		lastName: string;
+		role: string;
+		profileUrl: string;
+	}[];
 };
 
 // New interviews default to the given day (or tomorrow) at 09:00 in the timezone, or the next full hour if that's past.
@@ -120,6 +130,8 @@ const draftFrom = (applicationId: string, interview: InterviewTimelineEntry, fal
 			id: generateId(),
 			contactId: participant.contactId,
 			name: participant.name,
+			firstName: participant.name,
+			lastName: "",
 			role: participant.role,
 			profileUrl: participant.profileUrl ?? "",
 		})),
@@ -218,10 +230,15 @@ export function InterviewDialog({
 	const details = interviewDetailsSchema.safeParse({
 		...draft,
 		participants: draft.participants
+			.map((participant) => ({
+				...participant,
+				name: participant.contactId ? participant.name : contactFullName(participant.firstName, participant.lastName),
+			}))
 			.filter(({ name }) => name.trim())
-			.map(({ contactId, name, role, profileUrl }) => ({
+			.map(({ contactId, name, firstName, lastName, role, profileUrl }) => ({
 				contactId,
 				name,
+				...(contactId ? {} : { firstName, lastName }),
 				role,
 				...(profileUrl.trim() ? { profileUrl: profileUrl.trim() } : {}),
 			})),
@@ -230,6 +247,15 @@ export function InterviewDialog({
 	const canSave = !!at && !!draft.applicationId && details.success && !pending;
 	const showZone = otherZone || draft.timezone !== preferredZone;
 	const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((prev) => ({ ...prev, [key]: value }));
+	const roleInput = (participant: Draft["participants"][number], index: number) => (
+		<Input
+			aria-label={t`Role of person ${index + 1}`}
+			placeholder={t`Role`}
+			value={participant.role}
+			maxLength={200}
+			onChange={(event) => setParticipant(participant.id, { role: event.target.value })}
+		/>
+	);
 	const setParticipant = (participantId: string, patch: Partial<Draft["participants"][number]>) =>
 		setDraft((prev) => ({
 			...prev,
@@ -442,6 +468,8 @@ export function InterviewDialog({
 										id: generateId(),
 										contactId: person.id,
 										name: person.name,
+										firstName: person.firstName,
+										lastName: person.lastName,
 										role: "",
 										profileUrl:
 											person.profileLinks.find(
@@ -453,21 +481,27 @@ export function InterviewDialog({
 						/>
 						{draft.participants.map((participant, index) => (
 							<div key={participant.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_32px] gap-2">
-								<Input
-									aria-label={t`Name of person ${index + 1}`}
-									placeholder={t`Name`}
-									value={participant.name}
-									maxLength={200}
-									readOnly={!!participant.contactId}
-									onChange={(event) => setParticipant(participant.id, { name: event.target.value })}
-								/>
-								<Input
-									aria-label={t`Role of person ${index + 1}`}
-									placeholder={t`Role`}
-									value={participant.role}
-									maxLength={200}
-									onChange={(event) => setParticipant(participant.id, { role: event.target.value })}
-								/>
+								{participant.contactId ? (
+									<Input aria-label={t`Name of person ${index + 1}`} value={participant.name} readOnly />
+								) : (
+									<>
+										<Input
+											aria-label={t`First name of person ${index + 1}`}
+											placeholder={t`First name`}
+											value={participant.firstName}
+											maxLength={200}
+											onChange={(event) => setParticipant(participant.id, { firstName: event.target.value })}
+										/>
+										<Input
+											aria-label={t`Last name of person ${index + 1}`}
+											placeholder={t`Last name`}
+											value={participant.lastName}
+											maxLength={200}
+											onChange={(event) => setParticipant(participant.id, { lastName: event.target.value })}
+										/>
+									</>
+								)}
+								{participant.contactId && roleInput(participant, index)}
 								<IconButton
 									icon="x"
 									iconSize={18}
@@ -480,11 +514,12 @@ export function InterviewDialog({
 										)
 									}
 								/>
+								{!participant.contactId && roleInput(participant, index)}
 								<Input
 									type="url"
 									aria-label={t`Profile link of person ${index + 1}`}
 									placeholder={t`Profile link (optional)`}
-									className="col-span-2"
+									className={participant.contactId ? "col-span-2" : undefined}
 									value={participant.profileUrl}
 									readOnly={!!participant.contactId}
 									maxLength={2048}
@@ -503,7 +538,10 @@ export function InterviewDialog({
 							className="w-fit text-ink-2"
 							disabled={draft.participants.length >= 20}
 							onClick={() =>
-								set("participants", [...draft.participants, { id: generateId(), name: "", role: "", profileUrl: "" }])
+								set("participants", [
+									...draft.participants,
+									{ id: generateId(), name: "", firstName: "", lastName: "", role: "", profileUrl: "" },
+								])
 							}
 						>
 							<Icon name="user-plus" size={18} />

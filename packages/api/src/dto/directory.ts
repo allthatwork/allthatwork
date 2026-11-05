@@ -1,6 +1,7 @@
 import { createSelectSchema } from "drizzle-zod";
 import z from "zod";
 import * as schema from "@reactive-resume/db/schema";
+import { boardAtsSchema, boardRegionSchema } from "@reactive-resume/schema/boards";
 import { companyFieldsSchema, contactFieldsSchema, directorySourceSchema } from "@reactive-resume/schema/directory";
 import { linkedInImportSchema } from "@reactive-resume/schema/directory-import";
 
@@ -28,7 +29,33 @@ export const directoryDto = {
 			companiesCreated: z.number(),
 		}),
 	},
-	companies: { input: query, output: z.array(company) },
+	companies: {
+		input: query,
+		output: z.array(
+			company.extend({
+				contactCount: z.number().int(),
+				applicationCount: z.number().int(),
+				jobs: z
+					.object({
+						watching: z
+							.array(
+								z.object({
+									ats: boardAtsSchema,
+									region: boardRegionSchema,
+									slug: z.string(),
+									jobCount: z.number().int().nullable(),
+								}),
+							)
+							.describe("Watched job pages, earliest confirmed first, with open roles at the last check."),
+						found: z
+							.object({ ats: boardAtsSchema, region: boardRegionSchema, slug: z.string() })
+							.nullable()
+							.describe("A job page a posting link on file points at that isn't watched yet, to confirm."),
+					})
+					.describe("Where the company's jobs are watched or found."),
+			}),
+		),
+	},
 	company: {
 		input: id,
 		output: z.object({ company, contacts: z.array(contact), applications: z.array(applicationSummary) }),
@@ -50,7 +77,13 @@ export const directoryDto = {
 			),
 		}),
 	},
-	createContact: { input: contactFieldsSchema, output: contact },
+	createContact: {
+		input: contactFieldsSchema.refine(
+			(fields) => !!(fields.firstName?.trim() || fields.lastName?.trim() || fields.name?.trim()),
+			{ message: "Enter a first or last name.", path: ["firstName"] },
+		),
+		output: contact,
+	},
 	updateContact: { input: contactFieldsSchema.partial().extend(id.shape), output: contact },
 	deleteContact: { input: id, output: z.void() },
 	deleteAllContacts: { input: z.object({ confirm: z.literal(true) }), output: z.void() },

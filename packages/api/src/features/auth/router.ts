@@ -242,7 +242,7 @@ export const authRouter = {
 				coverLetters: z.array(coverLetterSchema),
 				applications: z.array(applicationDto.getById.output),
 				directory: z.object({
-					companies: directoryDto.companies.output,
+					companies: z.array(directoryDto.company.output.shape.company),
 					contacts: directoryDto.contacts.output,
 					employment: directoryDto.contact.output.shape.employment,
 					notes: directoryDto.contact.output.shape.notes,

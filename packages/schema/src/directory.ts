@@ -18,7 +18,11 @@ export const companyFieldsSchema = z.object({
 });
 export const contactFieldsSchema = z.object({
 	companyId: z.string().min(1).nullable().default(null),
-	name: text(200).min(1),
+	/** The full name, rebuilt from first and last name on every save. Sent alone (older clients), it's the first name. */
+	name: text(200).optional(),
+	// No defaults: an update that leaves a part out keeps it.
+	firstName: text(200).optional(),
+	lastName: text(200).optional(),
 	position: text(300).default(""),
 	profileLinks: z.array(webUrl).max(20).default([]),
 	emails: z.array(z.email().max(320)).max(20).default([]),

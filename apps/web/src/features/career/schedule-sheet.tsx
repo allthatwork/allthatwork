@@ -41,7 +41,7 @@ const KINDS: readonly Kind[] = ["discovery", "boards", "prepare", "follow-up"];
 export function scheduleKind(kind: string): { icon: IconName; title: string } {
 	if (kind === "prepare") return { icon: "graduation-cap", title: t`Interview preparation` };
 	if (kind === "follow-up") return { icon: "bell", title: t`Follow-up reminder` };
-	if (kind === "boards") return { icon: "briefcase", title: t`Board checks` };
+	if (kind === "boards") return { icon: "briefcase", title: t`Watched companies` };
 	return { icon: "globe-simple", title: t`Opportunity discovery` };
 }
 
@@ -152,7 +152,7 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 	const [form, setForm] = useState<Form | null>(null);
 	if (shown && form?.target !== shown && schedules && profile && applications && !providersLoading) {
 		const [head, kind, applicationId] = shown.split(":");
-		// Board checks are one schedule per account: a new one opens the existing one.
+		// Watched companies (kind boards) is one schedule per account: a new one opens the existing one.
 		const boards = kind === "boards" ? schedules.find((row) => row.kind === "boards") : undefined;
 		const existing = boards ?? (head === "new" ? null : (schedules.find((row) => row.id === shown) ?? null));
 		const at = existing
@@ -292,7 +292,7 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 							onChange={(kind) => set({ kind: kind as Kind })}
 							options={[
 								{ value: "discovery", label: t`Find roles` },
-								{ value: "boards", label: t`Check boards` },
+								{ value: "boards", label: t`Watched companies` },
 								{ value: "prepare", label: t`Prepare` },
 								{ value: "follow-up", label: t`Remind me` },
 							]}
@@ -354,9 +354,9 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 										<Icon name="briefcase" size={18} className="mt-px shrink-0 text-info-text" />
 										<span>
 											<Trans>
-												Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles
-												that match your target roles, places, pay and office days wait in Today for your review. No AI,
-												and no web search service needed.
+												Checks the companies you watch in the Directory for new roles on Greenhouse, Ashby and Lever.
+												Roles that match your target roles, places, pay and office days wait in Today for your review.
+												No AI, and no web search service needed.
 											</Trans>{" "}
 											<Link
 												to="/dashboard/directory"
@@ -370,13 +370,14 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 									{profile && profile.targetRoles.length === 0 && (
 										<p className="-mt-2 text-xs text-warn-text">
 											<Trans>
-												Add target roles in Preferences first: board checks only bring roles whose title matches one.
+												Add target roles in Preferences first: watched companies only bring roles whose title matches
+												one.
 											</Trans>
 										</p>
 									)}
 									{otherBoards && (
 										<p className="-mt-2 text-xs text-warn-text">
-											<Trans>You already have a board checks schedule. Edit that one instead.</Trans>
+											<Trans>You already have a Watched companies schedule. Edit that one instead.</Trans>
 										</p>
 									)}
 								</>

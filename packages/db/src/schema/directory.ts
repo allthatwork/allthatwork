@@ -41,7 +41,11 @@ export const contact = pg.pgTable(
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
 		companyId: pg.text("company_id").references(() => company.id, { onDelete: "set null" }),
+		/** The full name, rebuilt from first and last name on every save. */
 		name: pg.text("name").notNull(),
+		/** Contacts sort and group by last name; one-name people and contacts from before the split have none. */
+		firstName: pg.text("first_name").notNull().default(""),
+		lastName: pg.text("last_name").notNull().default(""),
 		normalizedKey: pg.text("normalized_key").notNull(),
 		position: pg.text("position").notNull().default(""),
 		profileLinks: pg.text("profile_links").array().notNull().default([]),

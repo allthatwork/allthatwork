@@ -6,7 +6,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as tables from "@reactive-resume/db/schema";
 import { contactSchema, interviewDetailsSchema } from "@reactive-resume/schema/applications/data";
-import { contactFieldsSchema } from "@reactive-resume/schema/directory";
+import { companyFieldsSchema, contactFieldsSchema } from "@reactive-resume/schema/directory";
 import { accountImportDto } from "../../dto/account-import";
 
 const fixture = vi.hoisted(() => ({ db: undefined as ReturnType<typeof drizzle> | undefined }));
@@ -109,6 +109,10 @@ suite("Directory migration and account boundaries", () => {
 		expect(people).toHaveLength(1);
 		const person = people[0];
 		expect(person).toMatchObject({
+			// The migration keeps the whole name as the first name; no guessing at a last name.
+			name: "Alice Example",
+			firstName: "Alice Example",
+			lastName: "",
 			position: "Engineer",
 			emails: expect.arrayContaining(["alice@example.test", "alice@work.test"]),
 			phones: expect.arrayContaining(["123", "456"]),
@@ -465,13 +469,182 @@ suite("Directory migration and account boundaries", () => {
 		expect(await service.contacts({ userId, query: "Jordan Twin" })).toHaveLength(3);
 	});
 
+	it("saves first and last name, rebuilds the full name, and takes a lone name as the first name", async () => {
+		const created = await service.createContact({
+			userId,
+			...contactFieldsSchema.parse({ firstName: " Jan ", lastName: "de Vries" }),
+		});
+		expect(created).toMatchObject({
+			firstName: "Jan",
+			lastName: "de Vries",
+			name: "Jan de Vries",
+			normalizedKey: "jan de vries",
+		});
+		const renamed = await service.updateContact({ userId, id: created.id, lastName: "Kowalski" });
+		expect(renamed).toMatchObject({ firstName: "Jan", lastName: "Kowalski", name: "Jan Kowalski" });
+		// Updates that don't name the contact keep its names.
+		expect(await service.updateContact({ userId, id: created.id, position: "Architect" })).toMatchObject({
+			name: "Jan Kowalski",
+			lastName: "Kowalski",
+		});
+		// Older clients and MCP send a lone name.
+		expect(await service.updateContact({ userId, id: created.id, name: "Jan Nowak" })).toMatchObject({
+			firstName: "Jan Nowak",
+			lastName: "",
+			name: "Jan Nowak",
+		});
+		expect(await service.createContact({ userId, ...contactFieldsSchema.parse({ name: "Teodora" }) })).toMatchObject({
+			firstName: "Teodora",
+			lastName: "",
+			name: "Teodora",
+		});
+		await expect(
+			service.createContact({ userId, ...contactFieldsSchema.parse({ firstName: " ", lastName: "" }) }),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		await expect(service.updateContact({ userId, id: created.id, firstName: "", lastName: "" })).rejects.toMatchObject({
+			code: "BAD_REQUEST",
+		});
+		await expect(
+			service.updateContact({ userId, id: created.id, firstName: "A".repeat(150), lastName: "B".repeat(150) }),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+	});
+
+	it("makes a new person from an application's name parts", async () => {
+		const id = await applications.create({
+			userId,
+			company: "Halcyon Health",
+			role: "SRE",
+			contacts: [contactSchema.parse({ name: "Brianna Chu", firstName: "Brianna", lastName: "Chu" })],
+		});
+		const link = (await applications.getById({ userId, id })).contacts[0];
+		expect(link).not.toHaveProperty("firstName");
+		const person = await service.contact({ userId, id: link?.contactId ?? "" });
+		expect(person.contact).toMatchObject({ firstName: "Brianna", lastName: "Chu", name: "Brianna Chu" });
+	});
+
+	it("fills first and last name on a LinkedIn re-import matched by profile", async () => {
+		const { importLinkedInContacts } = await import("./linkedin");
+		const { linkedInConnectionSchema } = await import("@reactive-resume/schema/directory-import");
+		const profileUrl = "https://linkedin.com/in/priya-menon-test";
+		const legacy = linkedInConnectionSchema.parse({ name: "Priya Menon, PMP", profileUrl });
+		await importLinkedInContacts(userId, {
+			importEmails: false,
+			companies: [],
+			rows: [{ connection: legacy, action: "create" }],
+		});
+		const before = (await service.contacts({ userId, query: "Priya Menon" }))[0];
+		expect(before).toMatchObject({ firstName: "Priya Menon, PMP", lastName: "" });
+		const connection = linkedInConnectionSchema.parse({
+			name: "Priya Menon, PMP",
+			firstName: "Priya",
+			lastName: "Menon, PMP",
+			profileUrl,
+		});
+		expect(
+			await importLinkedInContacts(userId, {
+				importEmails: false,
+				companies: [],
+				rows: [{ connection, action: "update", contactId: before?.id ?? "", expectedUpdatedAt: before?.updatedAt }],
+			}),
+		).toMatchObject({ updated: 1, created: 0 });
+		const after = await service.contacts({ userId, query: "Priya Menon" });
+		expect(after).toHaveLength(1);
+		expect(after[0]).toMatchObject({
+			id: before?.id,
+			firstName: "Priya",
+			lastName: "Menon, PMP",
+			name: "Priya Menon, PMP",
+		});
+	});
+
+	it("lists companies with contact and application counts and their Jobs state", async () => {
+		const db = getDb();
+		const watched = await service.createCompany({
+			userId,
+			...companyFieldsSchema.parse({ name: "Bluepeak Robotics" }),
+		});
+		const found = await service.createCompany({ userId, ...companyFieldsSchema.parse({ name: "Kestrel Data" }) });
+		await service.createContact({
+			userId,
+			...contactFieldsSchema.parse({ firstName: "Andrés", lastName: "Molina", companyId: found.id }),
+		});
+		await service.createContact({
+			userId,
+			...contactFieldsSchema.parse({ firstName: "Farah", lastName: "Nasser", companyId: found.id }),
+		});
+		await db.insert(tables.application).values({
+			userId,
+			company: "Kestrel Data",
+			companyId: found.id,
+			role: "Engineer",
+			sourceUrl: "https://job-boards.greenhouse.io/kestrel/jobs/123",
+		});
+		const [lever, ashby] = await db
+			.insert(tables.jobBoard)
+			.values([
+				{ ats: "lever", host: "api.lever.co", slug: "bluepeak", jobCount: 22 },
+				{ ats: "ashby", host: "api.ashbyhq.com", slug: "bluepeak-eng", jobCount: null },
+			])
+			.returning();
+		await db.insert(tables.companyBoard).values([
+			{ userId, companyId: watched.id, boardId: lever?.id ?? "", source: "link", confirmedAt: new Date("2026-10-01") },
+			{ userId, companyId: watched.id, boardId: ashby?.id ?? "", source: "guess", confirmedAt: new Date("2026-10-02") },
+		]);
+		const rows = await service.companies({ userId });
+		expect(rows.find((row) => row.id === watched.id)).toMatchObject({
+			contactCount: 0,
+			applicationCount: 0,
+			jobs: {
+				watching: [
+					{ ats: "lever", slug: "bluepeak", jobCount: 22 },
+					{ ats: "ashby", slug: "bluepeak-eng", jobCount: null },
+				],
+				found: null,
+			},
+		});
+		expect(rows.find((row) => row.id === found.id)).toMatchObject({
+			contactCount: 2,
+			applicationCount: 1,
+			jobs: { watching: [], found: { ats: "greenhouse", slug: "kestrel" } },
+		});
+		// Another account's watches and counts never show.
+		expect((await service.companies({ userId: otherId })).every((row) => row.jobs.watching.length === 0)).toBe(true);
+	});
+
+	it("round-trips first and last name through an export, and reads an older export's name as the first name", async () => {
+		const { accountImportService } = await import("../account-import/service");
+		const source = await service.exportData(userId);
+		const exported = source.contacts.find((row) => row.lastName === "Molina");
+		expect(exported).toMatchObject({ firstName: "Andrés", lastName: "Molina" });
+		const { firstName: _first, lastName: _last, ...older } = exported ?? { firstName: "", lastName: "" };
+		const result = await accountImportService.run(
+			otherId,
+			accountImportDto.run.input.parse({
+				area: "directory",
+				mode: "append",
+				companies: [],
+				contacts: [exported, { ...older, id: "older-export", name: "Old Style Name" }],
+				employment: [],
+				notes: [],
+			}),
+		);
+		const restored = await service.contact({ userId: otherId, id: result.ids.contact?.[exported?.id ?? ""] ?? "" });
+		expect(restored.contact).toMatchObject({ firstName: "Andrés", lastName: "Molina", name: "Andrés Molina" });
+		const old = await service.contact({ userId: otherId, id: result.ids.contact?.["older-export"] ?? "" });
+		expect(old.contact).toMatchObject({ firstName: "Old Style Name", lastName: "", name: "Old Style Name" });
+	});
+
 	it("deletes all contacts only for the current account and keeps its applications and companies", async () => {
 		const othersBefore = await service.contacts({ userId: otherId });
 		const companiesBefore = await service.companies({ userId });
 		await service.deleteAllContacts({ userId, confirm: true });
 		expect(await service.contacts({ userId })).toEqual([]);
 		expect(await service.contacts({ userId: otherId })).toEqual(othersBefore);
-		expect(await service.companies({ userId })).toEqual(companiesBefore);
+		const ids = (rows: { id: string; name: string; applicationCount: number }[]) =>
+			rows.map(({ id, name, applicationCount }) => ({ id, name, applicationCount }));
+		const companiesAfter = await service.companies({ userId });
+		expect(ids(companiesAfter)).toEqual(ids(companiesBefore));
+		expect(companiesAfter.every((row) => row.contactCount === 0)).toBe(true);
 		const rows = await getDb().select().from(tables.application).where(eq(tables.application.userId, userId));
 		expect(rows.length).toBeGreaterThan(0);
 		expect(

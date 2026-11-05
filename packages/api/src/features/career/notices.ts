@@ -12,7 +12,7 @@ export function noticeText(notice: CareerNotice): { title: string; body: string 
 				body:
 					notice.source === "boards"
 						? [
-								"From the job boards of companies you watch. Review them before tracking any.",
+								"From the companies you watch. Review them before tracking any.",
 								notice.failed?.length ? `Couldn't check ${notice.failed.join(", ")} this time.` : "",
 							]
 								.filter(Boolean)
@@ -21,8 +21,8 @@ export function noticeText(notice: CareerNotice): { title: string; body: string 
 			};
 		case "boards-failed":
 			return {
-				title: "Some job boards couldn't be checked",
-				body: `Couldn't read the job board of ${notice.failed.join(", ")}. Their last postings are kept, and the next run tries again.`,
+				title: "Some watched companies couldn't be checked",
+				body: `Couldn't read the open roles of ${notice.failed.join(", ")}. Their last postings are kept, and the next run tries again.`,
 			};
 		case "briefing":
 			return { title: `Your ${notice.company} briefing is ready`, body: `${notice.company} · ${notice.role}` };

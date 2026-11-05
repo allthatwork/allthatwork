@@ -1,6 +1,7 @@
 import type { LinkedInConnection } from "@reactive-resume/schema/directory-import";
 import { unzipSync } from "fflate";
 import { linkedInConnectionSchema, linkedInProfileKey } from "@reactive-resume/schema/directory-import";
+import { cleanImportedText, contactFullName } from "@reactive-resume/schema/directory-names";
 
 const MAX_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_CSV_BYTES = 20 * 1024 * 1024;
@@ -92,7 +93,11 @@ export function parseLinkedInConnectionsCsv(text: string): LinkedInConnectionsFi
 	const seen = new Set<string>();
 	for (const cells of rows) {
 		const cell = (name: string) => (cells[column(name)] ?? "").trim();
-		const name = [cell("First Name"), cell("Last Name")].filter(Boolean).join(" ");
+		// LinkedIn names and headlines often carry emoji and symbols; first and last name stay apart.
+		const clean = (name: string) => cleanImportedText(cell(name));
+		const firstName = clean("First Name");
+		const lastName = clean("Last Name");
+		const name = contactFullName(firstName, lastName);
 		const profileUrl = linkedInProfileKey(cell("URL"));
 		if (!name || !profileUrl) {
 			result.skipped++;
@@ -111,9 +116,11 @@ export function parseLinkedInConnectionsCsv(text: string): LinkedInConnectionsFi
 		if (cell("Connected On") && !connectedOn) result.invalidDates++;
 		const parsed = linkedInConnectionSchema.safeParse({
 			name,
+			firstName,
+			lastName,
 			profileUrl,
-			company: cell("Company"),
-			position: cell("Position"),
+			company: clean("Company"),
+			position: clean("Position"),
 			email,
 			connectedOn,
 		});

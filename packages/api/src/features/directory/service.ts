@@ -1,10 +1,11 @@
 import type { directoryDto } from "../../dto/directory";
 import type z from "zod";
 import { ORPCError } from "@orpc/server";
-import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { directoryKey } from "@reactive-resume/schema/directory";
+import { contactNames } from "@reactive-resume/schema/directory-names";
 import { boardsService } from "../boards/service";
 import { ensureCompany, lockDirectoryOwner, ownedCompany, ownedContact, refreshContactLinks } from "./links";
 
@@ -13,19 +14,39 @@ const stripOwner = <T extends { userId: string }>(row: T) => {
 	const { userId: _owner, ...rest } = row;
 	return rest;
 };
+/** A contact needs a first or last name, and the full name built from them keeps the 200-character limit. */
+const checkedNames = <T extends { name: string }>(names: T | null): T => {
+	if (!names?.name) throw new ORPCError("BAD_REQUEST", { message: "Enter a first or last name." });
+	if (names.name.length > 200) throw new ORPCError("BAD_REQUEST", { message: "Keep the full name to 200 characters." });
+	return names;
+};
 const literalLike = (value: string) => `%${value.replace(/[\\%_]/g, "\\$&")}%`;
 
 export const directoryService = {
-	companies: async ({ userId, query }: Input<"companies">) =>
-		(
-			await db
-				.select()
+	/** Companies with their contact and application counts and their Jobs state, for the list in one request. */
+	companies: async ({ userId, query }: Input<"companies">) => {
+		const [rows, jobs] = await Promise.all([
+			db
+				.select({
+					company: schema.company,
+					// Spelled out: Drizzle leaves a one-table select's columns unqualified, which a subquery would misread.
+					contactCount: sql<number>`(select count(*)::int from "contact" as c where c."company_id" = "company"."id" and c."user_id" = ${userId})`,
+					applicationCount: sql<number>`(select count(*)::int from "application" as a where a."company_id" = "company"."id" and a."user_id" = ${userId})`,
+				})
 				.from(schema.company)
 				.where(
 					and(eq(schema.company.userId, userId), query ? ilike(schema.company.name, literalLike(query)) : undefined),
 				)
-				.orderBy(asc(schema.company.name))
-		).map(stripOwner),
+				.orderBy(asc(schema.company.name)),
+			boardsService.jobsByCompany(userId),
+		]);
+		return rows.map(({ company, contactCount, applicationCount }) => ({
+			...stripOwner(company),
+			contactCount,
+			applicationCount,
+			jobs: jobs.get(company.id) ?? { watching: [], found: null },
+		}));
+	},
 	contacts: async ({ userId, query, companyId }: Input<"contacts">) =>
 		(
 			await db
@@ -101,21 +122,24 @@ export const directoryService = {
 			await ownedCompany(tx, userId, id);
 			await tx.delete(schema.company).where(and(eq(schema.company.id, id), eq(schema.company.userId, userId)));
 		}),
-	createContact: ({ userId, ...fields }: Input<"createContact">) =>
+	createContact: ({ userId, name, firstName, lastName, ...fields }: Input<"createContact">) =>
 		db.transaction(async (tx) => {
 			await lockDirectoryOwner(tx, userId);
 			if (fields.companyId) await ownedCompany(tx, userId, fields.companyId);
+			const names = checkedNames(contactNames({ name, firstName, lastName }));
 			const [row] = await tx
 				.insert(schema.contact)
-				.values({ ...fields, userId, normalizedKey: directoryKey(fields.name) })
+				.values({ ...fields, ...names, userId, normalizedKey: directoryKey(names.name) })
 				.returning();
 			if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
 			return stripOwner(row);
 		}),
-	updateContact: ({ userId, id, ...fields }: Input<"updateContact">) =>
+	updateContact: ({ userId, id, name, firstName, lastName, ...fields }: Input<"updateContact">) =>
 		db.transaction(async (tx) => {
 			await lockDirectoryOwner(tx, userId);
 			const current = await ownedContact(tx, userId, id);
+			const renamed = contactNames({ name, firstName, lastName }, current);
+			const names = renamed ? checkedNames(renamed) : null;
 			if (fields.companyId) await ownedCompany(tx, userId, fields.companyId);
 			if (
 				(fields.companyId !== undefined && fields.companyId !== current.companyId) ||
@@ -133,7 +157,7 @@ export const directoryService = {
 			}
 			const [row] = await tx
 				.update(schema.contact)
-				.set({ ...fields, ...(fields.name ? { normalizedKey: directoryKey(fields.name) } : {}) })
+				.set({ ...fields, ...(names ? { ...names, normalizedKey: directoryKey(names.name) } : {}) })
 				.where(and(eq(schema.contact.id, id), eq(schema.contact.userId, userId)))
 				.returning();
 			if (!row) throw new ORPCError("NOT_FOUND");

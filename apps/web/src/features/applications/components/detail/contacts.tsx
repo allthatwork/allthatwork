@@ -4,13 +4,14 @@ import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { contactSchema } from "@reactive-resume/schema/applications/data";
+import { contactFullName } from "@reactive-resume/schema/directory-names";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
 import { ContactPicker } from "@/features/directory/contact-picker";
 
-const EMPTY_CONTACT = { name: "", role: "", type: "", email: "", phone: "" };
+const EMPTY_CONTACT = { firstName: "", lastName: "", role: "", type: "", email: "", phone: "" };
 
 type ContactsProps = { contacts: Contact[]; disabled: boolean; onChange: (contacts: Contact[]) => void };
 
@@ -40,10 +41,12 @@ function ContactList({ contacts, disabled, onChange }: ContactsProps) {
 	const [draft, setDraft] = useState(EMPTY_CONTACT);
 	const [error, setError] = useState("");
 
+	const name = contactFullName(draft.firstName, draft.lastName);
 	const add = () => {
-		if (!draft.name.trim()) return;
-		// Checked with the API's schema here, so a mistyped email is caught before the draft is thrown away.
-		const parsed = contactSchema.safeParse(draft);
+		if (!name) return;
+		// Checked with the API's schema here, so a mistyped email is caught before the draft is thrown away. The name
+		// parts make the Directory contact; the application keeps the full name.
+		const parsed = contactSchema.safeParse({ ...draft, name });
 		if (!parsed.success) return setError(t`Enter a valid email address.`);
 		onChange([...contacts, parsed.data]);
 		setDraft(EMPTY_CONTACT);
@@ -147,7 +150,10 @@ function ContactList({ contacts, disabled, onChange }: ContactsProps) {
 						add();
 					}}
 				>
-					{field("name", t`Name`)}
+					<div className="grid grid-cols-2 gap-2">
+						{field("firstName", t`First name`)}
+						{field("lastName", t`Last name`)}
+					</div>
 					<div className="grid grid-cols-2 gap-2">
 						{field("role", t`Role (optional)`)}
 						<Input
@@ -173,7 +179,7 @@ function ContactList({ contacts, disabled, onChange }: ContactsProps) {
 						<Button type="button" size="sm" variant="ghost" onClick={() => setAdding(false)}>
 							<Trans>Cancel</Trans>
 						</Button>
-						<Button type="submit" size="sm" disabled={!draft.name.trim() || disabled}>
+						<Button type="submit" size="sm" disabled={!name || disabled}>
 							<Trans>Add</Trans>
 						</Button>
 					</div>

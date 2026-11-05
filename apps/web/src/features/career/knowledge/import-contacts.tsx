@@ -10,11 +10,17 @@ import {
 	matchLinkedInCompany,
 	matchLinkedInContact,
 } from "@reactive-resume/schema/directory-import";
+import { compareContacts } from "@reactive-resume/schema/directory-names";
 import { Button } from "@reactive-resume/ui/components/button";
 import { cn } from "@reactive-resume/utils/style";
 import { client, orpc } from "@/libs/orpc/client";
 
 const alphabetical = new Intl.Collator(undefined, { sensitivity: "base", numeric: true }).compare;
+const nameParts = (connection: { name: string; firstName?: string | undefined; lastName?: string | undefined }) => ({
+	name: connection.name,
+	firstName: connection.firstName ?? connection.name,
+	lastName: connection.lastName ?? "",
+});
 
 export type ContactsImportSelection = LinkedInImport;
 export type ContactsImportResult = Awaited<ReturnType<typeof client.directory.importLinkedIn>>;
@@ -147,7 +153,8 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 		.sort(
 			(a, b) =>
 				alphabetical(groupName(a.connection.company), groupName(b.connection.company)) ||
-				alphabetical(a.connection.name, b.connection.name),
+				// Within a company, by last name like the Directory.
+				compareContacts(nameParts(a.connection), nameParts(b.connection)),
 		);
 	const grouped = new Map<string, { name: string; rows: typeof rows }>();
 	for (const row of visible.slice(page * 50, (page + 1) * 50)) {

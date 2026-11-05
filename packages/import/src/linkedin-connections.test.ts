@@ -17,6 +17,8 @@ describe("LinkedIn connections", () => {
 		expect(data.connections).toEqual([
 			{
 				name: "Casey Nguyen",
+				firstName: "Casey",
+				lastName: "Nguyen",
 				profileUrl: "https://www.linkedin.com/in/casey",
 				email: "casey@example.test",
 				company: "Lumen, Inc.",
@@ -25,12 +27,48 @@ describe("LinkedIn connections", () => {
 			},
 			{
 				name: "Jo Example",
+				firstName: "Jo",
+				lastName: "Example",
 				profileUrl: "https://www.linkedin.com/in/jo",
 				email: "",
 				company: "Example",
-				position: 'Staff "Platform"\nEngineer',
+				// Whitespace collapses: a line break inside a cell reads as a space.
+				position: 'Staff "Platform" Engineer',
 				connectedOn: "2026-10-23",
 			},
+		]);
+	});
+	it("keeps first and last name apart and strips emoji and symbols, as a real export has them", () => {
+		const shapes = [
+			"Mary Ann,Okafor,https://linkedin.com/in/maryann,,Lumen,Engineer,",
+			"John A.,Berg,https://linkedin.com/in/johna,,,,",
+			'Priya,"Menon, PMP",https://linkedin.com/in/priya,,,,',
+			'Tomas,"Marek MBA, MST, CTP®",https://linkedin.com/in/tomas,,,,',
+			"Hana,Lee (Kim),https://linkedin.com/in/hana,,,,",
+			"Teodora,,https://linkedin.com/in/teodora,,,,",
+			"🚀 Dana,Rivera,https://linkedin.com/in/dana,,★ Acme™,Staff Engineer ✓,",
+			"Sam ,Cole ,https://linkedin.com/in/sam,,,,",
+			"𝗝𝗼𝗵𝗻,Park,https://linkedin.com/in/john,,,,",
+		];
+		const names = parseLinkedInConnectionsCsv([header, ...shapes].join("\n")).connections.map(
+			({ name, firstName, lastName, company, position }) => ({ name, firstName, lastName, company, position }),
+		);
+		expect(names).toEqual([
+			{ name: "Mary Ann Okafor", firstName: "Mary Ann", lastName: "Okafor", company: "Lumen", position: "Engineer" },
+			{ name: "John A. Berg", firstName: "John A.", lastName: "Berg", company: "", position: "" },
+			{ name: "Priya Menon, PMP", firstName: "Priya", lastName: "Menon, PMP", company: "", position: "" },
+			{
+				name: "Tomas Marek MBA, MST, CTP",
+				firstName: "Tomas",
+				lastName: "Marek MBA, MST, CTP",
+				company: "",
+				position: "",
+			},
+			{ name: "Hana Lee (Kim)", firstName: "Hana", lastName: "Lee (Kim)", company: "", position: "" },
+			{ name: "Teodora", firstName: "Teodora", lastName: "", company: "", position: "" },
+			{ name: "Dana Rivera", firstName: "Dana", lastName: "Rivera", company: "Acme", position: "Staff Engineer" },
+			{ name: "Sam Cole", firstName: "Sam", lastName: "Cole", company: "", position: "" },
+			{ name: "John Park", firstName: "John", lastName: "Park", company: "", position: "" },
 		]);
 	});
 	it("skips unavailable identities, removes URL duplicates, and reports invalid optional fields", () => {

@@ -24,7 +24,11 @@ export function linkedInProfileKey(value: string): string | null {
 }
 
 export const linkedInConnectionSchema = z.object({
+	/** The full name: first and last name joined. Matching by name uses it. */
 	name: z.string().trim().min(1).max(200),
+	/** LinkedIn's First Name and Last Name, kept apart. Missing (older clients), the name is the first name. */
+	firstName: z.string().trim().max(200).optional(),
+	lastName: z.string().trim().max(200).optional(),
 	profileUrl: z
 		.string()
 		.max(2048)

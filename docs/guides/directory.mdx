@@ -5,10 +5,12 @@ description: "Keep companies and people in one private Directory, and link the s
 
 Open **Directory** in the sidebar to see **Companies** and **Contacts**. These records belong to your account and stay available across devices.
 
-<Frame caption="Contacts can work at an employer, an agency, or have no current company. These examples use fictional people.">
+Both tabs are compact lists, A to Z, under letter headers that stay pinned while you scroll. The rail on the right jumps to a letter; grey letters have nobody under them. Names that start with a digit or another script go under **#**, after Z. The toolbar shows the total, and search filters the rows while keeping the letters. On a phone each row takes two short lines.
+
+<Frame caption="Contacts sort by last name, with the part they sort by in bold, as in Priya Menon, PMP. People with no last name come last, below Z. These examples use fictional people.">
   <img
     src="/images/guides/directory/contacts.png"
-    alt="Directory Contacts tab with Avery Chen at Atlas Recruiting, Casey Nguyen at Lumen Labs, and Morgan Lee marked Looking for work"
+    alt="Directory Contacts tab with 23 contacts under letter headers A to O, an A to Z rail with empty letters greyed out, Hana Lee (Kim) and Priya Menon, PMP with their last names in bold, and Andrés Molina marked Looking for work"
   />
 </Frame>
 
@@ -16,30 +18,36 @@ Open **Directory** in the sidebar to see **Companies** and **Contacts**. These r
 
 A company is created when you track an application. Names that differ only in capitalization or spacing use the same company. You can also select **Add company** to keep a company before applying there.
 
-Open a company to see its applications and contacts. **Edit company** lets you change its name, website and notes. A website's icon appears as its logo when available. Renaming a company also updates the company name on its linked applications.
+Each row shows the company's logo, name and domain, how many contacts and applications it has, and **Jobs**: **Watching on Greenhouse · 143 open** for a company you watch (with **+1** when you watch two of its pages), **Found on Greenhouse · confirm** when one of its posting links points at a page you haven't confirmed, and a dash otherwise. Companies sort by name, ignoring case and accents.
 
-<Frame caption="A company page brings its tracked applications and contacts together.">
+Open a company to see its contacts, A to Z by last name (the first five, then **Show more**), and its applications, newest first, with their stage and date. **Edit company** lets you change its name, website and notes. A website's icon appears as its logo when available. Renaming a company also updates the company name on its linked applications.
+
+<Frame caption="A company page brings its contacts, tracked applications and open roles together.">
   <img
     src="/images/guides/directory/company.png"
-    alt="Lumen Labs company page with Contacts and Applications sections and a Staff Platform Engineer application"
+    alt="Kestrel Data company page with five of six contacts and Show 1 more, two applications with Interview and Closed stages, and Open roles offering a Greenhouse page found from a posting link to confirm"
   />
 </Frame>
 
-### Watch a company's job board
+### Watch a company's open roles
 
-A company page has a **Job board** section. Watching a company's Greenhouse, Ashby or Lever board lets [board checks](/guides/finding-roles-automatically#check-the-job-boards-of-companies-you-watch) bring its new roles into **Career → Today**. Nothing is watched until you confirm a board.
+Most companies list their jobs on Greenhouse, Ashby or Lever. A company page's **Open roles** section watches the company's page there, so the [Watched companies schedule](/guides/finding-roles-automatically#check-the-companies-you-watch) brings its new roles that match your Preferences into **Career → Today**. Nothing is watched until you confirm.
 
-- **From a posting link on file**: when one of the company's applications links to a posting on its board, the board appears here. Select **Confirm**.
-- **Paste a careers or job board link**, then **Look up**. A board or posting link works, and so does a careers page that links to or embeds its board. Pages that build their job list with scripts may show no board; paste a posting link instead.
-- **Find board** tries board names made from the company's name. Each board found shows its own name where the board gives one, its number of open roles and a few titles. A guess can land on another company's board, so check before selecting **Confirm**.
+- **Found on Greenhouse · from a posting link on file**: one of the company's applications links to a posting there. Select **Confirm**.
+- **Paste the company's careers link**, then **Look up**. A posting link works, and so does a careers page that links to or embeds its jobs. Pages that build their job list with scripts may show nothing; paste a posting link instead.
+- **Find it for me** tries names made from the company's name. Each result shows the name the platform gives, where it gives one, its number of open roles and a few titles. A guess can land on another company's jobs, so check before selecting **Confirm**.
 
-A company can have more than one board. **Stop watching** removes one; roles it already found stay in Today until you dismiss them or they close. When the company has no website, the board can fill it in from its posting links; a website you set is never replaced.
+A watched row reads **Watching on Greenhouse · 143 open · checked 2 hours ago**, with **Open on Greenhouse** and **Stop watching**. A company can be watched in more than one place. **Stop watching** removes one; roles it already found stay in Today until you dismiss them or they close. When the company has no website, its postings can fill it in; a website you set is never replaced.
 
-On the **Companies** tab, **Companies to watch** lists companies where you know people, most contacts first. Where a posting link on file names the company's board, it shows how many open roles match your preferences. Open a company to watch its board.
+On the **Companies** tab, **Companies to watch** is one line with the three companies where you know the most people. **Show all** opens the full list in place; where a posting link on file names the company's jobs page, it shows how many open roles match your preferences. Open a company to watch it.
 
 ## Contacts
 
-Select **Add contact** to save a name, position, optional company, profile links, email addresses, phone numbers, tags, notes, and how you know them. Use one line per email, phone number, profile link or tag.
+Select **Add contact** to save a first and last name, position, optional company, profile links, email addresses, phone numbers, tags, notes, and how you know them. Use one line per email, phone number, profile link or tag.
+
+Contacts sort and group by last name, then first name, ignoring case and accents. Anything after a comma in the last name (credentials, as in "Menon, PMP") and anything in parentheses is left out of the sort, and the part they sort by shows in bold. People who use one name, and contacts saved before first and last name were separate, go in **No last name** at the end, sorted by first name. Editing a contact, or importing from LinkedIn again, fills in the last name. Names you type are saved as typed.
+
+Each row shows the name, the position with **Looking for work** at its start, the company and the last contact date. Select a row to open the contact, or the company to open the company. **Delete all contacts** is in the **⋯** menu next to **Add contact**.
 
 A contact's company is where they work. Keep an agency recruiter under their agency, even when they help with an application at another company. **No company** is available for people between jobs or other personal contacts. **Looking for work** is a separate choice.
 
@@ -54,15 +62,17 @@ A contact page shows linked applications and interviews together with manual not
 
 ## Import LinkedIn contacts
 
-Open **Knowledge → Import** and upload your LinkedIn export ZIP. In **LinkedIn export detected**, select **Import contacts** to review `Connections.csv`; keep **Import facts** selected too if you want career facts from the same upload. The choices appear before any CSV data is read. Facts start selected and contacts start unchecked. Available email addresses are included for the people you select. Choose contacts using the checkboxes; possible duplicates need a separate match decision. Company groups and names are alphabetical.
+Open **Knowledge → Import** and upload your LinkedIn export ZIP. In **LinkedIn export detected**, select **Import contacts** to review `Connections.csv`; keep **Import facts** selected too if you want career facts from the same upload. The choices appear before any CSV data is read. Facts start selected and contacts start unchecked. Available email addresses are included for the people you select. Choose contacts using the checkboxes; possible duplicates need a separate match decision. Company groups are alphabetical, and people within a company sort by last name.
+
+First and last name are kept apart as LinkedIn has them. Emoji and decorative symbols (such as ®, ™ or ★) are removed from names, companies and positions, and fancy letters such as 𝗝𝗼𝗵𝗻 become plain ones. Credentials after a last name stay. Importing again updates the first and last name of people matched by their profile link, without adding duplicates.
 
 Review possible duplicates before saving. Selected contacts automatically bring in their companies; existing companies are reused by name, ignoring capitalization and spacing. Returning profile URLs update the same people. See [Import facts from a file](/guides/building-career-knowledge#import-facts-from-a-file) for the combined workflow. Standalone CSV upload in Directory is deferred.
 
 ## Link people to applications and interviews
 
-In an application's **Contacts** cell, search **Find a directory contact** to pick an existing person. Set their role in that application, such as Recruiter or Referral. **Add contact** also creates a central record under the application's company.
+In an application's **Contacts** cell, search **Find a directory contact** to pick an existing person; results sort by last name. Set their role in that application, such as Recruiter or Referral. **Add contact** asks for a first and last name and also creates a central record under the application's company.
 
-In the interview dialog, **Who you'll meet** has the same search. Choose an existing person and enter their role for that interview. **Add a person** creates a central contact when the interview is saved. One person can be a referral on an application and an interviewer in a particular round.
+In the interview dialog, **Who you'll meet** has the same search. Choose an existing person and enter their role for that interview. **Add a person** asks for a first and last name and creates a central contact when the interview is saved. One person can be a referral on an application and an interviewer in a particular round.
 
 Names edited in Directory update the linked application and interview records. Removing a person from an application or interview leaves their Directory record available.
 
@@ -70,6 +80,8 @@ Names edited in Directory update the linked application and interview records. R
 
 The first migration creates companies from existing applications and brings application contacts and interview participants into Directory. It merges matching names within the same company and account, preserving email addresses, phone numbers, profile links and source references. People in different accounts remain separate.
 
-[Export everything](/guides/exporting-your-data) includes `directory.json` with companies, contacts, past positions, notes and the job boards you watch. Account import restores them with new IDs and reconnects imported applications and interviews when both areas are selected.
+[Export everything](/guides/exporting-your-data) includes `directory.json` with companies, contacts with their first and last names, past positions, notes and the companies you watch. Account import restores them with new IDs and reconnects imported applications and interviews when both areas are selected. A contact from an older export, without separate names, comes back with its whole name as the first name.
 
-**Delete contact** removes the person, their notes and company history, and their details from linked applications and interviews. **Delete all contacts** does this for every contact in your account. Companies and applications remain. **Delete company** keeps its contacts and applications but clears their company links; application company names remain in their history.
+When first and last name became separate, existing contacts kept their whole name as the first name, with no last name; nothing was guessed.
+
+**Delete contact** removes the person, their notes and company history, and their details from linked applications and interviews. **Delete all contacts**, in the **⋯** menu, does this for every contact in your account: it also empties every application's contacts and every interview's participants. Companies and applications remain. **Delete company** keeps its contacts and applications but clears their company links; application company names remain in their history.
