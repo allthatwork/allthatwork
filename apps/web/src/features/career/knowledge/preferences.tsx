@@ -146,6 +146,22 @@ function PreferencesForm({ initial }: PreferencesFormProps) {
 
 			<div className="grid gap-1.5">
 				<ChipField
+					label={t`Leave out titles with`}
+					placeholder={t`Add a word, then Enter`}
+					value={draft.excludeTitles}
+					max={50}
+					onChange={(excludeTitles) => change({ excludeTitles })}
+				/>
+				<p className="text-xs text-ink-3">
+					<Trans>
+						Found roles whose title has one of these, such as Intern or Sales, are hidden from New roles. A phrase hides
+						a title only when the title has all of its words.
+					</Trans>
+				</p>
+			</div>
+
+			<div className="grid gap-1.5">
+				<ChipField
 					label={t`Lanes`}
 					placeholder={t`Add a lane, then Enter`}
 					value={draft.lanes}
@@ -268,16 +284,23 @@ const fieldShell =
 const bareSelect =
 	"field-sizing-content cursor-pointer appearance-none bg-transparent text-ink-3 outline-none hover:text-ink focus-visible:text-ink";
 
-type ChipFieldProps = { label: string; placeholder: string; value: string[]; onChange: (value: string[]) => void };
+type ChipFieldProps = {
+	label: string;
+	placeholder: string;
+	value: string[];
+	/** Most chips the field takes; Preferences caps lists at 20. */
+	max?: number;
+	onChange: (value: string[]) => void;
+};
 
 /** Enter or comma adds a chip, Backspace in an empty input removes the last one, × removes one. */
-function ChipField({ label, placeholder, value, onChange }: ChipFieldProps) {
+function ChipField({ label, placeholder, value, max = 20, onChange }: ChipFieldProps) {
 	const id = useId();
 	const [input, setInput] = useState("");
 
 	const add = () => {
 		const chip = input.trim().slice(0, 200);
-		if (chip && !value.includes(chip) && value.length < 20) onChange([...value, chip]);
+		if (chip && !value.includes(chip) && value.length < max) onChange([...value, chip]);
 		setInput("");
 	};
 

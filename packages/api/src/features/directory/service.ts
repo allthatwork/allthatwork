@@ -5,6 +5,7 @@ import { and, asc, desc, eq, ilike, or } from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { directoryKey } from "@reactive-resume/schema/directory";
+import { boardsService } from "../boards/service";
 import { ensureCompany, lockDirectoryOwner, ownedCompany, ownedContact, refreshContactLinks } from "./links";
 
 type Input<K extends keyof typeof directoryDto> = z.infer<(typeof directoryDto)[K]["input"]> & { userId: string };
@@ -237,17 +238,20 @@ export const directoryService = {
 			if (!rows.length) throw new ORPCError("NOT_FOUND");
 		}),
 	exportData: async (userId: string) => {
-		const [companies, contacts, employment, notes] = await Promise.all([
+		const [companies, contacts, employment, notes, boards] = await Promise.all([
 			db.select().from(schema.company).where(eq(schema.company.userId, userId)),
 			db.select().from(schema.contact).where(eq(schema.contact.userId, userId)),
 			db.select().from(schema.contactEmployment).where(eq(schema.contactEmployment.userId, userId)),
 			db.select().from(schema.contactNote).where(eq(schema.contactNote.userId, userId)),
+			boardsService.exportData(userId),
 		]);
 		return {
 			companies: companies.map(stripOwner),
 			contacts: contacts.map(stripOwner),
 			employment: employment.map(stripOwner),
 			notes: notes.map(stripOwner),
+			/** Watched job boards; shared board data isn't the account's and stays out. */
+			boards,
 		};
 	},
 };

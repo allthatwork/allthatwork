@@ -35,12 +35,13 @@ export type Kind = ScheduleInput["kind"];
 export type Lead = NonNullable<ScheduleInput["lead"]>;
 export type Schedule = RouterOutput["career"]["schedules"][number];
 
-const KINDS: readonly Kind[] = ["discovery", "prepare", "follow-up"];
+const KINDS: readonly Kind[] = ["discovery", "boards", "prepare", "follow-up"];
 
 /** The icon and name a schedule goes by in Today and in toasts. */
 export function scheduleKind(kind: string): { icon: IconName; title: string } {
 	if (kind === "prepare") return { icon: "graduation-cap", title: t`Interview preparation` };
 	if (kind === "follow-up") return { icon: "bell", title: t`Follow-up reminder` };
+	if (kind === "boards") return { icon: "briefcase", title: t`Board checks` };
 	return { icon: "globe-simple", title: t`Opportunity discovery` };
 }
 
@@ -151,7 +152,9 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 	const [form, setForm] = useState<Form | null>(null);
 	if (shown && form?.target !== shown && schedules && profile && applications && !providersLoading) {
 		const [head, kind, applicationId] = shown.split(":");
-		const existing = head === "new" ? null : (schedules.find((row) => row.id === shown) ?? null);
+		// Board checks are one schedule per account: a new one opens the existing one.
+		const boards = kind === "boards" ? schedules.find((row) => row.kind === "boards") : undefined;
+		const existing = boards ?? (head === "new" ? null : (schedules.find((row) => row.id === shown) ?? null));
 		const at = existing
 			? existing.intervalDays
 				? rollForward(new Date(existing.nextRunAt), existing.intervalDays, timeZone, now)
@@ -198,7 +201,12 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 		(form?.submitted || form?.touched[field]) && errors[field] ? errors[field] : null;
 	const smtp = context.flags?.smtpEnabled ?? false;
 	const verified = Boolean(user?.emailVerified);
+	const otherBoards =
+		draft?.kind === "boards"
+			? schedules?.find((row) => row.kind === "boards" && row.id !== form?.existing?.id)
+			: undefined;
 	const blocked =
+		(draft?.kind === "boards" && Boolean(otherBoards)) ||
 		(draft?.kind === "prepare" && (!interview || providers.length === 0)) ||
 		(draft?.kind === "follow-up" && open.length === 0);
 	const needsWebSearch = draft?.kind === "discovery" && webAccess?.search === false;
@@ -225,7 +233,7 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 				nextRunAt: runAt ?? fromZoned(draft.date, draft.time, timeZone),
 				timezone: timeZone,
 				locale,
-				intervalDays: draft.kind === "discovery" ? Number(draft.every) : null,
+				intervalDays: draft.kind === "discovery" || draft.kind === "boards" ? Number(draft.every) : null,
 				aiProviderId: draft.kind === "prepare" ? draft.aiProviderId || null : null,
 			},
 			{
@@ -284,6 +292,7 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 							onChange={(kind) => set({ kind: kind as Kind })}
 							options={[
 								{ value: "discovery", label: t`Find roles` },
+								{ value: "boards", label: t`Check boards` },
 								{ value: "prepare", label: t`Prepare` },
 								{ value: "follow-up", label: t`Remind me` },
 							]}
@@ -325,6 +334,51 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 											applications and documents are never created for you.
 										</Trans>
 									</p>
+								</>
+							)}
+
+							{draft.kind === "boards" && (
+								<>
+									<Segments
+										label={t`How often`}
+										value={draft.every}
+										onChange={(every) => set({ every })}
+										options={[
+											{ value: "1", label: t`Every day` },
+											{ value: "3", label: t`Every 3 days` },
+											{ value: "7", label: t`Every week` },
+											{ value: "30", label: t`Every 30 days` },
+										]}
+									/>
+									<p className="flex gap-2.5 rounded-lg bg-info-soft px-3 py-2.5 text-[13px] leading-[19px] text-ink">
+										<Icon name="briefcase" size={18} className="mt-px shrink-0 text-info-text" />
+										<span>
+											<Trans>
+												Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles
+												that match your target roles, places, pay and office days wait in Today for your review. No AI,
+												and no web search service needed.
+											</Trans>{" "}
+											<Link
+												to="/dashboard/directory"
+												search={{ tab: "companies" }}
+												className="underline underline-offset-2"
+											>
+												<Trans>Watch companies in the Directory</Trans>
+											</Link>
+										</span>
+									</p>
+									{profile && profile.targetRoles.length === 0 && (
+										<p className="-mt-2 text-xs text-warn-text">
+											<Trans>
+												Add target roles in Preferences first: board checks only bring roles whose title matches one.
+											</Trans>
+										</p>
+									)}
+									{otherBoards && (
+										<p className="-mt-2 text-xs text-warn-text">
+											<Trans>You already have a board checks schedule. Edit that one instead.</Trans>
+										</p>
+									)}
 								</>
 							)}
 

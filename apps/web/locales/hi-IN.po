@@ -407,6 +407,11 @@ msgstr "{0} सक्रिय नौकरी आवेदन"
 msgid "{0} closed"
 msgstr "{0} बंद हो गया"
 
+#. placeholder {0}: row.contacts
+#: src/features/directory/boards.tsx
+msgid "{0} contacts"
+msgstr ""
+
 #. placeholder {0}: contactsResult.created
 #. placeholder {1}: contactsResult.updated
 #. placeholder {2}: contactsResult.unchanged
@@ -488,6 +493,11 @@ msgstr "{0} साक्षात्कार"
 msgid "{0} invalid rows skipped; {1} repeated profiles removed; {2} invalid emails and {3} invalid connection dates left blank."
 msgstr ""
 
+#. placeholder {0}: row.openRoles
+#: src/features/directory/boards.tsx
+msgid "{0} matching open roles"
+msgstr ""
+
 #. placeholder {0}: i18n.number(row.minutes)
 #. placeholder {0}: row.minutes
 #: src/features/career/workspace/prepare.tsx
@@ -555,6 +565,17 @@ msgstr ""
 #. placeholder {1}: number.format(node.facts.excluded)
 #: src/features/career/knowledge/groups.tsx
 msgid "{0} on · {1} off · private, never sent unless an application includes it"
+msgstr ""
+
+#. placeholder {0}: board.jobCount
+#: src/features/directory/boards.tsx
+msgid "{0} open roles"
+msgstr ""
+
+#. placeholder {0}: board.jobCount ?? 0
+#. placeholder {1}: when(board.fetchedAt)
+#: src/features/directory/boards.tsx
+msgid "{0} open roles · checked {1}"
 msgstr ""
 
 #. placeholder {0}: document.posting.company
@@ -1029,9 +1050,17 @@ msgstr "06/2017 – 2021"
 msgid "1 column, inline"
 msgstr "1 कॉलम, इनलाइन"
 
+#: src/features/directory/boards.tsx
+msgid "1 contact"
+msgstr ""
+
 #: src/features/applications/components/calendar-view.tsx
 msgid "1 interview"
 msgstr "1 साक्षात्कार"
+
+#: src/features/directory/boards.tsx
+msgid "1 matching open role"
+msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
 msgid "10-minute briefing"
@@ -1179,6 +1208,10 @@ msgstr "एक फ़ुल-हाइट गैप इस पेज को द�
 #: src/features/ats-checker/messages.ts
 msgid "A gap is not a problem. Add a one-line explanation if you want to; many strong resumes simply do not."
 msgstr "गैप कोई समस्या नहीं है। चाहें तो एक-पंक्ति स्पष्टीकरण जोड़ें; कई मज़बूत बायोडाटा ऐसा करते ही नहीं।"
+
+#: src/features/directory/boards.tsx
+msgid "A guess can find another company's board. Check the name and roles before confirming."
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "A high bar for accessibility"
@@ -1367,6 +1400,10 @@ msgstr "“{0}” जोड़ें"
 msgid "Add “{typed}”"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Add a board checks schedule"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Add a fact to {group}"
 msgstr ""
@@ -1456,6 +1493,10 @@ msgstr "एक टैग जोड़ना"
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Add a tag and press Enter…"
 msgstr "एक टैग जोड़ें और Enter दबाएँ…"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Add a word, then Enter"
+msgstr ""
 
 #: src/features/settings/ai/providers.tsx
 msgid "Add AI provider"
@@ -1628,6 +1669,10 @@ msgstr "सेक्शन के बीच कुछ खाली जगह ज
 #: src/features/applications/components/list-view.tsx
 msgid "Add tag"
 msgstr "टैग जोड़ें"
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Add target roles in Preferences first: board checks only bring roles whose title matches one."
+msgstr ""
 
 #: src/features/resume/editor/write/outline.tsx
 msgid "Add text"
@@ -1908,6 +1953,10 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Already interviewing"
 msgstr "पहले से ही साक्षात्कार कर रहा हूँ"
+
+#: src/features/directory/boards.tsx
+msgid "Already watching"
+msgstr ""
 
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Also check the exported PDF"
@@ -2585,6 +2634,15 @@ msgstr "नीला"
 msgid "Board"
 msgstr "बोर्ड"
 
+#: src/features/career/schedule-sheet.tsx
+#: src/features/career/today.tsx
+msgid "Board checks"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Board checks start within a minute. New roles appear here."
+msgstr ""
+
 #: src/routes/builder/$resumeId/-sidebar/right/sections/typography.tsx
 msgctxt "Body Text (paragraphs, lists, etc.)"
 msgid "Body"
@@ -2789,6 +2847,10 @@ msgstr "करियर"
 msgid "Career preferences"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Careers or job board link"
+msgstr ""
+
 #: src/libs/locale.ts
 msgid "Catalan"
 msgstr "कातालान"
@@ -2903,6 +2965,14 @@ msgstr "किसी अन्य फ़ाइल की जाँच करे�
 msgid "Check any PDF, no account needed"
 msgstr "किसी भी PDF की जाँच करें, किसी खाते की आवश्यकता नहीं है"
 
+#: src/features/career/schedule-sheet.tsx
+msgid "Check boards"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Check company boards"
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Check every claim, date and result against your experience."
 msgstr "हर दावे, तारीख़ और परिणाम को अपने अनुभव से मिलाकर जाँचें।"
@@ -2995,6 +3065,10 @@ msgstr "श्रेणी के अनुसार जाँच करता �
 #: src/features/assistant/assistant-panel.tsx
 msgid "Checks every bullet for action and result"
 msgstr "कार्रवाई और परिणाम के लिए प्रत्येक सूची प्रविष्टि की जाँच करता है"
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Chinese (Simplified)"
@@ -3235,6 +3309,10 @@ msgstr "संक्षिप्त"
 msgid "Companies"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Companies to watch"
+msgstr ""
+
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
@@ -3282,6 +3360,7 @@ msgstr ""
 msgid "Compress or remove large images to keep uploads quick."
 msgstr "अपलोड तेज़ रखने के लिए बड़ी इमेज कंप्रेस करें या हटाएँ।"
 
+#: src/features/directory/boards.tsx
 #: src/hooks/use-confirm.tsx
 msgid "Confirm"
 msgstr "पुष्टि करें"
@@ -3297,6 +3376,10 @@ msgstr "पासवर्ड की पुष्टि करें"
 #: src/features/applications/components/application-detail-sheet.tsx
 msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
 msgstr "सबमिशन की पुष्टि करें और आपके द्वारा वास्तव में भेजे गए दस्तावेज़ चुनें। उनके वर्तमान संस्करण सहेजे जाएंगे."
+
+#: src/features/directory/boards.tsx
+msgid "Confirm the board to watch it."
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -3857,12 +3940,20 @@ msgstr "साक्षात्कार लोड नहीं हो सक�
 msgid "Couldn't load the sample file. Try again."
 msgstr "नमूना फ़ाइल लोड नहीं हो सकी. पुनः प्रयास करें।"
 
+#: src/features/directory/boards.tsx
+msgid "Couldn't load this company's job boards."
+msgstr ""
+
 #: src/features/career/load-state.tsx
 msgid "Couldn't load this. Your saved data hasn't changed."
 msgstr "इसे लोड नहीं किया जा सका। आपका सहेजा गया डेटा नहीं बदला है।"
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Couldn't load your AI limits."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't look for a board."
 msgstr ""
 
 #: src/features/settings/ai/providers.tsx
@@ -3897,6 +3988,10 @@ msgstr "आपके AI प्रदाता तक नहीं पहुं�
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Couldn't read that file."
 msgstr "उस फ़ाइल को पढ़ा नहीं जा सका."
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't read that link."
+msgstr ""
 
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't read this file. Try again or choose another file."
@@ -4064,6 +4159,10 @@ msgstr "साक्षात्कार शेड्यूल नहीं क
 msgid "Couldn't send the email. Try again."
 msgstr "ईमेल नहीं भेजा जा सका. पुनः प्रयास करें।"
 
+#: src/features/career/today.tsx
+msgid "Couldn't start board checks."
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Couldn't start recording. Choose an audio file, or type your answer."
 msgstr "रिकॉर्डिंग शुरू नहीं हो सकी। कोई ऑडियो फ़ाइल चुनें, या अपना जवाब टाइप करें।"
@@ -4072,6 +4171,10 @@ msgstr "रिकॉर्डिंग शुरू नहीं हो सक�
 #: src/features/career/coach-thread.tsx
 msgid "Couldn't start the conversation. Try again."
 msgstr "बातचीत शुरू नहीं हो सकी. पुनः प्रयास करें।"
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't stop watching this board."
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Couldn't switch connections."
@@ -4112,6 +4215,10 @@ msgstr "समयरेखा अपडेट नहीं की जा सक�
 #: src/features/settings/account/profile.tsx
 msgid "Couldn't upload the photo."
 msgstr "फ़ोटो अपलोड नहीं किया जा सका."
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't watch this board."
+msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
 msgid "Count by source"
@@ -5287,6 +5394,10 @@ msgid "Every 3 days"
 msgstr "हर 3 दिन"
 
 #: src/features/career/schedule-sheet.tsx
+msgid "Every 30 days"
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
 msgid "Every day"
 msgstr "हर दिन"
 
@@ -5639,6 +5750,10 @@ msgstr "टैग द्वारा फ़िल्टर करें"
 msgid "Find a directory contact"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Find board"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "Find out why, and shorten setup without adding support work."
 msgstr "कारण पता करना, और सपोर्ट का काम बढ़ाए बिना सेटअप छोटा करना।"
@@ -5905,6 +6020,10 @@ msgstr ""
 msgid "Found on {source}"
 msgstr ""
 
+#: src/features/career/knowledge/preferences.tsx
+msgid "Found roles whose title has one of these, such as Intern or Sales, are hidden from New roles. A phrase hides a title only when the title has all of its words."
+msgstr ""
+
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Found the role and company on the page. Review the details before saving."
 msgstr "पेज पर पद और कंपनी मिल गए। सहेजने से पहले विवरण की समीक्षा करें।"
@@ -5957,6 +6076,10 @@ msgstr "किसी समीक्षा से"
 msgid "From a document you attached"
 msgstr "आपके संलग्न दस्तावेज़ से"
 
+#: src/features/directory/boards.tsx
+msgid "From a posting link on file:"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "From an imported file"
 msgstr ""
@@ -5968,6 +6091,10 @@ msgstr "इसका समर्थन करने वाले डेवल�
 #: src/features/career/workspace/fit.tsx
 msgid "From Fit"
 msgstr "उपयुक्तता से"
+
+#: src/features/career/today.tsx
+msgid "From its job board"
+msgstr ""
 
 #: src/features/resume/share/format.ts
 msgid "from the assistant or API"
@@ -6895,6 +7022,14 @@ msgstr "जापानी"
 msgid "Job"
 msgstr "काम"
 
+#: src/features/directory/boards.tsx
+msgid "Job board"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Job boards of the companies you watch"
+msgstr ""
+
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Job description"
@@ -7269,6 +7404,10 @@ msgstr "लिंक हटाने के लिए इसे खाली छ
 msgid "Leave out"
 msgstr "चोर दिया"
 
+#: src/features/career/knowledge/preferences.tsx
+msgid "Leave out titles with"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "नए उपयोगकर्ताओं के शुरुआती अनुभव को फिर से डिज़ाइन करने के लिए <0>उपयोगकर्ता शोध</0> का नेतृत्व किया; सक्रियण दर 31% से बढ़कर 44% हो गई।"
@@ -7630,6 +7769,7 @@ msgstr "कुल लोड हो रहा है"
 msgid "Loading workspace…"
 msgstr "वर्कस्पेस लोड हो रहा है…"
 
+#: src/features/directory/boards.tsx
 #: src/features/directory/page.tsx
 msgid "Loading…"
 msgstr ""
@@ -7673,6 +7813,10 @@ msgstr "क्या खोजें"
 
 #: src/features/career/knowledge/budget.tsx
 msgid "Look it up instead"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Look up"
 msgstr ""
 
 #: src/features/directory/page.tsx
@@ -8401,6 +8545,10 @@ msgstr "अभी तक कोई नौकरी आवेदन नहीं.
 msgid "No archived facts match."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "No board found from the name. Paste the company's careers page link instead."
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "No bullet lists were found."
 msgstr "कोई बुलेट सूची नहीं मिली।"
@@ -8510,6 +8658,10 @@ msgstr "लिंक करने के लिए अभी कोई तथ्
 msgid "No facts yet. Add one above."
 msgstr "अभी कोई तथ्य नहीं। ऊपर एक जोड़ें।"
 
+#: src/features/directory/boards.tsx
+msgid "No Greenhouse, Ashby or Lever board found at that link."
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "No group"
 msgstr ""
@@ -8541,6 +8693,19 @@ msgstr "कोई पंक्ति नौकरी के शीर्षक �
 #: src/features/resume/editor/check/issues.ts
 msgid "No location"
 msgstr "कोई स्थान नहीं"
+
+#. placeholder {0}: day(active.nextRunAt)
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again on {0} at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again today at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again tomorrow at {clock}."
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery is paused."
@@ -8697,6 +8862,10 @@ msgstr "लागू नहीं किया गया"
 msgid "Not applied yet"
 msgstr "अभी तक आवेदन नहीं किया गया है"
 
+#: src/features/directory/boards.tsx
+msgid "Not checked yet"
+msgstr ""
+
 #: src/features/settings/account/security.tsx
 msgid "Not connected"
 msgstr "जुड़े नहीं हैं"
@@ -8818,6 +8987,10 @@ msgstr "टिप्पणियाँ"
 
 #: src/features/directory/page.tsx
 msgid "Notes, linked applications, and interviews will appear here."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Nothing checks this board yet."
 msgstr ""
 
 #: src/features/ats-checker/checker.tsx
@@ -9075,6 +9248,10 @@ msgstr "{title} खोलें"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "एआई सेटिंग्स खोलें"
+
+#: src/features/directory/boards.tsx
+msgid "Open board"
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -9421,6 +9598,10 @@ msgstr "पासवर्ड मेल नहीं खाते।"
 #: src/features/assistant/assistant-panel.tsx
 msgid "Past conversations"
 msgstr "पिछली बातचीत"
+
+#: src/features/directory/boards.tsx
+msgid "Paste a careers or job board link"
+msgstr ""
 
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Paste a job link or posting, then check the role and company."
@@ -11038,6 +11219,10 @@ msgstr "पंक्ति {row}, {0}: \"{value}\" अमान्य है।"
 msgid "Run again"
 msgstr "फिर से चलाएँ"
 
+#: src/features/career/today.tsx
+msgid "Run now"
+msgstr ""
+
 #: src/features/homepage/prepare.tsx
 msgid "Run research with customers"
 msgstr "ग्राहकों के साथ रिसर्च करना"
@@ -12433,6 +12618,10 @@ msgstr "ऑडियो रोकें"
 msgid "Stop recording"
 msgstr "रिकॉर्डिंग रोकें"
 
+#: src/features/directory/boards.tsx
+msgid "Stop watching"
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Stop when you're done. Nothing is sent until then."
 msgstr "पूरा होने पर रोकें। तब तक कुछ भी नहीं भेजा जाता।"
@@ -12445,6 +12634,10 @@ msgstr "रोका गया"
 #: src/features/career/workspace/practise.tsx
 msgid "Stopped at {0}"
 msgstr "{0} पर रुका"
+
+#: src/features/directory/boards.tsx
+msgid "Stopped watching this board"
+msgstr ""
 
 #: src/features/assistant/conversation.tsx
 msgid "Stopped. No edits were proposed."
@@ -13066,6 +13259,10 @@ msgstr "कुंजी सर्वर पर एन्क्रिप्ट �
 
 #: src/features/career/knowledge/preferences.tsx
 msgid "The kinds of role you aim resumes at, such as Platform / reliability. An application's primary and secondary lane are picked from these."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "The last check failed. Its last postings are kept, and the next check tries again."
 msgstr ""
 
 #: src/routes/builder/letter/-components/share-sheet.tsx
@@ -14471,6 +14668,30 @@ msgstr ""
 msgid "Warning"
 msgstr "चेतावनी"
 
+#: src/features/directory/boards.tsx
+msgid "Watch {companyName}'s Greenhouse, Ashby or Lever board, and board checks bring its new roles that match your preferences into New roles on Career → Today."
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Watch companies in the Directory"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. {added} open roles matched and are in New roles."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. 1 open role matched and is in New roles."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. No open roles match your preferences right now."
+msgstr ""
+
 #: src/features/homepage/hero.tsx
 msgid "WCAG 2.1 AA"
 msgstr "WCAG 2.1 AA"
@@ -14736,6 +14957,10 @@ msgstr "जब आप भेजें दबाएँगे, तो {shared} {co
 msgid "Where applications come from"
 msgstr "आवेदन कहाँ से आते हैं"
 
+#: src/features/directory/boards.tsx
+msgid "Where you know people, most contacts first. Open one to find and confirm its job board."
+msgstr ""
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Where you want to work"
 msgstr "आप कहाँ काम करना चाहते हैं"
@@ -14958,6 +15183,10 @@ msgstr "कल {time}"
 msgid "You"
 msgstr "आप"
 
+#: src/features/career/schedule-sheet.tsx
+msgid "You already have a board checks schedule. Edit that one instead."
+msgstr ""
+
 #. placeholder {0}: result.takenBy
 #: src/features/resume/share/link-tab.tsx
 msgid "You already use this for “{0}”."
@@ -14994,6 +15223,10 @@ msgstr "आपने इसे पहले भुला दिया था, �
 #: src/hooks/use-form-blocker.tsx
 msgid "You have unsaved changes that will be lost."
 msgstr "आपके सहेजे न गए परिवर्तन खो जाएंगे।"
+
+#: src/features/career/today.tsx
+msgid "You know"
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "You partnered with engineering. How you led the work isn’t described yet."

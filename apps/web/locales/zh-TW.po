@@ -407,6 +407,11 @@ msgstr "{0} 活躍工作申請"
 msgid "{0} closed"
 msgstr "{0} 已關閉"
 
+#. placeholder {0}: row.contacts
+#: src/features/directory/boards.tsx
+msgid "{0} contacts"
+msgstr ""
+
 #. placeholder {0}: contactsResult.created
 #. placeholder {1}: contactsResult.updated
 #. placeholder {2}: contactsResult.unchanged
@@ -488,6 +493,11 @@ msgstr "{0}採訪"
 msgid "{0} invalid rows skipped; {1} repeated profiles removed; {2} invalid emails and {3} invalid connection dates left blank."
 msgstr ""
 
+#. placeholder {0}: row.openRoles
+#: src/features/directory/boards.tsx
+msgid "{0} matching open roles"
+msgstr ""
+
 #. placeholder {0}: i18n.number(row.minutes)
 #. placeholder {0}: row.minutes
 #: src/features/career/workspace/prepare.tsx
@@ -555,6 +565,17 @@ msgstr ""
 #. placeholder {1}: number.format(node.facts.excluded)
 #: src/features/career/knowledge/groups.tsx
 msgid "{0} on · {1} off · private, never sent unless an application includes it"
+msgstr ""
+
+#. placeholder {0}: board.jobCount
+#: src/features/directory/boards.tsx
+msgid "{0} open roles"
+msgstr ""
+
+#. placeholder {0}: board.jobCount ?? 0
+#. placeholder {1}: when(board.fetchedAt)
+#: src/features/directory/boards.tsx
+msgid "{0} open roles · checked {1}"
 msgstr ""
 
 #. placeholder {0}: document.posting.company
@@ -1029,9 +1050,17 @@ msgstr "06/2017 – 2021"
 msgid "1 column, inline"
 msgstr "1 列，內聯"
 
+#: src/features/directory/boards.tsx
+msgid "1 contact"
+msgstr ""
+
 #: src/features/applications/components/calendar-view.tsx
 msgid "1 interview"
 msgstr "1 次面試"
+
+#: src/features/directory/boards.tsx
+msgid "1 matching open role"
+msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
 msgid "10-minute briefing"
@@ -1179,6 +1208,10 @@ msgstr "一道貫穿整頁的空白把這一頁分成了兩欄。"
 #: src/features/ats-checker/messages.ts
 msgid "A gap is not a problem. Add a one-line explanation if you want to; many strong resumes simply do not."
 msgstr "空檔本身不是問題。想的話可以加一行說明；許多出色的履歷根本沒有說明。"
+
+#: src/features/directory/boards.tsx
+msgid "A guess can find another company's board. Check the name and roles before confirming."
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "A high bar for accessibility"
@@ -1367,6 +1400,10 @@ msgstr "新增“{0}”"
 msgid "Add “{typed}”"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Add a board checks schedule"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Add a fact to {group}"
 msgstr ""
@@ -1456,6 +1493,10 @@ msgstr "添加標籤"
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Add a tag and press Enter…"
 msgstr "新增標籤並按 Enter…"
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Add a word, then Enter"
+msgstr ""
 
 #: src/features/settings/ai/providers.tsx
 msgid "Add AI provider"
@@ -1628,6 +1669,10 @@ msgstr "在各部分之間加一些留白，方便讀者快速瀏覽。"
 #: src/features/applications/components/list-view.tsx
 msgid "Add tag"
 msgstr "新增標籤"
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Add target roles in Preferences first: board checks only bring roles whose title matches one."
+msgstr ""
 
 #: src/features/resume/editor/write/outline.tsx
 msgid "Add text"
@@ -1908,6 +1953,10 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Already interviewing"
 msgstr "已經面試了"
+
+#: src/features/directory/boards.tsx
+msgid "Already watching"
+msgstr ""
 
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Also check the exported PDF"
@@ -2585,6 +2634,15 @@ msgstr "藍色"
 msgid "Board"
 msgstr "看板"
 
+#: src/features/career/schedule-sheet.tsx
+#: src/features/career/today.tsx
+msgid "Board checks"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Board checks start within a minute. New roles appear here."
+msgstr ""
+
 #: src/routes/builder/$resumeId/-sidebar/right/sections/typography.tsx
 msgctxt "Body Text (paragraphs, lists, etc.)"
 msgid "Body"
@@ -2789,6 +2847,10 @@ msgstr "職涯"
 msgid "Career preferences"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Careers or job board link"
+msgstr ""
+
 #: src/libs/locale.ts
 msgid "Catalan"
 msgstr "加泰隆尼亞語"
@@ -2903,6 +2965,14 @@ msgstr "檢查另一個文件"
 msgid "Check any PDF, no account needed"
 msgstr "查詢任PDF，無需帳戶"
 
+#: src/features/career/schedule-sheet.tsx
+msgid "Check boards"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Check company boards"
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Check every claim, date and result against your experience."
 msgstr "對照您的經歷核實每一項陳述、日期和結果。"
@@ -2995,6 +3065,10 @@ msgstr "按類別檢查"
 #: src/features/assistant/assistant-panel.tsx
 msgid "Checks every bullet for action and result"
 msgstr "檢查每個清單條目的操作和結果"
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Chinese (Simplified)"
@@ -3235,6 +3309,10 @@ msgstr "緊湊型"
 msgid "Companies"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Companies to watch"
+msgstr ""
+
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
@@ -3282,6 +3360,7 @@ msgstr ""
 msgid "Compress or remove large images to keep uploads quick."
 msgstr "壓縮或移除較大的圖片，以保持上傳速度。"
 
+#: src/features/directory/boards.tsx
 #: src/hooks/use-confirm.tsx
 msgid "Confirm"
 msgstr "確認"
@@ -3297,6 +3376,10 @@ msgstr "確認密碼"
 #: src/features/applications/components/application-detail-sheet.tsx
 msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
 msgstr "確認提交並選擇您實際發送的文件。他們當前的版本將被保存。"
+
+#: src/features/directory/boards.tsx
+msgid "Confirm the board to watch it."
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -3857,12 +3940,20 @@ msgstr "無法載入面試。重試"
 msgid "Couldn't load the sample file. Try again."
 msgstr "無法載入範例檔案。再試一次。"
 
+#: src/features/directory/boards.tsx
+msgid "Couldn't load this company's job boards."
+msgstr ""
+
 #: src/features/career/load-state.tsx
 msgid "Couldn't load this. Your saved data hasn't changed."
 msgstr "無法載入此內容。您已儲存的資料沒有變更。"
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Couldn't load your AI limits."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't look for a board."
 msgstr ""
 
 #: src/features/settings/ai/providers.tsx
@@ -3897,6 +3988,10 @@ msgstr "無法聯絡您的 AI 提供者。其密鑰可能已過期。"
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Couldn't read that file."
 msgstr "無法讀取該檔案。"
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't read that link."
+msgstr ""
 
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't read this file. Try again or choose another file."
@@ -4064,6 +4159,10 @@ msgstr "無法安排面試。"
 msgid "Couldn't send the email. Try again."
 msgstr "無法傳送電子郵件。再試一次。"
 
+#: src/features/career/today.tsx
+msgid "Couldn't start board checks."
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Couldn't start recording. Choose an audio file, or type your answer."
 msgstr "無法開始錄音。請選擇音訊檔案，或輸入您的回答。"
@@ -4072,6 +4171,10 @@ msgstr "無法開始錄音。請選擇音訊檔案，或輸入您的回答。"
 #: src/features/career/coach-thread.tsx
 msgid "Couldn't start the conversation. Try again."
 msgstr "無法開始對話。再試一次。"
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't stop watching this board."
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Couldn't switch connections."
@@ -4112,6 +4215,10 @@ msgstr "無法更新時間表。再試一次。"
 #: src/features/settings/account/profile.tsx
 msgid "Couldn't upload the photo."
 msgstr "無法上傳照片。"
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't watch this board."
+msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
 msgid "Count by source"
@@ -5287,6 +5394,10 @@ msgid "Every 3 days"
 msgstr "每 3 天"
 
 #: src/features/career/schedule-sheet.tsx
+msgid "Every 30 days"
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
 msgid "Every day"
 msgstr "每天"
 
@@ -5639,6 +5750,10 @@ msgstr "按標籤過濾"
 msgid "Find a directory contact"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Find board"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "Find out why, and shorten setup without adding support work."
 msgstr "找出原因，並在不增加客服工作的前提下縮短設定流程。"
@@ -5905,6 +6020,10 @@ msgstr ""
 msgid "Found on {source}"
 msgstr ""
 
+#: src/features/career/knowledge/preferences.tsx
+msgid "Found roles whose title has one of these, such as Intern or Sales, are hidden from New roles. A phrase hides a title only when the title has all of its words."
+msgstr ""
+
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Found the role and company on the page. Review the details before saving."
 msgstr "已在頁面上找到職位和公司。儲存前請核對詳細資料。"
@@ -5957,6 +6076,10 @@ msgstr "來自回顧"
 msgid "From a document you attached"
 msgstr "來自您附加的文件"
 
+#: src/features/directory/boards.tsx
+msgid "From a posting link on file:"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "From an imported file"
 msgstr ""
@@ -5968,6 +6091,10 @@ msgstr "來自支持它的開發者"
 #: src/features/career/workspace/fit.tsx
 msgid "From Fit"
 msgstr "來自契合度檢查"
+
+#: src/features/career/today.tsx
+msgid "From its job board"
+msgstr ""
 
 #: src/features/resume/share/format.ts
 msgid "from the assistant or API"
@@ -6895,6 +7022,14 @@ msgstr "日文"
 msgid "Job"
 msgstr "工作"
 
+#: src/features/directory/boards.tsx
+msgid "Job board"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Job boards of the companies you watch"
+msgstr ""
+
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Job description"
@@ -7269,6 +7404,10 @@ msgstr "將其留空以刪除連結。"
 msgid "Leave out"
 msgstr "省略"
 
+#: src/features/career/knowledge/preferences.tsx
+msgid "Leave out titles with"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "為新使用者入門體驗的重新設計主導<0>使用者研究</0>；啟用率從31%提高至44%。"
@@ -7630,6 +7769,7 @@ msgstr "加載總數"
 msgid "Loading workspace…"
 msgstr "正在載入工作區…"
 
+#: src/features/directory/boards.tsx
 #: src/features/directory/page.tsx
 msgid "Loading…"
 msgstr ""
@@ -7673,6 +7813,10 @@ msgstr "搜尋內容"
 
 #: src/features/career/knowledge/budget.tsx
 msgid "Look it up instead"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Look up"
 msgstr ""
 
 #: src/features/directory/page.tsx
@@ -8401,6 +8545,10 @@ msgstr "還沒有工作申請。首先在工作申請中新增一個。"
 msgid "No archived facts match."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "No board found from the name. Paste the company's careers page link instead."
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "No bullet lists were found."
 msgstr "未找到項目符號清單。"
@@ -8510,6 +8658,10 @@ msgstr "尚無可連結的事實。請在「事實」中新增。"
 msgid "No facts yet. Add one above."
 msgstr "尚無事實。請在上方新增一個。"
 
+#: src/features/directory/boards.tsx
+msgid "No Greenhouse, Ashby or Lever board found at that link."
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "No group"
 msgstr ""
@@ -8541,6 +8693,19 @@ msgstr "沒有看起來像「職稱 + 雇主」這種搭配的行。"
 #: src/features/resume/editor/check/issues.ts
 msgid "No location"
 msgstr "沒有位置"
+
+#. placeholder {0}: day(active.nextRunAt)
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again on {0} at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again today at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again tomorrow at {clock}."
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery is paused."
@@ -8697,6 +8862,10 @@ msgstr "未套用"
 msgid "Not applied yet"
 msgstr "尚未申請"
 
+#: src/features/directory/boards.tsx
+msgid "Not checked yet"
+msgstr ""
+
 #: src/features/settings/account/security.tsx
 msgid "Not connected"
 msgstr "未連接"
@@ -8818,6 +8987,10 @@ msgstr "備註"
 
 #: src/features/directory/page.tsx
 msgid "Notes, linked applications, and interviews will appear here."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Nothing checks this board yet."
 msgstr ""
 
 #: src/features/ats-checker/checker.tsx
@@ -9075,6 +9248,10 @@ msgstr "開啟{title}"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "開啟AI設定"
+
+#: src/features/directory/boards.tsx
+msgid "Open board"
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -9421,6 +9598,10 @@ msgstr "密碼不符。"
 #: src/features/assistant/assistant-panel.tsx
 msgid "Past conversations"
 msgstr "過去的談話"
+
+#: src/features/directory/boards.tsx
+msgid "Paste a careers or job board link"
+msgstr ""
 
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Paste a job link or posting, then check the role and company."
@@ -11038,6 +11219,10 @@ msgstr "第 {row} 列，{0}：「{value}」無效。"
 msgid "Run again"
 msgstr "重新執行"
 
+#: src/features/career/today.tsx
+msgid "Run now"
+msgstr ""
+
 #: src/features/homepage/prepare.tsx
 msgid "Run research with customers"
 msgstr "與客戶進行研究"
@@ -12433,6 +12618,10 @@ msgstr "停止音訊"
 msgid "Stop recording"
 msgstr "停止錄音"
 
+#: src/features/directory/boards.tsx
+msgid "Stop watching"
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Stop when you're done. Nothing is sent until then."
 msgstr "說完後請停止。在此之前不會傳送任何內容。"
@@ -12445,6 +12634,10 @@ msgstr "已停止"
 #: src/features/career/workspace/practise.tsx
 msgid "Stopped at {0}"
 msgstr "停在 {0}"
+
+#: src/features/directory/boards.tsx
+msgid "Stopped watching this board"
+msgstr ""
 
 #: src/features/assistant/conversation.tsx
 msgid "Stopped. No edits were proposed."
@@ -13066,6 +13259,10 @@ msgstr "密鑰在伺服器上加密並且不會再次顯示。儲存測試連線
 
 #: src/features/career/knowledge/preferences.tsx
 msgid "The kinds of role you aim resumes at, such as Platform / reliability. An application's primary and secondary lane are picked from these."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "The last check failed. Its last postings are kept, and the next check tries again."
 msgstr ""
 
 #: src/routes/builder/letter/-components/share-sheet.tsx
@@ -14471,6 +14668,30 @@ msgstr ""
 msgid "Warning"
 msgstr "警告”"
 
+#: src/features/directory/boards.tsx
+msgid "Watch {companyName}'s Greenhouse, Ashby or Lever board, and board checks bring its new roles that match your preferences into New roles on Career → Today."
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Watch companies in the Directory"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. {added} open roles matched and are in New roles."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. 1 open role matched and is in New roles."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. No open roles match your preferences right now."
+msgstr ""
+
 #: src/features/homepage/hero.tsx
 msgid "WCAG 2.1 AA"
 msgstr "WCAG 2.1 AA"
@@ -14736,6 +14957,10 @@ msgstr "按下傳送後，{shared}會傳送給 {connection}。"
 msgid "Where applications come from"
 msgstr "應徵來源"
 
+#: src/features/directory/boards.tsx
+msgid "Where you know people, most contacts first. Open one to find and confirm its job board."
+msgstr ""
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Where you want to work"
 msgstr "您想在哪裡工作"
@@ -14958,6 +15183,10 @@ msgstr "昨天 {time}"
 msgid "You"
 msgstr "你"
 
+#: src/features/career/schedule-sheet.tsx
+msgid "You already have a board checks schedule. Edit that one instead."
+msgstr ""
+
 #. placeholder {0}: result.takenBy
 #: src/features/resume/share/link-tab.tsx
 msgid "You already use this for “{0}”."
@@ -14994,6 +15223,10 @@ msgstr "您先前忘記過這項，所以沒有再次儲存。"
 #: src/hooks/use-form-blocker.tsx
 msgid "You have unsaved changes that will be lost."
 msgstr "您有未儲存的變更，這些變更將會遺失。"
+
+#: src/features/career/today.tsx
+msgid "You know"
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "You partnered with engineering. How you led the work isn’t described yet."

@@ -1,3 +1,4 @@
+import type { BoardPay } from "@reactive-resume/schema/boards";
 import type {
 	CareerNotice,
 	CareerProfileData,
@@ -14,6 +15,8 @@ import { generateId } from "@reactive-resume/utils/string";
 import { aiProvider } from "./agent";
 import { application } from "./applications";
 import { user } from "./auth";
+import { jobBoardPosting } from "./boards";
+import { company } from "./directory";
 
 const owned = () => ({
 	id: pg
@@ -216,8 +219,19 @@ export const careerOpportunity = pg.pgTable(
 		dismissedAt: pg.timestamp("dismissed_at", { withTimezone: true }),
 		/** Set when tracked in Applications; a tracked role never returns in later runs. */
 		trackedApplicationId: pg.text("tracked_application_id").references(() => application.id, { onDelete: "set null" }),
+		/** search (web discovery) or board (a watched company's job board). */
+		source: pg.text("source").notNull().default("search"),
+		/** Board finds: the Directory company whose board listed it. */
+		companyId: pg.text("company_id").references(() => company.id, { onDelete: "set null" }),
+		/** Board finds: the shared posting, which says when it closes. */
+		postingId: pg.text("posting_id").references(() => jobBoardPosting.id, { onDelete: "set null" }),
+		pay: pg.jsonb("pay").notNull().$type<BoardPay[]>().default([]),
+		remote: pg.boolean("remote").notNull().default(false),
+		postedAt: pg.timestamp("posted_at", { withTimezone: true }),
+		/** Its posting disappeared from the board: out of New roles. Tracked applications aren't touched. */
+		closedAt: pg.timestamp("closed_at", { withTimezone: true }),
 	},
-	(t) => [pg.uniqueIndex().on(t.userId, t.url)],
+	(t) => [pg.uniqueIndex().on(t.userId, t.url), pg.index().on(t.postingId)],
 );
 
 /** One application's live workspace state: answers, checklist ticks, questions to ask. */

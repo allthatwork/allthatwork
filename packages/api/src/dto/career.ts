@@ -1,6 +1,7 @@
 import { createSelectSchema } from "drizzle-zod";
 import z from "zod";
 import * as tables from "@reactive-resume/db/schema";
+import { boardPaySchema } from "@reactive-resume/schema/boards";
 import {
 	careerNoticeSchema,
 	careerSourceSchema,
@@ -32,9 +33,11 @@ export const careerNotificationSchema = createSelectSchema(tables.careerNotifica
 	title: z.string(),
 	body: z.string(),
 });
-export const careerOpportunitySchema = createSelectSchema(tables.careerOpportunity)
+export const careerOpportunitySchema = createSelectSchema(tables.careerOpportunity, { pay: z.array(boardPaySchema) })
 	.omit({ description: true })
 	.extend({
+		/** The company's Directory contacts (up to five), for a warm route in. */
+		contacts: z.array(z.object({ id: z.string(), name: z.string(), position: z.string() })),
 		/** Target roles and locations from Preferences that the posting matches, in the user's words. */
 		matches: z.array(z.string()),
 		/** What the posting doesn't say. */

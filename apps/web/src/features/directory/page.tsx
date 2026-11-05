@@ -10,6 +10,7 @@ import { Button } from "@reactive-resume/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@reactive-resume/ui/components/dialog";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
+import { CompanyBoards, WatchSuggestions } from "./boards";
 import { useCareerTime } from "@/features/career/shared";
 import { client, orpc } from "@/libs/orpc/client";
 
@@ -167,6 +168,7 @@ function CompaniesList() {
 					<Trans>Add company</Trans>
 				</Button>
 			</div>
+			{!search && <WatchSuggestions />}
 			<LoadState pending={query.isPending} error={query.isError} retry={() => void query.refetch()} />
 			{rows?.length === 0 && (
 				<p className="text-ink-2">
@@ -332,6 +334,7 @@ function CompanyPage({ id, onDeleted }: DetailProps) {
 					</p>
 				)}
 			</div>
+			<CompanyBoards companyId={company.id} companyName={company.name} />
 			<DeleteAction
 				label={t`Delete company`}
 				onDelete={async () => {

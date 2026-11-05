@@ -402,6 +402,11 @@ msgstr ""
 msgid "{0} closed"
 msgstr ""
 
+#. placeholder {0}: row.contacts
+#: src/features/directory/boards.tsx
+msgid "{0} contacts"
+msgstr ""
+
 #. placeholder {0}: contactsResult.created
 #. placeholder {1}: contactsResult.updated
 #. placeholder {2}: contactsResult.unchanged
@@ -483,6 +488,11 @@ msgstr ""
 msgid "{0} invalid rows skipped; {1} repeated profiles removed; {2} invalid emails and {3} invalid connection dates left blank."
 msgstr ""
 
+#. placeholder {0}: row.openRoles
+#: src/features/directory/boards.tsx
+msgid "{0} matching open roles"
+msgstr ""
+
 #. placeholder {0}: i18n.number(row.minutes)
 #. placeholder {0}: row.minutes
 #: src/features/career/workspace/prepare.tsx
@@ -550,6 +560,17 @@ msgstr ""
 #. placeholder {1}: number.format(node.facts.excluded)
 #: src/features/career/knowledge/groups.tsx
 msgid "{0} on · {1} off · private, never sent unless an application includes it"
+msgstr ""
+
+#. placeholder {0}: board.jobCount
+#: src/features/directory/boards.tsx
+msgid "{0} open roles"
+msgstr ""
+
+#. placeholder {0}: board.jobCount ?? 0
+#. placeholder {1}: when(board.fetchedAt)
+#: src/features/directory/boards.tsx
+msgid "{0} open roles · checked {1}"
 msgstr ""
 
 #. placeholder {0}: document.posting.company
@@ -1024,8 +1045,16 @@ msgstr ""
 msgid "1 column, inline"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "1 contact"
+msgstr ""
+
 #: src/features/applications/components/calendar-view.tsx
 msgid "1 interview"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "1 matching open role"
 msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
@@ -1173,6 +1202,10 @@ msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "A gap is not a problem. Add a one-line explanation if you want to; many strong resumes simply do not."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "A guess can find another company's board. Check the name and roles before confirming."
 msgstr ""
 
 #: src/features/homepage/prepare.tsx
@@ -1362,6 +1395,10 @@ msgstr ""
 msgid "Add “{typed}”"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Add a board checks schedule"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Add a fact to {group}"
 msgstr ""
@@ -1450,6 +1487,10 @@ msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Add a tag and press Enter…"
+msgstr ""
+
+#: src/features/career/knowledge/preferences.tsx
+msgid "Add a word, then Enter"
 msgstr ""
 
 #: src/features/settings/ai/providers.tsx
@@ -1622,6 +1663,10 @@ msgstr ""
 
 #: src/features/applications/components/list-view.tsx
 msgid "Add tag"
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Add target roles in Preferences first: board checks only bring roles whose title matches one."
 msgstr ""
 
 #: src/features/resume/editor/write/outline.tsx
@@ -1902,6 +1947,10 @@ msgstr ""
 
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Already interviewing"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Already watching"
 msgstr ""
 
 #: src/features/resume/editor/check/check-panel.tsx
@@ -2580,6 +2629,15 @@ msgstr ""
 msgid "Board"
 msgstr ""
 
+#: src/features/career/schedule-sheet.tsx
+#: src/features/career/today.tsx
+msgid "Board checks"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Board checks start within a minute. New roles appear here."
+msgstr ""
+
 #: src/routes/builder/$resumeId/-sidebar/right/sections/typography.tsx
 msgctxt "Body Text (paragraphs, lists, etc.)"
 msgid "Body"
@@ -2784,6 +2842,10 @@ msgstr ""
 msgid "Career preferences"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Careers or job board link"
+msgstr ""
+
 #: src/libs/locale.ts
 msgid "Catalan"
 msgstr ""
@@ -2898,6 +2960,14 @@ msgstr ""
 msgid "Check any PDF, no account needed"
 msgstr ""
 
+#: src/features/career/schedule-sheet.tsx
+msgid "Check boards"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Check company boards"
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Check every claim, date and result against your experience."
 msgstr ""
@@ -2989,6 +3059,10 @@ msgstr ""
 
 #: src/features/assistant/assistant-panel.tsx
 msgid "Checks every bullet for action and result"
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
 msgstr ""
 
 #: src/libs/locale.ts
@@ -3230,6 +3304,10 @@ msgstr ""
 msgid "Companies"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Companies to watch"
+msgstr ""
+
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
@@ -3277,6 +3355,7 @@ msgstr ""
 msgid "Compress or remove large images to keep uploads quick."
 msgstr ""
 
+#: src/features/directory/boards.tsx
 #: src/hooks/use-confirm.tsx
 msgid "Confirm"
 msgstr ""
@@ -3291,6 +3370,10 @@ msgstr ""
 
 #: src/features/applications/components/application-detail-sheet.tsx
 msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Confirm the board to watch it."
 msgstr ""
 
 #: src/features/career/workspace/messages.tsx
@@ -3852,12 +3935,20 @@ msgstr ""
 msgid "Couldn't load the sample file. Try again."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Couldn't load this company's job boards."
+msgstr ""
+
 #: src/features/career/load-state.tsx
 msgid "Couldn't load this. Your saved data hasn't changed."
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Couldn't load your AI limits."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't look for a board."
 msgstr ""
 
 #: src/features/settings/ai/providers.tsx
@@ -3891,6 +3982,10 @@ msgstr ""
 
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Couldn't read that file."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't read that link."
 msgstr ""
 
 #: src/features/career/knowledge/import.tsx
@@ -4059,6 +4154,10 @@ msgstr ""
 msgid "Couldn't send the email. Try again."
 msgstr ""
 
+#: src/features/career/today.tsx
+msgid "Couldn't start board checks."
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Couldn't start recording. Choose an audio file, or type your answer."
 msgstr ""
@@ -4066,6 +4165,10 @@ msgstr ""
 #: src/features/assistant/assistant-panel.tsx
 #: src/features/career/coach-thread.tsx
 msgid "Couldn't start the conversation. Try again."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't stop watching this board."
 msgstr ""
 
 #: src/features/career/coach.tsx
@@ -4106,6 +4209,10 @@ msgstr ""
 
 #: src/features/settings/account/profile.tsx
 msgid "Couldn't upload the photo."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Couldn't watch this board."
 msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
@@ -5282,6 +5389,10 @@ msgid "Every 3 days"
 msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
+msgid "Every 30 days"
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
 msgid "Every day"
 msgstr ""
 
@@ -5634,6 +5745,10 @@ msgstr ""
 msgid "Find a directory contact"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Find board"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "Find out why, and shorten setup without adding support work."
 msgstr ""
@@ -5900,6 +6015,10 @@ msgstr ""
 msgid "Found on {source}"
 msgstr ""
 
+#: src/features/career/knowledge/preferences.tsx
+msgid "Found roles whose title has one of these, such as Intern or Sales, are hidden from New roles. A phrase hides a title only when the title has all of its words."
+msgstr ""
+
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Found the role and company on the page. Review the details before saving."
 msgstr ""
@@ -5952,6 +6071,10 @@ msgstr ""
 msgid "From a document you attached"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "From a posting link on file:"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "From an imported file"
 msgstr ""
@@ -5962,6 +6085,10 @@ msgstr "ezivela konjiniyela abayisekelayo"
 
 #: src/features/career/workspace/fit.tsx
 msgid "From Fit"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "From its job board"
 msgstr ""
 
 #: src/features/resume/share/format.ts
@@ -6890,6 +7017,14 @@ msgstr ""
 msgid "Job"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Job board"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Job boards of the companies you watch"
+msgstr ""
+
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Job description"
@@ -7264,6 +7399,10 @@ msgstr ""
 msgid "Leave out"
 msgstr ""
 
+#: src/features/career/knowledge/preferences.tsx
+msgid "Leave out titles with"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr ""
@@ -7625,6 +7764,7 @@ msgstr ""
 msgid "Loading workspace…"
 msgstr ""
 
+#: src/features/directory/boards.tsx
 #: src/features/directory/page.tsx
 msgid "Loading…"
 msgstr ""
@@ -7668,6 +7808,10 @@ msgstr ""
 
 #: src/features/career/knowledge/budget.tsx
 msgid "Look it up instead"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Look up"
 msgstr ""
 
 #: src/features/directory/page.tsx
@@ -8396,6 +8540,10 @@ msgstr ""
 msgid "No archived facts match."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "No board found from the name. Paste the company's careers page link instead."
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "No bullet lists were found."
 msgstr ""
@@ -8505,6 +8653,10 @@ msgstr ""
 msgid "No facts yet. Add one above."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "No Greenhouse, Ashby or Lever board found at that link."
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "No group"
 msgstr ""
@@ -8535,6 +8687,19 @@ msgstr ""
 
 #: src/features/resume/editor/check/issues.ts
 msgid "No location"
+msgstr ""
+
+#. placeholder {0}: day(active.nextRunAt)
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again on {0} at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again today at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Board checks run again tomorrow at {clock}."
 msgstr ""
 
 #: src/features/career/today.tsx
@@ -8692,6 +8857,10 @@ msgstr ""
 msgid "Not applied yet"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Not checked yet"
+msgstr ""
+
 #: src/features/settings/account/security.tsx
 msgid "Not connected"
 msgstr ""
@@ -8813,6 +8982,10 @@ msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "Notes, linked applications, and interviews will appear here."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Nothing checks this board yet."
 msgstr ""
 
 #: src/features/ats-checker/checker.tsx
@@ -9069,6 +9242,10 @@ msgstr ""
 #: src/features/resume/editor/check/writing-tab.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Open board"
 msgstr ""
 
 #: src/features/career/today.tsx
@@ -9415,6 +9592,10 @@ msgstr ""
 
 #: src/features/assistant/assistant-panel.tsx
 msgid "Past conversations"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Paste a careers or job board link"
 msgstr ""
 
 #: src/features/applications/components/add-application-dialog.tsx
@@ -11033,6 +11214,10 @@ msgstr ""
 msgid "Run again"
 msgstr ""
 
+#: src/features/career/today.tsx
+msgid "Run now"
+msgstr ""
+
 #: src/features/homepage/prepare.tsx
 msgid "Run research with customers"
 msgstr ""
@@ -12428,6 +12613,10 @@ msgstr ""
 msgid "Stop recording"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Stop watching"
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Stop when you're done. Nothing is sent until then."
 msgstr ""
@@ -12439,6 +12628,10 @@ msgstr ""
 #. placeholder {0}: clock(seconds)
 #: src/features/career/workspace/practise.tsx
 msgid "Stopped at {0}"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Stopped watching this board"
 msgstr ""
 
 #: src/features/assistant/conversation.tsx
@@ -13061,6 +13254,10 @@ msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx
 msgid "The kinds of role you aim resumes at, such as Platform / reliability. An application's primary and secondary lane are picked from these."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "The last check failed. Its last postings are kept, and the next check tries again."
 msgstr ""
 
 #: src/routes/builder/letter/-components/share-sheet.tsx
@@ -14466,6 +14663,30 @@ msgstr ""
 msgid "Warning"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Watch {companyName}'s Greenhouse, Ashby or Lever board, and board checks bring its new roles that match your preferences into New roles on Career → Today."
+msgstr ""
+
+#: src/features/career/schedule-sheet.tsx
+msgid "Watch companies in the Directory"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. {added} open roles matched and are in New roles."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. 1 open role matched and is in New roles."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Watching. No open roles match your preferences right now."
+msgstr ""
+
 #: src/features/homepage/hero.tsx
 msgid "WCAG 2.1 AA"
 msgstr ""
@@ -14731,6 +14952,10 @@ msgstr ""
 msgid "Where applications come from"
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "Where you know people, most contacts first. Open one to find and confirm its job board."
+msgstr ""
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Where you want to work"
 msgstr ""
@@ -14953,6 +15178,10 @@ msgstr ""
 msgid "You"
 msgstr ""
 
+#: src/features/career/schedule-sheet.tsx
+msgid "You already have a board checks schedule. Edit that one instead."
+msgstr ""
+
 #. placeholder {0}: result.takenBy
 #: src/features/resume/share/link-tab.tsx
 msgid "You already use this for “{0}”."
@@ -14988,6 +15217,10 @@ msgstr ""
 
 #: src/hooks/use-form-blocker.tsx
 msgid "You have unsaved changes that will be lost."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "You know"
 msgstr ""
 
 #: src/features/homepage/prepare.tsx

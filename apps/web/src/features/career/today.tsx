@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouteContext, useRouter } from "@tanstack/react-router";
 import { AnimatePresence } from "motion/react";
 import { useRef, useState } from "react";
+import { formatBoardPay } from "@reactive-resume/schema/boards";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { IconButton } from "@reactive-resume/ui/components/icon-button";
@@ -179,11 +180,13 @@ function NeedsYou({ now, onReview, className }: NeedsYouProps) {
 
 	const meta = (row: Notification) => {
 		const source =
-			row.notice.type === "opportunities"
-				? t`Opportunity discovery`
-				: row.notice.type === "briefing"
-					? t`Interview preparation`
-					: applications?.find((application) => application.id === row.applicationId)?.company;
+			row.notice.type === "boards-failed" || (row.notice.type === "opportunities" && row.notice.source === "boards")
+				? t`Board checks`
+				: row.notice.type === "opportunities"
+					? t`Opportunity discovery`
+					: row.notice.type === "briefing"
+						? t`Interview preparation`
+						: applications?.find((application) => application.id === row.applicationId)?.company;
 		const offset = dayOffset(row.createdAt, now);
 		const stamp =
 			offset === null
@@ -356,8 +359,14 @@ function NewRoles({ ref, now, deleted, onOpenSchedule, className }: NewRolesProp
 		);
 	const shown = expanded ? visible : visible.slice(0, 5);
 	const discovery =
-		schedules?.filter((schedule) => schedule.kind === "discovery" && !deleted.includes(schedule.id)) ?? [];
-	const active = discovery.find((schedule) => schedule.enabled) ?? discovery[0];
+		schedules?.filter(
+			(schedule) => (schedule.kind === "discovery" || schedule.kind === "boards") && !deleted.includes(schedule.id),
+		) ?? [];
+	// The next of them to run says when new roles may come.
+	const active =
+		discovery
+			.filter((schedule) => schedule.enabled)
+			.sort((a, b) => new Date(a.nextRunAt).getTime() - new Date(b.nextRunAt).getTime())[0] ?? discovery[0];
 
 	const onTrack = (row: Opportunity) => track.mutate({ id: row.id });
 	const onUndoTrack = (applicationId: string) => untrack.mutate({ id: applicationId });
@@ -388,6 +397,16 @@ function NewRoles({ ref, now, deleted, onOpenSchedule, className }: NewRolesProp
 			);
 		const offset = dayOffset(active.nextRunAt, now);
 		const clock = time(active.nextRunAt);
+		if (active.kind === "boards")
+			return (
+				<p className="px-0.5 py-1.5 text-[13px] text-ink-3">
+					{offset === 0
+						? t`No new roles. Board checks run again today at ${clock}.`
+						: offset === 1
+							? t`No new roles. Board checks run again tomorrow at ${clock}.`
+							: t`No new roles. Board checks run again on ${day(active.nextRunAt)} at ${clock}.`}
+				</p>
+			);
 		return (
 			<p className="px-0.5 py-1.5 text-[13px] text-ink-3">
 				{offset === 0
@@ -424,14 +443,20 @@ function NewRoles({ ref, now, deleted, onOpenSchedule, className }: NewRolesProp
 						<p className="text-sm text-ink-2">
 							<Trans>Get new roles here every morning</Trans>
 						</p>
-						<Button
-							variant="secondary"
-							className="h-8 px-3 text-[13px]"
-							onClick={() => onOpenSchedule("new:discovery")}
-						>
-							<Icon name="globe-simple" size={18} />
-							<Trans>Set up discovery</Trans>
-						</Button>
+						<div className="flex flex-wrap gap-2">
+							<Button
+								variant="secondary"
+								className="h-8 px-3 text-[13px]"
+								onClick={() => onOpenSchedule("new:discovery")}
+							>
+								<Icon name="globe-simple" size={18} />
+								<Trans>Set up discovery</Trans>
+							</Button>
+							<Button variant="secondary" className="h-8 px-3 text-[13px]" onClick={() => onOpenSchedule("new:boards")}>
+								<Icon name="briefcase" size={18} />
+								<Trans>Check company boards</Trans>
+							</Button>
+						</div>
 					</div>
 				)
 			) : (
@@ -484,8 +509,10 @@ type RoleCardProps = {
 const companyOf = (row: Opportunity) => row.company || new URL(row.url).hostname.replace(/^www\./, "");
 
 function RoleCard({ row, found, tracked, pending, onTrack, onUndo, onDismiss }: RoleCardProps) {
+	const { locale } = useCareerTime();
 	const { matches, unknowns } = row;
 	const company = companyOf(row);
+	const pay = formatBoardPay(row.pay, locale);
 	const unknownLabels = { salary: t`Salary not listed`, office: t`Office days not stated` };
 	return (
 		<article
@@ -504,22 +531,50 @@ function RoleCard({ row, found, tracked, pending, onTrack, onUndo, onDismiss }: 
 					<h3 id={`role-${row.id}`} className="text-[15px] font-semibold">
 						{row.role}
 					</h3>
-					<p className="text-[13px] text-ink-3">{[company, row.location, found].filter(Boolean).join(" · ")}</p>
+					<p className="text-[13px] text-ink-3">
+						{[company, row.location, found, row.source === "board" ? t`From its job board` : null]
+							.filter(Boolean)
+							.join(" · ")}
+					</p>
 				</div>
 			</div>
 			{row.snippet && <p className="text-sm leading-[21px] text-ink-2">{row.snippet}</p>}
-			{matches.length + unknowns.length > 0 && (
+			{row.contacts.length > 0 && (
+				<p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-2">
+					<Icon name="user-circle" size={16} className="shrink-0 text-ink-3" />
+					<span className="text-ink-3">
+						<Trans>You know</Trans>
+					</span>
+					{row.contacts.map((contact, index) => (
+						<span key={contact.id}>
+							<Link
+								to="/dashboard/directory"
+								search={{ tab: "contacts", contact: contact.id }}
+								className="underline underline-offset-2 hover:text-ink"
+							>
+								{contact.name}
+							</Link>
+							{contact.position && <span className="text-ink-3"> ({contact.position})</span>}
+							{index < row.contacts.length - 1 && ","}
+						</span>
+					))}
+				</p>
+			)}
+			{matches.length + unknowns.length + (pay ? 1 : 0) > 0 && (
 				<div className="flex flex-wrap gap-1.5">
+					{pay && <InfoChip tone="match">{pay}</InfoChip>}
 					{matches.map((match) => (
 						<InfoChip key={match} tone="match">
 							{match}
 						</InfoChip>
 					))}
-					{unknowns.map((unknown) => (
-						<InfoChip key={unknown} tone="unknown">
-							{unknownLabels[unknown]}
-						</InfoChip>
-					))}
+					{unknowns
+						.filter((unknown) => !(pay && unknown === "salary"))
+						.map((unknown) => (
+							<InfoChip key={unknown} tone="unknown">
+								{unknownLabels[unknown]}
+							</InfoChip>
+						))}
 				</div>
 			)}
 			<Swap id={tracked ? "tracked" : "actions"}>
@@ -653,7 +708,7 @@ function ComingUp({ now, className }: ComingUpProps) {
 
 type SchedulesProps = { deleted: string[]; onOpenSchedule: (schedule: string) => void; className?: string };
 
-const KIND_ORDER = ["discovery", "prepare", "follow-up"];
+const KIND_ORDER = ["discovery", "boards", "prepare", "follow-up"];
 
 function Schedules({ deleted, onOpenSchedule, className }: SchedulesProps) {
 	const queryClient = useQueryClient();
@@ -694,6 +749,11 @@ function Schedules({ deleted, onOpenSchedule, className }: SchedulesProps) {
 			failed(error, t`Couldn't change this schedule.`);
 		},
 	});
+	const runNow = useMutation({
+		...orpc.career.runSchedule.mutationOptions(),
+		onSuccess: () => toast.add({ description: t`Board checks start within a minute. New roles appear here.` }),
+		onError: (error) => failed(error, t`Couldn't start board checks.`),
+	});
 	// A stable order (kind, then newest): an update must not reshuffle rows that share a creation time.
 	const rows = schedules
 		?.filter((row) => !deleted.includes(row.id))
@@ -707,6 +767,7 @@ function Schedules({ deleted, onOpenSchedule, className }: SchedulesProps) {
 	const describe = (row: Schedule) => {
 		const application = applications?.find((item) => item.id === row.applicationId);
 		if (row.kind === "discovery") return row.query;
+		if (row.kind === "boards") return t`Job boards of the companies you watch`;
 		if (row.kind === "follow-up") return application ? `${application.company} · ${application.role}` : "";
 		const interview = application?.activity.find((entry) => entry.type === "interview" && entry.id === row.interviewId);
 		const kind = interview?.type === "interview" ? (interviewKindOf(interview.kind)?.label ?? interview.kind) : null;
@@ -716,7 +777,7 @@ function Schedules({ deleted, onOpenSchedule, className }: SchedulesProps) {
 	const status = (row: Schedule) => {
 		if (!row.intervalDays && row.lastQueuedAt) return t`Done · ${day(row.nextRunAt)}`;
 		let line = when(row.nextRunAt);
-		if (row.kind === "discovery") {
+		if (row.kind === "discovery" || row.kind === "boards") {
 			const clock = time(row.nextRunAt);
 			const next = day(row.nextRunAt);
 			const days = row.intervalDays ?? 1;
@@ -809,6 +870,17 @@ function Schedules({ deleted, onOpenSchedule, className }: SchedulesProps) {
 											{status(row)}
 										</span>
 									</button>
+									{row.kind === "boards" && row.enabled && (
+										<Button
+											variant="ghost"
+											size="sm"
+											className="text-ink-2"
+											loading={runNow.isPending && runNow.variables?.id === row.id}
+											onClick={() => runNow.mutate({ id: row.id })}
+										>
+											<Trans>Run now</Trans>
+										</Button>
+									)}
 									<Switch
 										aria-label={[title, describe(row)].filter(Boolean).join(" · ")}
 										checked={row.enabled}
