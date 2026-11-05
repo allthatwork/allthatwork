@@ -79,6 +79,7 @@ const application: Application = {
 	searchFit: null,
 	searchNotes: null,
 	searchAt: null,
+	targetingBuildStatus: null,
 	targetingNotes: null,
 	targetingFit: null,
 	targetingReviews: [],

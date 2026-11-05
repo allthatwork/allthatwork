@@ -38,6 +38,7 @@ const fieldLabel = (field: CsvField) =>
 		foundBy: t`Found by`,
 		searchFit: t`Search fit`,
 		searchNotes: t`Search notes`,
+		targetingBuildStatus: t`Build status`,
 		targetingPrimaryLane: t`Primary lane`,
 		targetingSecondaryLane: t`Secondary lane`,
 		sourceUrl: t`Link`,

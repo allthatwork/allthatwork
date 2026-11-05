@@ -10,6 +10,7 @@ import {
 	interviewDetailsSchema,
 	interviewKindSchema,
 	postingSourceSchema,
+	targetingBuildStatusSchema,
 	targetingQuestionSchema,
 	targetingQuestionStatusSchema,
 	targetingReviewSchema,
@@ -87,6 +88,11 @@ const applicationSchema = createSelectSchema(schema.application, {
 		.nullable()
 		.describe("The job search's assessment of the posting. The user's own notes stay in `notes`."),
 	searchAt: z.date().nullable().describe("When the search assessed the posting. Set on save when omitted."),
+	targetingBuildStatus: targetingBuildStatusSchema
+		.nullable()
+		.describe(
+			"Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built.",
+		),
 	targetingNotes: z
 		.string()
 		.max(MAX_APPLICATION_TARGETING_NOTES_CHARS)
@@ -169,6 +175,7 @@ const editableSchema = applicationSchema.pick({
 	searchFit: true,
 	searchNotes: true,
 	searchAt: true,
+	targetingBuildStatus: true,
 	targetingNotes: true,
 	targetingReviews: true,
 	targetingPrimaryLane: true,

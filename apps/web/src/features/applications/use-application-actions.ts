@@ -1,5 +1,9 @@
 import type { Application } from "./types";
-import type { ApplicationClosedReason, ApplicationStatus } from "@reactive-resume/schema/applications/data";
+import type {
+	ApplicationClosedReason,
+	ApplicationStatus,
+	TargetingBuildStatus,
+} from "@reactive-resume/schema/applications/data";
 import { t } from "@lingui/core/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@reactive-resume/ui/components/toast";
@@ -49,6 +53,9 @@ export function useApplicationActions() {
 								...row,
 								...(status ? { status } : {}),
 								...(input.closedReason !== undefined ? { closedReason: input.closedReason } : {}),
+								...(input.targetingBuildStatus !== undefined
+									? { targetingBuildStatus: input.targetingBuildStatus }
+									: {}),
 							}
 						: row,
 				),
@@ -84,5 +91,7 @@ export function useApplicationActions() {
 				{ id: application.id, status: "closed", closedReason },
 				{ onSuccess: () => toast.add({ description: t`Application closed` }) },
 			),
+		setBuildStatus: (application: Pick<Application, "id">, targetingBuildStatus: TargetingBuildStatus | null) =>
+			update.mutate({ id: application.id, targetingBuildStatus }),
 	};
 }

@@ -4,6 +4,7 @@ import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
 import { cn } from "@reactive-resume/utils/style";
 import { Eyebrow, useCareerTime } from "../shared";
+import { BuildStatusControl } from "@/features/applications/components/build-status";
 import { TargetingNoteButton } from "@/features/applications/components/detail/assessments";
 
 type AssessmentsProps = { application: Application };
@@ -79,7 +80,11 @@ export function AssessmentContext({ application }: AssessmentsProps) {
 	const lanes = [application.targetingPrimaryLane, application.targetingSecondaryLane].filter(Boolean);
 	const reviewers = reviewSummary(application.targetingReviews);
 	const hasSearch = application.searchFit !== null || Boolean(application.searchNotes) || Boolean(found);
-	const hasTargeting = application.targetingFit !== null || lanes.length > 0 || Boolean(application.targetingNotes);
+	const hasTargeting =
+		application.targetingBuildStatus !== null ||
+		application.targetingFit !== null ||
+		lanes.length > 0 ||
+		Boolean(application.targetingNotes);
 
 	return (
 		<>
@@ -125,6 +130,7 @@ export function AssessmentContext({ application }: AssessmentsProps) {
 							<span className="font-semibold text-ink tabular-nums">{application.targetingFit}%</span>
 						)}
 						{lanes.length > 0 && <span>{lanes.join(" + ")}</span>}
+						<BuildStatusControl application={application} />
 					</p>
 					{reviewers && <p className="text-xs text-ink-3 tabular-nums">{reviewers}</p>}
 					{application.targetingNotes && (

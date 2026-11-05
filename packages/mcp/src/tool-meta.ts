@@ -14,6 +14,7 @@ import {
 	contactSchema,
 	interviewDetailsSchema,
 	interviewKindSchema,
+	targetingBuildStatusSchema,
 	targetingQuestionSchema,
 	targetingReviewSchema,
 } from "@reactive-resume/schema/applications/data";
@@ -244,6 +245,12 @@ const applicationMutableFieldsSchema = {
 		.nullable()
 		.optional()
 		.describe("When the search assessed the posting, ISO 8601. Defaults to now when search fields are written."),
+	targetingBuildStatus: targetingBuildStatusSchema
+		.nullable()
+		.optional()
+		.describe(
+			"Where building the targeted resume package stands: `build` (queued), `building` (in progress), `built` or `failed`; null when not queued or built.",
+		),
 	targetingNotes: z
 		.string()
 		.max(200_000)

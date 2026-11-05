@@ -23,6 +23,7 @@ import { cn } from "@reactive-resume/utils/style";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
 import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel, LIST_ORDER, PIPELINE } from "../stages";
 import { useInvalidateApplications } from "../use-application-actions";
+import { BuildStatusControl } from "./build-status";
 import { useConfirm } from "@/hooks/use-confirm";
 import { formatRelativeTime } from "@/libs/locale";
 import { D2, EASE, EXIT } from "@/libs/motion";
@@ -139,6 +140,9 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 							{header("role", t`Role`)}
 							{header("next", t`Next step`)}
 							{header("fit", t`Fit`, "max-md:hidden")}
+							<th scope="col" className="px-2 text-start font-medium max-md:hidden">
+								<Trans>Build</Trans>
+							</th>
 							<th scope="col" className="px-2 text-start font-medium max-lg:hidden">
 								<Trans>Stage</Trans>
 							</th>
@@ -156,7 +160,7 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 					return (
 						<tbody key={status} aria-labelledby={groupId}>
 							<tr>
-								<th scope="colgroup" colSpan={7} className="pt-3 text-start">
+								<th scope="colgroup" colSpan={8} className="pt-3 text-start">
 									<button
 										type="button"
 										id={groupId}
@@ -297,6 +301,9 @@ function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen
 				) : (
 					<span title={t`Search fit`}>{application.searchFit}%</span>
 				)}
+			</td>
+			<td className="relative z-10 px-2 whitespace-nowrap max-md:hidden">
+				<BuildStatusControl application={application} />
 			</td>
 			<td className="px-2 max-lg:hidden">
 				<span className="flex items-center gap-1.5 text-ink-2">

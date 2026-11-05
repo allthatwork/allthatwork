@@ -1,0 +1,1 @@
+ALTER TABLE "application" ADD COLUMN "targeting_build_status" text;

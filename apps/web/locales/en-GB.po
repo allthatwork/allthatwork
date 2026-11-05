@@ -2660,6 +2660,22 @@ msgstr "Bring in an Export everything zip from Reactive Resume or {APP_NAME}"
 msgid "Bring in documents, applications and Knowledge from an Export everything zip, made in Reactive Resume or {APP_NAME}."
 msgstr "Bring in documents, applications and Knowledge from an Export everything zip, made in Reactive Resume or {APP_NAME}."
 
+#: src/features/applications/components/build-status.tsx
+#: src/features/applications/components/list-view.tsx
+msgid "Build"
+msgstr "Build"
+
+#. placeholder {0}: application.role
+#. placeholder {1}: application.company
+#: src/features/applications/components/build-status.tsx
+msgid "Build resume for {0} at {1}"
+msgstr "Build resume for {0} at {1}"
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Build status"
+msgstr "Build status"
+
 #: src/features/homepage/ui.tsx
 msgid "Build your resume"
 msgstr "Build your resume"
@@ -2668,6 +2684,14 @@ msgstr "Build your resume"
 #: src/features/command-palette/index.tsx
 msgid "Builder Command Palette"
 msgstr "Builder Command Palette"
+
+#: src/features/applications/components/build-status.tsx
+msgid "Building"
+msgstr "Building"
+
+#: src/features/applications/components/build-status.tsx
+msgid "Built"
+msgstr "Built"
 
 #: src/features/homepage/sheet.tsx
 msgid "Built a shared design system used by six product teams, cutting UI review time by 40%."
@@ -2727,6 +2751,7 @@ msgstr "Can software read your resume?"
 #: src/dialogs/auth/enable-two-factor.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/detail/close-dialog.tsx
 #: src/features/applications/components/detail/contacts.tsx
 #: src/features/applications/components/export-applications-sheet.tsx
@@ -5454,6 +5479,7 @@ msgstr "Facts shared with each message"
 msgid "Facts, stories and preferences that are switched on in Knowledge"
 msgstr "Facts, stories and preferences that are switched on in Knowledge"
 
+#: src/features/applications/components/build-status.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Failed"
 msgstr "Failed"
@@ -5645,6 +5671,7 @@ msgstr "Finnish"
 msgid "First run"
 msgstr "First run"
 
+#: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
@@ -10037,6 +10064,14 @@ msgstr "Questions copied"
 msgid "Questions to ask"
 msgstr "Questions to ask"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Queue for resume build"
+msgstr "Queue for resume build"
+
+#: src/features/applications/components/build-status.tsx
+msgid "Queued for build (click to unqueue)"
+msgstr "Queued for build (click to unqueue)"
+
 #: src/features/homepage/remember.tsx
 msgid "R"
 msgstr "R"
@@ -10260,6 +10295,10 @@ msgstr "Reason"
 #: src/features/settings/ai/reasoning.tsx
 msgid "Reasoning"
 msgstr "Reasoning"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Rebuild"
+msgstr "Rebuild"
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recalled"
@@ -10745,6 +10784,14 @@ msgstr "Resume + letter"
 msgid "Resume attached"
 msgstr "Resume attached"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build failed or stopped"
+msgstr "Resume build failed or stopped"
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build in progress"
+msgstr "Resume build in progress"
+
 #: src/features/resume/preview/resume-accessible-text.tsx
 msgid "Resume content"
 msgstr "Resume content"
@@ -10768,6 +10815,10 @@ msgstr "Resume length"
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Resume length and reminders. Off keeps yours."
 msgstr "Resume length and reminders. Off keeps yours."
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume package built"
+msgstr "Resume package built"
 
 #: src/routes/builder/$resumeId/-components/page-canvas.tsx
 msgid "Resume page"
@@ -10813,6 +10864,10 @@ msgstr "Retrieved {0}. Origin freshness is unknown unless reported."
 #: src/routes/dashboard/applications/index.tsx
 msgid "Retry"
 msgstr "Retry"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Retry build"
+msgstr "Retry build"
 
 #: src/features/applications/components/application-notes.tsx
 msgid "Retry save"

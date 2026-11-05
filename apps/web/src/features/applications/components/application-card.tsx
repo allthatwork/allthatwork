@@ -1,10 +1,12 @@
 import type { Application } from "../types";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
+import { Trans } from "@lingui/react/macro";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
 import { ApplicationActionsMenu } from "./application-actions-menu";
+import { BuildStatusControl } from "./build-status";
 
 type ApplicationCardProps = {
 	application: Application;
@@ -54,15 +56,25 @@ export function ApplicationCard({ application, onClick, withMenu = false, draggi
 			>
 				<Icon name={next.icon} size={15} className="shrink-0" />
 				<span className="truncate">{next.title}</span>
-				{application.searchFit !== null && (
-					<span
-						title={t`Search fit`}
-						aria-label={t`Search fit ${application.searchFit}%`}
-						className="ms-auto shrink-0 rounded bg-sunken px-1.5 py-0.5 text-[11px] font-medium text-ink-2 tabular-nums"
-					>
-						{application.searchFit}%
+				<span className="ms-auto grid shrink-0 grid-cols-[54px_62px] items-center gap-2">
+					<span className="flex justify-end">
+						{application.searchFit !== null && (
+							<span
+								title={t`Search fit`}
+								aria-label={t`Search fit ${application.searchFit}%`}
+								className="inline-flex w-full items-center justify-center gap-1 rounded bg-sunken px-1.5 py-0.5 text-[11px] font-medium text-ink-2 tabular-nums"
+							>
+								<span className="font-normal text-ink-3">
+									<Trans>Fit</Trans>
+								</span>
+								<span>{application.searchFit}%</span>
+							</span>
+						)}
 					</span>
-				)}
+					<span className="flex justify-start">
+						<BuildStatusControl application={application} className="relative z-10" />
+					</span>
+				</span>
 			</span>
 		</div>
 	);

@@ -2660,6 +2660,22 @@ msgstr ""
 msgid "Bring in documents, applications and Knowledge from an Export everything zip, made in Reactive Resume or {APP_NAME}."
 msgstr ""
 
+#: src/features/applications/components/build-status.tsx
+#: src/features/applications/components/list-view.tsx
+msgid "Build"
+msgstr ""
+
+#. placeholder {0}: application.role
+#. placeholder {1}: application.company
+#: src/features/applications/components/build-status.tsx
+msgid "Build resume for {0} at {1}"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Build status"
+msgstr ""
+
 #: src/features/homepage/ui.tsx
 msgid "Build your resume"
 msgstr "Construiește-ți CV-ul"
@@ -2668,6 +2684,14 @@ msgstr "Construiește-ți CV-ul"
 #: src/features/command-palette/index.tsx
 msgid "Builder Command Palette"
 msgstr "Paletă de comenzi a editorului"
+
+#: src/features/applications/components/build-status.tsx
+msgid "Building"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Built"
+msgstr ""
 
 #: src/features/homepage/sheet.tsx
 msgid "Built a shared design system used by six product teams, cutting UI review time by 40%."
@@ -2727,6 +2751,7 @@ msgstr "Poate software-ul să vă citească CV-ul?"
 #: src/dialogs/auth/enable-two-factor.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
+#: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/detail/close-dialog.tsx
 #: src/features/applications/components/detail/contacts.tsx
 #: src/features/applications/components/export-applications-sheet.tsx
@@ -5454,6 +5479,7 @@ msgstr ""
 msgid "Facts, stories and preferences that are switched on in Knowledge"
 msgstr "Fapte, povești și preferințe activate în Cunoștințe"
 
+#: src/features/applications/components/build-status.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Failed"
 msgstr "A eșuat"
@@ -5645,6 +5671,7 @@ msgstr "Finlandeză"
 msgid "First run"
 msgstr "Prima rulare"
 
+#: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
@@ -10037,6 +10064,14 @@ msgstr "Întrebări copiate"
 msgid "Questions to ask"
 msgstr "Întrebări de pus"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Queue for resume build"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Queued for build (click to unqueue)"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "R"
 msgstr "R"
@@ -10259,6 +10294,10 @@ msgstr "Motiv"
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Reasoning"
+msgstr ""
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Rebuild"
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
@@ -10745,6 +10784,14 @@ msgstr "CV + scrisoare"
 msgid "Resume attached"
 msgstr "CV atașat"
 
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build failed or stopped"
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume build in progress"
+msgstr ""
+
 #: src/features/resume/preview/resume-accessible-text.tsx
 msgid "Resume content"
 msgstr "Conținut CV"
@@ -10767,6 +10814,10 @@ msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Resume length and reminders. Off keeps yours."
+msgstr ""
+
+#: src/features/applications/components/build-status.tsx
+msgid "Resume package built"
 msgstr ""
 
 #: src/routes/builder/$resumeId/-components/page-canvas.tsx
@@ -10813,6 +10864,10 @@ msgstr "S-a preluat {0}. Prospețimea originii este necunoscută dacă nu este r
 #: src/routes/dashboard/applications/index.tsx
 msgid "Retry"
 msgstr "Reîncercați"
+
+#: src/features/applications/components/detail/assessments.tsx
+msgid "Retry build"
+msgstr ""
 
 #: src/features/applications/components/application-notes.tsx
 msgid "Retry save"
