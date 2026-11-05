@@ -402,13 +402,20 @@ msgstr "{0} (நகல்)"
 msgid "{0} active applications"
 msgstr "{0} செயலில் உள்ள வேலை விண்ணப்பங்கள்"
 
+#. placeholder {0}: company.applicationCount
+#: src/features/directory/lists.tsx
+msgid "{0} applications"
+msgstr ""
+
 #. placeholder {0}: insights.closed
 #: src/features/applications/components/insights-view.tsx
 msgid "{0} closed"
 msgstr "{0} மூடப்பட்டது"
 
+#. placeholder {0}: company.contactCount
 #. placeholder {0}: row.contacts
 #: src/features/directory/boards.tsx
+#: src/features/directory/lists.tsx
 msgid "{0} contacts"
 msgstr ""
 
@@ -568,14 +575,11 @@ msgid "{0} on · {1} off · private, never sent unless an application includes i
 msgstr ""
 
 #. placeholder {0}: board.jobCount
-#: src/features/directory/boards.tsx
-msgid "{0} open roles"
-msgstr ""
-
 #. placeholder {0}: board.jobCount ?? 0
-#. placeholder {1}: when(board.fetchedAt)
+#. placeholder {0}: first.jobCount
 #: src/features/directory/boards.tsx
-msgid "{0} open roles · checked {1}"
+#: src/features/directory/lists.tsx
+msgid "{0} open"
 msgstr ""
 
 #. placeholder {0}: document.posting.company
@@ -964,6 +968,14 @@ msgstr "{toCheck, plural, one {# புலத்தைப் பார்க்�
 msgid "{toCheck, plural, one {# to check} other {# to check}}"
 msgstr "{toCheck, plural, one {சரிபார்க்க #} other {சரிபார்க்க #}}"
 
+#: src/features/directory/page.tsx
+msgid "{total} companies"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "{total} contacts"
+msgstr ""
+
 #. placeholder {0}: daysLeftInTrash(document.trashedAt)
 #: src/features/documents/document-card.tsx
 msgid "{type} · {0} days left"
@@ -1046,11 +1058,21 @@ msgstr "<0>மொத்தங்கள் வேண்டுமென்றே �
 msgid "06/2017 – 2021"
 msgstr "06/2017 – 2021"
 
+#: src/features/directory/lists.tsx
+msgid "1 application"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "1 column, inline"
 msgstr "1 நெடுவரிசை, இன்லைன்"
 
+#: src/features/directory/page.tsx
+msgid "1 company"
+msgstr ""
+
 #: src/features/directory/boards.tsx
+#: src/features/directory/lists.tsx
+#: src/features/directory/page.tsx
 msgid "1 contact"
 msgstr ""
 
@@ -1210,7 +1232,7 @@ msgid "A gap is not a problem. Add a one-line explanation if you want to; many s
 msgstr "இடைவெளி ஒரு பிரச்சனை இல்லை. நீங்கள் விரும்பினால் ஒரு வரி விளக்கத்தைச் சேர்க்கலாம்; வலுவான பல ரெஸ்யூம்களில் அதுகூட இருக்காது."
 
 #: src/features/directory/boards.tsx
-msgid "A guess can find another company's board. Check the name and roles before confirming."
+msgid "A guess can find another company's jobs. Check the name and roles before confirming."
 msgstr ""
 
 #: src/features/homepage/prepare.tsx
@@ -1387,6 +1409,7 @@ msgstr "செயல்பாடு"
 #: src/features/applications/components/list-view.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/today.tsx
+#: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Add"
 msgstr "சேர்"
@@ -1398,10 +1421,6 @@ msgstr "\"{0}\" சேர்"
 
 #: src/features/applications/components/suggestion-combobox.tsx
 msgid "Add “{typed}”"
-msgstr ""
-
-#: src/features/directory/boards.tsx
-msgid "Add a board checks schedule"
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -1493,6 +1512,10 @@ msgstr "குறிச்சொல்லைச் சேர்க்கவு�
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Add a tag and press Enter…"
 msgstr "ஒரு குறிச்சொல்லைச் சேர்த்து Enter ஐ அழுத்தவும்…"
+
+#: src/features/directory/boards.tsx
+msgid "Add a Watched companies schedule"
+msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx
 msgid "Add a word, then Enter"
@@ -1671,7 +1694,7 @@ msgid "Add tag"
 msgstr "குறிச்சொல்லைச் சேர்க்கவும்"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "Add target roles in Preferences first: board checks only bring roles whose title matches one."
+msgid "Add target roles in Preferences first: watched companies only bring roles whose title matches one."
 msgstr ""
 
 #: src/features/resume/editor/write/outline.tsx
@@ -2011,6 +2034,10 @@ msgstr "எதிர்பாராத பிழை காரணமாக இந
 msgid "and {0} more"
 msgstr "மற்றும் {0} மேலும்"
 
+#: src/features/directory/boards.tsx
+msgid "and {more} more"
+msgstr ""
+
 #: src/features/homepage/sections.tsx
 msgid "and counting"
 msgstr "மற்றும் எண்ணுதல்"
@@ -2231,6 +2258,7 @@ msgstr ""
 #: src/features/career/workspace/shell.tsx
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/resumes.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
@@ -2634,15 +2662,6 @@ msgstr "நீலம்"
 msgid "Board"
 msgstr "போர்டு"
 
-#: src/features/career/schedule-sheet.tsx
-#: src/features/career/today.tsx
-msgid "Board checks"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Board checks start within a minute. New roles appear here."
-msgstr ""
-
 #: src/routes/builder/$resumeId/-sidebar/right/sections/typography.tsx
 msgctxt "Body Text (paragraphs, lists, etc.)"
 msgid "Body"
@@ -2847,10 +2866,6 @@ msgstr "தொழில் வாழ்க்கை"
 msgid "Career preferences"
 msgstr ""
 
-#: src/features/directory/boards.tsx
-msgid "Careers or job board link"
-msgstr ""
-
 #: src/libs/locale.ts
 msgid "Catalan"
 msgstr "கட்டலான்"
@@ -2965,14 +2980,6 @@ msgstr "மற்றொரு கோப்பை சரிபார்க்க�
 msgid "Check any PDF, no account needed"
 msgstr "எந்த PDF கோப்பையும் சரிபார்க்கலாம், கணக்கு தேவையில்லை"
 
-#: src/features/career/schedule-sheet.tsx
-msgid "Check boards"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Check company boards"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 msgid "Check every claim, date and result against your experience."
 msgstr "ஒவ்வொரு கூற்றையும், தேதியையும், முடிவையும் உங்கள் அனுபவத்துடன் சரிபார்க்கவும்."
@@ -3009,6 +3016,10 @@ msgstr "இந்தப் பதவியை உங்கள் சான்ற
 msgid "Check views"
 msgstr "காட்சிகளை சரிபார்க்கவும்"
 
+#: src/features/career/today.tsx
+msgid "Check watched companies"
+msgstr ""
+
 #: src/libs/seo.ts
 msgid "Check whether software can read your resume PDF. Runs entirely in your browser, so your file is never uploaded."
 msgstr "உங்கள் ரெஸ்யூம் PDF மென்பொருளால் படிக்க முடியுமா என்பதைச் சரிபார்க்கவும். உங்கள் உலாவியில் முழுவதுமாக இயங்கும், எனவே உங்கள் கோப்பு பதிவேற்றப்படாது."
@@ -3024,6 +3035,11 @@ msgstr "உங்கள் கடவுச்சொல்லை மீட்ட�
 #: src/features/auth/pages/register.tsx
 msgid "Check your email for a link to verify your account."
 msgstr "உங்கள் கணக்கை சரிபார்க்க ஒரு இணைப்புக்காக உங்கள் மின்னஞ்சலைச் சரிபார்க்கவும்."
+
+#. placeholder {0}: lower(relative(board.fetchedAt))
+#: src/features/directory/boards.tsx
+msgid "checked {0}"
+msgstr ""
 
 #. placeholder {0}: file.name
 #: src/features/ats-checker/checker.tsx
@@ -3046,6 +3062,10 @@ msgstr "தளவமைப்பு மற்றும் உள்ளடக்�
 msgid "Checking the exported PDF…"
 msgstr "ஏற்றுமதி செய்யப்பட்ட PDF ஐச் சரிபார்க்கிறது…"
 
+#: src/features/career/today.tsx
+msgid "Checking watched companies within a minute. New roles appear here."
+msgstr ""
+
 #: src/features/career/shared.tsx
 msgid "Checking your preferences"
 msgstr "உங்கள் விருப்பங்களைச் சரிபார்க்கிறது"
@@ -3067,7 +3087,7 @@ msgid "Checks every bullet for action and result"
 msgstr "செயல் மற்றும் முடிவுக்காக ஒவ்வொரு பட்டியல் உள்ளீட்டையும் சரிபார்க்கிறது"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
+msgid "Checks the companies you watch in the Directory for new roles on Greenhouse, Ashby and Lever. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
 msgstr ""
 
 #: src/libs/locale.ts
@@ -3316,6 +3336,7 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/check/job-match.tsx
 #: src/features/resume/editor/write/entries.tsx
@@ -3360,6 +3381,10 @@ msgstr ""
 msgid "Compress or remove large images to keep uploads quick."
 msgstr "பதிவேற்றங்களை விரைவாக வைத்திருக்க பெரிய படங்களை சுருக்கவும் அல்லது நீக்கவும்."
 
+#: src/features/directory/lists.tsx
+msgid "confirm"
+msgstr ""
+
 #: src/features/directory/boards.tsx
 #: src/hooks/use-confirm.tsx
 msgid "Confirm"
@@ -3377,10 +3402,6 @@ msgstr "கடவுச்சொல்லை உறுதிப்படுத�
 msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
 msgstr "சமர்ப்பிப்பை உறுதிசெய்து, நீங்கள் உண்மையில் அனுப்பிய ஆவணங்களைத் தேர்ந்தெடுக்கவும். அவற்றின் தற்போதைய பதிப்புகள் சேமிக்கப்படும்."
 
-#: src/features/directory/boards.tsx
-msgid "Confirm the board to watch it."
-msgstr ""
-
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
 msgstr "புதிய நேர்காணலைச் சேர்க்கும் முன் நேரத்தை உறுதிசெய்யவும்."
@@ -3392,6 +3413,10 @@ msgstr "புதிய நேர்காணலைச் சேர்க்க�
 #: src/features/career/workspace/prepare.tsx
 msgid "Confirm the time, link and who you'll meet. Glance at the resume and letter you sent."
 msgstr "நேரம், இணைப்பு, நீங்கள் சந்திக்கப் போகிறவர்கள் ஆகியவற்றை உறுதிசெய்யவும். நீங்கள் அனுப்பிய ரெஸ்யூமையும் கடிதத்தையும் ஒருமுறை பாருங்கள்."
+
+#: src/features/directory/boards.tsx
+msgid "Confirm to watch it."
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "Confirms {time} today, by video."
@@ -3516,9 +3541,14 @@ msgstr "தொடர்பு பங்கு"
 #: src/features/applications/components/detail/contacts.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/command-palette/pages/navigation.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "Contacts"
 msgstr "தொடர்புகள்"
+
+#: src/features/directory/page.tsx
+msgid "Contacts are sorted and grouped by it."
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Contain"
@@ -3941,7 +3971,7 @@ msgid "Couldn't load the sample file. Try again."
 msgstr "மாதிரி கோப்பை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't load this company's job boards."
+msgid "Couldn't load this company's open roles."
 msgstr ""
 
 #: src/features/career/load-state.tsx
@@ -3953,7 +3983,7 @@ msgid "Couldn't load your AI limits."
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't look for a board."
+msgid "Couldn't look for its jobs."
 msgstr ""
 
 #: src/features/settings/ai/providers.tsx
@@ -4160,7 +4190,7 @@ msgid "Couldn't send the email. Try again."
 msgstr "மின்னஞ்சலை அனுப்ப முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
 
 #: src/features/career/today.tsx
-msgid "Couldn't start board checks."
+msgid "Couldn't start checking watched companies."
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
@@ -4173,7 +4203,7 @@ msgid "Couldn't start the conversation. Try again."
 msgstr "உரையாடலைத் தொடங்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't stop watching this board."
+msgid "Couldn't stop watching."
 msgstr ""
 
 #: src/features/career/coach.tsx
@@ -4217,7 +4247,7 @@ msgid "Couldn't upload the photo."
 msgstr "படத்தைப் பதிவேற்ற முடியவில்லை."
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't watch this board."
+msgid "Couldn't watch this company's jobs."
 msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
@@ -4554,6 +4584,10 @@ msgstr "கணக்கை நீக்கு"
 
 #: src/features/directory/page.tsx
 msgid "Delete all contacts"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "Delete all contacts?"
 msgstr ""
 
 #: src/features/directory/page.tsx
@@ -5751,7 +5785,7 @@ msgid "Find a directory contact"
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Find board"
+msgid "Find it for me"
 msgstr ""
 
 #: src/features/homepage/remember.tsx
@@ -5781,6 +5815,17 @@ msgstr ""
 #: src/libs/locale.ts
 msgid "Finnish"
 msgstr "ஃபின்னிஷ்"
+
+#: src/features/applications/components/detail/contacts.tsx
+#: src/features/applications/components/interview-dialog.tsx
+#: src/features/directory/page.tsx
+msgid "First name"
+msgstr ""
+
+#. placeholder {0}: index + 1
+#: src/features/applications/components/interview-dialog.tsx
+msgid "First name of person {0}"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "First run"
@@ -6016,6 +6061,15 @@ msgstr ""
 msgid "Found on"
 msgstr ""
 
+#. placeholder {0}: platform(board.ats)
+#: src/features/directory/boards.tsx
+msgid "Found on {0}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Found on {platform}"
+msgstr ""
+
 #: src/features/career/workspace/assessments.tsx
 msgid "Found on {source}"
 msgstr ""
@@ -6060,6 +6114,11 @@ msgstr "பிரெஞ்சு"
 msgid "From"
 msgstr "இருந்து"
 
+#. placeholder {0}: BOARD_ATS_NAMES[ref.ats]
+#: src/features/career/today.tsx
+msgid "From {0}"
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -6077,7 +6136,7 @@ msgid "From a document you attached"
 msgstr "நீங்கள் இணைத்த ஆவணத்திலிருந்து"
 
 #: src/features/directory/boards.tsx
-msgid "From a posting link on file:"
+msgid "from a posting link on file"
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -6093,7 +6152,7 @@ msgid "From Fit"
 msgstr "பொருத்தம் தாவலிலிருந்து"
 
 #: src/features/career/today.tsx
-msgid "From its job board"
+msgid "From its careers page"
 msgstr ""
 
 #: src/features/resume/share/format.ts
@@ -7022,14 +7081,6 @@ msgstr "ஜப்பானியம்"
 msgid "Job"
 msgstr "வேலை"
 
-#: src/features/directory/boards.tsx
-msgid "Job board"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Job boards of the companies you watch"
-msgstr ""
-
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Job description"
@@ -7069,6 +7120,7 @@ msgid "Job search pipeline"
 msgstr "வேலை தேடல் நிலைவரிசை"
 
 #: src/features/command-palette/pages/navigation.tsx
+#: src/features/directory/lists.tsx
 msgid "Jobs"
 msgstr "வேலைகள்"
 
@@ -7085,6 +7137,14 @@ msgstr "ஜான்.டோ"
 #: src/features/resume/import/read-file.ts
 msgid "JSON read"
 msgstr "JSON படித்தது"
+
+#: src/features/directory/lists.tsx
+msgid "Jump to {letter}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Jump to a letter"
+msgstr ""
 
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Justify"
@@ -7320,6 +7380,10 @@ msgstr "மொழிகள்"
 msgid "Last changed in {0}"
 msgstr "கடைசியாக {0} இல் மாற்றப்பட்டது"
 
+#: src/features/directory/lists.tsx
+msgid "Last contact"
+msgstr ""
+
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -7328,6 +7392,17 @@ msgstr ""
 #: src/routes/builder/$resumeId/-components/document-details.tsx
 msgid "Last edited"
 msgstr "கடைசியாக திருத்தப்பட்டது"
+
+#: src/features/applications/components/detail/contacts.tsx
+#: src/features/applications/components/interview-dialog.tsx
+#: src/features/directory/page.tsx
+msgid "Last name"
+msgstr ""
+
+#. placeholder {0}: index + 1
+#: src/features/applications/components/interview-dialog.tsx
+msgid "Last name of person {0}"
+msgstr ""
 
 #. placeholder {0}: format(last.at, { day: "numeric", month: "short" })
 #. placeholder {1}: last.connection
@@ -7819,6 +7894,7 @@ msgstr ""
 msgid "Look up"
 msgstr ""
 
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "Looking for work"
 msgstr ""
@@ -8119,6 +8195,10 @@ msgstr ""
 msgid "Mono"
 msgstr "மோனோ"
 
+#: src/features/directory/page.tsx
+msgid "More actions"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/editor-bar.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
@@ -8156,6 +8236,10 @@ msgstr "அன்று காலை"
 #: src/features/ats-checker/messages.ts
 msgid "Most bullets open with filler rather than something you did."
 msgstr "பெரும்பாலான புல்லட் புள்ளிகள் நீங்கள் செய்ததைக் குறிப்பிடாமல் நிரப்பு வார்த்தைகளுடன் தொடங்குகின்றன."
+
+#: src/features/directory/boards.tsx
+msgid "Most companies list their jobs on Greenhouse, Ashby or Lever. Watch the company's page there, and its new roles that match your Preferences show up in New roles on Career → Today."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Most entries have no dates."
@@ -8272,9 +8356,8 @@ msgstr "ஆதரவுப் பணியைக் கூட்டாமல்,
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
-#: src/features/applications/components/detail/contacts.tsx
-#: src/features/applications/components/interview-dialog.tsx
 #: src/features/auth/pages/register.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
@@ -8456,6 +8539,10 @@ msgid "New random address"
 msgstr ""
 
 #: src/features/career/today.tsx
+msgid "New roles at the companies you watch"
+msgstr ""
+
+#: src/features/career/today.tsx
 msgid "New roles from your search"
 msgstr "உங்கள் தேடலிலிருந்து புதிய பதவிகள்"
 
@@ -8545,10 +8632,6 @@ msgstr "இதுவரை வேலை விண்ணப்பங்கள் 
 msgid "No archived facts match."
 msgstr ""
 
-#: src/features/directory/boards.tsx
-msgid "No board found from the name. Paste the company's careers page link instead."
-msgstr ""
-
 #: src/features/ats-checker/messages.ts
 msgid "No bullet lists were found."
 msgstr "எந்த புல்லட் பட்டியலும் காணப்படவில்லை."
@@ -8579,6 +8662,7 @@ msgid "No companies found. Add a company or track an application to get started.
 msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "No company"
 msgstr ""
@@ -8659,7 +8743,7 @@ msgid "No facts yet. Add one above."
 msgstr "இன்னும் உண்மைகள் இல்லை. மேலே ஒன்றைச் சேர்க்கவும்."
 
 #: src/features/directory/boards.tsx
-msgid "No Greenhouse, Ashby or Lever board found at that link."
+msgid "No Greenhouse, Ashby or Lever jobs found at that link."
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -8686,6 +8770,10 @@ msgstr "இன்னும் வேலை இல்லை"
 msgid "No keys yet."
 msgstr "இன்னும் சாவிகள் இல்லை."
 
+#: src/features/directory/lists.tsx
+msgid "No last name"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "No lines look like a job title paired with an employer."
 msgstr "பணிப் பதவியும் முதலாளியும் இணைந்த வரி எதுவும் தெரியவில்லை."
@@ -8693,19 +8781,6 @@ msgstr "பணிப் பதவியும் முதலாளியும�
 #: src/features/resume/editor/check/issues.ts
 msgid "No location"
 msgstr "இடம் இல்லை"
-
-#. placeholder {0}: day(active.nextRunAt)
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again on {0} at {clock}."
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again today at {clock}."
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again tomorrow at {clock}."
-msgstr ""
 
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery is paused."
@@ -8723,6 +8798,19 @@ msgstr "புதிய பதவிகள் இல்லை. வாய்ப�
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery runs again tomorrow at {clock}."
 msgstr "புதிய பதவிகள் இல்லை. வாய்ப்புத் தேடல் நாளை {clock}-க்கு மீண்டும் இயங்கும்."
+
+#. placeholder {0}: day(active.nextRunAt)
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again on {0} at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again today at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again tomorrow at {clock}."
+msgstr ""
 
 #: src/features/career/offers.tsx
 msgid "No offers to compare yet"
@@ -8863,7 +8951,7 @@ msgid "Not applied yet"
 msgstr "இன்னும் விண்ணப்பிக்கவில்லை"
 
 #: src/features/directory/boards.tsx
-msgid "Not checked yet"
+msgid "not checked yet"
 msgstr ""
 
 #: src/features/settings/account/security.tsx
@@ -8990,7 +9078,11 @@ msgid "Notes, linked applications, and interviews will appear here."
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Nothing checks this board yet."
+msgid "Nothing checks watched companies yet."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Nothing found from the name. Paste the company's careers link instead."
 msgstr ""
 
 #: src/features/ats-checker/checker.tsx
@@ -9249,10 +9341,6 @@ msgstr "{title}ஐத் திறக்கவும்"
 msgid "Open AI settings"
 msgstr "AI அமைப்புகளைத் திறக்கவும்"
 
-#: src/features/directory/boards.tsx
-msgid "Open board"
-msgstr ""
-
 #: src/features/career/today.tsx
 msgid "Open briefing"
 msgstr "சுருக்கக் குறிப்பைத் திற"
@@ -9287,6 +9375,11 @@ msgstr "திறந்த பிரச்சினைகள்"
 msgid "Open LinkedIn profile"
 msgstr ""
 
+#. placeholder {0}: platform(ats)
+#: src/features/directory/boards.tsx
+msgid "Open on {0}"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 msgid "Open Preferences"
 msgstr "விருப்பங்களைத் திற"
@@ -9294,6 +9387,10 @@ msgstr "விருப்பங்களைத் திற"
 #: src/features/resume/share/link-tab.tsx
 msgid "Open public page"
 msgstr "பொதுப் பக்கத்தைத் திறக்கவும்"
+
+#: src/features/directory/boards.tsx
+msgid "Open roles"
+msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Open story"
@@ -9599,10 +9696,6 @@ msgstr "கடவுச்சொற்கள் பொருந்தவில�
 msgid "Past conversations"
 msgstr "கடந்த உரையாடல்கள்"
 
-#: src/features/directory/boards.tsx
-msgid "Paste a careers or job board link"
-msgstr ""
-
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Paste a job link or posting, then check the role and company."
 msgstr "வேலை இணைப்பு அல்லது வேலை இடுகையை ஒட்டவும், பிறகு பங்கு மற்றும் நிறுவனத்தைச் சரிபார்க்கவும்."
@@ -9635,6 +9728,10 @@ msgstr "அதற்கு பதிலாக விளக்கத்தை ஒ
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Paste rows or upload a .csv. Columns are matched automatically, and you check the match before anything is saved."
 msgstr "வரிசைகளை ஒட்டவும் அல்லது .csv ஐப் பதிவேற்றவும். நெடுவரிசைகள் தானாகவே பொருந்துகின்றன, மேலும் எதையும் சேமிக்கும் முன் பொருத்தத்தை சரிபார்க்கவும்."
+
+#: src/features/directory/boards.tsx
+msgid "Paste the company's careers link"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "Paste the email or message, without the signature."
@@ -9837,6 +9934,7 @@ msgstr "போர்த்துகீசியம் (பூர்வீகம�
 msgid "Portuguese (Portugal)"
 msgstr "போர்ச்சுகீஸ் (போர்ச்சுகல்)"
 
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/entries.tsx
 msgid "Position"
@@ -11539,6 +11637,7 @@ msgstr "முதற்கட்டத் தேர்வு"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/page.tsx
 #: src/features/documents/documents-page.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search"
@@ -12026,15 +12125,24 @@ msgstr "மேலும் {0} காட்டு"
 msgid "Show {0} read"
 msgstr "படித்த {0}-ஐக் காட்டு"
 
+#: src/features/directory/page.tsx
+msgid "Show {hidden} more"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Show {title} on the page"
 msgstr "பக்கத்தில் {title} ஐக் காட்டு"
+
+#: src/features/directory/page.tsx
+msgid "Show 1 more"
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Show again"
 msgstr "மீண்டும் காட்டு"
 
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/boards.tsx
 msgid "Show all"
 msgstr ""
 
@@ -12059,6 +12167,7 @@ msgid "Show heading"
 msgstr "தலைப்பைக் காட்டு"
 
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/boards.tsx
 msgid "Show less"
 msgstr ""
 
@@ -12636,7 +12745,7 @@ msgid "Stopped at {0}"
 msgstr "{0}-இல் நிறுத்தப்பட்டது"
 
 #: src/features/directory/boards.tsx
-msgid "Stopped watching this board"
+msgid "Stopped watching"
 msgstr ""
 
 #: src/features/assistant/conversation.tsx
@@ -13217,6 +13326,10 @@ msgstr "நீங்கள் கூறும் உண்மைகளை ஆல
 msgid "The Coach shares up to {0} of {1} facts and {2} of {3} stories with each message, best matches first."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "The company's careers link"
+msgstr ""
+
 #: src/features/documents/new-document-dialog.tsx
 msgid "The copy is linked to the application, so Check and the assistant use its posting."
 msgstr "நகல் வேலை விண்ணப்பத்துடன் இணைக்கப்பட்டுள்ளது, எனவே சரிபார்த்து, உதவியாளர் அதன் வேலை இடுகையைப் பயன்படுத்துகிறார்."
@@ -13701,6 +13814,14 @@ msgstr "இந்த PDF ஸ்கேன் செய்யப்பட்ட �
 #: src/features/ats-checker/checker.tsx
 msgid "This PDF is password protected. Save an unprotected copy and try again."
 msgstr "இந்த PDF கடவுச்சொல் பாதுகாப்புடையது. பாதுகாக்கப்படாத நகலைச் சேமித்து மீண்டும் முயற்சிக்கவும்."
+
+#: src/features/directory/page.tsx
+msgid "This permanently deletes {total} contacts, their notes and history, and removes them from your applications' contacts and interviews' participants. Companies and applications stay."
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
+msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes the selected records."
@@ -14668,16 +14789,22 @@ msgstr ""
 msgid "Warning"
 msgstr "எச்சரிக்கை"
 
-#: src/features/directory/boards.tsx
-msgid "Watch {companyName}'s Greenhouse, Ashby or Lever board, and board checks bring its new roles that match your preferences into New roles on Career → Today."
-msgstr ""
-
 #: src/features/career/schedule-sheet.tsx
 msgid "Watch companies in the Directory"
 msgstr ""
 
+#: src/features/career/schedule-sheet.tsx
+#: src/features/career/today.tsx
+msgid "Watched companies"
+msgstr ""
+
+#. placeholder {0}: platform(board.ats)
 #: src/features/directory/boards.tsx
-msgid "Watching"
+msgid "Watching on {0}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Watching on {platform}"
 msgstr ""
 
 #: src/features/directory/boards.tsx
@@ -14958,7 +15085,7 @@ msgid "Where applications come from"
 msgstr "விண்ணப்பங்கள் எங்கிருந்து வருகின்றன"
 
 #: src/features/directory/boards.tsx
-msgid "Where you know people, most contacts first. Open one to find and confirm its job board."
+msgid "Where you know people, most contacts first. Open one to find and confirm where it lists its jobs."
 msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx
@@ -15184,7 +15311,7 @@ msgid "You"
 msgstr "நீங்கள்"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "You already have a board checks schedule. Edit that one instead."
+msgid "You already have a Watched companies schedule. Edit that one instead."
 msgstr ""
 
 #. placeholder {0}: result.takenBy

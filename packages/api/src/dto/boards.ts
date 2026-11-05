@@ -24,7 +24,13 @@ export const boardsDto = {
 					error: z.string().nullable().describe("Why the last check failed; its last postings are kept."),
 				}),
 			),
-			detected: z.array(ref).describe("Boards named by the company's posting links on file, not yet watched."),
+			detected: z
+				.array(
+					ref.extend({
+						jobCount: z.number().int().nullable().describe("Open roles at its last check; null when never read."),
+					}),
+				)
+				.describe("Boards named by the company's posting links on file, not yet watched."),
 		}),
 	},
 	fromLink: {

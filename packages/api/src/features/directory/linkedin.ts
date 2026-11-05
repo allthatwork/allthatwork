@@ -10,6 +10,7 @@ import {
 	matchLinkedInContact,
 	updateLinkedInContactIndex,
 } from "@reactive-resume/schema/directory-import";
+import { contactNames } from "@reactive-resume/schema/directory-names";
 import { ensureCompany, lockDirectoryOwner, ownedCompany, refreshContactLinks } from "./links";
 
 const changedReview = () =>
@@ -120,9 +121,15 @@ export function importLinkedInContacts(userId: string, input: LinkedInImport) {
 			)
 				? current.sources
 				: [...(current?.sources ?? []), { kind: "linkedin" as const, id: connection.profileUrl }];
+			// A re-import overwrites first and last name, as it overwrites the name.
+			const split = contactNames(connection);
+			const names =
+				split?.name && split.name.length <= 200
+					? split
+					: { firstName: connection.name, lastName: "", name: connection.name };
 			const fields = {
-				name: connection.name,
-				normalizedKey: directoryKey(connection.name),
+				...names,
+				normalizedKey: directoryKey(names.name),
 				companyId,
 				position: connection.position || current?.position || "",
 				profileLinks: unique([...(current?.profileLinks ?? []), connection.profileUrl]),

@@ -8,7 +8,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useRouteContext, useRouter } from "@tanstack/react-router";
 import { AnimatePresence } from "motion/react";
 import { useRef, useState } from "react";
-import { formatBoardPay } from "@reactive-resume/schema/boards";
+import { BOARD_ATS_NAMES, boardFromUrl, formatBoardPay } from "@reactive-resume/schema/boards";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { IconButton } from "@reactive-resume/ui/components/icon-button";
@@ -181,7 +181,7 @@ function NeedsYou({ now, onReview, className }: NeedsYouProps) {
 	const meta = (row: Notification) => {
 		const source =
 			row.notice.type === "boards-failed" || (row.notice.type === "opportunities" && row.notice.source === "boards")
-				? t`Board checks`
+				? t`Watched companies`
 				: row.notice.type === "opportunities"
 					? t`Opportunity discovery`
 					: row.notice.type === "briefing"
@@ -401,10 +401,10 @@ function NewRoles({ ref, now, deleted, onOpenSchedule, className }: NewRolesProp
 			return (
 				<p className="px-0.5 py-1.5 text-[13px] text-ink-3">
 					{offset === 0
-						? t`No new roles. Board checks run again today at ${clock}.`
+						? t`No new roles. Watched companies are checked again today at ${clock}.`
 						: offset === 1
-							? t`No new roles. Board checks run again tomorrow at ${clock}.`
-							: t`No new roles. Board checks run again on ${day(active.nextRunAt)} at ${clock}.`}
+							? t`No new roles. Watched companies are checked again tomorrow at ${clock}.`
+							: t`No new roles. Watched companies are checked again on ${day(active.nextRunAt)} at ${clock}.`}
 				</p>
 			);
 		return (
@@ -454,7 +454,7 @@ function NewRoles({ ref, now, deleted, onOpenSchedule, className }: NewRolesProp
 							</Button>
 							<Button variant="secondary" className="h-8 px-3 text-[13px]" onClick={() => onOpenSchedule("new:boards")}>
 								<Icon name="briefcase" size={18} />
-								<Trans>Check company boards</Trans>
+								<Trans>Check watched companies</Trans>
 							</Button>
 						</div>
 					</div>
@@ -506,6 +506,11 @@ type RoleCardProps = {
 	onDismiss: (row: Opportunity) => void;
 };
 
+/** "From Greenhouse": where a watched company's role was found, by the platform's name. */
+const foundOn = (url: string) => {
+	const ref = boardFromUrl(url);
+	return ref ? t`From ${BOARD_ATS_NAMES[ref.ats]}` : t`From its careers page`;
+};
 const companyOf = (row: Opportunity) => row.company || new URL(row.url).hostname.replace(/^www\./, "");
 
 function RoleCard({ row, found, tracked, pending, onTrack, onUndo, onDismiss }: RoleCardProps) {
@@ -532,7 +537,7 @@ function RoleCard({ row, found, tracked, pending, onTrack, onUndo, onDismiss }: 
 						{row.role}
 					</h3>
 					<p className="text-[13px] text-ink-3">
-						{[company, row.location, found, row.source === "board" ? t`From its job board` : null]
+						{[company, row.location, found, row.source === "board" ? foundOn(row.url) : null]
 							.filter(Boolean)
 							.join(" · ")}
 					</p>
@@ -751,8 +756,8 @@ function Schedules({ deleted, onOpenSchedule, className }: SchedulesProps) {
 	});
 	const runNow = useMutation({
 		...orpc.career.runSchedule.mutationOptions(),
-		onSuccess: () => toast.add({ description: t`Board checks start within a minute. New roles appear here.` }),
-		onError: (error) => failed(error, t`Couldn't start board checks.`),
+		onSuccess: () => toast.add({ description: t`Checking watched companies within a minute. New roles appear here.` }),
+		onError: (error) => failed(error, t`Couldn't start checking watched companies.`),
 	});
 	// A stable order (kind, then newest): an update must not reshuffle rows that share a creation time.
 	const rows = schedules
@@ -767,7 +772,7 @@ function Schedules({ deleted, onOpenSchedule, className }: SchedulesProps) {
 	const describe = (row: Schedule) => {
 		const application = applications?.find((item) => item.id === row.applicationId);
 		if (row.kind === "discovery") return row.query;
-		if (row.kind === "boards") return t`Job boards of the companies you watch`;
+		if (row.kind === "boards") return t`New roles at the companies you watch`;
 		if (row.kind === "follow-up") return application ? `${application.company} · ${application.role}` : "";
 		const interview = application?.activity.find((entry) => entry.type === "interview" && entry.id === row.interviewId);
 		const kind = interview?.type === "interview" ? (interviewKindOf(interview.kind)?.label ?? interview.kind) : null;

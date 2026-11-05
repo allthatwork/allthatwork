@@ -402,13 +402,20 @@ msgstr "{0} (प्रतिलिपि)"
 msgid "{0} active applications"
 msgstr "{0} सक्रिय जागिर आवेदनहरू"
 
+#. placeholder {0}: company.applicationCount
+#: src/features/directory/lists.tsx
+msgid "{0} applications"
+msgstr ""
+
 #. placeholder {0}: insights.closed
 #: src/features/applications/components/insights-view.tsx
 msgid "{0} closed"
 msgstr "{0} बन्द"
 
+#. placeholder {0}: company.contactCount
 #. placeholder {0}: row.contacts
 #: src/features/directory/boards.tsx
+#: src/features/directory/lists.tsx
 msgid "{0} contacts"
 msgstr ""
 
@@ -568,14 +575,11 @@ msgid "{0} on · {1} off · private, never sent unless an application includes i
 msgstr ""
 
 #. placeholder {0}: board.jobCount
-#: src/features/directory/boards.tsx
-msgid "{0} open roles"
-msgstr ""
-
 #. placeholder {0}: board.jobCount ?? 0
-#. placeholder {1}: when(board.fetchedAt)
+#. placeholder {0}: first.jobCount
 #: src/features/directory/boards.tsx
-msgid "{0} open roles · checked {1}"
+#: src/features/directory/lists.tsx
+msgid "{0} open"
 msgstr ""
 
 #. placeholder {0}: document.posting.company
@@ -964,6 +968,14 @@ msgstr "{toCheck, plural, one {# फिल्डलाई हेर्न आव
 msgid "{toCheck, plural, one {# to check} other {# to check}}"
 msgstr "{toCheck, plural, one {# जाँच गर्न} other {# जाँच गर्न}}"
 
+#: src/features/directory/page.tsx
+msgid "{total} companies"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "{total} contacts"
+msgstr ""
+
 #. placeholder {0}: daysLeftInTrash(document.trashedAt)
 #: src/features/documents/document-card.tsx
 msgid "{type} · {0} days left"
@@ -1046,11 +1058,21 @@ msgstr "<0>जोडहरू जानाजानी जोडिएका छ
 msgid "06/2017 – 2021"
 msgstr "06/2017 – 2021"
 
+#: src/features/directory/lists.tsx
+msgid "1 application"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "1 column, inline"
 msgstr "१ स्तम्भ, इनलाइन"
 
+#: src/features/directory/page.tsx
+msgid "1 company"
+msgstr ""
+
 #: src/features/directory/boards.tsx
+#: src/features/directory/lists.tsx
+#: src/features/directory/page.tsx
 msgid "1 contact"
 msgstr ""
 
@@ -1210,7 +1232,7 @@ msgid "A gap is not a problem. Add a one-line explanation if you want to; many s
 msgstr "खाली अवधि समस्या होइन। चाहेमा एक-लाइनको स्पष्टीकरण थप्नुहोस्; धेरै राम्रा बायोडाटाहरूले त्यसो गर्दैनन्।"
 
 #: src/features/directory/boards.tsx
-msgid "A guess can find another company's board. Check the name and roles before confirming."
+msgid "A guess can find another company's jobs. Check the name and roles before confirming."
 msgstr ""
 
 #: src/features/homepage/prepare.tsx
@@ -1387,6 +1409,7 @@ msgstr "गतिविधि"
 #: src/features/applications/components/list-view.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/today.tsx
+#: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Add"
 msgstr "थप्नुहोस्"
@@ -1398,10 +1421,6 @@ msgstr "\"{0}\" थप्नुहोस्"
 
 #: src/features/applications/components/suggestion-combobox.tsx
 msgid "Add “{typed}”"
-msgstr ""
-
-#: src/features/directory/boards.tsx
-msgid "Add a board checks schedule"
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -1493,6 +1512,10 @@ msgstr "ट्याग थप्नुहोस्"
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Add a tag and press Enter…"
 msgstr "ट्याग थप्नुहोस् र Enter थिच्नुहोस्…"
+
+#: src/features/directory/boards.tsx
+msgid "Add a Watched companies schedule"
+msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx
 msgid "Add a word, then Enter"
@@ -1671,7 +1694,7 @@ msgid "Add tag"
 msgstr "ट्याग थप्नुहोस्"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "Add target roles in Preferences first: board checks only bring roles whose title matches one."
+msgid "Add target roles in Preferences first: watched companies only bring roles whose title matches one."
 msgstr ""
 
 #: src/features/resume/editor/write/outline.tsx
@@ -2011,6 +2034,10 @@ msgstr "एउटा अप्रत्याशित त्रुटिले 
 msgid "and {0} more"
 msgstr "र {0} थप"
 
+#: src/features/directory/boards.tsx
+msgid "and {more} more"
+msgstr ""
+
 #: src/features/homepage/sections.tsx
 msgid "and counting"
 msgstr "र गणना"
@@ -2231,6 +2258,7 @@ msgstr ""
 #: src/features/career/workspace/shell.tsx
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/resumes.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
@@ -2634,15 +2662,6 @@ msgstr "निलो"
 msgid "Board"
 msgstr "बोर्ड"
 
-#: src/features/career/schedule-sheet.tsx
-#: src/features/career/today.tsx
-msgid "Board checks"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Board checks start within a minute. New roles appear here."
-msgstr ""
-
 #: src/routes/builder/$resumeId/-sidebar/right/sections/typography.tsx
 msgctxt "Body Text (paragraphs, lists, etc.)"
 msgid "Body"
@@ -2847,10 +2866,6 @@ msgstr "करियर"
 msgid "Career preferences"
 msgstr ""
 
-#: src/features/directory/boards.tsx
-msgid "Careers or job board link"
-msgstr ""
-
 #: src/libs/locale.ts
 msgid "Catalan"
 msgstr "क्याटालान"
@@ -2965,14 +2980,6 @@ msgstr "अर्को फाइल जाँच गर्नुहोस्"
 msgid "Check any PDF, no account needed"
 msgstr "कुनै पनि PDF जाँच गर्नुहोस्, कुनै खाता आवश्यक छैन"
 
-#: src/features/career/schedule-sheet.tsx
-msgid "Check boards"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Check company boards"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 msgid "Check every claim, date and result against your experience."
 msgstr "हरेक दाबी, मिति र नतिजा तपाईंको अनुभवसँग जाँच गर्नुहोस्।"
@@ -3009,6 +3016,10 @@ msgstr "यो भूमिकालाई तपाईंको प्रमा
 msgid "Check views"
 msgstr "दृश्यहरू जाँच गर्नुहोस्"
 
+#: src/features/career/today.tsx
+msgid "Check watched companies"
+msgstr ""
+
 #: src/libs/seo.ts
 msgid "Check whether software can read your resume PDF. Runs entirely in your browser, so your file is never uploaded."
 msgstr "जाँच गर्नुहोस् कि सफ्टवेयरले तपाइँको रिजुमे PDF पढ्न सक्छ। तपाईंको ब्राउजरमा पूर्ण रूपमा चल्छ, त्यसैले तपाईंको फाइल कहिल्यै अपलोड हुँदैन।"
@@ -3024,6 +3035,11 @@ msgstr "पासवर्ड रिसेट गर्न लिङ्कको
 #: src/features/auth/pages/register.tsx
 msgid "Check your email for a link to verify your account."
 msgstr "खाताको यकिन गर्न लिङ्कको लागि आफ्नो इमेल जाँच गर्नुहोस्।"
+
+#. placeholder {0}: lower(relative(board.fetchedAt))
+#: src/features/directory/boards.tsx
+msgid "checked {0}"
+msgstr ""
 
 #. placeholder {0}: file.name
 #: src/features/ats-checker/checker.tsx
@@ -3046,6 +3062,10 @@ msgstr "लेआउट र सामग्री जाँच गर्दै"
 msgid "Checking the exported PDF…"
 msgstr "निर्यात गरिएको PDF जाँच गर्दै..."
 
+#: src/features/career/today.tsx
+msgid "Checking watched companies within a minute. New roles appear here."
+msgstr ""
+
 #: src/features/career/shared.tsx
 msgid "Checking your preferences"
 msgstr "तपाईंका प्राथमिकताहरू जाँच गर्दै"
@@ -3067,7 +3087,7 @@ msgid "Checks every bullet for action and result"
 msgstr "कार्य र परिणामको लागि प्रत्येक सूची प्रविष्टि जाँच गर्दछ"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
+msgid "Checks the companies you watch in the Directory for new roles on Greenhouse, Ashby and Lever. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
 msgstr ""
 
 #: src/libs/locale.ts
@@ -3316,6 +3336,7 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/check/job-match.tsx
 #: src/features/resume/editor/write/entries.tsx
@@ -3360,6 +3381,10 @@ msgstr ""
 msgid "Compress or remove large images to keep uploads quick."
 msgstr "अपलोड छिटो राख्न ठूला तस्बिरहरू कम्प्रेस गर्नुहोस् वा हटाउनुहोस्।"
 
+#: src/features/directory/lists.tsx
+msgid "confirm"
+msgstr ""
+
 #: src/features/directory/boards.tsx
 #: src/hooks/use-confirm.tsx
 msgid "Confirm"
@@ -3377,10 +3402,6 @@ msgstr "पासवर्ड पुष्टि गर्नुहोस्"
 msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
 msgstr "सबमिशन पुष्टि गर्नुहोस् र तपाईंले वास्तवमा पठाउनुभएको कागजातहरू छान्नुहोस्। तिनीहरूका हालका संस्करणहरू बचत हुनेछन्।"
 
-#: src/features/directory/boards.tsx
-msgid "Confirm the board to watch it."
-msgstr ""
-
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
 msgstr "नयाँ अन्तर्वार्ता थप्नुअघि समय पुष्टि गर्नुहोस्।"
@@ -3392,6 +3413,10 @@ msgstr "नयाँ अन्तर्वार्ता थप्नुअघ�
 #: src/features/career/workspace/prepare.tsx
 msgid "Confirm the time, link and who you'll meet. Glance at the resume and letter you sent."
 msgstr "समय, लिङ्क र तपाईं कसलाई भेट्दै हुनुहुन्छ पुष्टि गर्नुहोस्। तपाईंले पठाएको बायोडाटा र पत्रमा एक नजर लगाउनुहोस्।"
+
+#: src/features/directory/boards.tsx
+msgid "Confirm to watch it."
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "Confirms {time} today, by video."
@@ -3516,9 +3541,14 @@ msgstr "सम्पर्क भूमिका"
 #: src/features/applications/components/detail/contacts.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/command-palette/pages/navigation.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "Contacts"
 msgstr "सम्पर्कहरू"
+
+#: src/features/directory/page.tsx
+msgid "Contacts are sorted and grouped by it."
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Contain"
@@ -3941,7 +3971,7 @@ msgid "Couldn't load the sample file. Try again."
 msgstr "नमूना फाइल लोड गर्न सकिएन। पुन: प्रयास गर्नुहोस्।"
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't load this company's job boards."
+msgid "Couldn't load this company's open roles."
 msgstr ""
 
 #: src/features/career/load-state.tsx
@@ -3953,7 +3983,7 @@ msgid "Couldn't load your AI limits."
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't look for a board."
+msgid "Couldn't look for its jobs."
 msgstr ""
 
 #: src/features/settings/ai/providers.tsx
@@ -4160,7 +4190,7 @@ msgid "Couldn't send the email. Try again."
 msgstr "इमेल पठाउन सकिएन। पुन: प्रयास गर्नुहोस्।"
 
 #: src/features/career/today.tsx
-msgid "Couldn't start board checks."
+msgid "Couldn't start checking watched companies."
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
@@ -4173,7 +4203,7 @@ msgid "Couldn't start the conversation. Try again."
 msgstr "कुराकानी सुरु गर्न सकिएन। पुन: प्रयास गर्नुहोस्।"
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't stop watching this board."
+msgid "Couldn't stop watching."
 msgstr ""
 
 #: src/features/career/coach.tsx
@@ -4217,7 +4247,7 @@ msgid "Couldn't upload the photo."
 msgstr "फोटो अपलोड गर्न सकिएन।"
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't watch this board."
+msgid "Couldn't watch this company's jobs."
 msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
@@ -4554,6 +4584,10 @@ msgstr "खाता मेटाउनुहोस्"
 
 #: src/features/directory/page.tsx
 msgid "Delete all contacts"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "Delete all contacts?"
 msgstr ""
 
 #: src/features/directory/page.tsx
@@ -5751,7 +5785,7 @@ msgid "Find a directory contact"
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Find board"
+msgid "Find it for me"
 msgstr ""
 
 #: src/features/homepage/remember.tsx
@@ -5781,6 +5815,17 @@ msgstr ""
 #: src/libs/locale.ts
 msgid "Finnish"
 msgstr "फिनिस"
+
+#: src/features/applications/components/detail/contacts.tsx
+#: src/features/applications/components/interview-dialog.tsx
+#: src/features/directory/page.tsx
+msgid "First name"
+msgstr ""
+
+#. placeholder {0}: index + 1
+#: src/features/applications/components/interview-dialog.tsx
+msgid "First name of person {0}"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "First run"
@@ -6016,6 +6061,15 @@ msgstr ""
 msgid "Found on"
 msgstr ""
 
+#. placeholder {0}: platform(board.ats)
+#: src/features/directory/boards.tsx
+msgid "Found on {0}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Found on {platform}"
+msgstr ""
+
 #: src/features/career/workspace/assessments.tsx
 msgid "Found on {source}"
 msgstr ""
@@ -6060,6 +6114,11 @@ msgstr "फ्रान्सेली"
 msgid "From"
 msgstr "बाट"
 
+#. placeholder {0}: BOARD_ATS_NAMES[ref.ats]
+#: src/features/career/today.tsx
+msgid "From {0}"
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -6077,7 +6136,7 @@ msgid "From a document you attached"
 msgstr "तपाईंले संलग्न गरेको कागजातबाट"
 
 #: src/features/directory/boards.tsx
-msgid "From a posting link on file:"
+msgid "from a posting link on file"
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -6093,7 +6152,7 @@ msgid "From Fit"
 msgstr "उपयुक्तताबाट"
 
 #: src/features/career/today.tsx
-msgid "From its job board"
+msgid "From its careers page"
 msgstr ""
 
 #: src/features/resume/share/format.ts
@@ -7022,14 +7081,6 @@ msgstr "जापानी"
 msgid "Job"
 msgstr "काम"
 
-#: src/features/directory/boards.tsx
-msgid "Job board"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Job boards of the companies you watch"
-msgstr ""
-
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Job description"
@@ -7069,6 +7120,7 @@ msgid "Job search pipeline"
 msgstr "रोजगार खोज पाइपलाइन"
 
 #: src/features/command-palette/pages/navigation.tsx
+#: src/features/directory/lists.tsx
 msgid "Jobs"
 msgstr "जागिरहरू"
 
@@ -7085,6 +7137,14 @@ msgstr "जोन डू"
 #: src/features/resume/import/read-file.ts
 msgid "JSON read"
 msgstr "JSON पढियो"
+
+#: src/features/directory/lists.tsx
+msgid "Jump to {letter}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Jump to a letter"
+msgstr ""
 
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Justify"
@@ -7320,6 +7380,10 @@ msgstr "भाषाहरू"
 msgid "Last changed in {0}"
 msgstr "पछिल्लो पटक {0} मा परिवर्तन भयो"
 
+#: src/features/directory/lists.tsx
+msgid "Last contact"
+msgstr ""
+
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -7328,6 +7392,17 @@ msgstr ""
 #: src/routes/builder/$resumeId/-components/document-details.tsx
 msgid "Last edited"
 msgstr "पछिल्लो पटक सम्पादन गरिएको"
+
+#: src/features/applications/components/detail/contacts.tsx
+#: src/features/applications/components/interview-dialog.tsx
+#: src/features/directory/page.tsx
+msgid "Last name"
+msgstr ""
+
+#. placeholder {0}: index + 1
+#: src/features/applications/components/interview-dialog.tsx
+msgid "Last name of person {0}"
+msgstr ""
 
 #. placeholder {0}: format(last.at, { day: "numeric", month: "short" })
 #. placeholder {1}: last.connection
@@ -7819,6 +7894,7 @@ msgstr ""
 msgid "Look up"
 msgstr ""
 
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "Looking for work"
 msgstr ""
@@ -8119,6 +8195,10 @@ msgstr ""
 msgid "Mono"
 msgstr "मोनो"
 
+#: src/features/directory/page.tsx
+msgid "More actions"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/editor-bar.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
@@ -8156,6 +8236,10 @@ msgstr "सोही दिन बिहान"
 #: src/features/ats-checker/messages.ts
 msgid "Most bullets open with filler rather than something you did."
 msgstr "धेरैजसो बुलेट तपाईंले गरेको काम भन्दा भराइ शब्दबाट सुरु हुन्छन्।"
+
+#: src/features/directory/boards.tsx
+msgid "Most companies list their jobs on Greenhouse, Ashby or Lever. Watch the company's page there, and its new roles that match your Preferences show up in New roles on Career → Today."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Most entries have no dates."
@@ -8272,9 +8356,8 @@ msgstr "मेरो काम सपोर्टको काम नबढा�
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
-#: src/features/applications/components/detail/contacts.tsx
-#: src/features/applications/components/interview-dialog.tsx
 #: src/features/auth/pages/register.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
@@ -8456,6 +8539,10 @@ msgid "New random address"
 msgstr ""
 
 #: src/features/career/today.tsx
+msgid "New roles at the companies you watch"
+msgstr ""
+
+#: src/features/career/today.tsx
 msgid "New roles from your search"
 msgstr "तपाईंको खोजबाट नयाँ भूमिकाहरू"
 
@@ -8545,10 +8632,6 @@ msgstr "अहिलेसम्म कुनै जागिरको आवे
 msgid "No archived facts match."
 msgstr ""
 
-#: src/features/directory/boards.tsx
-msgid "No board found from the name. Paste the company's careers page link instead."
-msgstr ""
-
 #: src/features/ats-checker/messages.ts
 msgid "No bullet lists were found."
 msgstr "कुनै बुलेट सूची फेला परेन।"
@@ -8579,6 +8662,7 @@ msgid "No companies found. Add a company or track an application to get started.
 msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "No company"
 msgstr ""
@@ -8659,7 +8743,7 @@ msgid "No facts yet. Add one above."
 msgstr "अझै तथ्यहरू छैनन्। माथि एउटा थप्नुहोस्।"
 
 #: src/features/directory/boards.tsx
-msgid "No Greenhouse, Ashby or Lever board found at that link."
+msgid "No Greenhouse, Ashby or Lever jobs found at that link."
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -8686,6 +8770,10 @@ msgstr "अझै जागिर छैन"
 msgid "No keys yet."
 msgstr "अझै कुञ्जीहरू छैनन्।"
 
+#: src/features/directory/lists.tsx
+msgid "No last name"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "No lines look like a job title paired with an employer."
 msgstr "कुनै पनि लाइन काम शीर्षक र रोजगारदातासँग मिल्दो देखिँदैन।"
@@ -8693,19 +8781,6 @@ msgstr "कुनै पनि लाइन काम शीर्षक र र
 #: src/features/resume/editor/check/issues.ts
 msgid "No location"
 msgstr "कुनै स्थान छैन"
-
-#. placeholder {0}: day(active.nextRunAt)
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again on {0} at {clock}."
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again today at {clock}."
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again tomorrow at {clock}."
-msgstr ""
 
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery is paused."
@@ -8723,6 +8798,19 @@ msgstr "नयाँ भूमिका छैनन्। खोज फेर�
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery runs again tomorrow at {clock}."
 msgstr "नयाँ भूमिका छैनन्। खोज फेरि भोलि {clock} बजे चल्छ।"
+
+#. placeholder {0}: day(active.nextRunAt)
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again on {0} at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again today at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again tomorrow at {clock}."
+msgstr ""
 
 #: src/features/career/offers.tsx
 msgid "No offers to compare yet"
@@ -8863,7 +8951,7 @@ msgid "Not applied yet"
 msgstr "अझै आवेदन गरिएको छैन"
 
 #: src/features/directory/boards.tsx
-msgid "Not checked yet"
+msgid "not checked yet"
 msgstr ""
 
 #: src/features/settings/account/security.tsx
@@ -8990,7 +9078,11 @@ msgid "Notes, linked applications, and interviews will appear here."
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Nothing checks this board yet."
+msgid "Nothing checks watched companies yet."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Nothing found from the name. Paste the company's careers link instead."
 msgstr ""
 
 #: src/features/ats-checker/checker.tsx
@@ -9249,10 +9341,6 @@ msgstr "{title} खोल्नुहोस्"
 msgid "Open AI settings"
 msgstr "AI सेटिंग्स खोल्नुहोस्"
 
-#: src/features/directory/boards.tsx
-msgid "Open board"
-msgstr ""
-
 #: src/features/career/today.tsx
 msgid "Open briefing"
 msgstr "ब्रिफिङ खोल्नुहोस्"
@@ -9287,6 +9375,11 @@ msgstr "खुला मुद्दाहरू"
 msgid "Open LinkedIn profile"
 msgstr ""
 
+#. placeholder {0}: platform(ats)
+#: src/features/directory/boards.tsx
+msgid "Open on {0}"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 msgid "Open Preferences"
 msgstr "प्राथमिकताहरू खोल्नुहोस्"
@@ -9294,6 +9387,10 @@ msgstr "प्राथमिकताहरू खोल्नुहोस्"
 #: src/features/resume/share/link-tab.tsx
 msgid "Open public page"
 msgstr "सार्वजनिक पृष्ठ खोल्नुहोस्"
+
+#: src/features/directory/boards.tsx
+msgid "Open roles"
+msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Open story"
@@ -9599,10 +9696,6 @@ msgstr "पासवर्डहरू मेल खाँदैनन्।"
 msgid "Past conversations"
 msgstr "विगतका कुराकानीहरू"
 
-#: src/features/directory/boards.tsx
-msgid "Paste a careers or job board link"
-msgstr ""
-
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Paste a job link or posting, then check the role and company."
 msgstr "जागिर लिङ्क वा जागिर पोस्टिङ टाँस्नुहोस्, त्यसपछि भूमिका र कम्पनी जाँच गर्नुहोस्।"
@@ -9635,6 +9728,10 @@ msgstr "बरु विवरण टाँस्नुहोस्"
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Paste rows or upload a .csv. Columns are matched automatically, and you check the match before anything is saved."
 msgstr "पङ्क्तिहरू टाँस्नुहोस् वा .csv अपलोड गर्नुहोस्। स्तम्भहरू स्वचालित रूपमा मेल खान्छ, र तपाईंले केहि बचत गर्नु अघि मिलान जाँच गर्नुहोस्।"
+
+#: src/features/directory/boards.tsx
+msgid "Paste the company's careers link"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "Paste the email or message, without the signature."
@@ -9837,6 +9934,7 @@ msgstr "पोर्चुगल (देशी)"
 msgid "Portuguese (Portugal)"
 msgstr "पोर्चुगाली (पोर्चुगल)"
 
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/entries.tsx
 msgid "Position"
@@ -11539,6 +11637,7 @@ msgstr "स्क्रिनिङ"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/page.tsx
 #: src/features/documents/documents-page.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search"
@@ -12026,15 +12125,24 @@ msgstr "{0} थप देखाउनुहोस्"
 msgid "Show {0} read"
 msgstr "{0} पढिएका देखाउनुहोस्"
 
+#: src/features/directory/page.tsx
+msgid "Show {hidden} more"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Show {title} on the page"
 msgstr "पृष्ठमा {title} देखाउनुहोस्"
+
+#: src/features/directory/page.tsx
+msgid "Show 1 more"
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Show again"
 msgstr "फेरि देखाउनुहोस्"
 
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/boards.tsx
 msgid "Show all"
 msgstr ""
 
@@ -12059,6 +12167,7 @@ msgid "Show heading"
 msgstr "हेडिङ देखाउनुहोस्"
 
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/boards.tsx
 msgid "Show less"
 msgstr ""
 
@@ -12636,7 +12745,7 @@ msgid "Stopped at {0}"
 msgstr "{0} मा रोकियो"
 
 #: src/features/directory/boards.tsx
-msgid "Stopped watching this board"
+msgid "Stopped watching"
 msgstr ""
 
 #: src/features/assistant/conversation.tsx
@@ -13217,6 +13326,10 @@ msgstr "कोचले तपाईंले भनेका तथ्यहर
 msgid "The Coach shares up to {0} of {1} facts and {2} of {3} stories with each message, best matches first."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "The company's careers link"
+msgstr ""
+
 #: src/features/documents/new-document-dialog.tsx
 msgid "The copy is linked to the application, so Check and the assistant use its posting."
 msgstr "प्रतिलिपि जागिरको आवेदनसँग लिङ्क गरिएको छ, त्यसैले जाँच गर्नुहोस् र सहायकले यसको जागिर पोस्टिङ प्रयोग गर्नुहोस्।"
@@ -13701,6 +13814,14 @@ msgstr "यो PDF स्क्यान गरिएको छवि हो। 
 #: src/features/ats-checker/checker.tsx
 msgid "This PDF is password protected. Save an unprotected copy and try again."
 msgstr "यो PDF पासवर्डले सुरक्षित छ। असुरक्षित प्रतिलिपि सुरक्षित गरी फेरि प्रयास गर्नुहोस्।"
+
+#: src/features/directory/page.tsx
+msgid "This permanently deletes {total} contacts, their notes and history, and removes them from your applications' contacts and interviews' participants. Companies and applications stay."
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
+msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes the selected records."
@@ -14668,16 +14789,22 @@ msgstr ""
 msgid "Warning"
 msgstr "चेतावनी"
 
-#: src/features/directory/boards.tsx
-msgid "Watch {companyName}'s Greenhouse, Ashby or Lever board, and board checks bring its new roles that match your preferences into New roles on Career → Today."
-msgstr ""
-
 #: src/features/career/schedule-sheet.tsx
 msgid "Watch companies in the Directory"
 msgstr ""
 
+#: src/features/career/schedule-sheet.tsx
+#: src/features/career/today.tsx
+msgid "Watched companies"
+msgstr ""
+
+#. placeholder {0}: platform(board.ats)
 #: src/features/directory/boards.tsx
-msgid "Watching"
+msgid "Watching on {0}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Watching on {platform}"
 msgstr ""
 
 #: src/features/directory/boards.tsx
@@ -14958,7 +15085,7 @@ msgid "Where applications come from"
 msgstr "जहाँबाट आवेदन आउँछन्"
 
 #: src/features/directory/boards.tsx
-msgid "Where you know people, most contacts first. Open one to find and confirm its job board."
+msgid "Where you know people, most contacts first. Open one to find and confirm where it lists its jobs."
 msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx
@@ -15184,7 +15311,7 @@ msgid "You"
 msgstr "तपाईं"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "You already have a board checks schedule. Edit that one instead."
+msgid "You already have a Watched companies schedule. Edit that one instead."
 msgstr ""
 
 #. placeholder {0}: result.takenBy

@@ -402,13 +402,20 @@ msgstr "{0} (コピー)"
 msgid "{0} active applications"
 msgstr "進行中の応募: {0}件"
 
+#. placeholder {0}: company.applicationCount
+#: src/features/directory/lists.tsx
+msgid "{0} applications"
+msgstr ""
+
 #. placeholder {0}: insights.closed
 #: src/features/applications/components/insights-view.tsx
 msgid "{0} closed"
 msgstr "{0} 閉店"
 
+#. placeholder {0}: company.contactCount
 #. placeholder {0}: row.contacts
 #: src/features/directory/boards.tsx
+#: src/features/directory/lists.tsx
 msgid "{0} contacts"
 msgstr ""
 
@@ -568,14 +575,11 @@ msgid "{0} on · {1} off · private, never sent unless an application includes i
 msgstr ""
 
 #. placeholder {0}: board.jobCount
-#: src/features/directory/boards.tsx
-msgid "{0} open roles"
-msgstr ""
-
 #. placeholder {0}: board.jobCount ?? 0
-#. placeholder {1}: when(board.fetchedAt)
+#. placeholder {0}: first.jobCount
 #: src/features/directory/boards.tsx
-msgid "{0} open roles · checked {1}"
+#: src/features/directory/lists.tsx
+msgid "{0} open"
 msgstr ""
 
 #. placeholder {0}: document.posting.company
@@ -964,6 +968,14 @@ msgstr "{toCheck, plural, one {# フィールドを確認する必要があり�
 msgid "{toCheck, plural, one {# to check} other {# to check}}"
 msgstr "{toCheck, plural, one {# を確認してください} other {# を確認してください}}"
 
+#: src/features/directory/page.tsx
+msgid "{total} companies"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "{total} contacts"
+msgstr ""
+
 #. placeholder {0}: daysLeftInTrash(document.trashedAt)
 #: src/features/documents/document-card.tsx
 msgid "{type} · {0} days left"
@@ -1046,11 +1058,21 @@ msgstr "<0>合計はあえて算出していません。</0>ボーナスと株�
 msgid "06/2017 – 2021"
 msgstr "06/2017 – 2021"
 
+#: src/features/directory/lists.tsx
+msgid "1 application"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "1 column, inline"
 msgstr "1列、インライン"
 
+#: src/features/directory/page.tsx
+msgid "1 company"
+msgstr ""
+
 #: src/features/directory/boards.tsx
+#: src/features/directory/lists.tsx
+#: src/features/directory/page.tsx
 msgid "1 contact"
 msgstr ""
 
@@ -1210,7 +1232,7 @@ msgid "A gap is not a problem. Add a one-line explanation if you want to; many s
 msgstr "空白期間は問題ではありません。必要であれば一行で説明を加えてもよいですが、優れた履歴書の多くはそうしていません。"
 
 #: src/features/directory/boards.tsx
-msgid "A guess can find another company's board. Check the name and roles before confirming."
+msgid "A guess can find another company's jobs. Check the name and roles before confirming."
 msgstr ""
 
 #: src/features/homepage/prepare.tsx
@@ -1387,6 +1409,7 @@ msgstr "活動"
 #: src/features/applications/components/list-view.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/today.tsx
+#: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Add"
 msgstr "追加"
@@ -1398,10 +1421,6 @@ msgstr "「{0}」を追加"
 
 #: src/features/applications/components/suggestion-combobox.tsx
 msgid "Add “{typed}”"
-msgstr ""
-
-#: src/features/directory/boards.tsx
-msgid "Add a board checks schedule"
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -1493,6 +1512,10 @@ msgstr "タグを追加する"
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Add a tag and press Enter…"
 msgstr "タグを追加して Enter を押す…"
+
+#: src/features/directory/boards.tsx
+msgid "Add a Watched companies schedule"
+msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx
 msgid "Add a word, then Enter"
@@ -1671,7 +1694,7 @@ msgid "Add tag"
 msgstr "タグを追加"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "Add target roles in Preferences first: board checks only bring roles whose title matches one."
+msgid "Add target roles in Preferences first: watched companies only bring roles whose title matches one."
 msgstr ""
 
 #: src/features/resume/editor/write/outline.tsx
@@ -2011,6 +2034,10 @@ msgstr "予期せぬエラーが発生したため、このページを読み込
 msgid "and {0} more"
 msgstr "および {0} 詳細"
 
+#: src/features/directory/boards.tsx
+msgid "and {more} more"
+msgstr ""
+
 #: src/features/homepage/sections.tsx
 msgid "and counting"
 msgstr "そして数えます"
@@ -2231,6 +2258,7 @@ msgstr ""
 #: src/features/career/workspace/shell.tsx
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/resumes.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
@@ -2634,15 +2662,6 @@ msgstr "青"
 msgid "Board"
 msgstr "ボード"
 
-#: src/features/career/schedule-sheet.tsx
-#: src/features/career/today.tsx
-msgid "Board checks"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Board checks start within a minute. New roles appear here."
-msgstr ""
-
 #: src/routes/builder/$resumeId/-sidebar/right/sections/typography.tsx
 msgctxt "Body Text (paragraphs, lists, etc.)"
 msgid "Body"
@@ -2847,10 +2866,6 @@ msgstr "キャリア"
 msgid "Career preferences"
 msgstr ""
 
-#: src/features/directory/boards.tsx
-msgid "Careers or job board link"
-msgstr ""
-
 #: src/libs/locale.ts
 msgid "Catalan"
 msgstr "カタロニア語"
@@ -2965,14 +2980,6 @@ msgstr "別のファイルを確認してください"
 msgid "Check any PDF, no account needed"
 msgstr "PDF をチェックしてください。アカウントは必要ありません"
 
-#: src/features/career/schedule-sheet.tsx
-msgid "Check boards"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Check company boards"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 msgid "Check every claim, date and result against your experience."
 msgstr "すべての主張、日付、成果をあなたの経験と照らし合わせて確認してください。"
@@ -3009,6 +3016,10 @@ msgstr "この職種をあなたの根拠と照合"
 msgid "Check views"
 msgstr "ビューを確認する"
 
+#: src/features/career/today.tsx
+msgid "Check watched companies"
+msgstr ""
+
 #: src/libs/seo.ts
 msgid "Check whether software can read your resume PDF. Runs entirely in your browser, so your file is never uploaded."
 msgstr "ソフトウェアが履歴書 PDF を読み取れるかどうかを確認してください。完全にブラウザ内で実行されるため、ファイルがアップロードされることはありません。"
@@ -3024,6 +3035,11 @@ msgstr "パスワードをリセットするリンクを記載したメールを
 #: src/features/auth/pages/register.tsx
 msgid "Check your email for a link to verify your account."
 msgstr "アカウントを認証するリンクを記載したメールを確認してください。"
+
+#. placeholder {0}: lower(relative(board.fetchedAt))
+#: src/features/directory/boards.tsx
+msgid "checked {0}"
+msgstr ""
 
 #. placeholder {0}: file.name
 #: src/features/ats-checker/checker.tsx
@@ -3046,6 +3062,10 @@ msgstr "レイアウトや内容を確認する"
 msgid "Checking the exported PDF…"
 msgstr "エクスポートされたPDFを確認しています…"
 
+#: src/features/career/today.tsx
+msgid "Checking watched companies within a minute. New roles appear here."
+msgstr ""
+
 #: src/features/career/shared.tsx
 msgid "Checking your preferences"
 msgstr "希望条件を確認中"
@@ -3067,7 +3087,7 @@ msgid "Checks every bullet for action and result"
 msgstr "すべてのリスト エントリのアクションと結果をチェックします。"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "Checks the Greenhouse, Ashby and Lever boards of companies you watch in the Directory. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
+msgid "Checks the companies you watch in the Directory for new roles on Greenhouse, Ashby and Lever. Roles that match your target roles, places, pay and office days wait in Today for your review. No AI, and no web search service needed."
 msgstr ""
 
 #: src/libs/locale.ts
@@ -3316,6 +3336,7 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/check/job-match.tsx
 #: src/features/resume/editor/write/entries.tsx
@@ -3360,6 +3381,10 @@ msgstr ""
 msgid "Compress or remove large images to keep uploads quick."
 msgstr "アップロードを速く保つため、大きな画像を圧縮するか削除してください。"
 
+#: src/features/directory/lists.tsx
+msgid "confirm"
+msgstr ""
+
 #: src/features/directory/boards.tsx
 #: src/hooks/use-confirm.tsx
 msgid "Confirm"
@@ -3377,10 +3402,6 @@ msgstr "パスワードの確認"
 msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
 msgstr "提出内容を確認し、実際に送信した書類を選択します。現在のバージョンが保存されます。"
 
-#: src/features/directory/boards.tsx
-msgid "Confirm the board to watch it."
-msgstr ""
-
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
 msgstr "新しい面接を追加する前に、時間を確認してください。"
@@ -3392,6 +3413,10 @@ msgstr "新しい面接を追加する前に、{contact}に時間を確認して
 #: src/features/career/workspace/prepare.tsx
 msgid "Confirm the time, link and who you'll meet. Glance at the resume and letter you sent."
 msgstr "時間、リンク、面接相手を確認しましょう。送信した履歴書とレターにも目を通しておきましょう。"
+
+#: src/features/directory/boards.tsx
+msgid "Confirm to watch it."
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "Confirms {time} today, by video."
@@ -3516,9 +3541,14 @@ msgstr "連絡先の役割"
 #: src/features/applications/components/detail/contacts.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/command-palette/pages/navigation.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "Contacts"
 msgstr "連絡先"
+
+#: src/features/directory/page.tsx
+msgid "Contacts are sorted and grouped by it."
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Contain"
@@ -3941,7 +3971,7 @@ msgid "Couldn't load the sample file. Try again."
 msgstr "サンプルファイルを読み込めませんでした。もう一度やり直してください。"
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't load this company's job boards."
+msgid "Couldn't load this company's open roles."
 msgstr ""
 
 #: src/features/career/load-state.tsx
@@ -3953,7 +3983,7 @@ msgid "Couldn't load your AI limits."
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't look for a board."
+msgid "Couldn't look for its jobs."
 msgstr ""
 
 #: src/features/settings/ai/providers.tsx
@@ -4160,7 +4190,7 @@ msgid "Couldn't send the email. Try again."
 msgstr "メールを送信できませんでした。もう一度やり直してください。"
 
 #: src/features/career/today.tsx
-msgid "Couldn't start board checks."
+msgid "Couldn't start checking watched companies."
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
@@ -4173,7 +4203,7 @@ msgid "Couldn't start the conversation. Try again."
 msgstr "会話を開始できませんでした。もう一度やり直してください。"
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't stop watching this board."
+msgid "Couldn't stop watching."
 msgstr ""
 
 #: src/features/career/coach.tsx
@@ -4217,7 +4247,7 @@ msgid "Couldn't upload the photo."
 msgstr "写真をアップロードできませんでした。"
 
 #: src/features/directory/boards.tsx
-msgid "Couldn't watch this board."
+msgid "Couldn't watch this company's jobs."
 msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
@@ -4554,6 +4584,10 @@ msgstr "アカウントを削除する"
 
 #: src/features/directory/page.tsx
 msgid "Delete all contacts"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "Delete all contacts?"
 msgstr ""
 
 #: src/features/directory/page.tsx
@@ -5751,7 +5785,7 @@ msgid "Find a directory contact"
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Find board"
+msgid "Find it for me"
 msgstr ""
 
 #: src/features/homepage/remember.tsx
@@ -5781,6 +5815,17 @@ msgstr ""
 #: src/libs/locale.ts
 msgid "Finnish"
 msgstr "フィンランド語"
+
+#: src/features/applications/components/detail/contacts.tsx
+#: src/features/applications/components/interview-dialog.tsx
+#: src/features/directory/page.tsx
+msgid "First name"
+msgstr ""
+
+#. placeholder {0}: index + 1
+#: src/features/applications/components/interview-dialog.tsx
+msgid "First name of person {0}"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "First run"
@@ -6016,6 +6061,15 @@ msgstr ""
 msgid "Found on"
 msgstr ""
 
+#. placeholder {0}: platform(board.ats)
+#: src/features/directory/boards.tsx
+msgid "Found on {0}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Found on {platform}"
+msgstr ""
+
 #: src/features/career/workspace/assessments.tsx
 msgid "Found on {source}"
 msgstr ""
@@ -6060,6 +6114,11 @@ msgstr "フランス語"
 msgid "From"
 msgstr "から"
 
+#. placeholder {0}: BOARD_ATS_NAMES[ref.ats]
+#: src/features/career/today.tsx
+msgid "From {0}"
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -6077,7 +6136,7 @@ msgid "From a document you attached"
 msgstr "添付したドキュメントから"
 
 #: src/features/directory/boards.tsx
-msgid "From a posting link on file:"
+msgid "from a posting link on file"
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -6093,7 +6152,7 @@ msgid "From Fit"
 msgstr "適合度から"
 
 #: src/features/career/today.tsx
-msgid "From its job board"
+msgid "From its careers page"
 msgstr ""
 
 #: src/features/resume/share/format.ts
@@ -7022,14 +7081,6 @@ msgstr "日本語"
 msgid "Job"
 msgstr "仕事"
 
-#: src/features/directory/boards.tsx
-msgid "Job board"
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "Job boards of the companies you watch"
-msgstr ""
-
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Job description"
@@ -7069,6 +7120,7 @@ msgid "Job search pipeline"
 msgstr "求人応募パイプライン"
 
 #: src/features/command-palette/pages/navigation.tsx
+#: src/features/directory/lists.tsx
 msgid "Jobs"
 msgstr "求人情報"
 
@@ -7085,6 +7137,14 @@ msgstr "taro.yamada"
 #: src/features/resume/import/read-file.ts
 msgid "JSON read"
 msgstr "JSON 読み取り"
+
+#: src/features/directory/lists.tsx
+msgid "Jump to {letter}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Jump to a letter"
+msgstr ""
 
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Justify"
@@ -7320,6 +7380,10 @@ msgstr "語学"
 msgid "Last changed in {0}"
 msgstr "最終変更日: {0}"
 
+#: src/features/directory/lists.tsx
+msgid "Last contact"
+msgstr ""
+
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -7328,6 +7392,17 @@ msgstr ""
 #: src/routes/builder/$resumeId/-components/document-details.tsx
 msgid "Last edited"
 msgstr "最終編集"
+
+#: src/features/applications/components/detail/contacts.tsx
+#: src/features/applications/components/interview-dialog.tsx
+#: src/features/directory/page.tsx
+msgid "Last name"
+msgstr ""
+
+#. placeholder {0}: index + 1
+#: src/features/applications/components/interview-dialog.tsx
+msgid "Last name of person {0}"
+msgstr ""
 
 #. placeholder {0}: format(last.at, { day: "numeric", month: "short" })
 #. placeholder {1}: last.connection
@@ -7819,6 +7894,7 @@ msgstr ""
 msgid "Look up"
 msgstr ""
 
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "Looking for work"
 msgstr ""
@@ -8119,6 +8195,10 @@ msgstr ""
 msgid "Mono"
 msgstr "単核症"
 
+#: src/features/directory/page.tsx
+msgid "More actions"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/editor-bar.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
@@ -8156,6 +8236,10 @@ msgstr "当日の朝"
 #: src/features/ats-checker/messages.ts
 msgid "Most bullets open with filler rather than something you did."
 msgstr "ほとんどの箇条書きが、実際に行ったことではなく前置きの言葉で始まっています。"
+
+#: src/features/directory/boards.tsx
+msgid "Most companies list their jobs on Greenhouse, Ashby or Lever. Watch the company's page there, and its new roles that match your Preferences show up in New roles on Career → Today."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Most entries have no dates."
@@ -8272,9 +8356,8 @@ msgstr "私の役割は、サポートの負担を増やさずに原因を突き
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
-#: src/features/applications/components/detail/contacts.tsx
-#: src/features/applications/components/interview-dialog.tsx
 #: src/features/auth/pages/register.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
@@ -8456,6 +8539,10 @@ msgid "New random address"
 msgstr ""
 
 #: src/features/career/today.tsx
+msgid "New roles at the companies you watch"
+msgstr ""
+
+#: src/features/career/today.tsx
 msgid "New roles from your search"
 msgstr "検索で見つかった新しい求人"
 
@@ -8545,10 +8632,6 @@ msgstr "まだ求人への応募はありません。まず求人応募に 1 つ
 msgid "No archived facts match."
 msgstr ""
 
-#: src/features/directory/boards.tsx
-msgid "No board found from the name. Paste the company's careers page link instead."
-msgstr ""
-
 #: src/features/ats-checker/messages.ts
 msgid "No bullet lists were found."
 msgstr "箇条書きが見つかりませんでした。"
@@ -8579,6 +8662,7 @@ msgid "No companies found. Add a company or track an application to get started.
 msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 msgid "No company"
 msgstr ""
@@ -8659,7 +8743,7 @@ msgid "No facts yet. Add one above."
 msgstr "まだ事実がありません。上で追加してください。"
 
 #: src/features/directory/boards.tsx
-msgid "No Greenhouse, Ashby or Lever board found at that link."
+msgid "No Greenhouse, Ashby or Lever jobs found at that link."
 msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
@@ -8686,6 +8770,10 @@ msgstr "まだ仕事がありません"
 msgid "No keys yet."
 msgstr "まだ鍵がありません。"
 
+#: src/features/directory/lists.tsx
+msgid "No last name"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "No lines look like a job title paired with an employer."
 msgstr "職種名と勤務先が対になっているような行が見つかりません。"
@@ -8693,19 +8781,6 @@ msgstr "職種名と勤務先が対になっているような行が見つかり
 #: src/features/resume/editor/check/issues.ts
 msgid "No location"
 msgstr "場所がありません"
-
-#. placeholder {0}: day(active.nextRunAt)
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again on {0} at {clock}."
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again today at {clock}."
-msgstr ""
-
-#: src/features/career/today.tsx
-msgid "No new roles. Board checks run again tomorrow at {clock}."
-msgstr ""
 
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery is paused."
@@ -8723,6 +8798,19 @@ msgstr "新しい求人はありません。次回の求人探索は今日の{cl
 #: src/features/career/today.tsx
 msgid "No new roles. Discovery runs again tomorrow at {clock}."
 msgstr "新しい求人はありません。次回の求人探索は明日の{clock}です。"
+
+#. placeholder {0}: day(active.nextRunAt)
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again on {0} at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again today at {clock}."
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "No new roles. Watched companies are checked again tomorrow at {clock}."
+msgstr ""
 
 #: src/features/career/offers.tsx
 msgid "No offers to compare yet"
@@ -8863,7 +8951,7 @@ msgid "Not applied yet"
 msgstr "まだ応募していません"
 
 #: src/features/directory/boards.tsx
-msgid "Not checked yet"
+msgid "not checked yet"
 msgstr ""
 
 #: src/features/settings/account/security.tsx
@@ -8990,7 +9078,11 @@ msgid "Notes, linked applications, and interviews will appear here."
 msgstr ""
 
 #: src/features/directory/boards.tsx
-msgid "Nothing checks this board yet."
+msgid "Nothing checks watched companies yet."
+msgstr ""
+
+#: src/features/directory/boards.tsx
+msgid "Nothing found from the name. Paste the company's careers link instead."
 msgstr ""
 
 #: src/features/ats-checker/checker.tsx
@@ -9249,10 +9341,6 @@ msgstr "{title} を開きます"
 msgid "Open AI settings"
 msgstr "AI設定を開く"
 
-#: src/features/directory/boards.tsx
-msgid "Open board"
-msgstr ""
-
 #: src/features/career/today.tsx
 msgid "Open briefing"
 msgstr "ブリーフィングを開く"
@@ -9287,6 +9375,11 @@ msgstr "未解決の問題"
 msgid "Open LinkedIn profile"
 msgstr ""
 
+#. placeholder {0}: platform(ats)
+#: src/features/directory/boards.tsx
+msgid "Open on {0}"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 msgid "Open Preferences"
 msgstr "希望条件を開く"
@@ -9294,6 +9387,10 @@ msgstr "希望条件を開く"
 #: src/features/resume/share/link-tab.tsx
 msgid "Open public page"
 msgstr "公開ページを開く"
+
+#: src/features/directory/boards.tsx
+msgid "Open roles"
+msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Open story"
@@ -9599,10 +9696,6 @@ msgstr "パスワードが一致しません。"
 msgid "Past conversations"
 msgstr "過去の会話"
 
-#: src/features/directory/boards.tsx
-msgid "Paste a careers or job board link"
-msgstr ""
-
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Paste a job link or posting, then check the role and company."
 msgstr "求人リンクまたは求人情報を貼り付けて、役割と会社を確認してください。"
@@ -9635,6 +9728,10 @@ msgstr "代わりに説明を貼り付けます"
 #: src/features/applications/components/import-applications-sheet.tsx
 msgid "Paste rows or upload a .csv. Columns are matched automatically, and you check the match before anything is saved."
 msgstr "行を貼り付けるか、.csv をアップロードします。列は自動的に照合され、何かを保存する前に照合をチェックします。"
+
+#: src/features/directory/boards.tsx
+msgid "Paste the company's careers link"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "Paste the email or message, without the signature."
@@ -9837,6 +9934,7 @@ msgstr "ポルトガル語 (母国語)"
 msgid "Portuguese (Portugal)"
 msgstr "ポルトガル語（ポルトガル）"
 
+#: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/entries.tsx
 msgid "Position"
@@ -11539,6 +11637,7 @@ msgstr "スクリーニング"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/page.tsx
 #: src/features/documents/documents-page.tsx
 #: src/routes/dashboard/-components/app-shell.tsx
 msgid "Search"
@@ -12026,15 +12125,24 @@ msgstr "さらに {0} 件を表示"
 msgid "Show {0} read"
 msgstr "既読{0}件を表示"
 
+#: src/features/directory/page.tsx
+msgid "Show {hidden} more"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Show {title} on the page"
 msgstr "ページに{title}を表示"
+
+#: src/features/directory/page.tsx
+msgid "Show 1 more"
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Show again"
 msgstr "もう一度表示"
 
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/boards.tsx
 msgid "Show all"
 msgstr ""
 
@@ -12059,6 +12167,7 @@ msgid "Show heading"
 msgstr "見出しを表示"
 
 #: src/features/career/workspace/assessments.tsx
+#: src/features/directory/boards.tsx
 msgid "Show less"
 msgstr ""
 
@@ -12636,7 +12745,7 @@ msgid "Stopped at {0}"
 msgstr "{0}で停止"
 
 #: src/features/directory/boards.tsx
-msgid "Stopped watching this board"
+msgid "Stopped watching"
 msgstr ""
 
 #: src/features/assistant/conversation.tsx
@@ -13217,6 +13326,10 @@ msgstr "コーチはあなたが述べた事実を保存し、そのことを知
 msgid "The Coach shares up to {0} of {1} facts and {2} of {3} stories with each message, best matches first."
 msgstr ""
 
+#: src/features/directory/boards.tsx
+msgid "The company's careers link"
+msgstr ""
+
 #: src/features/documents/new-document-dialog.tsx
 msgid "The copy is linked to the application, so Check and the assistant use its posting."
 msgstr "コピーは求人応募にリンクされているため、Check とアシスタントはその求人掲載を使用します。"
@@ -13701,6 +13814,14 @@ msgstr "このPDFはスキャンした画像です。読むテキストがあり
 #: src/features/ats-checker/checker.tsx
 msgid "This PDF is password protected. Save an unprotected copy and try again."
 msgstr "このPDFはパスワードで保護されています。保護されていないコピーを保存してから、もう一度お試しください。"
+
+#: src/features/directory/page.tsx
+msgid "This permanently deletes {total} contacts, their notes and history, and removes them from your applications' contacts and interviews' participants. Companies and applications stay."
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
+msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes the selected records."
@@ -14668,16 +14789,22 @@ msgstr ""
 msgid "Warning"
 msgstr "警告"
 
-#: src/features/directory/boards.tsx
-msgid "Watch {companyName}'s Greenhouse, Ashby or Lever board, and board checks bring its new roles that match your preferences into New roles on Career → Today."
-msgstr ""
-
 #: src/features/career/schedule-sheet.tsx
 msgid "Watch companies in the Directory"
 msgstr ""
 
+#: src/features/career/schedule-sheet.tsx
+#: src/features/career/today.tsx
+msgid "Watched companies"
+msgstr ""
+
+#. placeholder {0}: platform(board.ats)
 #: src/features/directory/boards.tsx
-msgid "Watching"
+msgid "Watching on {0}"
+msgstr ""
+
+#: src/features/directory/lists.tsx
+msgid "Watching on {platform}"
 msgstr ""
 
 #: src/features/directory/boards.tsx
@@ -14958,7 +15085,7 @@ msgid "Where applications come from"
 msgstr "応募の流入元"
 
 #: src/features/directory/boards.tsx
-msgid "Where you know people, most contacts first. Open one to find and confirm its job board."
+msgid "Where you know people, most contacts first. Open one to find and confirm where it lists its jobs."
 msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx
@@ -15184,7 +15311,7 @@ msgid "You"
 msgstr "あなた"
 
 #: src/features/career/schedule-sheet.tsx
-msgid "You already have a board checks schedule. Edit that one instead."
+msgid "You already have a Watched companies schedule. Edit that one instead."
 msgstr ""
 
 #. placeholder {0}: result.takenBy

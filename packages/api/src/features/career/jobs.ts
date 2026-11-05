@@ -60,7 +60,7 @@ export const careerJobs = {
 				.from(tables.careerSchedule)
 				.where(and(eq(tables.careerSchedule.userId, userId), eq(tables.careerSchedule.kind, "boards")));
 			if (other && other.id !== input.id)
-				throw new ORPCError("CONFLICT", { message: "You already have a board checks schedule. Edit that one." });
+				throw new ORPCError("CONFLICT", { message: "You already have a Watched companies schedule. Edit that one." });
 		}
 		if (input.kind !== "discovery" && input.kind !== "boards" && !input.applicationId)
 			throw new ORPCError("BAD_REQUEST", { message: "Choose an application." });
@@ -127,7 +127,7 @@ export const careerJobs = {
 			.where(and(eq(tables.careerSchedule.id, id), eq(tables.careerSchedule.userId, userId)));
 		if (!schedule) throw new ORPCError("NOT_FOUND");
 		if (schedule.kind !== "boards")
-			throw new ORPCError("BAD_REQUEST", { message: "Only board checks can be run now." });
+			throw new ORPCError("BAD_REQUEST", { message: "Only the Watched companies schedule can be run now." });
 		if (!schedule.enabled) throw new ORPCError("BAD_REQUEST", { message: "Turn this schedule on first." });
 		const [pending] = await db
 			.select({ id: tables.careerJob.id })

@@ -138,6 +138,9 @@ export const STAGES = [
 export const contactSchema = z.object({
 	contactId: z.string().min(1).optional(),
 	name: z.string().trim().min(1),
+	/** A new person's name parts, for the Directory contact made from this link; the saved link keeps only `name`. */
+	firstName: z.string().trim().max(200).optional(),
+	lastName: z.string().trim().max(200).optional(),
 	role: z.string().trim().default(""),
 	// Free-form label shown as a pill: "Recruiter", "Referral", "Hiring Manager"…
 	type: z.string().trim().default(""),
@@ -171,6 +174,9 @@ export const INTERVIEW_KINDS = [
 export const interviewParticipantSchema = z.object({
 	contactId: z.string().min(1).optional(),
 	name: z.string().trim().min(1).max(200),
+	/** A new person's name parts, for the Directory contact made from this link; the saved link keeps only `name`. */
+	firstName: z.string().trim().max(200).optional(),
+	lastName: z.string().trim().max(200).optional(),
 	role: z.string().trim().max(200).default(""),
 	profileUrl: z
 		.url({ protocol: /^https$/ })

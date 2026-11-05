@@ -9,7 +9,7 @@ export const boardRegionSchema = z.enum(["us", "eu"]);
 export type BoardRegion = z.infer<typeof boardRegionSchema>;
 
 const SLUG = /^[\w][\w.-]{0,99}$/;
-export const boardSlugSchema = z.string().trim().regex(SLUG, "Not a job board name.");
+export const boardSlugSchema = z.string().trim().regex(SLUG, "Not a jobs page name.");
 
 /** A board as the user picks it. The API host comes from these, never from the client. */
 export const boardRefSchema = z.object({
@@ -152,10 +152,11 @@ export function formatBoardPay(pay: BoardPay[], locale = "en-US") {
 	return `${range.currency} ${shown} ${PERIOD_WORDS[range.period]}`;
 }
 
-const ATS_NAMES: Record<BoardAts, string> = { greenhouse: "Greenhouse", ashby: "Ashby", lever: "Lever" };
+/** The platforms by the names users know them by. */
+export const BOARD_ATS_NAMES: Record<BoardAts, string> = { greenhouse: "Greenhouse", ashby: "Ashby", lever: "Lever" };
 
-/** Where a board find came from, for an application's source: the ATS by name, or "Job board" for an embed. */
+/** Where a find on a watched company came from, for an application's source: the platform by name, or "Careers page". */
 export const boardSourceName = (url: string) => {
 	const ref = boardFromUrl(url);
-	return ref ? ATS_NAMES[ref.ats] : "Job board";
+	return ref ? BOARD_ATS_NAMES[ref.ats] : "Careers page";
 };

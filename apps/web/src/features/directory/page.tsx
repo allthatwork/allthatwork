@@ -1,20 +1,53 @@
 import type { RouterOutput } from "@/libs/orpc/client";
+import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ReactNode } from "react";
 import { t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { cloneElement, isValidElement, useId, useState } from "react";
+import { APPLICATION_STATUSES } from "@reactive-resume/schema/applications/data";
 import { companyFieldsSchema, contactFieldsSchema } from "@reactive-resume/schema/directory";
+import { contactFullName, groupCompanies, groupContacts, sortContacts } from "@reactive-resume/schema/directory-names";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@reactive-resume/ui/components/alert-dialog";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@reactive-resume/ui/components/dialog";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@reactive-resume/ui/components/dropdown-menu";
+import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
+import { useIsMobile } from "@reactive-resume/ui/hooks/use-mobile";
+import { cn } from "@reactive-resume/utils/style";
 import { CompanyBoards, WatchSuggestions } from "./boards";
+import {
+	CompaniesHead,
+	CompanyLogo,
+	CompanyRow,
+	ContactRow,
+	ContactsHead,
+	GroupedList,
+	hostname,
+	useShortDate,
+} from "./lists";
+import { getStageLabel } from "@/features/applications/stages";
 import { useCareerTime } from "@/features/career/shared";
 import { client, orpc } from "@/libs/orpc/client";
 
-type Company = RouterOutput["directory"]["companies"][number];
+type Company = RouterOutput["directory"]["company"]["company"];
 type Contact = RouterOutput["directory"]["contacts"][number];
 type DirectorySearch = {
 	tab?: "companies" | "contacts" | undefined;
@@ -74,15 +107,22 @@ export function DirectoryPage({ tab = "companies", company, contact }: Directory
 	);
 }
 
-type FieldProps = { label: string; children: ReactNode };
-function Field({ label, children }: FieldProps) {
+type FieldProps = { label: string; hint?: string | undefined; children: ReactNode };
+function Field({ label, hint, children }: FieldProps) {
 	const id = useId();
 	return (
-		<div className="grid gap-1.5 text-sm">
+		<div className="grid content-start gap-1.5 text-sm">
 			<label htmlFor={id} className="font-medium">
 				{label}
 			</label>
-			{isValidElement<{ id?: string }>(children) ? cloneElement(children, { id }) : children}
+			{isValidElement<{ id?: string; "aria-describedby"?: string }>(children)
+				? cloneElement(children, { id, ...(hint ? { "aria-describedby": `${id}-hint` } : {}) })
+				: children}
+			{hint && (
+				<p id={`${id}-hint`} className="-mt-0.5 text-xs text-ink-3">
+					{hint}
+				</p>
+			)}
 		</div>
 	);
 }
@@ -149,25 +189,58 @@ function useRefreshDirectory() {
 	};
 }
 
+type ToolbarProps = {
+	search: string;
+	onSearch: (value: string) => void;
+	label: string;
+	placeholder: string;
+	add: string;
+	onAdd: () => void;
+	count?: string | undefined;
+	children?: ReactNode;
+};
+/** Search, the add button, the total, and (contacts) a ⋯ menu. Shorter labels on a phone. */
+function Toolbar({ search, onSearch, label, placeholder, add, onAdd, count, children }: ToolbarProps) {
+	const mobile = useIsMobile();
+	return (
+		<div className="flex items-center gap-2">
+			<Input
+				className="min-w-0 flex-1 sm:max-w-xs"
+				aria-label={label}
+				placeholder={mobile ? t`Search` : placeholder}
+				value={search}
+				onChange={(event) => onSearch(event.target.value)}
+			/>
+			<Button onClick={onAdd} aria-label={add}>
+				<span className="sm:hidden">
+					<Trans>Add</Trans>
+				</span>
+				<span className="hidden sm:inline">{add}</span>
+			</Button>
+			{count && <span className="ms-auto hidden text-sm text-ink-3 sm:inline">{count}</span>}
+			{children}
+		</div>
+	);
+}
+
 function CompaniesList() {
+	const { i18n } = useLingui();
 	const [search, setSearch] = useState("");
 	const [adding, setAdding] = useState(false);
 	const query = useQuery(orpc.directory.companies.queryOptions({ input: {} }));
 	const rows = query.data?.filter((row) => row.name.toLowerCase().includes(search.toLowerCase()));
+	const total = query.data?.length ?? 0;
 	return (
-		<section className="grid gap-4">
-			<div className="flex flex-wrap gap-3">
-				<Input
-					className="max-w-md"
-					aria-label={t`Search companies`}
-					placeholder={t`Search companies`}
-					value={search}
-					onChange={(event) => setSearch(event.target.value)}
-				/>
-				<Button onClick={() => setAdding(true)}>
-					<Trans>Add company</Trans>
-				</Button>
-			</div>
+		<section className="grid gap-3">
+			<Toolbar
+				search={search}
+				onSearch={setSearch}
+				label={t`Search companies`}
+				placeholder={t`Search companies`}
+				add={t`Add company`}
+				onAdd={() => setAdding(true)}
+				count={query.data ? (total === 1 ? t`1 company` : t`${total} companies`) : undefined}
+			/>
 			{!search && <WatchSuggestions />}
 			<LoadState pending={query.isPending} error={query.isError} retry={() => void query.refetch()} />
 			{rows?.length === 0 && (
@@ -175,53 +248,63 @@ function CompaniesList() {
 					<Trans>No companies found. Add a company or track an application to get started.</Trans>
 				</p>
 			)}
-			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{rows?.map((row) => (
-					<Link
-						key={row.id}
-						to="/dashboard/directory"
-						search={{ tab: "companies", company: row.id }}
-						className="hover:bg-surface-2 grid gap-1 rounded-xl border border-line p-4"
-					>
-						<div className="flex items-center gap-3">
-							<CompanyLogo key={row.website} name={row.name} website={row.website} />
-							<span className="font-semibold">{row.name}</span>
-						</div>
-						{row.website && <span className="truncate text-sm text-ink-2">{new URL(row.website).hostname}</span>}
-					</Link>
-				))}
-			</div>
+			{!!rows?.length && (
+				<GroupedList
+					label={t`Companies`}
+					groups={groupCompanies(rows, i18n.locale)}
+					head={<CompaniesHead />}
+					rowKey={(row) => row.id}
+					renderRow={(row) => <CompanyRow company={row} />}
+				/>
+			)}
 			<CompanyEditor open={adding} onClose={() => setAdding(false)} />
 		</section>
 	);
 }
 
 function ContactsList() {
+	const { i18n } = useLingui();
 	const [search, setSearch] = useState("");
 	const [adding, setAdding] = useState(false);
+	const [erasing, setErasing] = useState(false);
 	const query = useQuery(orpc.directory.contacts.queryOptions({ input: {} }));
 	const companies = useQuery(orpc.directory.companies.queryOptions({ input: {} }));
-	const refresh = useRefreshDirectory();
-	const names = new Map(companies.data?.map((row) => [row.id, row.name]));
+	const byId = new Map(companies.data?.map((row) => [row.id, row]));
+	const companyOf = (row: Contact) => (row.companyId ? byId.get(row.companyId) : undefined);
 	const rows = query.data?.filter((row) =>
-		`${row.name} ${row.position} ${row.companyId ? (names.get(row.companyId) ?? "") : ""} ${row.tags.join(" ")}`
+		`${row.name} ${row.position} ${companyOf(row)?.name ?? ""} ${row.tags.join(" ")}`
 			.toLowerCase()
 			.includes(search.toLowerCase()),
 	);
+	const total = query.data?.length ?? 0;
 	return (
-		<section className="grid gap-4">
-			<div className="flex flex-wrap gap-3">
-				<Input
-					className="max-w-md"
-					aria-label={t`Search contacts`}
-					placeholder={t`Search contacts, companies, or tags`}
-					value={search}
-					onChange={(event) => setSearch(event.target.value)}
-				/>
-				<Button onClick={() => setAdding(true)}>
-					<Trans>Add contact</Trans>
-				</Button>
-			</div>
+		<section className="grid gap-3">
+			<Toolbar
+				search={search}
+				onSearch={setSearch}
+				label={t`Search contacts`}
+				placeholder={t`Search contacts, companies, or tags`}
+				add={t`Add contact`}
+				onAdd={() => setAdding(true)}
+				count={query.data ? (total === 1 ? t`1 contact` : t`${total} contacts`) : undefined}
+			>
+				{total > 0 && (
+					<DropdownMenu>
+						<DropdownMenuTrigger
+							render={
+								<Button variant="secondary" size="icon" aria-label={t`More actions`} className="ms-auto sm:ms-0" />
+							}
+						>
+							<Icon name="dots-three" size={18} />
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end">
+							<DropdownMenuItem variant="destructive" onClick={() => setErasing(true)}>
+								<Trans>Delete all contacts</Trans>
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+				)}
+			</Toolbar>
 			<LoadState
 				pending={query.isPending || companies.isPending}
 				error={query.isError || companies.isError}
@@ -235,106 +318,172 @@ function ContactsList() {
 					<Trans>No contacts found. People added from applications and interviews also appear here.</Trans>
 				</p>
 			)}
-			<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-				{rows?.map((row) => (
-					<ContactCard key={row.id} contact={row} companyName={row.companyId ? names.get(row.companyId) : undefined} />
-				))}
-			</div>
-			{!!query.data?.length && (
-				<DeleteAction
-					label={t`Delete all contacts`}
-					onDelete={async () => {
-						await client.directory.deleteAllContacts({ confirm: true });
-						await refresh();
-					}}
+			{!!rows?.length && companies.data && (
+				<GroupedList
+					label={t`Contacts`}
+					groups={groupContacts(rows, i18n.locale)}
+					head={<ContactsHead />}
+					rowKey={(row) => row.id}
+					renderRow={(row) => <ContactRow contact={row} company={companyOf(row)} />}
 				/>
 			)}
 			<ContactEditor open={adding} onClose={() => setAdding(false)} />
+			<DeleteAllContacts open={erasing} total={total} onClose={() => setErasing(false)} />
 		</section>
 	);
 }
 
-type ContactCardProps = { contact: Contact; companyName?: string | undefined };
-function ContactCard({ contact, companyName }: ContactCardProps) {
+type DeleteAllContactsProps = { open: boolean; total: number; onClose: () => void };
+function DeleteAllContacts({ open, total, onClose }: DeleteAllContactsProps) {
+	const refresh = useRefreshDirectory();
+	const erase = useMutation({
+		mutationFn: () => client.directory.deleteAllContacts({ confirm: true }),
+		onSuccess: async () => {
+			await refresh();
+			onClose();
+		},
+	});
 	return (
-		<Link
-			to="/dashboard/directory"
-			search={{ tab: "contacts", contact: contact.id }}
-			className="hover:bg-surface-2 grid gap-1 rounded-xl border border-line p-4"
+		<AlertDialog
+			open={open}
+			onOpenChange={(value) => {
+				if (!value) onClose();
+			}}
 		>
-			<span className="font-semibold">{contact.name}</span>
-			<span className="text-sm text-ink-2">{[contact.position, companyName].filter(Boolean).join(" · ")}</span>
-			{contact.lookingForWork && (
-				<span className="text-xs text-accent-text">
-					<Trans>Looking for work</Trans>
-				</span>
-			)}
-		</Link>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>
+						<Trans>Delete all contacts?</Trans>
+					</AlertDialogTitle>
+					<AlertDialogDescription>
+						{total === 1
+							? t`This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay.`
+							: t`This permanently deletes ${total} contacts, their notes and history, and removes them from your applications' contacts and interviews' participants. Companies and applications stay.`}
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				{erase.isError && (
+					<p role="alert" className="text-sm text-danger-text">
+						{erase.error.message}
+					</p>
+				)}
+				<AlertDialogFooter>
+					<AlertDialogCancel>
+						<Trans>Cancel</Trans>
+					</AlertDialogCancel>
+					<AlertDialogAction variant="danger" loading={erase.isPending} onClick={() => erase.mutate()}>
+						<Trans>Delete all contacts</Trans>
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }
 
 type DetailProps = { id: string; onDeleted: () => Promise<void> };
+/** A company's page shows this many contacts before Show more. */
+const COMPANY_CONTACTS_SHOWN = 5;
+
 function CompanyPage({ id, onDeleted }: DetailProps) {
+	const { i18n } = useLingui();
+	const shortDate = useShortDate();
 	const query = useQuery(orpc.directory.company.queryOptions({ input: { id } }));
 	const [editing, setEditing] = useState(false);
 	const [adding, setAdding] = useState(false);
+	const [allContacts, setAllContacts] = useState(false);
 	const refresh = useRefreshDirectory();
 	if (!query.data)
 		return <LoadState pending={query.isPending} error={query.isError} retry={() => void query.refetch()} />;
-	const { company, contacts, applications } = query.data;
+	const { company, applications } = query.data;
+	const contacts = sortContacts(query.data.contacts, i18n.locale);
+	const shown = allContacts ? contacts : contacts.slice(0, COMPANY_CONTACTS_SHOWN);
+	const hidden = contacts.length - shown.length;
+	const domain = hostname(company.website);
 	return (
 		<section className="grid gap-6">
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div className="grid gap-2">
-					<div className="flex items-center gap-3">
-						<CompanyLogo key={company.website} name={company.name} website={company.website} />
-						<h2 className="font-display text-2xl font-medium">{company.name}</h2>
-					</div>
-					{company.website && (
-						<a href={company.website} target="_blank" rel="noreferrer" className="text-accent-text hover:underline">
-							{company.website}
-						</a>
-					)}
+			<div className="grid gap-1">
+				<div className="flex items-center gap-2.5">
+					<CompanyLogo key={company.website} name={company.name} website={company.website} size="md" />
+					<h2 className="min-w-0 flex-1 truncate font-display text-2xl font-medium">{company.name}</h2>
+					<Button variant="secondary" onClick={() => setEditing(true)}>
+						<Trans>Edit company</Trans>
+					</Button>
 				</div>
-				<Button variant="secondary" onClick={() => setEditing(true)}>
-					<Trans>Edit company</Trans>
-				</Button>
+				{company.website && (
+					<a
+						href={company.website}
+						target="_blank"
+						rel="noreferrer"
+						className="ms-[42px] w-fit text-sm text-accent-text hover:underline"
+					>
+						{domain ?? company.website}
+					</a>
+				)}
 			</div>
 			{company.notes && <p className="text-sm whitespace-pre-wrap">{company.notes}</p>}
-			<div className="grid gap-3">
+			<div className="grid gap-2">
 				<div className="flex items-center justify-between">
-					<h3 className="text-lg font-semibold">
-						<Trans>Contacts</Trans>
+					<h3 className="text-sm font-bold">
+						<Trans>Contacts</Trans> <span className="font-normal text-ink-3">{contacts.length}</span>
 					</h3>
 					<Button size="sm" onClick={() => setAdding(true)}>
 						<Trans>Add contact</Trans>
 					</Button>
 				</div>
-				<div className="grid gap-3 sm:grid-cols-2">
-					{contacts.map((contact) => (
-						<ContactCard key={contact.id} contact={contact} />
-					))}
-				</div>
-				{!contacts.length && (
+				{contacts.length > 0 ? (
+					<ul className="overflow-clip rounded-md border border-line">
+						{shown.map((contact) => (
+							<li key={contact.id} className="border-b border-line last:border-b-0">
+								<ContactRow contact={contact} showCompany={false} />
+							</li>
+						))}
+						{hidden > 0 && (
+							<li>
+								<button
+									type="button"
+									className="px-2.5 py-1.5 text-[13px] text-accent-text underline-offset-4 hover:underline"
+									onClick={() => setAllContacts(true)}
+								>
+									{hidden === 1 ? t`Show 1 more` : t`Show ${hidden} more`}
+								</button>
+							</li>
+						)}
+					</ul>
+				) : (
 					<p className="text-sm text-ink-2">
 						<Trans>No contacts at this company yet.</Trans>
 					</p>
 				)}
 			</div>
-			<div className="grid gap-3">
-				<h3 className="text-lg font-semibold">
-					<Trans>Applications</Trans>
+			<div className="grid gap-2">
+				<h3 className="text-sm font-bold">
+					<Trans>Applications</Trans> <span className="font-normal text-ink-3">{applications.length}</span>
 				</h3>
-				{applications.map((row) => (
-					<ApplicationLink key={row.id} application={row} />
-				))}
-				{!applications.length && (
+				{applications.length > 0 ? (
+					<ul className="overflow-clip rounded-md border border-line">
+						{applications.map((row) => (
+							<li
+								key={row.id}
+								className="relative grid grid-cols-[minmax(0,1fr)_auto_4.5rem] items-center gap-3 border-b border-line px-2.5 py-1.5 text-[13px] last:border-b-0 hover:bg-sunken"
+							>
+								<Link
+									to="/dashboard/applications/$applicationId/{-$tab}"
+									params={{ applicationId: row.id }}
+									className="truncate font-semibold after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-accent"
+								>
+									{row.role}
+								</Link>
+								<StagePill status={row.status} />
+								<span className="text-end text-ink-2 tabular-nums">{shortDate(row.at)}</span>
+							</li>
+						))}
+					</ul>
+				) : (
 					<p className="text-sm text-ink-2">
 						<Trans>No applications at this company yet.</Trans>
 					</p>
 				)}
 			</div>
-			<CompanyBoards companyId={company.id} companyName={company.name} />
+			<CompanyBoards companyId={company.id} />
 			<DeleteAction
 				label={t`Delete company`}
 				onDelete={async () => {
@@ -349,13 +498,28 @@ function CompanyPage({ id, onDeleted }: DetailProps) {
 	);
 }
 
+type StagePillProps = { status: string };
+function StagePill({ status }: StagePillProps) {
+	const stage = (APPLICATION_STATUSES as readonly string[]).includes(status) ? (status as ApplicationStatus) : null;
+	return (
+		<span
+			className={cn(
+				"rounded-full px-1.5 py-px text-[11px] font-semibold whitespace-nowrap",
+				stage === "closed" ? "bg-sunken text-ink-2" : "bg-accent-soft text-accent-text",
+			)}
+		>
+			{stage ? getStageLabel(stage) : status}
+		</span>
+	);
+}
+
 type ApplicationLinkProps = { application: { id: string; company: string; role: string; status: string } };
 function ApplicationLink({ application }: ApplicationLinkProps) {
 	return (
 		<Link
 			to="/dashboard/applications/$applicationId/{-$tab}"
 			params={{ applicationId: application.id }}
-			className="hover:bg-surface-2 rounded-lg border border-line p-3 text-sm"
+			className="rounded-lg border border-line p-3 text-sm hover:bg-sunken"
 		>
 			<span className="font-medium">{application.role}</span>
 			<span className="text-ink-2"> · {application.company}</span>
@@ -652,9 +816,11 @@ const lines = (value: string) => [
 ];
 type ContactFormProps = { contact: Contact | undefined; companyId: string | undefined; onClose: () => void };
 function ContactForm({ contact, companyId, onClose }: ContactFormProps) {
+	const { i18n } = useLingui();
 	const companies = useQuery(orpc.directory.companies.queryOptions({ input: {} }));
 	const [draft, setDraft] = useState({
-		name: contact?.name ?? "",
+		firstName: contact?.firstName ?? "",
+		lastName: contact?.lastName ?? "",
 		companyId: contact?.companyId ?? companyId ?? "",
 		position: contact?.position ?? "",
 		profileLinks: contact?.profileLinks.join("\n") ?? "",
@@ -711,9 +877,24 @@ function ContactForm({ contact, companyId, onClose }: ContactFormProps) {
 				save.mutate();
 			}}
 		>
-			<Field label={t`Name`}>
-				<Input required maxLength={200} value={draft.name} onChange={(event) => set("name", event.target.value)} />
-			</Field>
+			<div className="grid gap-3 sm:grid-cols-2">
+				<Field label={t`First name`}>
+					<Input
+						maxLength={200}
+						autoComplete="off"
+						value={draft.firstName}
+						onChange={(event) => set("firstName", event.target.value)}
+					/>
+				</Field>
+				<Field label={t`Last name`} hint={t`Contacts are sorted and grouped by it.`}>
+					<Input
+						maxLength={200}
+						autoComplete="off"
+						value={draft.lastName}
+						onChange={(event) => set("lastName", event.target.value)}
+					/>
+				</Field>
+			</div>
 			<Field label={t`Company`}>
 				<select
 					className="h-9 rounded-md border border-line bg-surface px-3"
@@ -721,11 +902,14 @@ function ContactForm({ contact, companyId, onClose }: ContactFormProps) {
 					onChange={(event) => set("companyId", event.target.value)}
 				>
 					<option value="">{t`No company`}</option>
-					{companies.data?.map((row) => (
-						<option key={row.id} value={row.id}>
-							{row.name}
-						</option>
-					))}
+					{companies.data &&
+						groupCompanies(companies.data, i18n.locale)
+							.flatMap((group) => group.items)
+							.map((row) => (
+								<option key={row.id} value={row.id}>
+									{row.name}
+								</option>
+							))}
 				</select>
 			</Field>
 			<Field label={t`Position`}>
@@ -770,34 +954,17 @@ function ContactForm({ contact, companyId, onClose }: ContactFormProps) {
 					{save.error.message}
 				</p>
 			)}
-			<Button type="submit" disabled={save.isPending || !draft.name.trim() || companies.isPending || companies.isError}>
+			<Button
+				type="submit"
+				disabled={
+					save.isPending ||
+					!contactFullName(draft.firstName, draft.lastName) ||
+					companies.isPending ||
+					companies.isError
+				}
+			>
 				<Trans>Save</Trans>
 			</Button>
 		</form>
-	);
-}
-
-type CompanyLogoProps = { name: string; website: string | null };
-function CompanyLogo({ name, website }: CompanyLogoProps) {
-	const [failed, setFailed] = useState(false);
-	return (
-		<span
-			className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-sunken font-semibold"
-			aria-hidden="true"
-		>
-			{name.slice(0, 1).toUpperCase()}
-			{website && !failed && (
-				<img
-					src={new URL("/favicon.ico", website).href}
-					alt=""
-					width={40}
-					height={40}
-					loading="lazy"
-					referrerPolicy="no-referrer"
-					className="absolute inset-0 size-10 bg-sunken object-contain p-1"
-					onError={() => setFailed(true)}
-				/>
-			)}
-		</span>
 	);
 }

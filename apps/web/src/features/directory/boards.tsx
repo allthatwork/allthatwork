@@ -5,7 +5,9 @@ import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
+import { BOARD_ATS_NAMES } from "@reactive-resume/schema/boards";
 import { Button } from "@reactive-resume/ui/components/button";
+import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useCareerTime } from "@/features/career/shared";
@@ -14,22 +16,23 @@ import { orpc } from "@/libs/orpc/client";
 
 type Candidate = RouterOutput["boards"]["guess"][number];
 
-const ATS_NAMES: Record<BoardAts, string> = { greenhouse: "Greenhouse", ashby: "Ashby", lever: "Lever" };
-const atsLabel = (ats: BoardAts, region: string) => `${ATS_NAMES[ats]}${region === "eu" ? " EU" : ""}`;
+const platform = (ats: BoardAts) => BOARD_ATS_NAMES[ats];
+/** "2 hours ago", "yesterday", in a sentence. */
+const lower = (value: string) => value.charAt(0).toLocaleLowerCase() + value.slice(1);
 
 const failed = (error: unknown, fallback: string) =>
 	toast.add({ type: "error", description: getOrpcErrorMessage(error, { fallback, allowServerMessage: true }) });
 
-type CompanyBoardsProps = { companyId: string; companyName: string };
+type CompanyBoardsProps = { companyId: string };
 
 /**
- * A company's Job board section: the boards watched for it, a board its posting links point at (to confirm), a
- * pasted careers link, and Find board, which tries name guesses. Every board found is shown for confirming; only a
- * confirmed board is watched and checked.
+ * A company's Open roles section: the jobs pages watched for it on Greenhouse, Ashby or Lever, one its posting links
+ * point at (to confirm), a pasted careers link, and Find it for me, which tries name guesses. Every page found is shown
+ * for confirming; only a confirmed one is watched and checked. Users never read the word "board".
  */
-export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
+export function CompanyBoards({ companyId }: CompanyBoardsProps) {
 	const id = useId();
-	const { when } = useCareerTime();
+	const { relative } = useCareerTime();
 	const query = useQuery(orpc.boards.company.queryOptions({ input: { companyId } }));
 	const schedules = useQuery(orpc.career.schedules.queryOptions({ input: {} }));
 	const [link, setLink] = useState("");
@@ -42,7 +45,7 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 	const guess = useMutation({
 		...orpc.boards.guess.mutationOptions(),
 		onSuccess: (boards) => setFound({ source: "guess", boards }),
-		onError: (error) => failed(error, t`Couldn't look for a board.`),
+		onError: (error) => failed(error, t`Couldn't look for its jobs.`),
 	});
 	// Every mutation refetches all queries (MutationCache), so the lists follow.
 	const watch = useMutation({
@@ -59,12 +62,12 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 							: t`Watching. No open roles match your preferences right now.`,
 			});
 		},
-		onError: (error) => failed(error, t`Couldn't watch this board.`),
+		onError: (error) => failed(error, t`Couldn't watch this company's jobs.`),
 	});
 	const unwatch = useMutation({
 		...orpc.boards.unwatch.mutationOptions(),
-		onSuccess: () => toast.add({ description: t`Stopped watching this board` }),
-		onError: (error) => failed(error, t`Couldn't stop watching this board.`),
+		onSuccess: () => toast.add({ description: t`Stopped watching` }),
+		onError: (error) => failed(error, t`Couldn't stop watching.`),
 	});
 
 	const data = query.data;
@@ -79,45 +82,39 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 	return (
 		<section aria-labelledby={`${id}-boards`} className="grid gap-3">
 			<div className="grid gap-1">
-				<h3 id={`${id}-boards`} className="text-lg font-semibold">
-					<Trans>Job board</Trans>
+				<h3 id={`${id}-boards`} className="text-sm font-bold">
+					<Trans>Open roles</Trans>
 				</h3>
 				<p className="text-sm text-ink-2">
 					<Trans>
-						Watch {companyName}'s Greenhouse, Ashby or Lever board, and board checks bring its new roles that match your
-						preferences into New roles on Career → Today.
+						Most companies list their jobs on Greenhouse, Ashby or Lever. Watch the company's page there, and its new
+						roles that match your Preferences show up in New roles on Career → Today.
 					</Trans>
 				</p>
 			</div>
 
 			{!data ? (
 				<p role="status" className="text-sm text-ink-2">
-					{query.isError ? <Trans>Couldn't load this company's job boards.</Trans> : <Trans>Loading…</Trans>}
+					{query.isError ? <Trans>Couldn't load this company's open roles.</Trans> : <Trans>Loading…</Trans>}
 				</p>
 			) : (
 				<>
 					{data.watched.map((board) => (
-						<div key={board.id} className="flex flex-wrap items-start gap-3 rounded-xl border border-line p-3.5">
-							<div className="grid min-w-0 flex-1 gap-0.5">
-								<p className="text-sm font-semibold">
-									<Trans>Watching</Trans> · {atsLabel(board.ats, board.region)} · {board.name ?? board.slug}
-								</p>
-								<p className="text-xs text-ink-2">
+						<div
+							key={board.id}
+							className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-line px-2.5 py-1.5 text-[13px]"
+						>
+							<p className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+								<span className="font-semibold">{t`Watching on ${platform(board.ats)}`}</span>{" "}
+								<span className="text-ink-2">
 									{board.error
-										? t`The last check failed. Its last postings are kept, and the next check tries again.`
+										? `· ${t`The last check failed. Its last postings are kept, and the next check tries again.`}`
 										: board.fetchedAt
-											? t`${board.jobCount ?? 0} open roles · checked ${when(board.fetchedAt)}`
-											: t`Not checked yet`}
-								</p>
-							</div>
-							<Button
-								variant="ghost"
-								size="sm"
-								nativeButton={false}
-								render={<a href={board.url} target="_blank" rel="noopener noreferrer" />}
-							>
-								<Trans>Open board</Trans>
-							</Button>
+											? `· ${t`${board.jobCount ?? 0} open`} · ${t`checked ${lower(relative(board.fetchedAt))}`}`
+											: `· ${t`not checked yet`}`}
+								</span>
+							</p>
+							<OpenOn ats={board.ats} url={board.url} />
 							<Button
 								variant="secondary"
 								size="sm"
@@ -131,9 +128,9 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 
 					{data.watched.length > 0 && schedules.data && !hasSchedule && (
 						<p className="text-sm text-warn-text">
-							<Trans>Nothing checks this board yet.</Trans>{" "}
+							<Trans>Nothing checks watched companies yet.</Trans>{" "}
 							<Link to="/dashboard/career" search={{ schedule: "new:boards" }} className="underline underline-offset-2">
-								<Trans>Add a board checks schedule</Trans>
+								<Trans>Add a Watched companies schedule</Trans>
 							</Link>
 						</p>
 					)}
@@ -141,22 +138,16 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 					{data.detected.map((board) => (
 						<div
 							key={`${board.ats}:${board.region}:${board.slug}`}
-							className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-line-2 p-3.5"
+							className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-dashed border-line-2 px-2.5 py-1.5 text-[13px]"
 						>
-							<p className="min-w-0 flex-1 text-sm">
-								<Trans>From a posting link on file:</Trans>{" "}
-								<span className="font-semibold">
-									{atsLabel(board.ats, board.region)} · {board.slug}
+							<p className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+								<span className="font-semibold">{t`Found on ${platform(board.ats)}`}</span>{" "}
+								<span className="text-ink-2">
+									· {t`from a posting link on file`}
+									{board.jobCount !== null && ` · ${t`${board.jobCount} open`}`}
 								</span>
 							</p>
-							<Button
-								variant="ghost"
-								size="sm"
-								nativeButton={false}
-								render={<a href={board.url} target="_blank" rel="noopener noreferrer" />}
-							>
-								<Trans>Open board</Trans>
-							</Button>
+							<OpenOn ats={board.ats} url={board.url} />
 							<Button size="sm" loading={confirming(board.slug)} onClick={() => confirm(board, "posting")}>
 								<Trans>Confirm</Trans>
 							</Button>
@@ -173,8 +164,8 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 						<Input
 							type="url"
 							className="max-w-md min-w-60 flex-1"
-							aria-label={t`Careers or job board link`}
-							placeholder={t`Paste a careers or job board link`}
+							aria-label={t`The company's careers link`}
+							placeholder={t`Paste the company's careers link`}
 							value={link}
 							onChange={(event) => setLink(event.target.value)}
 						/>
@@ -187,7 +178,7 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 							loading={guess.isPending}
 							onClick={() => guess.mutate({ companyId })}
 						>
-							<Trans>Find board</Trans>
+							<Trans>Find it for me</Trans>
 						</Button>
 					</form>
 
@@ -196,9 +187,9 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 							{found.boards.length === 0 ? (
 								<p className="text-sm text-ink-2">
 									{found.source === "guess" ? (
-										<Trans>No board found from the name. Paste the company's careers page link instead.</Trans>
+										<Trans>Nothing found from the name. Paste the company's careers link instead.</Trans>
 									) : (
-										<Trans>No Greenhouse, Ashby or Lever board found at that link.</Trans>
+										<Trans>No Greenhouse, Ashby or Lever jobs found at that link.</Trans>
 									)}
 								</p>
 							) : (
@@ -206,34 +197,28 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 									<p className="text-sm text-ink-2">
 										{found.source === "guess" ? (
 											<Trans>
-												A guess can find another company's board. Check the name and roles before confirming.
+												A guess can find another company's jobs. Check the name and roles before confirming.
 											</Trans>
 										) : (
-											<Trans>Confirm the board to watch it.</Trans>
+											<Trans>Confirm to watch it.</Trans>
 										)}
 									</p>
 									{found.boards.map((board) => (
 										<div
 											key={`${board.ats}:${board.region}:${board.slug}`}
-											className="flex flex-wrap items-start gap-3 rounded-xl border border-line p-3.5"
+											className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-line px-2.5 py-1.5 text-[13px]"
 										>
-											<div className="grid min-w-0 flex-1 gap-0.5">
-												<p className="text-sm font-semibold">
-													{atsLabel(board.ats, board.region)} · {board.name ?? board.slug}
+											<div className="grid min-w-0 basis-full gap-0.5 sm:flex-1 sm:basis-auto">
+												<p>
+													<span className="font-semibold">{platform(board.ats)}</span>
+													{board.name && ` · ${board.name}`}
+													<span className="text-ink-2"> · {t`${board.jobCount} open`}</span>
 												</p>
-												<p className="text-xs text-ink-2">
-													{t`${board.jobCount} open roles`}
-													{board.sample.length > 0 && ` · ${board.sample.join(" · ")}`}
-												</p>
+												{board.sample.length > 0 && (
+													<p className="truncate text-xs text-ink-2">{board.sample.join(" · ")}</p>
+												)}
 											</div>
-											<Button
-												variant="ghost"
-												size="sm"
-												nativeButton={false}
-												render={<a href={board.url} target="_blank" rel="noopener noreferrer" />}
-											>
-												<Trans>Open board</Trans>
-											</Button>
+											<OpenOn ats={board.ats} url={board.url} />
 											{watchedKeys.has(boardKey(board)) ? (
 												<p className="self-center text-sm text-ink-2">
 													<Trans>Already watching</Trans>
@@ -255,48 +240,94 @@ export function CompanyBoards({ companyId, companyName }: CompanyBoardsProps) {
 	);
 }
 
+type OpenOnProps = { ats: BoardAts; url: string };
+function OpenOn({ ats, url }: OpenOnProps) {
+	return (
+		<Button
+			variant="ghost"
+			size="sm"
+			nativeButton={false}
+			render={<a href={url} target="_blank" rel="noopener noreferrer" />}
+		>
+			{t`Open on ${platform(ats)}`} ↗
+		</Button>
+	);
+}
+
 /**
  * Companies worth watching, from the contacts in the Directory: most contacts first, with their matching open roles
- * where a posting link on file names the board. Nothing is watched until the user confirms a board.
+ * where a posting link on file names their jobs page. One line with the top three; Show all opens the full list in
+ * place. Nothing is watched until the user confirms a page.
  */
 export function WatchSuggestions() {
 	const id = useId();
+	const [open, setOpen] = useState(false);
 	const query = useQuery(orpc.boards.suggestions.queryOptions({ input: {} }));
 	const rows = query.data;
-	if (query.isError || (rows && rows.length === 0)) return null;
+	if (query.isError || !rows || rows.length === 0) return null;
+	const top = rows.slice(0, 3);
+	const more = rows.length - top.length;
+	const companyLink = (row: (typeof rows)[number]) => (
+		<Link
+			to="/dashboard/directory"
+			search={{ tab: "companies", company: row.id }}
+			className="text-accent-text underline-offset-2 hover:underline"
+		>
+			{row.name}
+		</Link>
+	);
 	return (
-		<section aria-labelledby={`${id}-watch`} className="grid gap-2 rounded-xl border border-line p-4">
-			<div className="grid gap-1">
-				<h2 id={`${id}-watch`} className="text-base font-semibold">
+		<section
+			aria-labelledby={`${id}-watch`}
+			className="grid gap-2 rounded-md border border-line px-2.5 py-1.5 text-[13px]"
+		>
+			<div className="flex min-w-0 items-center gap-2">
+				<h2 id={`${id}-watch`} className="shrink-0 font-bold">
 					<Trans>Companies to watch</Trans>
 				</h2>
-				<p className="text-sm text-ink-2">
-					<Trans>Where you know people, most contacts first. Open one to find and confirm its job board.</Trans>
-				</p>
-			</div>
-			{!rows ? (
-				<p role="status" className="text-sm text-ink-2">
-					<Trans>Loading…</Trans>
-				</p>
-			) : (
-				<ul className="grid gap-1.5">
-					{rows.map((row) => (
-						<li key={row.id} className="flex flex-wrap items-baseline gap-x-2 text-sm">
-							<Link
-								to="/dashboard/directory"
-								search={{ tab: "companies", company: row.id }}
-								className="font-semibold underline-offset-2 hover:underline"
-							>
-								{row.name}
-							</Link>
-							<span className="text-ink-2">
-								{row.contacts === 1 ? t`1 contact` : t`${row.contacts} contacts`}
-								{row.openRoles !== null &&
-									` · ${row.openRoles === 1 ? t`1 matching open role` : t`${row.openRoles} matching open roles`}`}
+				{!open && (
+					<p className="min-w-0 flex-1 truncate text-ink-2">
+						{top.map((row, index) => (
+							<span key={row.id}>
+								{index > 0 && " · "}
+								{companyLink(row)}{" "}
+								{index === 0 ? (row.contacts === 1 ? t`1 contact` : t`${row.contacts} contacts`) : row.contacts}
 							</span>
-						</li>
-					))}
-				</ul>
+						))}
+						{more > 0 && ` · ${t`and ${more} more`}`}
+					</p>
+				)}
+				<Button
+					variant="link"
+					className="ms-auto shrink-0 text-[13px]"
+					aria-expanded={open}
+					aria-controls={`${id}-all`}
+					onClick={() => setOpen((value) => !value)}
+				>
+					{open ? <Trans>Show less</Trans> : <Trans>Show all</Trans>}
+					<Icon name="caret-down" size={12} className={open ? "rotate-180" : undefined} />
+				</Button>
+			</div>
+			{open && (
+				<div id={`${id}-all`} className="grid gap-1.5 pb-1">
+					<p className="text-ink-2">
+						<Trans>
+							Where you know people, most contacts first. Open one to find and confirm where it lists its jobs.
+						</Trans>
+					</p>
+					<ul className="grid gap-1.5">
+						{rows.map((row) => (
+							<li key={row.id} className="flex flex-wrap items-baseline gap-x-2">
+								<span className="font-semibold">{companyLink(row)}</span>
+								<span className="text-ink-2">
+									{row.contacts === 1 ? t`1 contact` : t`${row.contacts} contacts`}
+									{row.openRoles !== null &&
+										` · ${row.openRoles === 1 ? t`1 matching open role` : t`${row.openRoles} matching open roles`}`}
+								</span>
+							</li>
+						))}
+					</ul>
+				</div>
 			)}
 		</section>
 	);

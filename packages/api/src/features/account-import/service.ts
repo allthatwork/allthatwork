@@ -10,6 +10,7 @@ import * as schema from "@reactive-resume/db/schema";
 import { aiLimitsSchema, careerProfileDataSchema } from "@reactive-resume/schema/career";
 import { coverLetterSchema } from "@reactive-resume/schema/cover-letter/data";
 import { companyFieldsSchema, contactFieldsSchema, directoryKey } from "@reactive-resume/schema/directory";
+import { contactNames } from "@reactive-resume/schema/directory-names";
 import { noReplyDaysSchema } from "@reactive-resume/utils/reminders";
 import { resumePagesSchema } from "@reactive-resume/utils/resume-pages";
 import { generateId } from "@reactive-resume/utils/string";
@@ -277,15 +278,23 @@ async function importDirectory(userId: string, input: AreaInput<"directory">) {
 			} else report.skip("companies", "exists");
 			report.map("company", oldId, row.id);
 		}
-		for (const { id: oldId, companyId, ...fields } of contacts) {
+		for (const { id: oldId, companyId, name, firstName, lastName, ...fields } of contacts) {
+			// An export from before first and last name carries only the name, which becomes the first name.
+			const parts = contactNames({ name, firstName, lastName });
+			const names = parts?.name ? parts : name?.trim() ? contactNames({ name }) : null;
+			if (!names?.name || names.name.length > 200) {
+				report.skip("contacts", "unreadable");
+				continue;
+			}
 			const [row] = await tx
 				.insert(schema.contact)
 				.values(
 					defined({
 						...fields,
+						...names,
 						userId,
 						companyId: companyId ? (report.ids.company?.[companyId] ?? null) : null,
-						normalizedKey: directoryKey(fields.name),
+						normalizedKey: directoryKey(names.name),
 					}),
 				)
 				.returning();
