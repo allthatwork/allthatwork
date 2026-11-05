@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "Žádost o zaměstnání uzavřena"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "Datum žádosti"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "Potvrdit"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "Potvrdit podání"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "Potvrďte heslo"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "Potvrďte odeslání a vyberte dokumenty, které jste skutečně odeslali. Jejich aktuální verze budou uloženy."
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "Tuto stránku nelze přečíst: {0}"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "Odeslání se nepodařilo zaznamenat. Zkuste to znovu."
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "Průvodní dopis importován"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "Odeslání průvodního dopisu (volitelné)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "č. {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "stránka s životopisem"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "životopis předložen (volitelné)"
 
@@ -12827,16 +12811,6 @@ msgstr "Předmět"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "Odešlete ji sami přes stránku zaměstnavatele pro uchazeče."
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "Zaslaný přiložený průvodní dopis: {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "Zaslané přiložené resumé: {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

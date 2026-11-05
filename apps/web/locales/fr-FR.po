@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "demande d'emploi fermée"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "date de candidature"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "Confirmer"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "Confirmer l'envoi"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "Confirmez votre mot de passe"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "Confirmez la soumission et choisissez les documents que vous avez réellement envoyés. Leurs versions actuelles seront enregistrées."
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "Impossible de lire cette page : {0}"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "Impossible d'enregistrer la soumission. Essayer à nouveau."
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "Lettre de motivation importée"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "Lettre de motivation soumise (facultatif)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "N° {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "page de CV"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "curriculum vitae soumis (facultatif)"
 
@@ -12827,16 +12811,6 @@ msgstr "Objet"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "Envoyez vous-même votre candidature via la page de l'employeur."
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "Lettre de motivation ci-jointe soumise : {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "CV ci-joint soumis : {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

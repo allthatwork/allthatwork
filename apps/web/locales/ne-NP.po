@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "रोजगार आवेदन बन्द"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "काम आवेदन मिति"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "यकिन गर्नुहोस्"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "आवेदन गरेको पुष्टि गर्नुहोस्"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "पासवर्ड पुष्टि गर्नुहोस्"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "सबमिशन पुष्टि गर्नुहोस् र तपाईंले वास्तवमा पठाउनुभएको कागजातहरू छान्नुहोस्। तिनीहरूका हालका संस्करणहरू बचत हुनेछन्।"
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "यो पृष्ठ पढ्न सकिएन: {0}"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "सबमिशन रेकर्ड गर्न सकिएन। पुन: प्रयास गर्नुहोस्।"
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "आवरण पत्र आयात गरियो"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "पेश गरिएको आवरण पत्र (वैकल्पिक)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "नम्बर {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "पुन: सुरु पृष्ठ"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "रिजुमे पेश गरियो (वैकल्पिक)"
 
@@ -12827,16 +12811,6 @@ msgstr "विषय"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "रोजगारदाताको आवेदन पृष्ठबाट आफैँ पेस गर्नुहोस्।"
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "पेस गरिएको संलग्न कभर लेटर: {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "पेश गरिएको संलग्न रिजुमे: {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

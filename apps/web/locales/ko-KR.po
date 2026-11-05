@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "입사 지원이 마감되었습니다"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "입사지원일"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "확인"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "지원 완료 확인"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "비밀번호 확인"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "제출을 확인하고 실제로 보낸 서류를 선택하세요. 현재 버전이 저장됩니다."
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "이 페이지를 읽을 수 없습니다: {0}"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "제출을 기록할 수 없습니다. 다시 시도해 보세요."
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "자기소개서를 가져왔습니다."
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "자기 소개서 제출됨(선택 사항)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "번호 {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "이력서 페이지"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "이력서 제출(선택)"
 
@@ -12827,16 +12811,6 @@ msgstr "제목"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "고용주의 지원 페이지에서 직접 제출하세요."
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "제출된 자기소개서: {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "제출된 이력서: {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

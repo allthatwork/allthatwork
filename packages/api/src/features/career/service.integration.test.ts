@@ -8,7 +8,12 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as tables from "@reactive-resume/db/schema";
 import { copyCoverLetterStyle } from "@reactive-resume/resume/cover-letter";
-import { careerProfileDataSchema, aiLimitsSchema, savedItemDataSchema } from "@reactive-resume/schema/career";
+import {
+	careerProfileDataSchema,
+	aiLimitsSchema,
+	EMPTY_WORKSPACE,
+	savedItemDataSchema,
+} from "@reactive-resume/schema/career";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 
 const fixture = vi.hoisted(() => ({
@@ -1500,6 +1505,78 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		expect((await applications.getById({ userId: "alice", id: "alice-app" })).status).toBe("saved");
 		expect((await service.workspace("alice", "alice-app")).answers).toEqual([]);
 		expect(await service.savedItems({ userId: "alice", applicationId: "alice-app", kind: "answers" })).toEqual([]);
+	});
+
+	describe("answers saved on any move out of Saved", () => {
+		const written = (answer: string) => [
+			{ id: "why", question: "Why ACME?", answer, factIds: [] },
+			{ id: "blank", question: "Anything else?", answer: "  ", factIds: [] },
+		];
+		async function workspaceAnswers(applicationId: string, answers: ReturnType<typeof written>) {
+			const data = { ...EMPTY_WORKSPACE, answers };
+			await getDb()
+				.insert(tables.careerWorkspace)
+				.values({ applicationId, userId: "alice", data })
+				.onConflictDoUpdate({ target: tables.careerWorkspace.applicationId, set: { data } });
+		}
+		const saved = (applicationId: string) => service.savedItems({ userId: "alice", applicationId, kind: "answers" });
+
+		it("saves the written answers once when update moves a job from Saved to Applied", async () => {
+			await workspaceAnswers("alice-app", written("Sent from the board"));
+			await applications.update({ userId: "alice", id: "alice-app", status: "applied" });
+			expect(await saved("alice-app")).toMatchObject([
+				{
+					title: "Application answers",
+					data: { kind: "answers", answers: [{ id: "why", answer: "Sent from the board" }] },
+				},
+			]);
+			// A later move (Applied to Interview) doesn't save a second copy, even with new text.
+			await workspaceAnswers("alice-app", written("Edited after sending"));
+			await applications.update({ userId: "alice", id: "alice-app", status: "interview" });
+			expect(await saved("alice-app")).toMatchObject([{ data: { answers: [{ answer: "Sent from the board" }] } }]);
+		});
+
+		it("saves nothing when no answers are written", async () => {
+			await workspaceAnswers("alice-app", written(""));
+			await applications.update({ userId: "alice", id: "alice-app", status: "applied" });
+			expect((await applications.getById({ userId: "alice", id: "alice-app" })).status).toBe("applied");
+			expect(await saved("alice-app")).toEqual([]);
+		});
+
+		it("saves answers per row when bulkUpdate moves jobs from Saved to Applied", async () => {
+			await workspaceAnswers("alice-app", written("ACME answer"));
+			await workspaceAnswers("alice-other", written("NOVA answer"));
+			await applications.bulkUpdate({ userId: "alice", ids: ["alice-app", "alice-other"], status: "applied" });
+			expect(await saved("alice-app")).toMatchObject([{ data: { answers: [{ answer: "ACME answer" }] } }]);
+			expect(await saved("alice-other")).toMatchObject([{ data: { answers: [{ answer: "NOVA answer" }] } }]);
+		});
+
+		it("saves nothing on bulk moves that don't start at Saved", async () => {
+			await getDb()
+				.update(tables.application)
+				.set({ status: "applied" })
+				.where(eq(tables.application.id, "alice-other"));
+			await workspaceAnswers("alice-other", written("Written after applying"));
+			await applications.bulkUpdate({ userId: "alice", ids: ["alice-other"], status: "interview" });
+			expect(await saved("alice-other")).toEqual([]);
+		});
+
+		it("saves nothing when a closed job is reopened", async () => {
+			await applications.update({ userId: "alice", id: "alice-app", status: "closed", closedReason: "withdrew" });
+			await workspaceAnswers("alice-app", written("Never sent"));
+			await applications.update({ userId: "alice", id: "alice-app", status: "applied" });
+			expect((await applications.getById({ userId: "alice", id: "alice-app" })).status).toBe("applied");
+			expect(await saved("alice-app")).toEqual([]);
+		});
+
+		it("keeps career.snapshotAnswers working, once per application", async () => {
+			await expect(service.snapshotAnswers("alice", "alice-app")).rejects.toMatchObject({ code: "BAD_REQUEST" });
+			await getDb().update(tables.application).set({ status: "applied" }).where(eq(tables.application.id, "alice-app"));
+			await workspaceAnswers("alice-app", written("Recorded by hand"));
+			await service.snapshotAnswers("alice", "alice-app");
+			await service.snapshotAnswers("alice", "alice-app");
+			expect(await saved("alice-app")).toMatchObject([{ data: { answers: [{ answer: "Recorded by hand" }] } }]);
+		});
 	});
 
 	it("keeps chats visible if storage failure aborts application deletion", async () => {

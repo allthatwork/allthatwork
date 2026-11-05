@@ -514,7 +514,10 @@ type ChecklistProps = {
 	onSubmittingChange: (value: boolean) => void;
 };
 
-/** "Before you submit": five ticks stored with the application, copy/download, and Mark as applied before submission. */
+/**
+ * "Before you submit": four ticks stored with the application, copy/download, and Mark as applied before submission.
+ * The last item is done once the application has left Saved, however it was marked.
+ */
 function Checklist({
 	application,
 	answers,
@@ -531,7 +534,9 @@ function Checklist({
 	const items = checklistItems();
 	const ticked = workspace.data.checklist;
 	const submitted = application.status !== "saved";
-	const done = items.filter((_, index) => ticked.includes(index)).length;
+	const last = items.length - 1;
+	const isDone = (index: number) => (index === last ? submitted : ticked.includes(index));
+	const done = items.filter((_, index) => isDone(index)).length;
 	const written = answers.filter((answer) => answer.answer.trim());
 
 	const toggle = (index: number, on: boolean) => {
@@ -575,11 +580,6 @@ function Checklist({
 				...currentWorkspace,
 				answers,
 			});
-			// The ticks as they are now, not as they were when the button was pressed.
-			const current = queryClient.getQueryData(
-				orpc.career.workspace.queryKey({ input: { applicationId: application.id } }),
-			)?.checklist;
-			workspace.save({ checklist: [...new Set([...(current ?? ticked), items.length - 1])] });
 			toast.add({ description: t`Marked as applied. The versions you sent are kept.` });
 		} catch (error) {
 			toast.add({
@@ -621,7 +621,7 @@ function Checklist({
 			</div>
 			<ul className="grid gap-2.5">
 				{items.map((label, index) =>
-					!submitted && !readOnly && index === items.length - 1 ? (
+					!submitted && !readOnly && index === last ? (
 						<li key={label}>
 							<Button className="w-full" disabled={!canSubmit} loading={submitting} onClick={() => void markApplied()}>
 								<Trans>Mark as applied</Trans>
@@ -632,13 +632,11 @@ function Checklist({
 							<label className="flex cursor-pointer gap-2.5 text-[13px] leading-[19px]">
 								<Checkbox
 									className="mt-px"
-									checked={ticked.includes(index)}
-									disabled={readOnly || submitting}
+									checked={isDone(index)}
+									disabled={readOnly || submitting || index === last}
 									onCheckedChange={(checked) => toggle(index, checked)}
 								/>
-								<span
-									className={cn("transition-colors duration-quick", ticked.includes(index) ? "text-ink-2" : "text-ink")}
-								>
+								<span className={cn("transition-colors duration-quick", isDone(index) ? "text-ink-2" : "text-ink")}>
 									{label}
 								</span>
 							</label>

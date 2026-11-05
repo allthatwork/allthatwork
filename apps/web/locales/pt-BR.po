@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "pedido de emprego fechado"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "data do pedido de emprego"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "Confirmar"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "Confirmar envio da candidatura"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "Confirmar senha"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "Confirme o envio e escolha os documentos que você realmente enviou. Suas versões atuais serão salvas."
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "Não foi possível ler esta página: {0}"
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "Não foi possível registrar o envio. Tente novamente."
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "Carta de apresentação importada"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "Carta de apresentação enviada (opcional)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "Nº {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "página de currículo"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "currículo enviado (opcional)"
 
@@ -12827,16 +12811,6 @@ msgstr "Assunto"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "Faça o envio pela página de candidatura do empregador."
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "Carta de apresentação em anexo enviada: {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "Currículo anexado enviado: {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

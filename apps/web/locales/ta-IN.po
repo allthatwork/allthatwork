@@ -2209,7 +2209,6 @@ msgid "Application closed"
 msgstr "வேலை விண்ணப்பம் மூடப்பட்டது"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Application date"
 msgstr "வேலை விண்ணப்ப தேதி"
 
@@ -3390,17 +3389,9 @@ msgstr ""
 msgid "Confirm"
 msgstr "உறுதி செய்"
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm applied"
-msgstr "விண்ணப்பித்ததை உறுதிப்படுத்தவும்"
-
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Confirm Password"
 msgstr "கடவுச்சொல்லை உறுதிப்படுத்துங்கள்"
-
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Confirm submission and choose the documents you actually sent. Their current versions will be saved."
-msgstr "சமர்ப்பிப்பை உறுதிசெய்து, நீங்கள் உண்மையில் அனுப்பிய ஆவணங்களைத் தேர்ந்தெடுக்கவும். அவற்றின் தற்போதைய பதிப்புகள் சேமிக்கப்படும்."
 
 #: src/features/career/workspace/messages.tsx
 msgid "Confirm the time before adding a new interview."
@@ -4036,10 +4027,6 @@ msgstr "இந்தப் பக்கத்தைப் படிக்க ம
 msgid "Couldn't recheck matches. Your review is still here; try again."
 msgstr ""
 
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Couldn't record submission. Try again."
-msgstr "சமர்ப்பிப்பைப் பதிவுசெய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்."
-
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't refresh Knowledge. Try again before saving."
 msgstr ""
@@ -4303,7 +4290,6 @@ msgid "Cover letter imported"
 msgstr "கவர் கடிதம் இறக்குமதி செய்யப்பட்டது"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Cover letter submitted (optional)"
 msgstr "கவர் கடிதம் சமர்ப்பிக்கப்பட்டது (விரும்பினால்)"
 
@@ -8910,7 +8896,6 @@ msgid "No. {number} · {name}"
 msgstr "எண். {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
@@ -11104,7 +11089,6 @@ msgid "Resume page"
 msgstr "ரெஸ்யூம் பக்கம்"
 
 #: src/features/applications/components/add-application-dialog.tsx
-#: src/features/applications/components/application-detail-sheet.tsx
 msgid "Resume submitted (optional)"
 msgstr "ரெஸ்யூம் சமர்ப்பிக்கப்பட்டது (விரும்பினால்)"
 
@@ -12827,16 +12811,6 @@ msgstr "பொருள்"
 #: src/features/career/workspace/apply.tsx
 msgid "Submit through the employer's application page yourself."
 msgstr "பணி வழங்குநரின் விண்ணப்பப் பக்கம் வழியாக நீங்களே சமர்ப்பிக்கவும்."
-
-#. placeholder {0}: application.coverLetterName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached cover letter: {0}"
-msgstr "இணைக்கப்பட்ட கவர் கடிதம் சமர்ப்பிக்கப்பட்டது: {0}"
-
-#. placeholder {0}: application.resumeFileName ?? "PDF"
-#: src/features/applications/components/application-detail-sheet.tsx
-msgid "Submitted attached resume: {0}"
-msgstr "இணைக்கப்பட்ட ரெஸ்யூம் சமர்ப்பிக்கப்பட்டது: {0}"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Success at 90 days · next step"

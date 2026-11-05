@@ -9,13 +9,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { Button } from "@reactive-resume/ui/components/button";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@reactive-resume/ui/components/dialog";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -46,7 +39,6 @@ import { ViewPostingButton } from "./posting-dialog";
 import { SuggestionCombobox } from "./suggestion-combobox";
 import { useClosingValue } from "@/hooks/use-closing-value";
 import { useConfirm } from "@/hooks/use-confirm";
-import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
 
 type DetailSheetProps = {
@@ -111,7 +103,6 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 		entry: null,
 	});
 	const [closing, setClosing] = useState(false);
-	const [applying, setApplying] = useState(false);
 
 	const next = getNextStage(application.status);
 	const reached = PIPELINE.indexOf(application.status);
@@ -186,9 +177,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 										type="button"
 										aria-current={stage === application.status ? "step" : undefined}
 										onClick={() => {
-											if (stage === application.status) return;
-											if (application.status === "saved" && stage === "applied") setApplying(true);
-											else moveTo(application, stage);
+											if (stage !== application.status) moveTo(application, stage);
 										}}
 										className="grid w-full gap-1.5 text-start"
 									>
@@ -229,11 +218,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 								</span>
 							</span>
 							{next && !closed && (
-								<Button
-									size="sm"
-									variant="secondary"
-									onClick={() => (application.status === "saved" ? setApplying(true) : moveTo(application, next))}
-								>
+								<Button size="sm" variant="secondary" onClick={() => moveTo(application, next)}>
 									{application.status === "saved" ? (
 										<Trans>Mark as applied</Trans>
 									) : (
@@ -304,7 +289,6 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 				open={interview.open}
 				onOpenChange={(open) => setInterview((currentValue) => ({ ...currentValue, open }))}
 			/>
-			{applying && <MarkAppliedDialog application={application} onClose={() => setApplying(false)} />}
 		</>
 	);
 }
@@ -450,143 +434,6 @@ function Tags({ application }: { application: Application }) {
 				</form>
 			</div>
 		</section>
-	);
-}
-
-type MarkAppliedDialogProps = { application: Application; onClose: () => void };
-
-function MarkAppliedDialog({ application, onClose }: MarkAppliedDialogProps) {
-	const id = useId();
-	const invalidate = useInvalidateApplications();
-	const [date, setDate] = useState(() => new Date().toLocaleDateString("en-CA"));
-	const [resumeId, setResumeId] = useState(application.resumeId ?? "");
-	const [coverLetterId, setCoverLetterId] = useState(application.coverLetterId ?? "");
-	const [resumeFileSent, setResumeFileSent] = useState(true);
-	const [letterFileSent, setLetterFileSent] = useState(true);
-	const { data: documents } = useQuery(orpc.documents.list.queryOptions({ input: { trashed: false } }));
-	const update = useMutation({
-		...orpc.applications.update.mutationOptions(),
-		onSuccess: () => {
-			invalidate(application.id);
-			onClose();
-		},
-	});
-	return (
-		<Dialog
-			open
-			onOpenChange={(open) => {
-				if (!open) onClose();
-			}}
-		>
-			<DialogContent>
-				<form
-					className="grid gap-4"
-					onSubmit={(event) => {
-						event.preventDefault();
-						update.mutate({
-							id: application.id,
-							status: "applied",
-							stageEnteredAt: date,
-							resumeId: resumeId || null,
-							coverLetterId: coverLetterId || null,
-							...(!resumeFileSent ? { resumeFileUrl: null, resumeFileName: null } : {}),
-							...(!letterFileSent ? { coverLetterUrl: null, coverLetterName: null } : {}),
-						});
-					}}
-				>
-					<DialogHeader>
-						<DialogTitle>
-							<Trans>Mark as applied</Trans>
-						</DialogTitle>
-						<DialogDescription>
-							<Trans>
-								Confirm submission and choose the documents you actually sent. Their current versions will be saved.
-							</Trans>
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-1.5">
-						<label htmlFor={`${id}-date`}>
-							<Trans>Application date</Trans>
-						</label>
-						<Input
-							id={`${id}-date`}
-							type="date"
-							required
-							value={date}
-							onChange={(event) => setDate(event.target.value)}
-						/>
-					</div>
-					<div className="grid gap-1.5">
-						<label htmlFor={`${id}-resume`}>
-							<Trans>Resume submitted (optional)</Trans>
-						</label>
-						<select
-							id={`${id}-resume`}
-							value={resumeId}
-							onChange={(event) => setResumeId(event.target.value)}
-							className="h-9 rounded-md border border-line bg-surface px-2 text-sm"
-						>
-							<option value="">{t`None`}</option>
-							{documents
-								?.filter((document) => document.type === "resume")
-								.map((document) => (
-									<option key={document.id} value={document.id}>
-										{document.name}
-									</option>
-								))}
-						</select>
-					</div>
-					<div className="grid gap-1.5">
-						<label htmlFor={`${id}-letter`}>
-							<Trans>Cover letter submitted (optional)</Trans>
-						</label>
-						<select
-							id={`${id}-letter`}
-							value={coverLetterId}
-							onChange={(event) => setCoverLetterId(event.target.value)}
-							className="h-9 rounded-md border border-line bg-surface px-2 text-sm"
-						>
-							<option value="">{t`None`}</option>
-							{documents
-								?.filter((document) => document.type === "letter")
-								.map((document) => (
-									<option key={document.id} value={document.id}>
-										{document.name}
-									</option>
-								))}
-						</select>
-					</div>
-					{application.resumeFileUrl && (
-						<label className="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								checked={resumeFileSent}
-								onChange={(event) => setResumeFileSent(event.target.checked)}
-							/>
-							<Trans>Submitted attached resume: {application.resumeFileName ?? "PDF"}</Trans>
-						</label>
-					)}
-					{application.coverLetterUrl && (
-						<label className="flex items-center gap-2 text-sm">
-							<input
-								type="checkbox"
-								checked={letterFileSent}
-								onChange={(event) => setLetterFileSent(event.target.checked)}
-							/>
-							<Trans>Submitted attached cover letter: {application.coverLetterName ?? "PDF"}</Trans>
-						</label>
-					)}
-					{update.error && (
-						<p role="alert" className="text-sm text-danger-text">
-							{getOrpcErrorMessage(update.error, { fallback: t`Couldn't record submission. Try again.` })}
-						</p>
-					)}
-					<Button type="submit" disabled={!date || update.isPending}>
-						<Trans>Confirm applied</Trans>
-					</Button>
-				</form>
-			</DialogContent>
-		</Dialog>
 	);
 }
 
