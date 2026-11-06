@@ -7,6 +7,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as tables from "@reactive-resume/db/schema";
 import { careerProfileDataSchema, careerScheduleInputSchema } from "@reactive-resume/schema/career";
+import { boardsDto } from "../../dto/boards";
 
 const fixture = vi.hoisted(() => ({
 	db: undefined as ReturnType<typeof drizzle> | undefined,
@@ -38,6 +39,12 @@ vi.mock("../web-access/credentials", () => ({ webAccessService: { resolve: async
 vi.mock("@reactive-resume/email/transport", () => ({ sendCareerNotification: vi.fn() }));
 vi.mock("../career/generate", () => ({ generateCareer: vi.fn() }));
 vi.mock("../ai-providers/service", () => ({ aiProvidersService: { getRunnableById: async () => ({}) } }));
+// Careers pages are read without fetch; each test says what they answer.
+const page = vi.hoisted(() => ({ read: vi.fn() }));
+vi.mock("../web-access/builtin", async () => ({
+	...(await vi.importActual<typeof import("../web-access/builtin")>("../web-access/builtin")),
+	readBuiltinPage: page.read,
+}));
 
 const recorded = (name: string) =>
 	JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url), "utf8")) as Record<string, unknown>;
@@ -94,6 +101,8 @@ describe.skipIf(!databaseUrl)("job board checks", () => {
 	beforeEach(async () => {
 		vi.stubEnv("VERCEL", "");
 		calls.length = 0;
+		page.read.mockReset();
+		page.read.mockRejectedValue(new Error("unreachable"));
 		answers = {
 			"https://api.ashbyhq.com/posting-api/job-board/linear?includeCompensation=true": ashby,
 			"https://boards-api.greenhouse.io/v1/boards/gitlab/jobs": greenhouseJobs,
@@ -338,5 +347,120 @@ describe.skipIf(!databaseUrl)("job board checks", () => {
 		expect((await boards.company("alice", "alice-linear")).detected).toMatchObject([{ slug: "linear" }]);
 		await watchLinear("alice");
 		expect(await boards.suggestions("alice")).toEqual([]);
+	});
+
+	const careersUrl = async (companyId: string) =>
+		(await getDb().select().from(tables.company).where(eq(tables.company.id, companyId)))[0]?.careersUrl;
+	const WORKDAY = "https://lumen.wd5.myworkdayjobs.com/en-US/careers";
+
+	it("saves a link that leads to no Greenhouse, Ashby or Lever page as the company's jobs link", async () => {
+		page.read.mockResolvedValue({ html: "<html><body>Search jobs</body></html>", resolvedUrl: WORKDAY });
+		await expect(boards.fromLink("alice", "alice-linear", WORKDAY)).resolves.toEqual({
+			boards: [],
+			savedLink: WORKDAY,
+		});
+		expect(await careersUrl("alice-linear")).toBe(WORKDAY);
+		// A page that can't be opened at all (Workday often blocks or times out) is saved too, replacing the last one.
+		page.read.mockRejectedValue(new Error("timeout"));
+		const blocked = "https://careers.example.com/jobs";
+		await expect(boards.fromLink("alice", "alice-linear", blocked)).resolves.toEqual({
+			boards: [],
+			savedLink: blocked,
+		});
+		expect(await careersUrl("alice-linear")).toBe(blocked);
+		// Another account's company is out of reach.
+		await expect(boards.fromLink("bob", "alice-linear", WORKDAY)).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+
+	it("rejects input that isn't a link", () => {
+		expect(boardsDto.fromLink.input.safeParse({ companyId: "alice-linear", link: "Lumen Freight" }).success).toBe(
+			false,
+		);
+		expect(boardsDto.fromLink.input.safeParse({ companyId: "alice-linear", link: "ftp://lumen.example" }).success).toBe(
+			false,
+		);
+	});
+
+	it("reads a Greenhouse link as before, saving nothing", async () => {
+		const result = await boards.fromLink("alice", "alice-gitlab", "https://job-boards.greenhouse.io/gitlab");
+		expect(result).toMatchObject({ boards: [{ ats: "greenhouse", slug: "gitlab", name: "GitLab" }], savedLink: null });
+		expect(page.read).not.toHaveBeenCalled();
+		expect(await careersUrl("alice-gitlab")).toBeNull();
+		// A careers page that embeds one leads to it.
+		page.read.mockResolvedValue({
+			html: '<iframe src="https://boards.greenhouse.io/embed/job_board?for=gitlab"></iframe>',
+			resolvedUrl: "https://about.gitlab.example/jobs",
+		});
+		await expect(boards.fromLink("alice", "alice-gitlab", "https://about.gitlab.example/jobs")).resolves.toMatchObject({
+			boards: [{ slug: "gitlab" }],
+			savedLink: null,
+		});
+		// One that points at a board that can't be read is an error, and nothing is saved.
+		await expect(
+			boards.fromLink("alice", "alice-gitlab", "https://job-boards.greenhouse.io/nobody-here"),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(await careersUrl("alice-gitlab")).toBeNull();
+	});
+
+	it("clears the saved link when a page is watched for the company", async () => {
+		await getDb().update(tables.company).set({ careersUrl: WORKDAY }).where(eq(tables.company.id, "alice-linear"));
+		await getDb().update(tables.company).set({ careersUrl: WORKDAY }).where(eq(tables.company.id, "bob-linear"));
+		await watchLinear("alice");
+		expect(await careersUrl("alice-linear")).toBeNull();
+		expect(await careersUrl("bob-linear")).toBe(WORKDAY);
+	});
+
+	it("lists every company's watched page, found page with its stored count, and saved link in one go", async () => {
+		const { directoryService } = await import("../directory/service");
+		await boards.watch("alice", {
+			companyId: "alice-gitlab",
+			ats: "greenhouse",
+			region: "us",
+			slug: "gitlab",
+			source: "link",
+		});
+		await getDb().insert(tables.application).values({
+			userId: "alice",
+			company: "Linear",
+			companyId: "alice-linear",
+			role: "Engineer",
+			sourceUrl: "https://jobs.ashbyhq.com/linear/12f8f208-0b9c-4569-bb3d-41c8a197029e",
+		});
+		await getDb()
+			.insert(tables.company)
+			.values({ id: "alice-lumen", userId: "alice", name: "Lumen", normalizedKey: "lumen", careersUrl: WORKDAY });
+		// Linear's page was never read: no count yet, and listing doesn't read it.
+		const before = calls.length;
+		const unread = await directoryService.companies({ userId: "alice" });
+		expect(calls.length).toBe(before);
+		expect(unread.find((row) => row.id === "alice-linear")?.jobs.found).toEqual({
+			ats: "ashby",
+			region: "us",
+			slug: "linear",
+			url: "https://jobs.ashbyhq.com/linear",
+			jobCount: null,
+		});
+		// Bob watching it stores the shared board, so Alice's list shows its count.
+		await watchLinear("bob");
+		const rows = await directoryService.companies({ userId: "alice" });
+		const byId = new Map(rows.map((row) => [row.id, row]));
+		expect(byId.get("alice-linear")).toMatchObject({
+			careersUrl: null,
+			jobs: { watching: [], found: { jobCount: 3 } },
+		});
+		expect(byId.get("alice-gitlab")?.jobs).toMatchObject({
+			watching: [
+				{
+					ats: "greenhouse",
+					slug: "gitlab",
+					source: "link",
+					url: "https://job-boards.greenhouse.io/gitlab",
+					jobCount: 3,
+				},
+			],
+			found: null,
+		});
+		expect(byId.get("alice-gitlab")?.jobs.watching[0]?.id).toEqual(expect.any(String));
+		expect(byId.get("alice-lumen")).toMatchObject({ careersUrl: WORKDAY, jobs: { watching: [], found: null } });
 	});
 });

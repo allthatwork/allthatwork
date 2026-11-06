@@ -242,7 +242,21 @@ async function importDirectory(userId: string, input: AreaInput<"directory">) {
 		createdAt: z.coerce.date().optional(),
 		updatedAt: z.coerce.date().optional(),
 	};
-	const companies = readAll(report, "companies", companyFieldsSchema.extend(idFields), input.companies);
+	const companies = readAll(
+		report,
+		"companies",
+		companyFieldsSchema.extend({
+			...idFields,
+			// Not editable, so not a company field; an export from before it carries none.
+			careersUrl: z
+				.url({ protocol: /^https?$/ })
+				.max(2048)
+				.nullable()
+				.default(null)
+				.catch(null),
+		}),
+		input.companies,
+	);
 	const contacts = readAll(report, "contacts", contactFieldsSchema.extend(idFields), input.contacts);
 	await db.transaction(async (tx) => {
 		await lockDocumentOwner(tx, userId);

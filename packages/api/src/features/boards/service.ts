@@ -412,13 +412,16 @@ async function storedJobCounts(refs: BoardRef[]) {
 
 export type CompanyJobs = {
 	/** Watched boards, earliest confirmed first, with their open roles at the last check. */
-	watching: (BoardRef & { jobCount: number | null })[];
-	/** The first board a posting link on file points at that isn't watched, to confirm. */
-	found: BoardRef | null;
+	watching: (BoardRef & { id: string; source: BoardSource; url: string; jobCount: number | null })[];
+	/** The first board a posting link on file points at that isn't watched, with its stored open roles, to watch. */
+	found: (BoardRef & { url: string; jobCount: number | null }) | null;
 };
 
 export const boardsService = {
-	/** Every company's Jobs state for the Directory list, in one go: watched boards and one found to confirm. */
+	/**
+	 * Every company's Jobs state for the Directory list, in one go: watched boards and one found to watch. A found
+	 * board's count comes from what's stored; nothing is read live.
+	 */
 	jobsByCompany: async (userId: string) => {
 		const [watched, detected] = await Promise.all([watchedBy(userId), detectedRefs(userId, "all")]);
 		const jobs = new Map<string, CompanyJobs>();
@@ -434,19 +437,30 @@ export const boardsService = {
 		for (const { watch, board } of watched.toSorted(
 			(a, b) => a.watch.confirmedAt.getTime() - b.watch.confirmedAt.getTime(),
 		)) {
-			entry(watch.companyId).watching.push({ ...refOf(board), jobCount: board.jobCount });
-			watchedKeys.add(`${watch.companyId}|${refKey(refOf(board))}`);
+			const ref = refOf(board);
+			entry(watch.companyId).watching.push({
+				id: watch.id,
+				...ref,
+				source: watch.source as BoardSource,
+				url: boardPageUrl(ref),
+				jobCount: board.jobCount,
+			});
+			watchedKeys.add(`${watch.companyId}|${refKey(ref)}`);
 		}
+		const found = new Map<string, BoardRef>();
 		for (const [companyId, refs] of detected) {
 			const ref = refs.find((item) => !watchedKeys.has(`${companyId}|${refKey(item)}`));
-			if (ref) entry(companyId).found = ref;
+			if (ref) found.set(companyId, ref);
 		}
+		const counts = await storedJobCounts([...found.values()]);
+		for (const [companyId, ref] of found)
+			entry(companyId).found = { ...ref, url: boardPageUrl(ref), jobCount: counts.get(refKey(ref)) ?? null };
 		return jobs;
 	},
 
-	/** A company's watched boards, and boards its posting links point at that aren't watched yet. */
+	/** A company's watched boards, boards its posting links point at that aren't watched yet, and its saved link. */
 	company: async (userId: string, companyId: string) => {
-		await ownedCompany(db, userId, companyId);
+		const company = await ownedCompany(db, userId, companyId);
 		const [watched, detected] = await Promise.all([watchedBy(userId, companyId), detectedRefs(userId, [companyId])]);
 		const watchedKeys = new Set(watched.map(({ board }) => refKey(refOf(board))));
 		const unwatched = (detected.get(companyId) ?? []).filter((ref) => !watchedKeys.has(refKey(ref)));
@@ -464,17 +478,20 @@ export const boardsService = {
 				url: boardPageUrl(refOf(board)),
 			})),
 			detected: unwatched.map((ref) => ({ ...ref, url: boardPageUrl(ref), jobCount: counts.get(refKey(ref)) ?? null })),
+			careersUrl: company.careersUrl,
 		};
 	},
 
 	/**
 	 * The boards a pasted link points at: a board or posting address itself, or a careers page that links to or embeds
-	 * one. Each is read once to show what it is; nothing is saved.
+	 * one. Each is read once to show what it is. A link that leads to none (Workday, iCIMS, a careers page without one),
+	 * or a page that can't be opened (such sites often block or time out), is saved as the company's jobs link instead;
+	 * it can't be watched. A link that does lead to one but can't be read is an error, and nothing is saved.
 	 */
 	fromLink: async (userId: string, companyId: string, link: string) => {
 		await ownedCompany(db, userId, companyId);
 		const signal = AbortSignal.timeout(BOARD_TIMEOUT_MS);
-		let refs: BoardRef[];
+		let refs: BoardRef[] = [];
 		const direct = boardFromUrl(link);
 		if (direct) refs = [direct];
 		else {
@@ -483,12 +500,25 @@ export const boardsService = {
 				const resolved = boardFromUrl(page.resolvedUrl);
 				refs = resolved ? [resolved] : boardsInHtml(page.html);
 			} catch {
-				throw new ORPCError("BAD_REQUEST", { message: "Couldn't open that page. Paste its https link." });
+				// Unreadable: saved below like any other link we can't watch.
 			}
 		}
-		return (await Promise.all(refs.slice(0, 5).map((ref) => candidate(ref, signal)))).filter(
+		if (!refs.length) {
+			const savedLink = link.trim();
+			await db
+				.update(tables.company)
+				.set({ careersUrl: savedLink })
+				.where(and(eq(tables.company.id, companyId), eq(tables.company.userId, userId)));
+			return { boards: [], savedLink };
+		}
+		const boards = (await Promise.all(refs.slice(0, 5).map((ref) => candidate(ref, signal)))).filter(
 			(item): item is BoardCandidate => item !== null,
 		);
+		if (!boards.length)
+			throw new ORPCError("BAD_REQUEST", {
+				message: "Couldn't read this company's jobs page. Check the link and try again.",
+			});
+		return { boards, savedLink: null };
 	},
 
 	/**
@@ -526,6 +556,11 @@ export const boardsService = {
 				.insert(tables.companyBoard)
 				.values({ userId, companyId: input.companyId, boardId: board.id, source: input.source })
 				.onConflictDoNothing();
+			// A watched page replaces a saved link the company had, so it never shows both.
+			await tx
+				.update(tables.company)
+				.set({ careersUrl: null })
+				.where(and(eq(tables.company.id, input.companyId), eq(tables.company.userId, userId)));
 			const [row] = await tx
 				.select()
 				.from(tables.companyBoard)

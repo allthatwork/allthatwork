@@ -430,4 +430,35 @@ describe.skipIf(!databaseUrl)("account import", () => {
 		});
 		expect((await service.preview(userId)).knowledge).toEqual({ facts: 0, stories: 0, groups: 0 });
 	});
+	it("carries a company's saved jobs link through export and import, and reads an older export as none", async () => {
+		const { directoryService } = await import("../directory/service");
+		await getDb().insert(tables.company).values({
+			id: "export-lumen",
+			userId: otherId,
+			name: "Lumen Freight",
+			normalizedKey: "lumen freight",
+			careersUrl: "https://lumenfreight.wd5.myworkdayjobs.com/careers",
+		});
+		// Through JSON, as directory.json in the zip.
+		const exported = JSON.parse(JSON.stringify(await directoryService.exportData(otherId))) as {
+			companies: Record<string, unknown>[];
+		};
+		expect(exported.companies[0]).toMatchObject({ careersUrl: "https://lumenfreight.wd5.myworkdayjobs.com/careers" });
+		await service.run(userId, {
+			area: "directory",
+			mode: "append",
+			companies: [
+				...exported.companies,
+				{ id: "old-tidepool", name: "Tidepool", website: null, notes: "", sources: [] },
+			],
+			contacts: [],
+			employment: [],
+			notes: [],
+		});
+		const rows = await getDb().select().from(tables.company).where(eq(tables.company.userId, userId));
+		expect(rows.find((row) => row.name === "Lumen Freight")?.careersUrl).toBe(
+			"https://lumenfreight.wd5.myworkdayjobs.com/careers",
+		);
+		expect(rows.find((row) => row.name === "Tidepool")?.careersUrl).toBeNull();
+	});
 });

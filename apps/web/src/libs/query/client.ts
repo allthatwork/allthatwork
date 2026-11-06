@@ -3,6 +3,15 @@ import { MutationCache, QueryClient } from "@tanstack/react-query";
 
 const serializer = new StandardRPCJsonSerializer();
 
+/** Marks every data query stale after a change; the auth session and flags stay as they are. */
+export const refreshData = (queryClient: QueryClient) =>
+	queryClient.invalidateQueries({
+		predicate: (query) => {
+			const key = query.queryKey[0];
+			return key !== "auth" && key !== "flags";
+		},
+	});
+
 export const getQueryClient = () => {
 	const queryClient = new QueryClient({
 		defaultOptions: {
@@ -18,12 +27,7 @@ export const getQueryClient = () => {
 		mutationCache: new MutationCache({
 			onSettled: (_1, _2, _3, _4, _5, context) => {
 				if (context?.meta?.noInvalidate) return;
-				void queryClient.invalidateQueries({
-					predicate: (query) => {
-						const key = query.queryKey[0];
-						return key !== "auth" && key !== "flags";
-					},
-				});
+				void refreshData(queryClient);
 			},
 		}),
 	});

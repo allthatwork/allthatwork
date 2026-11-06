@@ -10,6 +10,8 @@ import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { hostname } from "./lists";
+import { DisabledWatchBox, JobsButton, watchDisabledReason } from "./watch";
 import { useCareerTime } from "@/features/career/shared";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
@@ -23,27 +25,37 @@ const lower = (value: string) => value.charAt(0).toLocaleLowerCase() + value.sli
 const failed = (error: unknown, fallback: string) =>
 	toast.add({ type: "error", description: getOrpcErrorMessage(error, { fallback, allowServerMessage: true }) });
 
-type CompanyBoardsProps = { companyId: string };
+type CompanyBoardsProps = { companyId: string; companyName: string };
 
 /**
  * A company's Open roles section: the jobs pages watched for it on Greenhouse, Ashby or Lever, one its posting links
  * point at (to confirm), a pasted careers link, and Find it for me, which tries name guesses. Every page found is shown
  * for confirming; only a confirmed one is watched and checked. Users never read the word "board".
  */
-export function CompanyBoards({ companyId }: CompanyBoardsProps) {
+export function CompanyBoards({ companyId, companyName: name }: CompanyBoardsProps) {
 	const id = useId();
 	const { relative } = useCareerTime();
 	const query = useQuery(orpc.boards.company.queryOptions({ input: { companyId } }));
 	const schedules = useQuery(orpc.career.schedules.queryOptions({ input: {} }));
 	const [link, setLink] = useState("");
 	const [found, setFound] = useState<{ source: BoardSource; boards: Candidate[] } | null>(null);
+	// Shown once, right after Look up saved a link we can't watch.
+	const [justSaved, setJustSaved] = useState(false);
 	const fromLink = useMutation({
 		...orpc.boards.fromLink.mutationOptions(),
-		onSuccess: (boards) => setFound({ source: "link", boards }),
+		onMutate: () => setJustSaved(false),
+		onSuccess: ({ boards, savedLink }) => {
+			if (savedLink) {
+				setFound(null);
+				setLink("");
+				setJustSaved(true);
+			} else setFound({ source: "link", boards });
+		},
 		onError: (error) => failed(error, t`Couldn't read that link.`),
 	});
 	const guess = useMutation({
 		...orpc.boards.guess.mutationOptions(),
+		onMutate: () => setJustSaved(false),
 		onSuccess: (boards) => setFound({ source: "guess", boards }),
 		onError: (error) => failed(error, t`Couldn't look for its jobs.`),
 	});
@@ -154,6 +166,19 @@ export function CompanyBoards({ companyId }: CompanyBoardsProps) {
 						</div>
 					))}
 
+					{data.careersUrl && (
+						<div className="flex items-center gap-2.5 rounded-md border border-line px-2.5 py-1.5 text-[13px]">
+							<DisabledWatchBox reason={watchDisabledReason("saved")} label={t`Watch ${name}`} />
+							<p className="min-w-0 flex-1 truncate">
+								<span className="font-semibold">
+									<Trans>Saved link</Trans>
+								</span>{" "}
+								<span className="text-ink-2">· {hostname(data.careersUrl) ?? data.careersUrl}</span>
+							</p>
+							<JobsButton url={data.careersUrl} />
+						</div>
+					)}
+
 					<form
 						className="flex flex-wrap gap-2"
 						onSubmit={(event) => {
@@ -182,15 +207,19 @@ export function CompanyBoards({ companyId }: CompanyBoardsProps) {
 						</Button>
 					</form>
 
+					{justSaved && (
+						<p role="status" className="text-[12.5px] text-danger-text">
+							<Trans>
+								Only Greenhouse, Ashby and Lever are supported for now. The link is saved but won't be watched.
+							</Trans>
+						</p>
+					)}
+
 					{found && (
 						<div role="status" className="grid gap-2">
 							{found.boards.length === 0 ? (
 								<p className="text-sm text-ink-2">
-									{found.source === "guess" ? (
-										<Trans>Nothing found from the name. Paste the company's careers link instead.</Trans>
-									) : (
-										<Trans>No Greenhouse, Ashby or Lever jobs found at that link.</Trans>
-									)}
+									<Trans>Nothing found from the name. Paste the company's careers link instead.</Trans>
 								</p>
 							) : (
 								<>
@@ -283,7 +312,7 @@ export function WatchSuggestions() {
 		>
 			<div className="flex min-w-0 items-center gap-2">
 				<h2 id={`${id}-watch`} className="shrink-0 font-bold">
-					<Trans>Companies to watch</Trans>
+					<Trans>Recommended companies to watch</Trans>
 				</h2>
 				{!open && (
 					<p className="min-w-0 flex-1 truncate text-ink-2">
@@ -312,7 +341,7 @@ export function WatchSuggestions() {
 				<div id={`${id}-all`} className="grid gap-1.5 pb-1">
 					<p className="text-ink-2">
 						<Trans>
-							Where you know people, most contacts first. Open one to find and confirm where it lists its jobs.
+							Where you know people, most contacts first. Open one to find its careers page, then tick Watch.
 						</Trans>
 					</p>
 					<ul className="grid gap-1.5">

@@ -576,7 +576,7 @@ msgstr ""
 
 #. placeholder {0}: board.jobCount
 #. placeholder {0}: board.jobCount ?? 0
-#. placeholder {0}: first.jobCount
+#. placeholder {0}: jobs.count
 #: src/features/directory/boards.tsx
 #: src/features/directory/lists.tsx
 msgid "{0} open"
@@ -3328,10 +3328,6 @@ msgstr "ขนาดกะทัดรัด"
 msgid "Companies"
 msgstr ""
 
-#: src/features/directory/boards.tsx
-msgid "Companies to watch"
-msgstr ""
-
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
@@ -3379,10 +3375,6 @@ msgstr ""
 #: src/features/ats-checker/messages.ts
 msgid "Compress or remove large images to keep uploads quick."
 msgstr "บีบอัดหรือลบรูปภาพขนาดใหญ่เพื่อให้อัปโหลดได้รวดเร็ว"
-
-#: src/features/directory/lists.tsx
-msgid "confirm"
-msgstr ""
 
 #: src/features/directory/boards.tsx
 #: src/hooks/use-confirm.tsx
@@ -4190,6 +4182,7 @@ msgid "Couldn't start the conversation. Try again."
 msgstr "ไม่สามารถเริ่มการสนทนาได้ ลองอีกครั้ง"
 
 #: src/features/directory/boards.tsx
+#: src/features/directory/watch.tsx
 msgid "Couldn't stop watching."
 msgstr ""
 
@@ -4234,6 +4227,7 @@ msgid "Couldn't upload the photo."
 msgstr "ไม่สามารถอัปโหลดรูปภาพได้"
 
 #: src/features/directory/boards.tsx
+#: src/features/directory/watch.tsx
 msgid "Couldn't watch this company's jobs."
 msgstr ""
 
@@ -6052,10 +6046,6 @@ msgstr ""
 msgid "Found on {0}"
 msgstr ""
 
-#: src/features/directory/lists.tsx
-msgid "Found on {platform}"
-msgstr ""
-
 #: src/features/career/workspace/assessments.tsx
 msgid "Found on {source}"
 msgstr ""
@@ -7051,6 +7041,10 @@ msgstr ""
 msgid "Its messages and attachments are deleted. Edits you accepted stay in the document."
 msgstr "ข้อความและไฟล์แนบจะถูกลบ การแก้ไขที่คุณยอมรับจะยังคงอยู่ในเอกสาร"
 
+#: src/features/directory/watch.tsx
+msgid "Its new roles show up in Career → Today."
+msgstr ""
+
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Its own design ({summary})."
 msgstr "การออกแบบของตัวเอง ({summary})"
@@ -7107,6 +7101,7 @@ msgstr "ไปป์ไลน์ค้นหางาน"
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/directory/lists.tsx
+#: src/features/directory/watch.tsx
 msgid "Jobs"
 msgstr "งาน"
 
@@ -8728,10 +8723,6 @@ msgstr "ยังไม่มีข้อเท็จจริงให้ลิ
 msgid "No facts yet. Add one above."
 msgstr "ยังไม่มีข้อเท็จจริง เพิ่มด้านบน"
 
-#: src/features/directory/boards.tsx
-msgid "No Greenhouse, Ashby or Lever jobs found at that link."
-msgstr ""
-
 #: src/features/career/knowledge/facts.tsx
 msgid "No group"
 msgstr ""
@@ -8751,6 +8742,10 @@ msgstr "ไม่มีการสัมภาษณ์"
 #: src/features/documents/new-document-dialog.tsx
 msgid "No job yet"
 msgstr "ยังไม่มีงานทำ"
+
+#: src/features/directory/watch.tsx
+msgid "No jobs page known yet. Open the company to look one up."
+msgstr ""
 
 #: src/features/settings/ai/api-keys.tsx
 msgid "No keys yet."
@@ -9255,6 +9250,14 @@ msgstr "อนุญาตเฉพาะแอปพลิเคชันที
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Only applies when the section fits on a single page."
 msgstr "ใช้ได้เฉพาะเมื่อส่วนนั้นพอดีกับหน้าเดียวเท่านั้น"
+
+#: src/features/directory/boards.tsx
+msgid "Only Greenhouse, Ashby and Lever are supported for now. The link is saved but won't be watched."
+msgstr ""
+
+#: src/features/directory/watch.tsx
+msgid "Only Greenhouse, Ashby and Lever can be watched for now."
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Only if you want it to. Add your own key from OpenAI, Anthropic, Google Gemini, OpenRouter, Ollama or another provider for sharper lines, tailoring to a job posting, coaching for applications and interviews, and reading Word files. Without a key, nothing is sent to an AI service."
@@ -10580,6 +10583,10 @@ msgstr ""
 msgid "Recipient"
 msgstr "ผู้รับ"
 
+#: src/features/directory/boards.tsx
+msgid "Recommended companies to watch"
+msgstr ""
+
 #: src/features/career/workspace/practise.tsx
 msgid "Record again"
 msgstr "บันทึกเสียงอีกครั้ง"
@@ -11519,6 +11526,10 @@ msgstr ""
 #: src/features/career/knowledge/preferences.tsx
 msgid "Saved just now"
 msgstr "บันทึกเมื่อสักครู่"
+
+#: src/features/directory/boards.tsx
+msgid "Saved link"
+msgstr ""
 
 #: src/features/career/coach-thread.tsx
 msgid "Saved offers"
@@ -12730,6 +12741,10 @@ msgstr "หยุดที่ {0}"
 
 #: src/features/directory/boards.tsx
 msgid "Stopped watching"
+msgstr ""
+
+#: src/features/directory/watch.tsx
+msgid "Stopped watching {name}"
 msgstr ""
 
 #: src/features/assistant/conversation.tsx
@@ -14253,6 +14268,7 @@ msgstr "ขีดเส้นใต้ลิงก์"
 #: src/features/career/today.tsx
 #: src/features/career/workspace/fit.tsx
 #: src/features/career/workspace/knowledge.tsx
+#: src/features/directory/watch.tsx
 #: src/features/documents/document-actions.tsx
 #: src/features/homepage/write.tsx
 #: src/features/resume/editor/check/actions.ts
@@ -14763,6 +14779,15 @@ msgstr ""
 msgid "Warning"
 msgstr "คำเตือน"
 
+#: src/features/directory/lists.tsx
+msgid "Watch"
+msgstr ""
+
+#: src/features/directory/boards.tsx
+#: src/features/directory/watch.tsx
+msgid "Watch {name}"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Watch companies in the Directory"
 msgstr ""
@@ -14772,13 +14797,13 @@ msgstr ""
 msgid "Watched companies"
 msgstr ""
 
+#: src/features/directory/watch.tsx
+msgid "Watching {name}"
+msgstr ""
+
 #. placeholder {0}: platform(board.ats)
 #: src/features/directory/boards.tsx
 msgid "Watching on {0}"
-msgstr ""
-
-#: src/features/directory/lists.tsx
-msgid "Watching on {platform}"
 msgstr ""
 
 #: src/features/directory/boards.tsx
@@ -15059,7 +15084,7 @@ msgid "Where applications come from"
 msgstr "แหล่งที่มาของใบสมัคร"
 
 #: src/features/directory/boards.tsx
-msgid "Where you know people, most contacts first. Open one to find and confirm where it lists its jobs."
+msgid "Where you know people, most contacts first. Open one to find its careers page, then tick Watch."
 msgstr ""
 
 #: src/features/career/knowledge/preferences.tsx

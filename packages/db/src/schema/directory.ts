@@ -17,6 +17,8 @@ export const company = pg.pgTable(
 		name: pg.text("name").notNull(),
 		normalizedKey: pg.text("normalized_key").notNull(),
 		website: pg.text("website"),
+		/** A jobs link on a site that can't be watched (Workday, iCIMS and others), saved by Look up. Cleared on watch. */
+		careersUrl: pg.text("careers_url"),
 		notes: pg.text("notes").notNull().default(""),
 		sources: pg.jsonb("sources").$type<DirectorySource[]>().notNull().default([]),
 		createdAt: pg.timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

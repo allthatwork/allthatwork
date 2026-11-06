@@ -43595,6 +43595,16 @@
 																	}
 																]
 															},
+															"careersUrl": {
+																"anyOf": [
+																	{
+																		"type": "string"
+																	},
+																	{
+																		"type": "null"
+																	}
+																]
+															},
 															"notes": {
 																"type": "string"
 															},
@@ -43641,6 +43651,7 @@
 															"name",
 															"normalizedKey",
 															"website",
+															"careersUrl",
 															"notes",
 															"sources",
 															"createdAt",
@@ -48432,11 +48443,23 @@
 												]
 											},
 											"description": "Boards named by the company's posting links on file, not yet watched."
+										},
+										"careersUrl": {
+											"anyOf": [
+												{
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "A saved jobs link on a site that can't be watched (Workday, iCIMS and others)."
 										}
 									},
 									"required": [
 										"watched",
-										"detected"
+										"detected",
+										"careersUrl"
 									]
 								}
 							}
@@ -48496,7 +48519,7 @@
 			"post": {
 				"operationId": "watchJobBoard",
 				"summary": "Watch a company's job board",
-				"description": "Confirms a board for a company. Its open roles that pass the Preferences screen land in New roles once; after that, board checks bring only roles first seen later.",
+				"description": "Confirms a board for a company. Its open roles that pass the Preferences screen land in New roles once; after that, board checks bring only roles first seen later. The company's saved jobs link (careersUrl) is cleared.",
 				"tags": [
 					"Job boards"
 				],
@@ -48638,7 +48661,7 @@
 			"post": {
 				"operationId": "jobBoardsFromLink",
 				"summary": "Find job boards from a careers link",
-				"description": "Reads a pasted board, posting or careers page link and returns the boards it points at, each read once to show its name and open roles. Nothing is saved.",
+				"description": "Reads a pasted board, posting or careers page link and returns the boards it points at, each read once to show its name and open roles. A link that leads to no Greenhouse, Ashby or Lever board, or that can't be opened, is saved as the company's jobs link (careersUrl) instead, which can't be watched.",
 				"tags": [
 					"Job boards"
 				],
@@ -48679,65 +48702,85 @@
 						"content": {
 							"application/json": {
 								"schema": {
-									"type": "array",
-									"items": {
-										"type": "object",
-										"properties": {
-											"ats": {
-												"enum": [
-													"greenhouse",
-													"ashby",
-													"lever"
-												],
-												"type": "string"
-											},
-											"region": {
-												"enum": [
-													"us",
-													"eu"
-												],
-												"type": "string"
-											},
-											"slug": {
-												"type": "string"
-											},
-											"url": {
-												"type": "string"
-											},
-											"name": {
-												"anyOf": [
-													{
+									"type": "object",
+									"properties": {
+										"boards": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"ats": {
+														"enum": [
+															"greenhouse",
+															"ashby",
+															"lever"
+														],
 														"type": "string"
 													},
-													{
-														"type": "null"
+													"region": {
+														"enum": [
+															"us",
+															"eu"
+														],
+														"type": "string"
+													},
+													"slug": {
+														"type": "string"
+													},
+													"url": {
+														"type": "string"
+													},
+													"name": {
+														"anyOf": [
+															{
+																"type": "string"
+															},
+															{
+																"type": "null"
+															}
+														],
+														"description": "The board's own name, when its API gives one (Greenhouse)."
+													},
+													"jobCount": {
+														"type": "integer",
+														"minimum": -9007199254740991,
+														"maximum": 9007199254740991
+													},
+													"sample": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"description": "A few of its open roles' titles."
 													}
-												],
-												"description": "The board's own name, when its API gives one (Greenhouse)."
-											},
-											"jobCount": {
-												"type": "integer",
-												"minimum": -9007199254740991,
-												"maximum": 9007199254740991
-											},
-											"sample": {
-												"type": "array",
-												"items": {
-													"type": "string"
 												},
-												"description": "A few of its open roles' titles."
+												"required": [
+													"ats",
+													"region",
+													"slug",
+													"url",
+													"name",
+													"jobCount",
+													"sample"
+												]
 											}
 										},
-										"required": [
-											"ats",
-											"region",
-											"slug",
-											"url",
-											"name",
-											"jobCount",
-											"sample"
-										]
-									}
+										"savedLink": {
+											"anyOf": [
+												{
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "Set when the link leads to no Greenhouse, Ashby or Lever page (or couldn't be opened): it was saved as the company's jobs link, which can't be watched."
+										}
+									},
+									"required": [
+										"boards",
+										"savedLink"
+									]
 								}
 							}
 						}
@@ -70619,6 +70662,16 @@
 													}
 												]
 											},
+											"careersUrl": {
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
 											"notes": {
 												"type": "string"
 											},
@@ -70677,6 +70730,10 @@
 														"items": {
 															"type": "object",
 															"properties": {
+																"id": {
+																	"type": "string",
+																	"description": "The watch, for stopping it."
+																},
 																"ats": {
 																	"enum": [
 																		"greenhouse",
@@ -70695,6 +70752,18 @@
 																"slug": {
 																	"type": "string"
 																},
+																"source": {
+																	"enum": [
+																		"posting",
+																		"link",
+																		"guess"
+																	],
+																	"type": "string"
+																},
+																"url": {
+																	"type": "string",
+																	"description": "The jobs page, for people to open."
+																},
 																"jobCount": {
 																	"anyOf": [
 																		{
@@ -70709,9 +70778,12 @@
 																}
 															},
 															"required": [
+																"id",
 																"ats",
 																"region",
 																"slug",
+																"source",
+																"url",
 																"jobCount"
 															]
 														},
@@ -70739,19 +70811,38 @@
 																	},
 																	"slug": {
 																		"type": "string"
+																	},
+																	"url": {
+																		"type": "string",
+																		"description": "The jobs page, for people to open."
+																	},
+																	"jobCount": {
+																		"anyOf": [
+																			{
+																				"type": "integer",
+																				"minimum": -9007199254740991,
+																				"maximum": 9007199254740991
+																			},
+																			{
+																				"type": "null"
+																			}
+																		],
+																		"description": "Open roles at its last check, from what's stored; null when never read."
 																	}
 																},
 																"required": [
 																	"ats",
 																	"region",
-																	"slug"
+																	"slug",
+																	"url",
+																	"jobCount"
 																]
 															},
 															{
 																"type": "null"
 															}
 														],
-														"description": "A job page a posting link on file points at that isn't watched yet, to confirm."
+														"description": "A job page a posting link on file points at that isn't watched yet, to watch."
 													}
 												},
 												"required": [
@@ -70766,6 +70857,7 @@
 											"name",
 											"normalizedKey",
 											"website",
+											"careersUrl",
 											"notes",
 											"sources",
 											"createdAt",
@@ -70931,6 +71023,16 @@
 												}
 											]
 										},
+										"careersUrl": {
+											"anyOf": [
+												{
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											]
+										},
 										"notes": {
 											"type": "string"
 										},
@@ -70977,6 +71079,7 @@
 										"name",
 										"normalizedKey",
 										"website",
+										"careersUrl",
 										"notes",
 										"sources",
 										"createdAt",
@@ -71087,6 +71190,16 @@
 														}
 													]
 												},
+												"careersUrl": {
+													"anyOf": [
+														{
+															"type": "string"
+														},
+														{
+															"type": "null"
+														}
+													]
+												},
 												"notes": {
 													"type": "string"
 												},
@@ -71133,6 +71246,7 @@
 												"name",
 												"normalizedKey",
 												"website",
+												"careersUrl",
 												"notes",
 												"sources",
 												"createdAt",
@@ -71503,6 +71617,16 @@
 												}
 											]
 										},
+										"careersUrl": {
+											"anyOf": [
+												{
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											]
+										},
 										"notes": {
 											"type": "string"
 										},
@@ -71549,6 +71673,7 @@
 										"name",
 										"normalizedKey",
 										"website",
+										"careersUrl",
 										"notes",
 										"sources",
 										"createdAt",
@@ -72531,6 +72656,16 @@
 																}
 															]
 														},
+														"careersUrl": {
+															"anyOf": [
+																{
+																	"type": "string"
+																},
+																{
+																	"type": "null"
+																}
+															]
+														},
 														"notes": {
 															"type": "string"
 														},
@@ -72577,6 +72712,7 @@
 														"name",
 														"normalizedKey",
 														"website",
+														"careersUrl",
 														"notes",
 														"sources",
 														"createdAt",
