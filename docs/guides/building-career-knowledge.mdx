@@ -143,7 +143,7 @@ Facts show their scope. Choose **Use for all applications** only when a private 
 
 ### Use a shared fact for some jobs only
 
-Some facts should reach the AI only for certain jobs, such as a security clearance for government roles. Put them in a group and switch **Private** on for it in **Curate → Groups**. A private group's facts, and its subgroups', never go to your AI provider, whatever their own switches say. They stay in Knowledge, and you can still correct or forget them.
+Some facts should reach the AI only for certain jobs, such as a security clearance for government roles. Put them in a group and select its lock in **Curate → Groups**. A locked group is private; its subgroups show a dimmed lock, since they're private through it. A private group's facts, and its subgroups', never go to your AI provider, whatever their own switches say. They stay in Knowledge, and you can still correct or forget them.
 
 To use them for one job, open the application and switch the group on under **Knowledge for this job** in its details. Fit, Apply, Prepare, Practise, Debrief, Messages and that job's coach then read those facts, switched off or not; every other job still doesn't. Nothing is copied, so a correction to a fact applies to every job that uses it.
 
@@ -165,7 +165,14 @@ After you correct, switch off or forget a fact, older interview debriefs remain 
 
 Put related facts in a group, such as one per job or a group for anything you rarely want sent. Select **Group** on a fact and type a name, or pick one already in use. Use slashes for levels: `experience/acme` sits under `experience`. To add facts straight into a group, choose it in the **Group** filter first; new facts you add go into it.
 
-**Career → Knowledge → Curate → Groups** lists every group with how many of its facts are switched on and off and how many characters its switched-on shared facts add to the budget. **Switch all on** and **Switch all off** change every fact in the group and its subgroups at once. A fact added to the group later starts the way the group was last switched, so a group you switched off stays off as it grows. Switching a parent group again also resets any subgroup you switched on its own.
+**Career → Knowledge → Curate → Groups** lists every group with a lock and a switch. Under its name it shows how many facts it holds (or how many are on and off, when some of each), and how many characters its switched-on shared facts add to the budget, or "private" when it's locked. The switch is on when anything in the group is on. Switching it turns every fact in the group and its subgroups on or off at once. A fact added to the group later starts the way the group, or the nearest group above it, was last switched, so a group you switched off stays off as it grows. When that differs from the switch, for example after you switched each fact off by hand in Facts, the row says **new facts start on** or **new facts start off**. Switching a parent group again also resets any subgroup you switched on its own.
+
+<Frame caption="Each group has a lock for Private and a switch for on and off.">
+  <img
+    src="/images/guides/career/groups.png"
+    alt="Groups card in Curate listing groups and subgroups, each with a lock button and an on/off switch, and a line with its fact count and characters or privacy"
+  />
+</Frame>
 
 The same controls are in the API and MCP: `GET /career/facts/groups` lists groups, `POST /career/facts/groups/status` switches one (the group goes in the body, since its path can contain slashes), `PATCH /career/facts` switches or regroups many facts by id, and `GET /career/facts?group=` lists one group's facts.
 

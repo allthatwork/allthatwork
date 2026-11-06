@@ -402,6 +402,11 @@ msgstr "{0} active applications"
 msgid "{0} applications"
 msgstr "{0} applications"
 
+#. placeholder {0}: number.format(node.activeChars)
+#: src/features/career/knowledge/groups.tsx
+msgid "{0} characters"
+msgstr "{0} characters"
+
 #. placeholder {0}: insights.closed
 #: src/features/applications/components/insights-view.tsx
 msgid "{0} closed"
@@ -556,18 +561,11 @@ msgstr "{0} of {1} tailored applications got a reply; {2} of {3} sent with anoth
 msgid "{0} of {1} terms found"
 msgstr "{0} of {1} terms found"
 
-#. placeholder {0}: number.format(node.facts.active)
-#. placeholder {1}: number.format(node.facts.excluded)
-#. placeholder {2}: number.format(node.activeChars)
+#. placeholder {0}: number.format(active)
+#. placeholder {1}: number.format(excluded)
 #: src/features/career/knowledge/groups.tsx
-msgid "{0} on · {1} off · {2} characters"
-msgstr "{0} on · {1} off · {2} characters"
-
-#. placeholder {0}: number.format(node.facts.active)
-#. placeholder {1}: number.format(node.facts.excluded)
-#: src/features/career/knowledge/groups.tsx
-msgid "{0} on · {1} off · private, never sent unless an application includes it"
-msgstr "{0} on · {1} off · private, never sent unless an application includes it"
+msgid "{0} on · {1} off"
+msgstr "{0} on · {1} off"
 
 #. placeholder {0}: board.jobCount
 #. placeholder {0}: board.jobCount ?? 0
@@ -962,6 +960,10 @@ msgstr "{toCheck, plural, one {# field needs a look.} other {# fields need a loo
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{toCheck, plural, one {# to check} other {# to check}}"
 msgstr "{toCheck, plural, one {# to check} other {# to check}}"
+
+#: src/features/career/knowledge/groups.tsx
+msgid "{total, plural, one {# fact} other {# facts}}"
+msgstr "{total, plural, one {# fact} other {# facts}}"
 
 #: src/features/directory/page.tsx
 msgid "{total} companies"
@@ -7943,6 +7945,10 @@ msgstr "Make the visible text and the destination match."
 msgid "Make them visibly larger, bolder or capitalised."
 msgstr "Make them visibly larger, bolder or capitalized."
 
+#: src/features/career/knowledge/groups.tsx
+msgid "Make this group private"
+msgstr "Make this group private"
+
 #: src/libs/locale.ts
 msgid "Malay"
 msgstr "Malay"
@@ -8492,6 +8498,10 @@ msgstr "New facts follow their group's coaching and privacy settings. New groups
 msgid "new facts start off"
 msgstr "new facts start off"
 
+#: src/features/career/knowledge/groups.tsx
+msgid "new facts start on"
+msgstr "new facts start on"
+
 #: src/features/settings/ai/api-keys.tsx
 msgid "New key"
 msgstr "New key"
@@ -8701,6 +8711,10 @@ msgstr "No email address was found."
 #: src/features/homepage/remember.tsx
 msgid "No evidence yet"
 msgstr "No evidence yet"
+
+#: src/features/career/knowledge/groups.tsx
+msgid "No facts"
+msgstr "No facts"
 
 #: src/features/career/knowledge/upkeep.tsx
 msgid "No facts back it. Edit it and tick the facts it rests on."
@@ -9096,6 +9110,10 @@ msgstr "Nothing scheduled yet"
 #: src/features/career/today.tsx
 msgid "Nothing scheduled yet."
 msgstr "Nothing scheduled yet."
+
+#: src/features/career/knowledge/groups.tsx
+msgid "nothing sent"
+msgstr "nothing sent"
 
 #: src/features/career/workspace/messages.tsx
 msgid "Nothing to apply"
@@ -10128,19 +10146,32 @@ msgid "Printing is turned off for this resume."
 msgstr "Printing is turned off for this resume."
 
 #: src/features/career/knowledge/groups.tsx
+msgid "private"
+msgstr "private"
+
 #: src/features/career/knowledge/import-comparison.tsx
 #: src/features/career/knowledge/import.tsx
 #: src/features/homepage/share.tsx
 msgid "Private"
 msgstr "Private"
 
+#. placeholder {0}: node.privateThrough
 #: src/features/career/knowledge/groups.tsx
-msgid "Private (parent)"
-msgstr "Private (parent)"
+msgid "Private because {0} is"
+msgstr "Private because {0} is"
+
+#. placeholder {0}: node.privateThrough
+#: src/features/career/knowledge/groups.tsx
+msgid "private through {0}"
+msgstr "private through {0}"
 
 #: src/features/career/workspace/knowledge.tsx
 msgid "Private, not sent"
 msgstr "Private, not sent"
+
+#: src/features/career/knowledge/groups.tsx
+msgid "Private: never sent unless an application includes it"
+msgstr "Private: never sent unless an application includes it"
 
 #: src/routes/builder/$resumeId/-components/document-details.tsx
 msgid "Private. Only you can see it."
@@ -12885,25 +12916,12 @@ msgstr "Swedish"
 
 #. placeholder {0}: node.path
 #: src/features/career/knowledge/groups.tsx
-msgid "Switch {0} off"
-msgstr "Switch {0} off"
-
-#. placeholder {0}: node.path
-#: src/features/career/knowledge/groups.tsx
 msgid "Switch {0} on"
 msgstr "Switch {0} on"
 
 #: src/features/career/knowledge/groups.tsx
-msgid "Switch a whole group on or off, subgroups included. Facts you add to a group later start the way the group was last switched. A private group never reaches your AI provider, whatever its switches say, unless an application includes it from its details. Put a fact in a group from its row in Facts."
-msgstr "Switch a whole group on or off, subgroups included. Facts you add to a group later start the way the group was last switched. A private group never reaches your AI provider, whatever its switches say, unless an application includes it from its details. Put a fact in a group from its row in Facts."
-
-#: src/features/career/knowledge/groups.tsx
-msgid "Switch all off"
-msgstr "Switch all off"
-
-#: src/features/career/knowledge/groups.tsx
-msgid "Switch all on"
-msgstr "Switch all on"
+msgid "Switch a group off to keep its facts out of what your AI provider gets, subgroups included. Facts you add to a group later start the way it's switched. Lock a group to make it private: it's never sent, whatever its switch says, unless an application includes it from its details. Put a fact in a group from its row in Facts."
+msgstr "Switch a group off to keep its facts out of what your AI provider gets, subgroups included. Facts you add to a group later start the way it's switched. Lock a group to make it private: it's never sent, whatever its switch says, unless an application includes it from its details. Put a fact in a group from its row in Facts."
 
 #: src/features/homepage/remember.tsx
 msgid "Switch it off"

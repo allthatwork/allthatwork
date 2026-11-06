@@ -407,6 +407,11 @@ msgstr "{0} 활성 직무 지원"
 msgid "{0} applications"
 msgstr ""
 
+#. placeholder {0}: number.format(node.activeChars)
+#: src/features/career/knowledge/groups.tsx
+msgid "{0} characters"
+msgstr ""
+
 #. placeholder {0}: insights.closed
 #: src/features/applications/components/insights-view.tsx
 msgid "{0} closed"
@@ -561,17 +566,10 @@ msgstr "{0}의 {1} 적응 채용 지원서는 답변을 받았습니다. {3}의 
 msgid "{0} of {1} terms found"
 msgstr "검색어 {0}개 중 {1}개 발견"
 
-#. placeholder {0}: number.format(node.facts.active)
-#. placeholder {1}: number.format(node.facts.excluded)
-#. placeholder {2}: number.format(node.activeChars)
+#. placeholder {0}: number.format(active)
+#. placeholder {1}: number.format(excluded)
 #: src/features/career/knowledge/groups.tsx
-msgid "{0} on · {1} off · {2} characters"
-msgstr ""
-
-#. placeholder {0}: number.format(node.facts.active)
-#. placeholder {1}: number.format(node.facts.excluded)
-#: src/features/career/knowledge/groups.tsx
-msgid "{0} on · {1} off · private, never sent unless an application includes it"
+msgid "{0} on · {1} off"
 msgstr ""
 
 #. placeholder {0}: board.jobCount
@@ -967,6 +965,10 @@ msgstr "{toCheck, plural, one {# 필드를 살펴봐야 합니다.} other {# 필
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{toCheck, plural, one {# to check} other {# to check}}"
 msgstr "{toCheck, plural, one {확인하려면 #} other {확인하려면 #}}"
+
+#: src/features/career/knowledge/groups.tsx
+msgid "{total, plural, one {# fact} other {# facts}}"
+msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "{total} companies"
@@ -7948,6 +7950,10 @@ msgstr "표시되는 텍스트와 실제 대상 주소를 일치시키세요."
 msgid "Make them visibly larger, bolder or capitalised."
 msgstr "눈에 띄게 크게, 굵게, 또는 대문자로 표시하세요."
 
+#: src/features/career/knowledge/groups.tsx
+msgid "Make this group private"
+msgstr ""
+
 #: src/libs/locale.ts
 msgid "Malay"
 msgstr "말레이어"
@@ -8497,6 +8503,10 @@ msgstr ""
 msgid "new facts start off"
 msgstr ""
 
+#: src/features/career/knowledge/groups.tsx
+msgid "new facts start on"
+msgstr ""
+
 #: src/features/settings/ai/api-keys.tsx
 msgid "New key"
 msgstr "새 키"
@@ -8706,6 +8716,10 @@ msgstr "이메일 주소를 찾을 수 없습니다."
 #: src/features/homepage/remember.tsx
 msgid "No evidence yet"
 msgstr "아직 근거 없음"
+
+#: src/features/career/knowledge/groups.tsx
+msgid "No facts"
+msgstr ""
 
 #: src/features/career/knowledge/upkeep.tsx
 msgid "No facts back it. Edit it and tick the facts it rests on."
@@ -9101,6 +9115,10 @@ msgstr "아직 예정된 것이 없습니다"
 #: src/features/career/today.tsx
 msgid "Nothing scheduled yet."
 msgstr "아직 예정된 스케줄이 없습니다."
+
+#: src/features/career/knowledge/groups.tsx
+msgid "nothing sent"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "Nothing to apply"
@@ -10133,18 +10151,31 @@ msgid "Printing is turned off for this resume."
 msgstr "이 이력서의 인쇄가 꺼졌습니다."
 
 #: src/features/career/knowledge/groups.tsx
+msgid "private"
+msgstr ""
+
 #: src/features/career/knowledge/import-comparison.tsx
 #: src/features/career/knowledge/import.tsx
 #: src/features/homepage/share.tsx
 msgid "Private"
 msgstr "비공개"
 
+#. placeholder {0}: node.privateThrough
 #: src/features/career/knowledge/groups.tsx
-msgid "Private (parent)"
+msgid "Private because {0} is"
+msgstr ""
+
+#. placeholder {0}: node.privateThrough
+#: src/features/career/knowledge/groups.tsx
+msgid "private through {0}"
 msgstr ""
 
 #: src/features/career/workspace/knowledge.tsx
 msgid "Private, not sent"
+msgstr ""
+
+#: src/features/career/knowledge/groups.tsx
+msgid "Private: never sent unless an application includes it"
 msgstr ""
 
 #: src/routes/builder/$resumeId/-components/document-details.tsx
@@ -12890,24 +12921,11 @@ msgstr "스웨덴어"
 
 #. placeholder {0}: node.path
 #: src/features/career/knowledge/groups.tsx
-msgid "Switch {0} off"
-msgstr ""
-
-#. placeholder {0}: node.path
-#: src/features/career/knowledge/groups.tsx
 msgid "Switch {0} on"
 msgstr ""
 
 #: src/features/career/knowledge/groups.tsx
-msgid "Switch a whole group on or off, subgroups included. Facts you add to a group later start the way the group was last switched. A private group never reaches your AI provider, whatever its switches say, unless an application includes it from its details. Put a fact in a group from its row in Facts."
-msgstr ""
-
-#: src/features/career/knowledge/groups.tsx
-msgid "Switch all off"
-msgstr ""
-
-#: src/features/career/knowledge/groups.tsx
-msgid "Switch all on"
+msgid "Switch a group off to keep its facts out of what your AI provider gets, subgroups included. Facts you add to a group later start the way it's switched. Lock a group to make it private: it's never sent, whatever its switch says, unless an application includes it from its details. Put a fact in a group from its row in Facts."
 msgstr ""
 
 #: src/features/homepage/remember.tsx

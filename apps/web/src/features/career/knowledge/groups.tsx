@@ -8,7 +8,9 @@ import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Switch } from "@reactive-resume/ui/components/switch";
 import { toast } from "@reactive-resume/ui/components/toast";
-import { groupAncestors, type KnowledgeRules } from "@reactive-resume/utils/knowledge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@reactive-resume/ui/components/tooltip";
+import { groupAncestors, type KnowledgeRules, nearestGroupSetting } from "@reactive-resume/utils/knowledge";
+import { cn } from "@reactive-resume/utils/style";
 import { CareerLoadError, CareerLoading } from "../load-state";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
@@ -46,10 +48,14 @@ export type GroupNode = {
 	depth: number;
 	/** How this group itself was last switched; null when it follows its parent or was never switched. */
 	status: FactGroup["status"];
+	/** How facts added to it later start: its own setting, else its nearest parent's, else on (the server's rule). */
+	startsAs: "active" | "excluded";
 	/** Marked private itself. */
 	private: boolean;
 	/** Private because a group above it is. */
 	privateFromParent: boolean;
+	/** The nearest group above it that's private, when there is one. */
+	privateThrough: string | null;
 	/** Its own facts and every subgroup's. */
 	facts: { active: number; excluded: number };
 	activeChars: number;
@@ -71,8 +77,10 @@ export function groupTree(groups: readonly FactGroup[]): GroupNode[] {
 						name: parts.at(-1) ?? path,
 						depth: parts.length - 1,
 						status: null,
+						startsAs: "active",
 						private: false,
 						privateFromParent: false,
+						privateThrough: null,
 						facts: { active: 0, excluded: 0 },
 						activeChars: 0,
 					}),
@@ -87,10 +95,17 @@ export function groupTree(groups: readonly FactGroup[]): GroupNode[] {
 			}
 		}
 	}
-	for (const node of nodes.values())
-		node.privateFromParent = groupAncestors(node.path)
-			.slice(1)
-			.some((path) => nodes.get(path)?.private === true);
+	const settings = new Map(
+		[...nodes.values()].flatMap((node) => (node.status ? [[node.path, node.status] as const] : [])),
+	);
+	for (const node of nodes.values()) {
+		node.startsAs = nearestGroupSetting(node.path, settings) === "excluded" ? "excluded" : "active";
+		node.privateThrough =
+			groupAncestors(node.path)
+				.slice(1)
+				.find((path) => nodes.get(path)?.private === true) ?? null;
+		node.privateFromParent = node.privateThrough !== null;
+	}
 	// Siblings sort by name under their parent: "a/b" before "a b", which plain string order would swap.
 	return [...nodes.values()].sort((a, b) => {
 		const left = a.path.split("/");
@@ -101,6 +116,30 @@ export function groupTree(groups: readonly FactGroup[]): GroupNode[] {
 		}
 		return left.length - right.length;
 	});
+}
+
+/** The line under a group's name: its count, whether it's private or what it adds, and how new facts start when that differs from its switch. */
+export function groupMeta(node: GroupNode, number: Intl.NumberFormat): string {
+	const { active, excluded } = node.facts;
+	const total = active + excluded;
+	const on = active > 0;
+	const parts = [
+		total === 0
+			? t`No facts`
+			: on && excluded > 0
+				? t`${number.format(active)} on · ${number.format(excluded)} off`
+				: plural(total, { one: "# fact", other: "# facts" }),
+		node.private
+			? t`private`
+			: node.privateThrough !== null
+				? t`private through ${node.privateThrough}`
+				: on
+					? t`${number.format(node.activeChars)} characters`
+					: t`nothing sent`,
+	];
+	if (node.startsAs === "active" && !on) parts.push(t`new facts start on`);
+	if (node.startsAs === "excluded" && on) parts.push(t`new facts start off`);
+	return parts.join(" · ");
 }
 
 /** Curate: switch whole groups of facts on or off, with how much each one adds to the budget. */
@@ -160,9 +199,10 @@ export function GroupsCard() {
 				</h2>
 				<p className="text-xs leading-[17px] text-ink-3">
 					<Trans>
-						Switch a whole group on or off, subgroups included. Facts you add to a group later start the way the group
-						was last switched. A private group never reaches your AI provider, whatever its switches say, unless an
-						application includes it from its details. Put a fact in a group from its row in Facts.
+						Switch a group off to keep its facts out of what your AI provider gets, subgroups included. Facts you add to
+						a group later start the way it's switched. Lock a group to make it private: it's never sent, whatever its
+						switch says, unless an application includes it from its details. Put a fact in a group from its row in
+						Facts.
 					</Trans>
 				</p>
 			</header>
@@ -174,52 +214,35 @@ export function GroupsCard() {
 				<ul>
 					{tree.map((node) => {
 						const total = node.facts.active + node.facts.excluded;
-						const pending = toggle.isPending && toggle.variables?.group === node.path;
+						const switching = toggle.isPending && toggle.variables?.group === node.path;
+						// While a switch is saving, show where it's going rather than flicking back until the list reloads.
+						const on = switching ? toggle.variables?.status === "active" : node.facts.active > 0;
 						return (
 							<li
 								key={node.path}
-								className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line px-4 py-2.5 last:border-b-0"
+								className="flex items-center gap-2 border-b border-line px-4 py-2.5 last:border-b-0"
 								style={{ paddingInlineStart: `${16 + node.depth * 20}px` }}
 							>
-								<div className="grid min-w-0 flex-1 basis-48 gap-0.5">
-									<p className="flex items-center gap-1.5 truncate text-sm font-medium" title={node.path}>
-										{(node.private || node.privateFromParent) && (
-											<Icon name="lock" size={14} className="flex-none text-ink-3" />
-										)}
+								<div className="grid min-w-0 flex-1 gap-0.5">
+									<p className="truncate text-sm font-medium" title={node.path}>
 										{node.name}
 									</p>
-									<p className="text-xs text-ink-3">
-										{node.private || node.privateFromParent
-											? t`${number.format(node.facts.active)} on · ${number.format(node.facts.excluded)} off · private, never sent unless an application includes it`
-											: t`${number.format(node.facts.active)} on · ${number.format(node.facts.excluded)} off · ${number.format(node.activeChars)} characters`}
-										{node.status === "excluded" && <> · {t`new facts start off`}</>}
-									</p>
+									<p className="text-xs text-ink-3">{groupMeta(node, number)}</p>
 								</div>
-								<label className="flex items-center gap-1.5 text-xs text-ink-2">
-									<Switch
-										checked={node.private || node.privateFromParent}
-										disabled={node.privateFromParent || (privacy.isPending && privacy.variables?.group === node.path)}
-										aria-label={t`Keep ${node.path} private`}
-										onCheckedChange={(checked) => privacy.mutate({ group: node.path, private: checked })}
-									/>
-									<span aria-hidden="true">{node.privateFromParent ? t`Private (parent)` : t`Private`}</span>
-								</label>
-								<div className="flex gap-1.5">
-									<GroupButton
-										label={t`Switch all on`}
-										name={t`Switch ${node.path} on`}
-										disabled={total === 0 || (node.facts.excluded === 0 && node.status !== "excluded")}
-										pending={pending && toggle.variables?.status === "active"}
-										onClick={() => toggle.mutate({ group: node.path, status: "active", subgroups: true })}
-									/>
-									<GroupButton
-										label={t`Switch all off`}
-										name={t`Switch ${node.path} off`}
-										disabled={total === 0 || (node.facts.active === 0 && node.status === "excluded")}
-										pending={pending && toggle.variables?.status === "excluded"}
-										onClick={() => toggle.mutate({ group: node.path, status: "excluded", subgroups: true })}
-									/>
-								</div>
+								<PrivateLock
+									node={node}
+									pending={privacy.isPending && privacy.variables?.group === node.path}
+									onChange={(locked) => privacy.mutate({ group: node.path, private: locked })}
+								/>
+								<Switch
+									className="ms-1 me-0.5"
+									checked={on}
+									disabled={total === 0 || switching}
+									aria-label={t`Switch ${node.path} on`}
+									onCheckedChange={(checked) =>
+										toggle.mutate({ group: node.path, status: checked ? "active" : "excluded", subgroups: true })
+									}
+								/>
 							</li>
 						);
 					})}
@@ -234,20 +257,40 @@ export function GroupsCard() {
 	);
 }
 
-type GroupButtonProps = { label: string; name: string; disabled: boolean; pending: boolean; onClick: () => void };
+type PrivateLockProps = { node: GroupNode; pending: boolean; onChange: (locked: boolean) => void };
 
-function GroupButton({ label, name, disabled, pending, onClick }: GroupButtonProps) {
+/** Private as a lock: open outline when not, solid in the accent when it is, dimmed when a parent makes it private. */
+function PrivateLock({ node, pending, onChange }: PrivateLockProps) {
+	const locked = node.private || node.privateFromParent;
+	const tooltip =
+		node.privateThrough !== null
+			? t`Private because ${node.privateThrough} is`
+			: node.private
+				? t`Private: never sent unless an application includes it`
+				: t`Make this group private`;
 	return (
-		<Button
-			variant="secondary"
-			size="sm"
-			aria-label={name}
-			disabled={disabled}
-			loading={pending}
-			onClick={onClick}
-			className="h-7 px-2.5 text-xs"
-		>
-			{label}
-		</Button>
+		<Tooltip>
+			{/* Focusable while disabled (aria-disabled), so hover and keyboard still reach the tooltip. */}
+			<TooltipTrigger
+				render={
+					<Button
+						variant="ghost"
+						size="icon-xs"
+						aria-pressed={locked}
+						aria-label={t`Keep ${node.path} private`}
+						disabled={node.privateFromParent || pending}
+						focusableWhenDisabled
+						onClick={() => onChange(!node.private)}
+						className={cn(
+							"size-[30px] rounded-md hover:bg-sunken aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-transparent",
+							locked ? "text-accent-text" : "text-ink-3 hover:text-ink aria-disabled:hover:text-ink-3",
+						)}
+					/>
+				}
+			>
+				<Icon name={locked ? "lock" : "lock-open"} filled={locked} size={20} />
+			</TooltipTrigger>
+			<TooltipContent>{tooltip}</TooltipContent>
+		</Tooltip>
 	);
 }
