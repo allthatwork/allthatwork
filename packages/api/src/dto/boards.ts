@@ -31,11 +31,23 @@ export const boardsDto = {
 					}),
 				)
 				.describe("Boards named by the company's posting links on file, not yet watched."),
+			careersUrl: z
+				.string()
+				.nullable()
+				.describe("A saved jobs link on a site that can't be watched (Workday, iCIMS and others)."),
 		}),
 	},
 	fromLink: {
 		input: companyId.extend({ link: z.url({ protocol: /^https?$/ }).max(2048) }),
-		output: z.array(candidate),
+		output: z.object({
+			boards: z.array(candidate),
+			savedLink: z
+				.string()
+				.nullable()
+				.describe(
+					"Set when the link leads to no Greenhouse, Ashby or Lever page (or couldn't be opened): it was saved as the company's jobs link, which can't be watched.",
+				),
+		}),
 	},
 	guess: { input: companyId, output: z.array(candidate) },
 	watch: {

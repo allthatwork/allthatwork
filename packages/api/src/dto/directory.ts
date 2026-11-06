@@ -1,7 +1,7 @@
 import { createSelectSchema } from "drizzle-zod";
 import z from "zod";
 import * as schema from "@reactive-resume/db/schema";
-import { boardAtsSchema, boardRegionSchema } from "@reactive-resume/schema/boards";
+import { boardAtsSchema, boardRegionSchema, boardSourceSchema } from "@reactive-resume/schema/boards";
 import { companyFieldsSchema, contactFieldsSchema, directorySourceSchema } from "@reactive-resume/schema/directory";
 import { linkedInImportSchema } from "@reactive-resume/schema/directory-import";
 
@@ -40,17 +40,30 @@ export const directoryDto = {
 						watching: z
 							.array(
 								z.object({
+									id: z.string().describe("The watch, for stopping it."),
 									ats: boardAtsSchema,
 									region: boardRegionSchema,
 									slug: z.string(),
+									source: boardSourceSchema,
+									url: z.string().describe("The jobs page, for people to open."),
 									jobCount: z.number().int().nullable(),
 								}),
 							)
 							.describe("Watched job pages, earliest confirmed first, with open roles at the last check."),
 						found: z
-							.object({ ats: boardAtsSchema, region: boardRegionSchema, slug: z.string() })
+							.object({
+								ats: boardAtsSchema,
+								region: boardRegionSchema,
+								slug: z.string(),
+								url: z.string().describe("The jobs page, for people to open."),
+								jobCount: z
+									.number()
+									.int()
+									.nullable()
+									.describe("Open roles at its last check, from what's stored; null when never read."),
+							})
 							.nullable()
-							.describe("A job page a posting link on file points at that isn't watched yet, to confirm."),
+							.describe("A job page a posting link on file points at that isn't watched yet, to watch."),
 					})
 					.describe("Where the company's jobs are watched or found."),
 			}),

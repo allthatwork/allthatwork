@@ -5,14 +5,13 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
-import { BOARD_ATS_NAMES } from "@reactive-resume/schema/boards";
 import { contactSortKey, DIRECTORY_LETTERS } from "@reactive-resume/schema/directory-names";
 import { cn } from "@reactive-resume/utils/style";
+import { JobsButton, jobsLink, WatchBox } from "./watch";
 import { useCareerTime } from "@/features/career/shared";
 
 type Contact = RouterOutput["directory"]["contacts"][number];
 type Company = RouterOutput["directory"]["companies"][number];
-type Jobs = Company["jobs"];
 
 const groupLabel = (key: DirectoryGroupKey) => (key === "none" ? t`No last name` : key);
 
@@ -138,7 +137,7 @@ function useShortDate() {
 
 const CONTACT_COLUMNS = "sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_minmax(0,9rem)_5.5rem]";
 const COMPANY_CONTACT_COLUMNS = "sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_5.5rem]";
-const COMPANY_COLUMNS = "sm:grid-cols-[minmax(0,1fr)_4.5rem_6rem_minmax(0,14rem)]";
+const COMPANY_COLUMNS = "sm:grid-cols-[minmax(0,1fr)_4.5rem_6rem_9.5rem_3rem]";
 
 type ListHeadProps = { columns: string; children: ReactNode };
 function ListHead({ columns, children }: ListHeadProps) {
@@ -258,6 +257,9 @@ export function CompaniesHead() {
 			<span>
 				<Trans>Jobs</Trans>
 			</span>
+			<span className="text-center">
+				<Trans>Watch</Trans>
+			</span>
 		</ListHead>
 	);
 }
@@ -271,47 +273,17 @@ const hostname = (website: string | null) => {
 	}
 };
 
-/** What the Jobs column says, long at desktop width and short on a phone. Null when nothing is watched or found. */
-export function jobsLabel(jobs: Jobs): { tone: "watch" | "found"; long: string; short: string } | null {
-	const [first, ...more] = jobs.watching;
-	if (first) {
-		const platform = BOARD_ATS_NAMES[first.ats];
-		const open = first.jobCount === null ? "" : ` · ${t`${first.jobCount} open`}`;
-		const extra = more.length ? ` +${more.length}` : "";
-		return {
-			tone: "watch",
-			long: `${t`Watching on ${platform}`}${open}${extra}`,
-			short: `${platform}${open}${extra}`,
-		};
-	}
-	if (jobs.found) {
-		const platform = BOARD_ATS_NAMES[jobs.found.ats];
-		return { tone: "found", long: `${t`Found on ${platform}`} · ${t`confirm`}`, short: `${platform} · ${t`confirm`}` };
-	}
-	return null;
-}
-
-type JobsPillProps = { jobs: Jobs; short?: boolean };
-function JobsPill({ jobs, short }: JobsPillProps) {
-	const label = jobsLabel(jobs);
-	if (!label) return short ? null : <span className="text-ink-3">—</span>;
-	return (
-		<span
-			className={cn(
-				"block w-fit max-w-full truncate rounded-full px-1.5 py-px text-[11px] font-semibold",
-				label.tone === "watch" ? "bg-accent-soft text-accent-text" : "bg-warn-soft text-warn-text",
-			)}
-		>
-			{short ? label.short : label.long}
-		</span>
-	);
-}
-
 type CompanyRowProps = { company: Company };
 
-/** One company: logo, name and domain, contact and application counts, and Jobs. Two short lines on a phone. */
+/**
+ * One company: logo, name and domain, contact and application counts, Jobs (the open count and Jobs ↗) and the Watch
+ * box. The row opens the company; Jobs ↗ and the box don't. On a phone, two lines with the box at the right: the open
+ * count and Jobs ↗ first, then the counts, leaving out zeros.
+ */
 export function CompanyRow({ company }: CompanyRowProps) {
 	const domain = hostname(company.website);
+	const jobs = jobsLink(company);
+	const open = jobs && jobs.count !== null ? t`${jobs.count} open` : "";
 	const counts = [
 		company.contactCount === 1 ? t`1 contact` : company.contactCount ? t`${company.contactCount} contacts` : "",
 		company.applicationCount === 1
@@ -320,10 +292,26 @@ export function CompanyRow({ company }: CompanyRowProps) {
 				? t`${company.applicationCount} applications`
 				: "",
 	].filter(Boolean);
+	const phoneLine: { key: string; node: ReactNode }[] = [
+		...(open ? [{ key: "open", node: open }] : []),
+		...(jobs
+			? [
+					{
+						key: "jobs",
+						node: (
+							<a href={jobs.url} target="_blank" rel="noopener noreferrer" className="relative z-1 text-accent-text">
+								{t`Jobs`} ↗
+							</a>
+						),
+					},
+				]
+			: []),
+		...counts.map((text) => ({ key: text, node: text })),
+	];
 	return (
 		<div
 			className={cn(
-				"relative grid gap-0.5 px-2.5 py-1.5 text-[13px] hover:bg-sunken sm:min-h-[34px] sm:items-center sm:gap-3 sm:py-1",
+				"relative grid grid-cols-[minmax(0,1fr)_1.5rem] gap-x-2 gap-y-0.5 px-2.5 py-1.5 text-[13px] hover:bg-sunken sm:min-h-[34px] sm:items-center sm:gap-3 sm:py-1",
 				COMPANY_COLUMNS,
 			)}
 		>
@@ -337,15 +325,31 @@ export function CompanyRow({ company }: CompanyRowProps) {
 					{company.name}
 				</Link>
 				{domain && <span className="hidden truncate text-ink-3 sm:inline">{domain}</span>}
-				<span className="ms-auto min-w-0 shrink sm:hidden">
-					<JobsPill jobs={company.jobs} short />
-				</span>
 			</span>
-			{counts.length > 0 && <span className="truncate text-ink-2 sm:hidden">{counts.join(" · ")}</span>}
+			{phoneLine.length > 0 && (
+				<span className="col-start-1 row-start-2 truncate text-ink-2 sm:hidden">
+					{phoneLine.map((part, index) => (
+						<span key={part.key}>
+							{index > 0 && " · "}
+							{part.node}
+						</span>
+					))}
+				</span>
+			)}
 			<span className="hidden text-end text-ink-2 tabular-nums sm:block">{company.contactCount}</span>
 			<span className="hidden text-end text-ink-2 tabular-nums sm:block">{company.applicationCount}</span>
-			<span className="hidden min-w-0 sm:block">
-				<JobsPill jobs={company.jobs} />
+			<span className="hidden min-w-0 items-center gap-1.5 whitespace-nowrap sm:flex">
+				{jobs ? (
+					<>
+						{open && <span className="ms-auto text-ink-2 tabular-nums">{open}</span>}
+						<JobsButton url={jobs.url} className={open ? undefined : "ms-auto"} />
+					</>
+				) : (
+					<span className="text-ink-3">—</span>
+				)}
+			</span>
+			<span className="col-start-2 row-span-2 row-start-1 flex items-center justify-center sm:col-start-auto sm:row-span-1 sm:row-start-auto">
+				<WatchBox company={company} />
 			</span>
 		</div>
 	);

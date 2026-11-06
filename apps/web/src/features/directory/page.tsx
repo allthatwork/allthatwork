@@ -483,7 +483,7 @@ function CompanyPage({ id, onDeleted }: DetailProps) {
 					</p>
 				)}
 			</div>
-			<CompanyBoards companyId={company.id} />
+			<CompanyBoards companyId={company.id} companyName={company.name} />
 			<DeleteAction
 				label={t`Delete company`}
 				onDelete={async () => {

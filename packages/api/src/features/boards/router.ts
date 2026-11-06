@@ -27,7 +27,7 @@ export const boardsRouter = {
 			operationId: "jobBoardsFromLink",
 			summary: "Find job boards from a careers link",
 			description:
-				"Reads a pasted board, posting or careers page link and returns the boards it points at, each read once to show its name and open roles. Nothing is saved.",
+				"Reads a pasted board, posting or careers page link and returns the boards it points at, each read once to show its name and open roles. A link that leads to no Greenhouse, Ashby or Lever board, or that can't be opened, is saved as the company's jobs link (careersUrl) instead, which can't be watched.",
 		})
 		.input(boardsDto.fromLink.input)
 		.output(boardsDto.fromLink.output)
@@ -55,7 +55,7 @@ export const boardsRouter = {
 			operationId: "watchJobBoard",
 			summary: "Watch a company's job board",
 			description:
-				"Confirms a board for a company. Its open roles that pass the Preferences screen land in New roles once; after that, board checks bring only roles first seen later.",
+				"Confirms a board for a company. Its open roles that pass the Preferences screen land in New roles once; after that, board checks bring only roles first seen later. The company's saved jobs link (careersUrl) is cleared.",
 		})
 		.input(boardsDto.watch.input)
 		.output(boardsDto.watch.output)
