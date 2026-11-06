@@ -43,6 +43,7 @@ import {
 	hostname,
 	useShortDate,
 } from "./lists";
+import { PAGE_CLASS } from "@/components/layout/page";
 import { getStageLabel } from "@/features/applications/stages";
 import { useCareerTime } from "@/features/career/shared";
 import { client, orpc } from "@/libs/orpc/client";
@@ -59,7 +60,7 @@ type DirectoryPageProps = DirectorySearch;
 export function DirectoryPage({ tab = "companies", company, contact }: DirectoryPageProps) {
 	const navigate = useNavigate();
 	return (
-		<div className="mx-auto grid w-full max-w-6xl gap-6 p-4 md:p-8">
+		<div className={cn(PAGE_CLASS, "grid content-start gap-6")}>
 			<header className="grid gap-3">
 				<h1 className="font-display text-3xl font-medium">
 					<Trans>Directory</Trans>
@@ -399,7 +400,7 @@ function CompanyPage({ id, onDeleted }: DetailProps) {
 	const hidden = contacts.length - shown.length;
 	const domain = hostname(company.website);
 	return (
-		<section className="grid gap-6">
+		<section className="grid max-w-6xl gap-6">
 			<div className="grid gap-1">
 				<div className="flex items-center gap-2.5">
 					<CompanyLogo key={company.website} name={company.name} website={company.website} size="md" />
@@ -572,7 +573,7 @@ function ContactPage({ id, onDeleted }: DetailProps) {
 		})),
 	].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 	return (
-		<section className="grid gap-6">
+		<section className="grid max-w-6xl gap-6">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div className="grid gap-1">
 					<h2 className="font-display text-2xl font-medium">{contact.name}</h2>

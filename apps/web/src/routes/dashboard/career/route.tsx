@@ -5,6 +5,7 @@ import { createFileRoute, Link, Outlet, useMatchRoute } from "@tanstack/react-ro
 import { m } from "motion/react";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
+import { PAGE_CLASS } from "@/components/layout/page";
 import { D2, EASE } from "@/libs/motion";
 
 export const Route = createFileRoute("/dashboard/career")({
@@ -44,7 +45,7 @@ function CareerLayout() {
 	const current = places.find((place) => matchRoute({ to: place.match, fuzzy: place.match !== "/dashboard/career/" }));
 
 	return (
-		<div className="flex min-h-svh flex-col gap-6 px-4 py-5 md:px-10 md:py-7">
+		<div className={cn(PAGE_CLASS, "flex min-h-svh flex-col gap-6")}>
 			<header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 [view-transition-name:career-header]">
 				<div className="grid min-w-0 gap-1">
 					<h1 className="font-display text-[30px] leading-9 font-medium">
@@ -56,7 +57,7 @@ function CareerLayout() {
 				</div>
 				<nav
 					aria-label={t`Career`}
-					className="-mx-4 flex max-w-[100vw] [scrollbar-width:none] overflow-x-auto px-4 md:mx-0 md:px-0"
+					className="-mx-4 flex max-w-[100vw] [scrollbar-width:none] overflow-x-auto px-4 sm:mx-0 sm:px-0"
 				>
 					<div className="flex shrink-0 gap-0.5 rounded-[9px] bg-sunken p-[3px]">
 						{places.map((place) => {
