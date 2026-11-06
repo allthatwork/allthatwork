@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { buttonVariants } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
+import { cn } from "@reactive-resume/utils/style";
 import { DocumentRow } from "./document-card";
 import { LibraryError } from "./library-error";
+import { PAGE_CLASS } from "@/components/layout/page";
 import { orpc } from "@/libs/orpc/client";
 
 const noop = () => undefined;
@@ -20,7 +22,7 @@ export function TrashPage() {
 	} = useQuery(orpc.documents.list.queryOptions({ input: { trashed: true } }));
 
 	return (
-		<div className="mx-auto grid w-full max-w-[1180px] content-start gap-5 px-8 py-8 max-sm:px-4 max-sm:py-5">
+		<div className={cn(PAGE_CLASS, "grid content-start gap-5")}>
 			<Link
 				to="/dashboard"
 				className={buttonVariants({ variant: "ghost", size: "sm", className: "-ms-2.5 w-fit gap-1.5 text-ink-2" })}

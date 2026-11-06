@@ -161,7 +161,7 @@ export function DocumentCard({
 					<article
 						style={introIndex === undefined ? undefined : stagger(introIndex)}
 						className={cn(
-							"group/card grid gap-2",
+							"group/card grid content-start gap-2",
 							introIndex !== undefined && ENTER_CLASS,
 							isNew && "animate-arrive",
 							document.trashedAt && "opacity-70",

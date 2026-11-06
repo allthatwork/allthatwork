@@ -27,6 +27,7 @@ import { DocumentCard, DocumentRow } from "./document-card";
 import { collectTags, filterDocuments } from "./filter";
 import { LibraryError } from "./library-error";
 import { useStartDocument } from "./new-document-dialog";
+import { PAGE_CLASS } from "@/components/layout/page";
 import { useDialogStore } from "@/dialogs/store";
 import { isEditableElementFocused } from "@/features/resume/builder/draft";
 import { orpc } from "@/libs/orpc/client";
@@ -124,7 +125,7 @@ export function DocumentsPage({ search, onSearchChange }: DocumentsPageProps) {
 	});
 
 	return (
-		<div className="mx-auto grid w-full max-w-[1180px] content-start gap-5 px-8 py-8 max-sm:px-4 max-sm:py-5">
+		<div className={cn(PAGE_CLASS, "grid content-start gap-5")}>
 			<h1 className="font-display text-[30px] leading-9 font-medium">
 				<Trans>Documents</Trans>
 			</h1>
@@ -280,7 +281,7 @@ export function DocumentsPage({ search, onSearchChange }: DocumentsPageProps) {
 					) : (
 						<div
 							className={cn(
-								"grid grid-cols-[repeat(auto-fill,minmax(180px,204px))] gap-x-7 gap-y-[22px] max-sm:grid-cols-2 max-sm:gap-4",
+								"grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-x-7 gap-y-[22px] max-sm:grid-cols-2 max-sm:gap-4",
 								viewEnter,
 							)}
 						>
@@ -542,7 +543,7 @@ function LibrarySkeleton({ view }: { view: "grid" | "list" }) {
 		);
 	}
 	return (
-		<div className="grid grid-cols-[repeat(auto-fill,minmax(180px,204px))] gap-x-7 gap-y-[22px] max-sm:grid-cols-2 max-sm:gap-4">
+		<div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-x-7 gap-y-[22px] max-sm:grid-cols-2 max-sm:gap-4">
 			{Array.from({ length: 6 }, (_, index) => (
 				<div key={index} className="grid gap-2">
 					<Skeleton className="aspect-page rounded-[6px]" />
