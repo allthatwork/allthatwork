@@ -799,6 +799,10 @@ msgstr "{lines, plural, one {Runs onto page {next} by about # line} other {Runs 
 msgid "{match}% match"
 msgstr "{match}% match"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "{matching, plural, one {Show # application} other {Show # applications}}"
+msgstr "{matching, plural, one {Show # application} other {Show # applications}}"
+
 #: src/features/career/offers.tsx
 msgid "{minimum} minimum"
 msgstr "{minimum} minimum"
@@ -1011,6 +1015,10 @@ msgstr "{value} a year"
 msgid "{value} an hour"
 msgstr "{value} an hour"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "{value} days"
+msgstr "{value} days"
+
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1028,6 +1036,14 @@ msgstr "/ month"
 msgid "/ year"
 msgstr "/ year"
 
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "+ and −"
+msgstr "+ and −"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "+ must have, − must not"
+msgstr "+ must have, − must not"
+
 #: src/features/applications/components/calendar-view.tsx
 msgid "+{extra} more"
 msgstr "+{extra} more"
@@ -1035,6 +1051,12 @@ msgstr "+{extra} more"
 #: src/features/homepage/hero.tsx
 msgid "+13 pts activation"
 msgstr "+13 pts activation"
+
+#. placeholder {0}: applications.length
+#: src/features/applications/components/filters/filter-bar.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "<0>{matching}</0> of {0}"
+msgstr "<0>{matching}</0> of {0}"
 
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "<0>Nothing to fix.</0> Every check passes."
@@ -1741,6 +1763,7 @@ msgid "Add what happened before you can save."
 msgstr "Add what happened before you can save."
 
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Add your lanes in Preferences"
 msgstr "Add your lanes in Preferences"
 
@@ -1754,10 +1777,20 @@ msgstr "Add your name"
 msgid "Added {0} at {1}"
 msgstr "Added {0} at {1}"
 
+#. placeholder {0}: filters.added
+#: src/features/applications/filter.ts
+msgid "Added {0}d"
+msgstr "Added {0}d"
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/shared.tsx
 msgid "Added by you"
 msgstr "Added by you"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Added in the last"
+msgstr "Added in the last"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private, and schedules come in switched off."
@@ -1782,6 +1815,10 @@ msgstr "Added to Knowledge as an experience."
 #: src/features/career/workspace/fit.tsx
 msgid "Added to Prepare"
 msgstr "Added to Prepare"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "Added, updated"
+msgstr "Added, updated"
 
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
@@ -1909,6 +1946,7 @@ msgstr "Align left"
 msgid "Align right"
 msgstr "Align right"
 
+#: src/features/applications/filter.ts
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-contacts.tsx
 #: src/features/career/workspace/saved.tsx
@@ -1934,6 +1972,10 @@ msgstr "All documents and applications as JSON, in one zip"
 msgid "All groups"
 msgstr "All groups"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "All of them"
+msgstr "All of them"
+
 #: src/features/career/knowledge/import.tsx
 msgid "All proposed facts have matches. Review them in Duplicates below."
 msgstr "All proposed facts have matches. Review them in Duplicates below."
@@ -1941,6 +1983,10 @@ msgstr "All proposed facts have matches. Review them in Duplicates below."
 #: src/features/career/workspace/questions.tsx
 msgid "All questions answered"
 msgstr "All questions answered"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "All stages"
+msgstr "All stages"
 
 #: src/features/auth/pages/consent.tsx
 msgid "Allow access"
@@ -2089,6 +2135,7 @@ msgstr "Answers copied"
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
 msgstr "Anthropic, Gemini, Ollama, OpenAI-compatible"
 
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/career/knowledge/preferences.tsx
 msgid "Any"
 msgstr "Any"
@@ -2096,6 +2143,10 @@ msgstr "Any"
 #: src/features/resume/editor/design/style-groups.tsx
 msgid "Any font, in Advanced"
 msgstr "Any font, in Advanced"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Any of the + tags"
+msgstr "Any of the + tags"
 
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Anyone who opens the public URL will need this password."
@@ -2293,6 +2344,10 @@ msgstr "Applied"
 #: src/features/career/workspace/shell.tsx
 msgid "Applied {0}"
 msgstr "Applied {0}"
+
+#: src/features/applications/filter.ts
+msgid "Applied to Offer"
+msgstr "Applied to Offer"
 
 #: src/features/applications/next-step.ts
 msgid "Applied today"
@@ -2735,6 +2790,7 @@ msgstr "Bring in documents, applications and Knowledge from an Export everything
 
 #: src/features/applications/components/build-status.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 msgid "Build"
 msgstr "Build"
 
@@ -2759,10 +2815,12 @@ msgid "Builder Command Palette"
 msgstr "Builder Command Palette"
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 msgid "Building"
 msgstr "Building"
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 msgid "Built"
 msgstr "Built"
 
@@ -3166,19 +3224,34 @@ msgid "Claude Desktop"
 msgstr "Claude Desktop"
 
 #: src/features/applications/components/detail/next-step-card.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Clear"
 msgstr "Clear"
 
+#. placeholder {0}: getFacetLabel(facet)
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Clear {0}"
+msgstr "Clear {0}"
+
+#: src/features/applications/components/filters/filter-button.tsx
+msgid "Clear {label}"
+msgstr "Clear {label}"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Clear all"
+msgstr "Clear all"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Clear filters"
+msgstr "Clear filters"
+
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Clear formatting"
 msgstr "Clear formatting"
-
-#: src/routes/dashboard/applications/index.tsx
-msgid "Clear search"
-msgstr "Clear search"
 
 #: src/features/documents/documents-page.tsx
 msgid "Clear search and filters"
@@ -4254,6 +4327,8 @@ msgstr "Cover"
 
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/detail/sent-documents.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "Cover letter"
 msgstr "Cover letter"
@@ -4451,6 +4526,7 @@ msgstr "Date"
 msgid "Date format"
 msgstr "Date format"
 
+#: src/features/applications/filter.ts
 #: src/features/ats-checker/messages.ts
 #: src/features/resume/editor/check/issues.ts
 #: src/features/resume/editor/check/parser-view.tsx
@@ -4826,6 +4902,7 @@ msgstr "Document type"
 msgid "Documentation"
 msgstr "Documentation"
 
+#: src/features/applications/filter.ts
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -4841,6 +4918,10 @@ msgstr "Documents for this job"
 #: src/features/homepage/faq.tsx
 msgid "Does it use AI?"
 msgstr "Does it use AI?"
+
+#: src/features/applications/components/application-card.tsx
+msgid "Doesn't match the filters now"
+msgstr "Doesn't match the filters now"
 
 #: src/features/auth/pages/login.tsx
 msgid "Don't have an account? <0/>"
@@ -5163,6 +5244,7 @@ msgid "Edit keyword"
 msgstr "Edit keyword"
 
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Edit lanes in Preferences"
 msgstr "Edit lanes in Preferences"
 
@@ -5243,6 +5325,15 @@ msgstr "Education"
 #: src/features/settings/ai/reasoning.tsx
 msgid "Effort"
 msgstr "Effort"
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "either lane"
+msgstr "either lane"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Either lane"
+msgstr "Either lane"
 
 #: src/features/resume/editor/check/parser-view.tsx
 #: src/features/resume/editor/write/basics-card.tsx
@@ -5602,6 +5693,7 @@ msgid "Facts, stories and preferences that are switched on in Knowledge"
 msgstr "Facts, stories and preferences that are switched on in Knowledge"
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 #: src/features/settings/ai/providers.tsx
 msgid "Failed"
 msgstr "Failed"
@@ -5757,6 +5849,10 @@ msgstr "Filling in entries"
 msgid "Filter by tag"
 msgstr "Filter by tag"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Filters"
+msgstr "Filters"
+
 #: src/features/directory/contact-picker.tsx
 msgid "Find a directory contact"
 msgstr "Find a directory contact"
@@ -5810,6 +5906,7 @@ msgstr "First run"
 
 #: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5906,6 +6003,10 @@ msgstr "Follow-up date"
 #: src/features/settings/reminders.tsx
 msgid "Follow-up dates you set yourself still show. Career schedules have their own switches in Career → Today."
 msgstr "Follow-up dates you set yourself still show. Career schedules have their own switches in Career → Today."
+
+#: src/features/applications/filter.ts
+msgid "Follow-up due"
+msgstr "Follow-up due"
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Follow-up note"
@@ -6021,6 +6122,7 @@ msgstr "Found {0}"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 msgid "Found by"
 msgstr "Found by"
 
@@ -6035,6 +6137,7 @@ msgstr "Found by {foundBy} on {source}"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 msgid "Found on"
 msgstr "Found on"
 
@@ -6859,6 +6962,10 @@ msgstr "Interface only. Each resume sets its own language in Design."
 msgid "Interview"
 msgstr "Interview"
 
+#: src/features/applications/filter.ts
+msgid "Interview coming"
+msgstr "Interview coming"
+
 #: src/features/career/workspace/debrief.tsx
 msgid "Interview debrief"
 msgstr "Interview debrief"
@@ -7330,6 +7437,10 @@ msgstr "Label, e.g. Recruiter"
 msgid "Landscape"
 msgstr "Landscape"
 
+#: src/features/applications/filter.ts
+msgid "Lane"
+msgstr "Lane"
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Lanes"
 msgstr "Lanes"
@@ -7518,6 +7629,7 @@ msgstr "Lets the coach search public pages through your web search service"
 msgid "letter"
 msgstr "letter"
 
+#: src/features/applications/filter.ts
 #: src/features/assistant/document.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
@@ -7666,6 +7778,10 @@ msgstr "Link turned off. The address is kept"
 #: src/features/resume/editor/check/issues.ts
 msgid "Link updated"
 msgstr "Link updated"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Linked"
+msgstr "Linked"
 
 #: src/features/applications/components/detail/sent-documents.tsx
 msgid "Linked · not sent yet"
@@ -8030,6 +8146,10 @@ msgstr "Marked as applied. The versions you sent are kept."
 msgid "Marked as read"
 msgstr "Marked as read"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Match"
+msgstr "Match"
+
 #. placeholder {0}: resume?.name ?? t`the resume`
 #: src/routes/builder/letter/-components/design-panel.tsx
 msgid "Match “{0}”"
@@ -8047,6 +8167,10 @@ msgstr "Match for {0}"
 #: src/features/command-palette/pages/preferences/theme.tsx
 msgid "Match system theme"
 msgstr "Match system theme"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Match the + tags"
+msgstr "Match the + tags"
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Match this posting"
@@ -8185,6 +8309,10 @@ msgstr "More actions"
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
 msgstr "More download formats"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "More filters"
+msgstr "More filters"
 
 #: src/features/career/coach.tsx
 msgid "More for {title}"
@@ -8332,6 +8460,24 @@ msgstr "Moved to {0}"
 msgid "Moves the application from {0}."
 msgstr "Moves the application from {0}."
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must have"
+msgstr "Must have"
+
+#. placeholder {0}: option.label
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must have {0}"
+msgstr "Must have {0}"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must not have"
+msgstr "Must not have"
+
+#. placeholder {0}: option.label
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must not have {0}"
+msgstr "Must not have {0}"
+
 #: src/features/homepage/remember.tsx
 msgid "My job was to find out why, without adding support work."
 msgstr "My job was to find out why, without adding support work."
@@ -8414,6 +8560,7 @@ msgstr "narrow margins"
 msgid "Nearly the same words · {percent}%"
 msgstr "Nearly the same words · {percent}%"
 
+#: src/features/applications/filter.ts
 #: src/features/settings/ai/providers.tsx
 msgid "Needs attention"
 msgstr "Needs attention"
@@ -8614,10 +8761,9 @@ msgstr "No application"
 msgid "No applications at this company yet."
 msgstr "No applications at this company yet."
 
-#. placeholder {0}: query.trim()
 #: src/routes/dashboard/applications/index.tsx
-msgid "No applications match “{0}”."
-msgstr "No applications match “{0}”."
+msgid "No applications match these filters."
+msgstr "No applications match these filters."
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No applications yet"
@@ -8774,9 +8920,17 @@ msgstr "No jobs page known yet. Open the company to look one up."
 msgid "No keys yet."
 msgstr "No keys yet."
 
+#: src/features/applications/filter.ts
+msgid "No lane"
+msgstr "No lane"
+
 #: src/features/directory/lists.tsx
 msgid "No last name"
 msgstr "No last name"
+
+#: src/features/applications/filter.ts
+msgid "No letter"
+msgstr "No letter"
 
 #: src/features/ats-checker/messages.ts
 msgid "No lines look like a job title paired with an employer."
@@ -8844,6 +8998,14 @@ msgstr "No postings found. Try different keywords."
 msgid "No questions for you"
 msgstr "No questions for you"
 
+#: src/features/applications/filter.ts
+msgid "No reply in {noReplyDays}+ days"
+msgstr "No reply in {noReplyDays}+ days"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "No reply, questions…"
+msgstr "No reply, questions…"
+
 #: src/features/applications/stages.ts
 msgid "No response"
 msgstr "No response"
@@ -8852,6 +9014,7 @@ msgstr "No response"
 msgid "No results found."
 msgstr "No results found."
 
+#: src/features/applications/filter.ts
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "No resume"
 msgstr "No resume"
@@ -8859,6 +9022,10 @@ msgstr "No resume"
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "No resumes yet."
 msgstr "No resumes yet."
+
+#: src/features/applications/filter.ts
+msgid "No search fit"
+msgstr "No search fit"
 
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
@@ -8884,9 +9051,21 @@ msgstr "No suggestions for this provider. Enter any model ID."
 msgid "No supporting facts. Link one before using this story."
 msgstr "No supporting facts. Link one before using this story."
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "No tags match."
+msgstr "No tags match."
+
 #: src/features/career/knowledge/stories.tsx
 msgid "No tags yet"
 msgstr "No tags yet"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "No tags yet."
+msgstr "No tags yet."
+
+#: src/features/applications/filter.ts
+msgid "No targeting fit"
+msgstr "No targeting fit"
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No terms stood out in this posting."
@@ -8915,9 +9094,14 @@ msgstr "No. {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
 msgstr "None"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "None yet"
+msgstr "None yet"
 
 #: src/features/resume/editor/design/fit.ts
 #: src/features/resume/editor/design/style-groups.tsx
@@ -8940,6 +9124,10 @@ msgstr "Northwind Labs · Lisbon"
 #: src/libs/locale.ts
 msgid "Norwegian"
 msgstr "Norwegian"
+
+#: src/features/applications/filter.ts
+msgid "not #{tag}"
+msgstr "not #{tag}"
 
 #: src/features/career/knowledge/review.tsx
 msgid "Not a problem"
@@ -9004,6 +9192,10 @@ msgstr "Not in your resume · add only if true"
 msgid "Not now"
 msgstr "Not now"
 
+#: src/features/applications/filter.ts
+msgid "Not queued"
+msgstr "Not queued"
+
 #: src/features/directory/page.tsx
 msgid "Not recorded"
 msgstr "Not recorded"
@@ -9033,6 +9225,10 @@ msgstr "Not scored"
 #: src/features/applications/stages.ts
 msgid "Not selected"
 msgstr "Not selected"
+
+#: src/features/applications/filter.ts
+msgid "Not set"
+msgstr "Not set"
 
 #: src/features/settings/root.tsx
 msgid "Not set up"
@@ -9349,6 +9545,7 @@ msgid "Onsite"
 msgstr "Onsite"
 
 #: src/features/applications/components/detail/sent-documents.tsx
+#: src/features/applications/filter.ts
 #: src/features/career/today.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/dashboard/applications/index.tsx
@@ -9414,6 +9611,10 @@ msgstr "Open public page"
 #: src/features/directory/boards.tsx
 msgid "Open roles"
 msgstr "Open roles"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Open stages"
+msgstr "Open stages"
 
 #: src/features/career/workspace/prepare.tsx
 msgid "Open story"
@@ -10155,6 +10356,15 @@ msgstr "Primary Color"
 msgid "Primary lane"
 msgstr "Primary lane"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "primary only"
+msgstr "primary only"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Primary only"
+msgstr "Primary only"
+
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 msgid "Print"
 msgstr "Print"
@@ -10374,6 +10584,10 @@ msgstr "Questions"
 msgid "Questions copied"
 msgstr "Questions copied"
 
+#: src/features/applications/filter.ts
+msgid "Questions to answer"
+msgstr "Questions to answer"
+
 #: src/features/career/workspace/prepare.tsx
 #: src/features/homepage/prepare.tsx
 msgid "Questions to ask"
@@ -10382,6 +10596,10 @@ msgstr "Questions to ask"
 #: src/features/applications/components/build-status.tsx
 msgid "Queue for resume build"
 msgstr "Queue for resume build"
+
+#: src/features/applications/filter.ts
+msgid "Queued"
+msgstr "Queued"
 
 #: src/features/applications/components/build-status.tsx
 msgid "Queued for build (click to unqueue)"
@@ -11077,7 +11295,10 @@ msgid "resume"
 msgstr "resume"
 
 #: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Resume"
@@ -11146,6 +11367,10 @@ msgstr "Resume page"
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Resume submitted (optional)"
 msgstr "Resume submitted (optional)"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "Resume, cover letter"
+msgstr "Resume, cover letter"
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/resumes.tsx
@@ -11691,6 +11916,11 @@ msgstr "Search"
 msgid "Search {0}%"
 msgstr "Search {0}%"
 
+#. placeholder {0}: filters.fit
+#: src/features/applications/filter.ts
+msgid "Search {0}+"
+msgstr "Search {0}+"
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Search and enhanced reading"
 msgstr "Search and enhanced reading"
@@ -11738,6 +11968,8 @@ msgstr "Search failed"
 
 #: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/career/workspace/assessments.tsx
@@ -11783,6 +12015,10 @@ msgstr "Search or run…"
 #: src/routes/dashboard/applications/index.tsx
 msgid "Search role, company or contact"
 msgstr "Search role, company or contact"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Search tags"
+msgstr "Search tags"
 
 #: src/features/career/coach.tsx
 msgid "Search terms go to your web search service."
@@ -12196,10 +12432,6 @@ msgstr "Show all groups"
 #: src/features/career/knowledge/facts.tsx
 msgid "Show all types"
 msgstr "Show all types"
-
-#: src/routes/dashboard/applications/index.tsx
-msgid "Show closed"
-msgstr "Show closed"
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Show contacts"
@@ -12624,6 +12856,7 @@ msgstr "Square"
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 msgid "Stage"
 msgstr "Stage"
 
@@ -13021,6 +13254,7 @@ msgstr "Tag"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
@@ -13071,6 +13305,10 @@ msgstr "Tailored vs. base resume"
 msgid "Tamil"
 msgstr "Tamil"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "tap: + must have, again: − must not"
+msgstr "tap: + must have, again: − must not"
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Target roles"
 msgstr "Target roles"
@@ -13089,7 +13327,14 @@ msgstr "Targeting"
 msgid "Targeting {0}%"
 msgstr "Targeting {0}%"
 
+#. placeholder {0}: filters.tfit
+#: src/features/applications/filter.ts
+msgid "Targeting {0}+"
+msgstr "Targeting {0}+"
+
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/career/workspace/assessments.tsx
 msgid "Targeting fit"
 msgstr "Targeting fit"
@@ -13535,6 +13780,10 @@ msgstr "The review couldn't finish. Try again."
 msgid "The review didn't finish."
 msgstr "The review didn't finish."
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "the reviewers' median, after a build"
+msgstr "the reviewers' median, after a build"
+
 #: src/features/ats-checker/messages.ts
 msgid "The same line repeats on every page."
 msgstr "The same line repeats on every page."
@@ -13555,6 +13804,10 @@ msgstr "The score is capped because of a blocking problem: {0}"
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "The score reflects how reliably text is extracted, not your chances."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "the search's read of the posting"
+msgstr "the search's read of the posting"
 
 #: src/features/settings/ai/web-access.tsx
 msgid "The service did not respond in time."
@@ -14432,9 +14685,19 @@ msgstr "Updated"
 msgid "Updated {0}"
 msgstr "Updated {0}"
 
+#. placeholder {0}: filters.updated
+#: src/features/applications/filter.ts
+msgid "Updated {0}d"
+msgstr "Updated {0}d"
+
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
 msgstr "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Updated in the last"
+msgstr "Updated in the last"
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Updates"

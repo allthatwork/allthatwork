@@ -1,4 +1,6 @@
+import type { ShownSnapshot } from "@/features/applications/filter";
 import type { Application } from "@/features/applications/types";
+import type { ApplicationFilters, ApplicationSort } from "@reactive-resume/schema/applications/filters";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
@@ -25,26 +27,32 @@ import { ApplicationFormSheet } from "@/features/applications/components/applica
 import { ApplicationBoard } from "@/features/applications/components/board";
 import { ApplicationCalendar } from "@/features/applications/components/calendar-view";
 import { ExportApplicationsSheet } from "@/features/applications/components/export-applications-sheet";
+import { FilterBar } from "@/features/applications/components/filters/filter-bar";
+import { PhoneFilters } from "@/features/applications/components/filters/filter-sheet";
 import { ImportApplicationsSheet } from "@/features/applications/components/import-applications-sheet";
 import { ApplicationInsights, InsightsSkeleton } from "@/features/applications/components/insights-view";
 import { ApplicationList } from "@/features/applications/components/list-view";
+import { clearAll, matchesFilters, mergeSnapshot, withHeld } from "@/features/applications/filter";
+import { filterSearchShape, filtersFromSearch, searchFromFilters } from "@/features/applications/filter-search";
 import { getNextStep, useNoReplyDays } from "@/features/applications/next-step";
 import { applicationsListQueryOptions } from "@/features/applications/queries";
+import { useRememberedFilters } from "@/features/applications/use-remembered-filters";
 import { ENTER_CLASS } from "@/libs/motion";
+import { orpc } from "@/libs/orpc/client";
 
 const VIEWS = ["board", "list", "insights", "calendar"] as const;
 type View = (typeof VIEWS)[number];
 
 const searchSchema = z.object({
-	q: z.string().default("").catch(""),
 	view: z.enum(VIEWS).default("board").catch("board"),
-	closed: z.boolean().default(false).catch(false),
 	// Deep links: open Add, or one application.
 	create: z.boolean().default(false).catch(false),
 	applicationId: z.string().optional().catch(undefined),
+	// The filters and the List's sort; each is left out of the address at its default.
+	...filterSearchShape,
 });
 type Search = z.output<typeof searchSchema>;
-const defaultSearch: Search = { q: "", view: "board", closed: false, create: false };
+const defaultSearch: Partial<Search> = { view: "board", create: false };
 
 export const Route = createFileRoute("/dashboard/applications/")({
 	component: RouteComponent,
@@ -52,27 +60,23 @@ export const Route = createFileRoute("/dashboard/applications/")({
 	search: { middlewares: [stripSearchParams(defaultSearch)] },
 });
 
-/** Search reads role, company, location, contacts and tags. */
-function matches(application: Application, query: string) {
-	if (!query) return true;
-	const haystack = [
-		application.role,
-		application.company,
-		application.location ?? "",
-		...application.contacts.map((contact) => contact.name),
-		...application.tags,
-	]
-		.join(" ")
-		.toLowerCase();
-	return haystack.includes(query);
-}
+const NO_SNAPSHOT: ShownSnapshot = new Map();
 
 function RouteComponent() {
-	const { q, view, closed, create, applicationId } = Route.useSearch();
+	const search = Route.useSearch();
+	const { view, create, applicationId } = search;
 	const navigate = useNavigate({ from: Route.fullPath });
 	const phone = useBreakpoint() === "mobile";
-	// Typing filters at once; the URL only seeds the search.
-	const [query, setQuery] = useState(q);
+	const { filters: addressFilters, sort } = filtersFromSearch(search);
+	// Typing filters at once; the address gets the text 300ms after typing stops.
+	const [query, setQuery] = useState(addressFilters.q);
+	const [addressQuery, setAddressQuery] = useState(addressFilters.q);
+	if (addressFilters.q !== addressQuery) {
+		// The address changed the search (Clear all, back, a restored tab): follow it, unless it's what was typed.
+		setAddressQuery(addressFilters.q);
+		if (addressFilters.q !== query.trim()) setQuery(addressFilters.q);
+	}
+	const filters: ApplicationFilters = { ...addressFilters, q: query };
 	const [adding, setAdding] = useState(false);
 	const [importing, setImporting] = useState(false);
 	const [exporting, setExporting] = useState(false);
@@ -82,8 +86,52 @@ function RouteComponent() {
 	const [viewSwitched, setViewSwitched] = useState(false);
 
 	const { data: applications, isPending, isError, isFetching, refetch } = useQuery(applicationsListQueryOptions());
+	const { data: profile } = useQuery(orpc.career.profile.queryOptions());
+	const noReplyDays = useNoReplyDays();
+	const [now] = useState(() => new Date());
+	const context = { now, noReplyDays };
+
 	const setSearch = (patch: Partial<Search>) =>
 		void navigate({ resetScroll: false, search: (prev: Search) => ({ ...prev, ...patch }) });
+	const setFilters = (next: ApplicationFilters) => {
+		if (next.q !== query) setQuery(next.q);
+		setSearch(searchFromFilters(next, sort));
+	};
+	const setSort = (next: ApplicationSort) => setSearch(searchFromFilters(filters, next));
+
+	useEffect(() => {
+		if (query.trim() === addressQuery) return;
+		const timer = window.setTimeout(
+			() =>
+				void navigate({
+					replace: true,
+					resetScroll: false,
+					search: (prev: Search) => ({ ...prev, q: query.trim() || undefined }),
+				}),
+			300,
+		);
+		return () => window.clearTimeout(timer);
+	}, [query, addressQuery, navigate]);
+
+	// Old links' ?closed=true: the stages already include Closed; write them out and drop the old param.
+	const legacyClosed = search.closed !== undefined;
+	useEffect(() => {
+		if (!legacyClosed) return;
+		void navigate({
+			replace: true,
+			resetScroll: false,
+			search: (prev: Search) => {
+				const { filters: mapped, sort: sorted } = filtersFromSearch(prev);
+				return { ...prev, ...searchFromFilters(mapped, sorted), closed: undefined };
+			},
+		});
+	}, [legacyClosed, navigate]);
+
+	useRememberedFilters({
+		search,
+		onRestore: (stored) =>
+			void navigate({ replace: true, resetScroll: false, search: (prev: Search) => ({ ...prev, ...stored }) }),
+	});
 
 	useEffect(() => {
 		if (!create) return;
@@ -103,13 +151,30 @@ function RouteComponent() {
 		});
 	}, [applicationId, applications, navigate]);
 
-	const text = query.trim().toLowerCase();
-	const filtered = (applications ?? []).filter((application) => matches(application, text));
+	// A card changed while filtered stays on screen, marked, until the filters change: the snapshot holds what was shown
+	// since the last filter change, and starts again whenever they change.
+	const filtersKey = JSON.stringify(filters);
+	const isMatch = (application: Application) => matchesFilters(application, filters, context);
+	const [snapshot, setSnapshot] = useState<{ key: string; shown: ShownSnapshot } | null>(null);
+	const current = snapshot?.key === filtersKey ? snapshot.shown : NO_SNAPSHOT;
+	const { matching, shown: visible, stale } = withHeld(applications ?? [], isMatch, current);
+	const merged = applications ? mergeSnapshot(current, matching) : null;
+	if (merged) setSnapshot({ key: filtersKey, shown: merged });
+
+	const filterProps = {
+		applications: applications ?? [],
+		filters,
+		onChange: setFilters,
+		context,
+		lanes: profile?.lanes ?? [],
+		matching: matching.length,
+	};
+
 	const selected = applications?.find((application) => application.id === selectedId) ?? null;
 	// The board needs room to drag: phones get the list instead.
 	const shown: View = phone && (view === "board" || view === "calendar") ? "list" : view;
 	const empty = !!applications && applications.length === 0;
-	const noMatches = !!applications && !empty && text && filtered.length === 0;
+	const noMatches = !!applications && !empty && visible.length === 0;
 	// In Board view the page is the window's height and the board takes what's left below the header, the nudge and the
 	// toolbar; each column scrolls on its own. The other views scroll the page.
 	const fill = shown === "board" && !empty && !(isError && !applications);
@@ -198,44 +263,39 @@ function RouteComponent() {
 							</TabsList>
 						</Tabs>
 
-						<div className="relative max-w-72 min-w-40 flex-1">
-							<Icon
-								name="magnifying-glass"
-								size={18}
-								className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3"
-							/>
-							<Input
-								type="search"
-								aria-label={t`Search applications`}
-								placeholder={t`Search role, company or contact`}
-								value={query}
-								className="ps-8"
-								onChange={(event) => setQuery(event.target.value)}
-							/>
-						</div>
-
+						{/* Insights doesn't follow the filters, so it hides them and the search. */}
 						{shown !== "insights" && (
-							<Button
-								variant="secondary"
-								aria-pressed={closed}
-								onClick={() => setSearch({ closed: !closed })}
-								className={cn(closed && "bg-sunken")}
-							>
-								<Icon name={closed ? "check-square" : "square"} size={18} />
-								<Trans>Show closed</Trans>
-							</Button>
+							<>
+								{phone && <span className="basis-full" />}
+								<div className={cn("relative flex-1", phone ? "min-w-0 basis-0" : "max-w-72 min-w-[220px]")}>
+									<Icon
+										name="magnifying-glass"
+										size={18}
+										className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3"
+									/>
+									<Input
+										type="search"
+										aria-label={t`Search applications`}
+										placeholder={t`Search role, company or contact`}
+										value={query}
+										className="ps-8"
+										onChange={(event) => setQuery(event.target.value)}
+									/>
+								</div>
+								{phone ? <PhoneFilters {...filterProps} /> : <FilterBar {...filterProps} />}
+							</>
 						)}
 					</div>
 
 					{isPending ? (
 						<ViewSkeleton view={shown} />
-					) : noMatches ? (
+					) : noMatches && shown !== "insights" ? (
 						<div className="grid justify-items-center gap-2 py-16 text-center">
 							<p className="text-sm font-medium">
-								<Trans>No applications match “{query.trim()}”.</Trans>
+								<Trans>No applications match these filters.</Trans>
 							</p>
-							<Button size="sm" variant="secondary" onClick={() => setQuery("")}>
-								<Trans>Clear search</Trans>
+							<Button size="sm" variant="secondary" onClick={() => setFilters(clearAll())}>
+								<Trans>Clear filters</Trans>
 							</Button>
 						</div>
 					) : (
@@ -251,23 +311,27 @@ function RouteComponent() {
 						>
 							{shown === "list" && (
 								<ApplicationList
-									applications={filtered}
-									showClosed={closed}
+									applications={visible}
+									stages={filters.stage}
+									stale={stale}
+									sort={sort}
+									onSortChange={setSort}
 									selectedId={selectedId}
 									onOpen={(application) => setSelectedId(application.id)}
 								/>
 							)}
 							{shown === "board" && (
 								<ApplicationBoard
-									applications={filtered}
-									showClosed={closed}
+									applications={visible}
+									stages={filters.stage}
+									stale={stale}
 									onOpen={(application) => setSelectedId(application.id)}
 								/>
 							)}
 							{shown === "insights" && <ApplicationInsights applications={applications ?? []} />}
 							{shown === "calendar" && (
 								<ApplicationCalendar
-									applications={filtered.filter((application) => closed || application.status !== "closed")}
+									applications={matching}
 									allApplications={applications ?? []}
 									onOpen={(application) => setSelectedId(application.id)}
 								/>
@@ -288,7 +352,7 @@ function RouteComponent() {
 				open={exporting}
 				onOpenChange={setExporting}
 				applications={applications ?? []}
-				filtered={filtered.filter((application) => closed || application.status !== "closed")}
+				filtered={matching}
 			/>
 			<ApplicationDetailSheet
 				application={selected}

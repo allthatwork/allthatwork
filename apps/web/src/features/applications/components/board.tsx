@@ -16,6 +16,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
+import { APPLICATION_STATUSES } from "@reactive-resume/schema/applications/data";
 import { Button } from "@reactive-resume/ui/components/button";
 import {
 	Dialog,
@@ -25,7 +26,7 @@ import {
 	DialogTitle,
 } from "@reactive-resume/ui/components/dialog";
 import { cn } from "@reactive-resume/utils/style";
-import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel, PIPELINE } from "../stages";
+import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel } from "../stages";
 import { useApplicationActions } from "../use-application-actions";
 import { ApplicationCard } from "./application-card";
 import { getEdgeFadeStyle, useScrollEdges } from "@/hooks/use-scroll-edges";
@@ -33,9 +34,14 @@ import { DRAG_SETTLE } from "@/libs/motion";
 
 type BoardProps = {
 	applications: Application[];
-	showClosed: boolean;
+	/** The stages the filters show; a column each, in pipeline order with Closed last. */
+	stages: readonly ApplicationStatus[];
+	/** Cards changed since the last filter change that no longer match, with the column they showed in. */
+	stale?: ReadonlyMap<string, ApplicationStatus>;
 	onOpen: (application: Application) => void;
 };
+
+const NO_STALE: ReadonlyMap<string, ApplicationStatus> = new Map();
 
 // While the overlay settles, the real card waits hidden in its new slot and the overlay's tilt eases off.
 const dropSideEffects = defaultDropAnimationSideEffects({
@@ -44,11 +50,13 @@ const dropSideEffects = defaultDropAnimationSideEffects({
 });
 
 /**
- * A column per stage (Closed only when shown). Dropping a card on a column moves it, with the same toast as the
- * other ways to change stage; each card's menu has Move to… for the keyboard. Desktop and tablet only. The columns share
- * the width evenly, at least 256px each; past that the board scrolls sideways, with a fade on the side that has more.
+ * A column per stage the filters show. Dropping a card on a column moves it, with the same toast as the other ways to
+ * change stage; each card's menu has Move to… for the keyboard. There's no column for a filtered-out stage to drop on.
+ * Desktop and tablet only. The columns share the width evenly, at least 256px each and never wider than with five
+ * showing, so a one-stage board keeps card-sized columns on the left; past that the board scrolls sideways, with a fade
+ * on the side that has more.
  */
-export function ApplicationBoard({ applications, showClosed, onOpen }: BoardProps) {
+export function ApplicationBoard({ applications, stages: chosen, stale = NO_STALE, onOpen }: BoardProps) {
 	const { moveTo, close } = useApplicationActions();
 	const reduceMotion = useReducedMotion();
 	const [activeId, setActiveId] = useState<string | null>(null);
@@ -67,19 +75,23 @@ export function ApplicationBoard({ applications, showClosed, onOpen }: BoardProp
 	) {
 		setPendingMove(null);
 	}
-	const statusOf = (application: Application) =>
-		pendingMove?.id === application.id ? pendingMove.to : application.status;
+	const stages = APPLICATION_STATUSES.filter((stage) => chosen.includes(stage));
+	// A changed card whose stage is filtered out stays in the column it was in until the filters change.
+	const statusOf = (application: Application) => {
+		if (pendingMove?.id === application.id) return pendingMove.to;
+		if (stages.includes(application.status)) return application.status;
+		return stale.get(application.id) ?? application.status;
+	};
 
 	// A small activation distance so a click still opens the detail sheet instead of starting a drag.
 	const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-	const stages: ApplicationStatus[] = showClosed ? [...PIPELINE, "closed"] : [...PIPELINE];
 
 	const byStage = new Map<ApplicationStatus, Application[]>(stages.map((stage) => [stage, []]));
 	for (const application of applications) byStage.get(statusOf(application))?.push(application);
 
 	const active = activeId ? applications.find((application) => application.id === activeId) : null;
 
-	// A soft fade on the sides with columns past the edge; Show closed adds or removes one.
+	// A soft fade on the sides with columns past the edge; the Stage filter adds or removes columns.
 	const scrollerRef = useRef<HTMLDivElement>(null);
 	const edges = useScrollEdges(scrollerRef, stages.length);
 
@@ -103,7 +115,7 @@ export function ApplicationBoard({ applications, showClosed, onOpen }: BoardProp
 		<DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={onDragStart} onDragEnd={onDragEnd}>
 			<div ref={scrollerRef} style={getEdgeFadeStyle(edges)} className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-3">
 				{stages.map((stage) => (
-					<Column key={stage} stage={stage} applications={byStage.get(stage) ?? []} onOpen={onOpen} />
+					<Column key={stage} stage={stage} applications={byStage.get(stage) ?? []} stale={stale} onOpen={onOpen} />
 				))}
 			</div>
 
@@ -150,10 +162,11 @@ const COLUMN_PAGE_SIZE = 50;
 type ColumnProps = {
 	stage: ApplicationStatus;
 	applications: Application[];
+	stale: ReadonlyMap<string, ApplicationStatus>;
 	onOpen: (application: Application) => void;
 };
 
-function Column({ stage, applications, onOpen }: ColumnProps) {
+function Column({ stage, applications, stale, onOpen }: ColumnProps) {
 	const { setNodeRef, isOver } = useDroppable({ id: stage });
 	const [visible, setVisible] = useState(COLUMN_PAGE_SIZE);
 	const shown = applications.slice(0, visible);
@@ -163,7 +176,7 @@ function Column({ stage, applications, onOpen }: ColumnProps) {
 		<section
 			aria-label={getStageLabel(stage)}
 			className={cn(
-				"flex min-w-64 flex-1 basis-0 flex-col rounded-xl border bg-sunken transition-colors duration-quick",
+				"flex max-w-[calc((100%-48px)/5)] min-w-64 flex-1 basis-0 flex-col rounded-xl border bg-sunken transition-colors duration-quick",
 				isOver ? "border-accent bg-accent-soft" : "border-transparent",
 			)}
 		>
@@ -174,7 +187,12 @@ function Column({ stage, applications, onOpen }: ColumnProps) {
 			</h2>
 			<div ref={setNodeRef} className="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
 				{shown.map((application) => (
-					<DraggableCard key={application.id} application={application} onOpen={() => onOpen(application)} />
+					<DraggableCard
+						key={application.id}
+						application={application}
+						stale={stale.has(application.id)}
+						onOpen={() => onOpen(application)}
+					/>
 				))}
 				{remaining > 0 && (
 					<button
@@ -190,14 +208,14 @@ function Column({ stage, applications, onOpen }: ColumnProps) {
 	);
 }
 
-type DraggableCardProps = { application: Application; onOpen: () => void };
+type DraggableCardProps = { application: Application; stale: boolean; onOpen: () => void };
 
-function DraggableCard({ application, onOpen }: DraggableCardProps) {
+function DraggableCard({ application, stale, onOpen }: DraggableCardProps) {
 	const { setNodeRef, listeners, isDragging } = useDraggable({ id: application.id });
 
 	return (
 		<div ref={setNodeRef} {...listeners} className={cn(isDragging && "opacity-40")}>
-			<ApplicationCard application={application} onClick={onOpen} withMenu />
+			<ApplicationCard application={application} onClick={onOpen} withMenu stale={stale} />
 		</div>
 	);
 }
