@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import type { Application } from "../types";
+import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -53,13 +54,15 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
 	useRouteContext: () => ({}),
 }));
 
+import { APPLICATION_STATUSES } from "@reactive-resume/schema/applications/data";
+import { DEFAULT_APPLICATION_SORT, OPEN_STAGES } from "@reactive-resume/schema/applications/filters";
 import { AddApplicationDialog } from "./add-application-dialog";
 import { ApplicationBoard } from "./board";
 import { ApplicationList } from "./list-view";
 
 const application = (id: string, status: Application["status"]): Application => ({
 	id,
-	company: id === "closed" ? "Closed Co" : "Open Co",
+	company: id === "closed" ? "Closed Co" : id === "moved" ? "Moved Co" : "Open Co",
 	companyId: null,
 	role: "Engineer",
 	status,
@@ -128,11 +131,21 @@ afterEach(() => {
 
 it("removes hidden closed applications from bulk selection before deleting visible rows", async () => {
 	const rows = [application("open", "saved"), application("closed", "closed")];
-	const view = mount(<ApplicationList applications={rows} showClosed selectedId={null} onOpen={vi.fn()} />);
+	const list = (stages: readonly ApplicationStatus[]) => (
+		<ApplicationList
+			applications={rows}
+			stages={stages}
+			sort={DEFAULT_APPLICATION_SORT}
+			onSortChange={vi.fn()}
+			selectedId={null}
+			onOpen={vi.fn()}
+		/>
+	);
+	const view = mount(list(APPLICATION_STATUSES));
 	fireEvent.click(screen.getByRole("checkbox", { name: "Select Engineer at Open Co" }));
 	fireEvent.click(screen.getByRole("checkbox", { name: "Select Engineer at Closed Co" }));
 	expect(screen.getByText("2 selected")).toBeTruthy();
-	view.rerender(<ApplicationList applications={rows} showClosed={false} selectedId={null} onOpen={vi.fn()} />);
+	view.rerender(list(OPEN_STAGES));
 	expect(screen.queryByRole("checkbox", { name: "Select Engineer at Closed Co" })).toBeNull();
 	expect(screen.getByText("1 selected")).toBeTruthy();
 	fireEvent.click(screen.getByRole("button", { name: "Delete…" }));
@@ -142,7 +155,7 @@ it("removes hidden closed applications from bulk selection before deleting visib
 it("offers one board-card open control and a separate options control without a dead draggable tab stop", async () => {
 	const row = application("open", "saved");
 	const onOpen = vi.fn();
-	const view = mount(<ApplicationBoard applications={[row]} showClosed={false} onOpen={onOpen} />);
+	const view = mount(<ApplicationBoard applications={[row]} stages={OPEN_STAGES} onOpen={onOpen} />);
 	const open = screen.getByRole("button", { name: "Engineer Open Co" });
 	const options = screen.getByRole("button", { name: "Options for Engineer at Open Co" });
 	expect(view.container.querySelector("button button, [role=button] button")).toBeNull();
@@ -154,6 +167,40 @@ it("offers one board-card open control and a separate options control without a 
 	fireEvent.click(options);
 	await screen.findByRole("menu");
 	expect(onOpen).toHaveBeenCalledTimes(1);
+});
+
+it("shows a column per chosen stage and keeps a changed card in the column it showed in, marked", () => {
+	const moved = application("moved", "applied");
+	mount(
+		<ApplicationBoard
+			applications={[application("open", "saved"), moved]}
+			stages={["saved"]}
+			stale={new Map([["moved", "saved"]])}
+			onOpen={vi.fn()}
+		/>,
+	);
+	expect(screen.getAllByRole("region").map((column) => column.getAttribute("aria-label"))).toEqual(["Saved"]);
+	expect(screen.getByRole("region", { name: "Saved" }).textContent).toContain("Moved Co");
+	expect(screen.getAllByText("Doesn't match the filters now")).toHaveLength(1);
+});
+
+it("groups the list by the chosen stages and sorts by the sort it's given", () => {
+	const onSortChange = vi.fn();
+	const rows = [application("a", "applied"), application("b", "applied"), application("c", "saved")];
+	mount(
+		<ApplicationList
+			applications={rows}
+			stages={["applied"]}
+			sort={{ sort: "role", dir: "asc" }}
+			onSortChange={onSortChange}
+			selectedId={null}
+			onOpen={vi.fn()}
+		/>,
+	);
+	expect(screen.getByRole("button", { name: /Applied/ })).toBeTruthy();
+	expect(screen.queryByRole("button", { name: /Saved/ })).toBeNull();
+	fireEvent.click(screen.getByRole("button", { name: "Role" }));
+	expect(onSortChange).toHaveBeenCalledWith({ sort: "role", dir: "desc" });
 });
 
 it.each(["ai", "page"])(

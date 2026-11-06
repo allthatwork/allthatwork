@@ -14,10 +14,18 @@ type ApplicationCardProps = {
 	/** The ⋯ menu (Move to…, Close…, Delete); cards dragged in the overlay go without. */
 	withMenu?: boolean;
 	dragging?: boolean;
+	/** Changed since the last filter change and no longer matching: shown faded until the filters change. */
+	stale?: boolean;
 };
 
 /** A board card: the company's initial, role and company, the next step (warn when it's overdue) and the search fit. */
-export function ApplicationCard({ application, onClick, withMenu = false, dragging = false }: ApplicationCardProps) {
+export function ApplicationCard({
+	application,
+	onClick,
+	withMenu = false,
+	dragging = false,
+	stale = false,
+}: ApplicationCardProps) {
 	const { i18n } = useLingui();
 	const noReplyDays = useNoReplyDays();
 	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, i18n.locale);
@@ -27,11 +35,12 @@ export function ApplicationCard({ application, onClick, withMenu = false, draggi
 			className={cn(
 				"group relative grid gap-2 rounded-[10px] border border-line bg-surface p-3 shadow-e1 transition-[border-color,scale] duration-quick ease-enter hover:border-line-2 active:not-has-[[data-slot=button]:active]:scale-[0.98]",
 				// The overlay card lifts as it's picked up and settles flat again while the drop animation flies it home.
+				stale && "border-dashed",
 				dragging &&
 					"scale-[1.02] rotate-1 cursor-grabbing shadow-e3 transition-[rotate,scale,box-shadow] duration-quick ease-enter **:cursor-grabbing in-[.is-dropping]:scale-100 in-[.is-dropping]:rotate-0 in-[.is-dropping]:shadow-e1 starting:scale-100 starting:rotate-0 starting:shadow-e1",
 			)}
 		>
-			<div className="flex items-start gap-2.5">
+			<div className={cn("flex items-start gap-2.5", stale && "opacity-55")}>
 				<span
 					aria-hidden="true"
 					className="grid size-7 shrink-0 place-items-center rounded-[7px] bg-sunken text-xs font-semibold text-ink-2"
@@ -49,7 +58,7 @@ export function ApplicationCard({ application, onClick, withMenu = false, draggi
 				{withMenu && <ApplicationActionsMenu application={application} className="relative z-10 -me-1.5 -mt-1.5" />}
 			</div>
 			{/* The next step keeps its full width: when it and the badges don't fit on one line, the badges wrap below. */}
-			<div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs">
+			<div className={cn("flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs", stale && "opacity-55")}>
 				<span
 					className={cn(
 						"flex max-w-full shrink-0 items-center gap-1.5",
@@ -79,6 +88,17 @@ export function ApplicationCard({ application, onClick, withMenu = false, draggi
 					</span>
 				</span>
 			</div>
+			{stale && <StaleNote />}
 		</div>
+	);
+}
+
+/** The line on a card or row that changed and no longer matches the filters. */
+export function StaleNote() {
+	return (
+		<span className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
+			<Icon name="funnel" size={14} className="shrink-0" />
+			<Trans>Doesn't match the filters now</Trans>
+		</span>
 	);
 }

@@ -1,5 +1,6 @@
 import type { Application } from "../types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
+import type { ApplicationSort } from "@reactive-resume/schema/applications/filters";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -23,14 +24,14 @@ import { cn } from "@reactive-resume/utils/style";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
 import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel, LIST_ORDER, PIPELINE } from "../stages";
 import { useInvalidateApplications } from "../use-application-actions";
+import { StaleNote } from "./application-card";
 import { BuildStatusControl } from "./build-status";
 import { useConfirm } from "@/hooks/use-confirm";
 import { formatRelativeTime } from "@/libs/locale";
 import { D2, EASE, EXIT } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
-type SortKey = "role" | "next" | "fit" | "updated";
-type Sort = { key: SortKey; direction: "asc" | "desc" };
+type SortKey = ApplicationSort["sort"];
 
 const nextStepTime = (application: Application) => {
 	const step = getNextStep(application);
@@ -47,44 +48,64 @@ const compare: Record<SortKey, (a: Application, b: Application) => number> = {
 
 type ListViewProps = {
 	applications: Application[];
-	showClosed: boolean;
+	/** The stages the filters show; a group each. */
+	stages: readonly ApplicationStatus[];
+	/** Rows changed since the last filter change that no longer match, with the group they showed in. */
+	stale?: ReadonlyMap<string, ApplicationStatus>;
+	/** The sort, kept in the address. */
+	sort: ApplicationSort;
+	onSortChange: (sort: ApplicationSort) => void;
 	selectedId: string | null;
 	onOpen: (application: Application) => void;
 };
 
+const NO_STALE: ReadonlyMap<string, ApplicationStatus> = new Map();
+
+/** A changed row whose stage is filtered out stays in the group it was in until the filters change. */
+const groupFor = (
+	application: Application,
+	stages: readonly ApplicationStatus[],
+	stale: ReadonlyMap<string, ApplicationStatus>,
+) => (stages.includes(application.status) ? application.status : (stale.get(application.id) ?? application.status));
+
 /**
  * The default view: applications grouped by stage in the order that needs you first (Interview, Offer, Screening,
- * Applied, Saved, then Closed when shown). Groups collapse, headers sort within groups, and row checkboxes select
- * for bulk moves, tags, closing and deleting. Phones get two-line rows.
+ * Applied, Saved, then Closed), for the stages the filters show. Groups collapse, headers sort within groups, and row
+ * checkboxes select for bulk moves, tags, closing and deleting. Phones get two-line rows.
  */
-export function ApplicationList({ applications, showClosed, selectedId, onOpen }: ListViewProps) {
+export function ApplicationList({
+	applications,
+	stages,
+	stale = NO_STALE,
+	sort,
+	onSortChange,
+	selectedId,
+	onOpen,
+}: ListViewProps) {
 	const phone = useBreakpoint() === "mobile";
 	const [collapsed, setCollapsed] = useState<ReadonlySet<ApplicationStatus>>(new Set());
-	const [sort, setSort] = useState<Sort>({ key: "updated", direction: "desc" });
 	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
 
 	// Selections only cover what's on screen.
 	const checkedIds = applications
-		.filter(
-			(application) =>
-				checked.has(application.id) &&
-				(application.status !== "closed" || showClosed) &&
-				!collapsed.has(application.status),
-		)
+		.filter((application) => {
+			const group = groupFor(application, stages, stale);
+			return checked.has(application.id) && stages.includes(group) && !collapsed.has(group);
+		})
 		.map((application) => application.id);
 	if (checkedIds.length !== checked.size) setChecked(new Set(checkedIds));
 
 	const groups = useMemo(() => {
-		const sign = sort.direction === "asc" ? 1 : -1;
-		return LIST_ORDER.filter((status) => status !== "closed" || showClosed)
+		const sign = sort.dir === "asc" ? 1 : -1;
+		return LIST_ORDER.filter((status) => stages.includes(status))
 			.map((status) => ({
 				status,
 				rows: applications
-					.filter((application) => application.status === status)
-					.sort((a, b) => sign * compare[sort.key](a, b)),
+					.filter((application) => groupFor(application, stages, stale) === status)
+					.sort((a, b) => sign * compare[sort.sort](a, b)),
 			}))
 			.filter((group) => group.rows.length > 0);
-	}, [applications, showClosed, sort]);
+	}, [applications, stages, stale, sort]);
 
 	const toggleGroup = (status: ApplicationStatus) =>
 		setCollapsed((current) => {
@@ -103,16 +124,16 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 		});
 
 	const sortBy = (key: SortKey) =>
-		setSort((current) =>
-			current.key === key
-				? { key, direction: current.direction === "asc" ? "desc" : "asc" }
-				: { key, direction: key === "updated" || key === "fit" ? "desc" : "asc" },
+		onSortChange(
+			sort.sort === key
+				? { sort: key, dir: sort.dir === "asc" ? "desc" : "asc" }
+				: { sort: key, dir: key === "updated" || key === "fit" ? "desc" : "asc" },
 		);
 
 	const header = (key: SortKey, label: string, className?: string) => (
 		<th
 			scope="col"
-			aria-sort={sort.key === key ? (sort.direction === "asc" ? "ascending" : "descending") : undefined}
+			aria-sort={sort.sort === key ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
 			className={cn("px-2 text-start font-medium", className)}
 		>
 			<button
@@ -121,7 +142,7 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 				className="inline-flex h-9 items-center gap-1 rounded-md transition-colors hover:text-ink"
 			>
 				{label}
-				{sort.key === key && <Icon name={sort.direction === "asc" ? "arrow-up" : "arrow-down"} size={14} />}
+				{sort.sort === key && <Icon name={sort.dir === "asc" ? "arrow-up" : "arrow-down"} size={14} />}
 			</button>
 		</th>
 	);
@@ -191,6 +212,7 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 										application={application}
 										phone={phone}
 										selected={application.id === selectedId}
+										stale={stale.has(application.id)}
 										checked={checked.has(application.id)}
 										onCheck={() => toggleRow(application.id)}
 										onOpen={() => onOpen(application)}
@@ -224,22 +246,28 @@ type ApplicationRowProps = {
 	application: Application;
 	phone: boolean;
 	selected: boolean;
+	/** Changed and no longer matching the filters: faded, with a note under the company. */
+	stale: boolean;
 	checked: boolean;
 	onCheck: () => void;
 	onOpen: () => void;
 };
 
-function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen }: ApplicationRowProps) {
+function ApplicationRow({ application, phone, selected, stale, checked, onCheck, onOpen }: ApplicationRowProps) {
 	const { i18n } = useLingui();
 	const noReplyDays = useNoReplyDays();
 	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, i18n.locale);
 	const sent = application.status !== "saved";
 	const tone = next.tone === "warn" ? "text-warn-text" : next.tone === "muted" ? "text-ink-3" : "text-ink-2";
 
+	const fade = stale && "opacity-55";
 	const initial = (
 		<span
 			aria-hidden="true"
-			className="grid size-8 shrink-0 place-items-center rounded-[7px] bg-sunken text-[13px] font-semibold text-ink-2"
+			className={cn(
+				"grid size-8 shrink-0 place-items-center rounded-[7px] bg-sunken text-[13px] font-semibold text-ink-2",
+				fade,
+			)}
 		>
 			{application.company.slice(0, 1).toUpperCase()}
 		</span>
@@ -247,12 +275,13 @@ function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen
 
 	const openButton = (
 		<button type="button" onClick={onOpen} className="grid min-w-0 text-start after:absolute after:inset-0">
-			<span className="truncate font-medium">{application.role}</span>
-			<span className="truncate text-xs text-ink-3">
+			<span className={cn("truncate font-medium", fade)}>{application.role}</span>
+			<span className={cn("truncate text-xs text-ink-3", fade)}>
 				{phone
 					? `${application.company} · ${next.title}`
 					: [application.company, application.location].filter(Boolean).join(" · ")}
 			</span>
+			{stale && <StaleNote />}
 		</button>
 	);
 
@@ -290,23 +319,23 @@ function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen
 					{openButton}
 				</div>
 			</td>
-			<td className="px-2">
+			<td className={cn("px-2", fade)}>
 				<span className={cn("flex items-center gap-1.5", tone)}>
 					<Icon name={next.icon} size={16} className="shrink-0" />
 					<span className="truncate">{next.title}</span>
 				</span>
 			</td>
-			<td className="px-2 text-[13px] whitespace-nowrap text-ink-2 tabular-nums max-md:hidden">
+			<td className={cn("px-2 text-[13px] whitespace-nowrap text-ink-2 tabular-nums max-md:hidden", fade)}>
 				{application.searchFit === null ? (
 					<span className="text-ink-3">—</span>
 				) : (
 					<span title={t`Search fit`}>{application.searchFit}%</span>
 				)}
 			</td>
-			<td className="relative z-10 px-2 whitespace-nowrap max-md:hidden">
+			<td className={cn("relative z-10 px-2 whitespace-nowrap max-md:hidden", fade)}>
 				<BuildStatusControl application={application} />
 			</td>
-			<td className="px-2 whitespace-nowrap max-lg:hidden">
+			<td className={cn("px-2 whitespace-nowrap max-lg:hidden", fade)}>
 				<span className="flex items-center gap-1.5 text-ink-2">
 					<span
 						aria-hidden="true"
@@ -316,7 +345,7 @@ function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen
 					{getStageLabel(application.status)}
 				</span>
 			</td>
-			<td className="px-2">
+			<td className={cn("px-2", fade)}>
 				{application.resumeId || application.coverLetterId ? (
 					<span className="flex items-center gap-1 text-ink-2">
 						{application.resumeId && <Icon name="file-text" size={18} aria-label={t`Resume`} />}
@@ -328,7 +357,7 @@ function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen
 					</span>
 				)}
 			</td>
-			<td className="px-2 text-xs whitespace-nowrap text-ink-3 max-md:hidden">
+			<td className={cn("px-2 text-xs whitespace-nowrap text-ink-3 max-md:hidden", fade)}>
 				{formatRelativeTime(application.updatedAt, i18n.locale)}
 			</td>
 		</tr>

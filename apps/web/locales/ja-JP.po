@@ -804,6 +804,10 @@ msgstr "{lines, plural, one {# 行目あたりで {next} ページに実行さ�
 msgid "{match}% match"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "{matching, plural, one {Show # application} other {Show # applications}}"
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "{minimum} minimum"
 msgstr "最低{minimum}"
@@ -1016,6 +1020,10 @@ msgstr "年額{value}"
 msgid "{value} an hour"
 msgstr "時給{value}"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "{value} days"
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1033,6 +1041,14 @@ msgstr "/ 月"
 msgid "/ year"
 msgstr "/ 年"
 
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "+ and −"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "+ must have, − must not"
+msgstr ""
+
 #: src/features/applications/components/calendar-view.tsx
 msgid "+{extra} more"
 msgstr "+{extra} 詳細"
@@ -1040,6 +1056,12 @@ msgstr "+{extra} 詳細"
 #: src/features/homepage/hero.tsx
 msgid "+13 pts activation"
 msgstr "+13 ポイントのアクティベーション"
+
+#. placeholder {0}: applications.length
+#: src/features/applications/components/filters/filter-bar.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "<0>{matching}</0> of {0}"
+msgstr ""
 
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "<0>Nothing to fix.</0> Every check passes."
@@ -1746,6 +1768,7 @@ msgid "Add what happened before you can save."
 msgstr "保存するには、何が起きたかを入力してください。"
 
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Add your lanes in Preferences"
 msgstr ""
 
@@ -1759,10 +1782,20 @@ msgstr "あなたの名前を追加してください"
 msgid "Added {0} at {1}"
 msgstr "{1} に {0} を追加しました"
 
+#. placeholder {0}: filters.added
+#: src/features/applications/filter.ts
+msgid "Added {0}d"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/shared.tsx
 msgid "Added by you"
 msgstr "自分で追加"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Added in the last"
+msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private, and schedules come in switched off."
@@ -1787,6 +1820,10 @@ msgstr "ナレッジに経験として追加しました。"
 #: src/features/career/workspace/fit.tsx
 msgid "Added to Prepare"
 msgstr "「準備」に追加しました"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "Added, updated"
+msgstr ""
 
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
@@ -1914,6 +1951,7 @@ msgstr "左揃え"
 msgid "Align right"
 msgstr "右揃え"
 
+#: src/features/applications/filter.ts
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-contacts.tsx
 #: src/features/career/workspace/saved.tsx
@@ -1939,12 +1977,20 @@ msgstr "すべてのドキュメントと求人応募書を JSON として 1 つ
 msgid "All groups"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "All of them"
+msgstr ""
+
 #: src/features/career/knowledge/import.tsx
 msgid "All proposed facts have matches. Review them in Duplicates below."
 msgstr ""
 
 #: src/features/career/workspace/questions.tsx
 msgid "All questions answered"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "All stages"
 msgstr ""
 
 #: src/features/auth/pages/consent.tsx
@@ -2094,6 +2140,7 @@ msgstr "回答をコピーしました"
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
 msgstr "Anthropic、Gemini、Ollama、OpenAI互換"
 
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/career/knowledge/preferences.tsx
 msgid "Any"
 msgstr "指定なし"
@@ -2101,6 +2148,10 @@ msgstr "指定なし"
 #: src/features/resume/editor/design/style-groups.tsx
 msgid "Any font, in Advanced"
 msgstr "任意のフォント（詳細設定）"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Any of the + tags"
+msgstr ""
 
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Anyone who opens the public URL will need this password."
@@ -2298,6 +2349,10 @@ msgstr "適用済み"
 #: src/features/career/workspace/shell.tsx
 msgid "Applied {0}"
 msgstr "{0}に応募"
+
+#: src/features/applications/filter.ts
+msgid "Applied to Offer"
+msgstr ""
 
 #: src/features/applications/next-step.ts
 msgid "Applied today"
@@ -2740,6 +2795,7 @@ msgstr ""
 
 #: src/features/applications/components/build-status.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 msgid "Build"
 msgstr ""
 
@@ -2764,10 +2820,12 @@ msgid "Builder Command Palette"
 msgstr "ビルダーコマンドパレット"
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 msgid "Building"
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 msgid "Built"
 msgstr ""
 
@@ -3171,19 +3229,34 @@ msgid "Claude Desktop"
 msgstr "Claude Desktop"
 
 #: src/features/applications/components/detail/next-step-card.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Clear"
 msgstr "クリア"
 
+#. placeholder {0}: getFacetLabel(facet)
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Clear {0}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-button.tsx
+msgid "Clear {label}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-bar.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Clear all"
+msgstr ""
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Clear filters"
+msgstr ""
+
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Clear formatting"
 msgstr "書式をクリアする"
-
-#: src/routes/dashboard/applications/index.tsx
-msgid "Clear search"
-msgstr "検索をクリア"
 
 #: src/features/documents/documents-page.tsx
 msgid "Clear search and filters"
@@ -4259,6 +4332,8 @@ msgstr "切り抜き"
 
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/detail/sent-documents.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "Cover letter"
 msgstr "カバーレター"
@@ -4456,6 +4531,7 @@ msgstr "日付"
 msgid "Date format"
 msgstr "日付形式"
 
+#: src/features/applications/filter.ts
 #: src/features/ats-checker/messages.ts
 #: src/features/resume/editor/check/issues.ts
 #: src/features/resume/editor/check/parser-view.tsx
@@ -4831,6 +4907,7 @@ msgstr "文書の種類"
 msgid "Documentation"
 msgstr "ドキュメント"
 
+#: src/features/applications/filter.ts
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -4846,6 +4923,10 @@ msgstr "この仕事の書類"
 #: src/features/homepage/faq.tsx
 msgid "Does it use AI?"
 msgstr "AIを使っているのでしょうか？"
+
+#: src/features/applications/components/application-card.tsx
+msgid "Doesn't match the filters now"
+msgstr ""
 
 #: src/features/auth/pages/login.tsx
 msgid "Don't have an account? <0/>"
@@ -5168,6 +5249,7 @@ msgid "Edit keyword"
 msgstr "編集キーワード"
 
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Edit lanes in Preferences"
 msgstr ""
 
@@ -5247,6 +5329,15 @@ msgstr "学歴"
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Effort"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "either lane"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Either lane"
 msgstr ""
 
 #: src/features/resume/editor/check/parser-view.tsx
@@ -5607,6 +5698,7 @@ msgid "Facts, stories and preferences that are switched on in Knowledge"
 msgstr "ナレッジでオンになっている事実、ストーリー、希望条件"
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 #: src/features/settings/ai/providers.tsx
 msgid "Failed"
 msgstr "失敗した"
@@ -5762,6 +5854,10 @@ msgstr "エントリーの記入"
 msgid "Filter by tag"
 msgstr "タグでフィルタリングする"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Filters"
+msgstr ""
+
 #: src/features/directory/contact-picker.tsx
 msgid "Find a directory contact"
 msgstr ""
@@ -5815,6 +5911,7 @@ msgstr "初回実行"
 
 #: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5910,6 +6007,10 @@ msgstr "フォローアップ日"
 
 #: src/features/settings/reminders.tsx
 msgid "Follow-up dates you set yourself still show. Career schedules have their own switches in Career → Today."
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "Follow-up due"
 msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
@@ -6026,6 +6127,7 @@ msgstr "{0}に発見"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 msgid "Found by"
 msgstr ""
 
@@ -6040,6 +6142,7 @@ msgstr ""
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 msgid "Found on"
 msgstr ""
 
@@ -6864,6 +6967,10 @@ msgstr "インターフェースのみ。各履歴書は、デザインにおい
 msgid "Interview"
 msgstr "面接"
 
+#: src/features/applications/filter.ts
+msgid "Interview coming"
+msgstr ""
+
 #: src/features/career/workspace/debrief.tsx
 msgid "Interview debrief"
 msgstr "面接の振り返り"
@@ -7335,6 +7442,10 @@ msgstr "ラベル、例:採用担当者"
 msgid "Landscape"
 msgstr "横長"
 
+#: src/features/applications/filter.ts
+msgid "Lane"
+msgstr ""
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Lanes"
 msgstr ""
@@ -7523,6 +7634,7 @@ msgstr "コーチがあなたのウェブ検索サービスを通じて公開ペ
 msgid "letter"
 msgstr "手紙"
 
+#: src/features/applications/filter.ts
 #: src/features/assistant/document.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
@@ -7671,6 +7783,10 @@ msgstr "リンクがオフになりました。住所は保管されています
 #: src/features/resume/editor/check/issues.ts
 msgid "Link updated"
 msgstr "リンクが更新されました"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Linked"
+msgstr ""
 
 #: src/features/applications/components/detail/sent-documents.tsx
 msgid "Linked · not sent yet"
@@ -8035,6 +8151,10 @@ msgstr "応募済みにしました。送信したバージョンは保管され
 msgid "Marked as read"
 msgstr "既読にしました"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Match"
+msgstr ""
+
 #. placeholder {0}: resume?.name ?? t`the resume`
 #: src/routes/builder/letter/-components/design-panel.tsx
 msgid "Match “{0}”"
@@ -8052,6 +8172,10 @@ msgstr ""
 #: src/features/command-palette/pages/preferences/theme.tsx
 msgid "Match system theme"
 msgstr "マッチシステムのテーマ"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Match the + tags"
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Match this posting"
@@ -8190,6 +8314,10 @@ msgstr ""
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
 msgstr "その他のダウンロード形式"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "More filters"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "More for {title}"
@@ -8337,6 +8465,24 @@ msgstr "{0} に移動しました"
 msgid "Moves the application from {0}."
 msgstr "応募を{0}から移動します。"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must have"
+msgstr ""
+
+#. placeholder {0}: option.label
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must have {0}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must not have"
+msgstr ""
+
+#. placeholder {0}: option.label
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must not have {0}"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "My job was to find out why, without adding support work."
 msgstr "私の役割は、サポートの負担を増やさずに原因を突き止めることでした。"
@@ -8419,6 +8565,7 @@ msgstr "狭い余白"
 msgid "Nearly the same words · {percent}%"
 msgstr ""
 
+#: src/features/applications/filter.ts
 #: src/features/settings/ai/providers.tsx
 msgid "Needs attention"
 msgstr "注意が必要です"
@@ -8619,10 +8766,9 @@ msgstr "求人応募はありません"
 msgid "No applications at this company yet."
 msgstr ""
 
-#. placeholder {0}: query.trim()
 #: src/routes/dashboard/applications/index.tsx
-msgid "No applications match “{0}”."
-msgstr "「{0}」に一致する求人応募はありません。"
+msgid "No applications match these filters."
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No applications yet"
@@ -8779,8 +8925,16 @@ msgstr ""
 msgid "No keys yet."
 msgstr "まだ鍵がありません。"
 
+#: src/features/applications/filter.ts
+msgid "No lane"
+msgstr ""
+
 #: src/features/directory/lists.tsx
 msgid "No last name"
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "No letter"
 msgstr ""
 
 #: src/features/ats-checker/messages.ts
@@ -8849,6 +9003,14 @@ msgstr "求人情報は見つかりませんでした。別のキーワードを
 msgid "No questions for you"
 msgstr ""
 
+#: src/features/applications/filter.ts
+msgid "No reply in {noReplyDays}+ days"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "No reply, questions…"
+msgstr ""
+
 #: src/features/applications/stages.ts
 msgid "No response"
 msgstr "応答なし"
@@ -8857,6 +9019,7 @@ msgstr "応答なし"
 msgid "No results found."
 msgstr "結果が見つかりません。"
 
+#: src/features/applications/filter.ts
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "No resume"
 msgstr "履歴書なし"
@@ -8864,6 +9027,10 @@ msgstr "履歴書なし"
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "No resumes yet."
 msgstr "まだ履歴書はありません。"
+
+#: src/features/applications/filter.ts
+msgid "No search fit"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
@@ -8889,9 +9056,21 @@ msgstr "このプロバイダーに対する提案はありません。任意の
 msgid "No supporting facts. Link one before using this story."
 msgstr "裏付けとなる事実がありません。このストーリーを使う前に1つリンクしてください。"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "No tags match."
+msgstr ""
+
 #: src/features/career/knowledge/stories.tsx
 msgid "No tags yet"
 msgstr "タグはまだありません"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "No tags yet."
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "No targeting fit"
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No terms stood out in this posting."
@@ -8920,9 +9099,14 @@ msgstr "No.{number}・{name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
 msgstr "なし"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "None yet"
+msgstr ""
 
 #: src/features/resume/editor/design/fit.ts
 #: src/features/resume/editor/design/style-groups.tsx
@@ -8945,6 +9129,10 @@ msgstr "Northwind Labs · Lisbon"
 #: src/libs/locale.ts
 msgid "Norwegian"
 msgstr "ノルウェー語"
+
+#: src/features/applications/filter.ts
+msgid "not #{tag}"
+msgstr ""
 
 #: src/features/career/knowledge/review.tsx
 msgid "Not a problem"
@@ -9009,6 +9197,10 @@ msgstr "履歴書に記載されていないため、真実の場合のみ追加
 msgid "Not now"
 msgstr "今はしない"
 
+#: src/features/applications/filter.ts
+msgid "Not queued"
+msgstr ""
+
 #: src/features/directory/page.tsx
 msgid "Not recorded"
 msgstr ""
@@ -9038,6 +9230,10 @@ msgstr "採点対象外"
 #: src/features/applications/stages.ts
 msgid "Not selected"
 msgstr "未選択"
+
+#: src/features/applications/filter.ts
+msgid "Not set"
+msgstr ""
 
 #: src/features/settings/root.tsx
 msgid "Not set up"
@@ -9354,6 +9550,7 @@ msgid "Onsite"
 msgstr "対面"
 
 #: src/features/applications/components/detail/sent-documents.tsx
+#: src/features/applications/filter.ts
 #: src/features/career/today.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/dashboard/applications/index.tsx
@@ -9418,6 +9615,10 @@ msgstr "公開ページを開く"
 
 #: src/features/directory/boards.tsx
 msgid "Open roles"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Open stages"
 msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
@@ -10160,6 +10361,15 @@ msgstr "メインカラー"
 msgid "Primary lane"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "primary only"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Primary only"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 msgid "Print"
 msgstr "印刷する"
@@ -10379,6 +10589,10 @@ msgstr ""
 msgid "Questions copied"
 msgstr "質問をコピーしました"
 
+#: src/features/applications/filter.ts
+msgid "Questions to answer"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 #: src/features/homepage/prepare.tsx
 msgid "Questions to ask"
@@ -10386,6 +10600,10 @@ msgstr "聞くべき質問"
 
 #: src/features/applications/components/build-status.tsx
 msgid "Queue for resume build"
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "Queued"
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
@@ -11082,7 +11300,10 @@ msgid "resume"
 msgstr "再開する"
 
 #: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Resume"
@@ -11151,6 +11372,10 @@ msgstr "履歴書ページ"
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Resume submitted (optional)"
 msgstr "履歴書提出（任意）"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "Resume, cover letter"
+msgstr ""
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/resumes.tsx
@@ -11696,6 +11921,11 @@ msgstr "検索"
 msgid "Search {0}%"
 msgstr ""
 
+#. placeholder {0}: filters.fit
+#: src/features/applications/filter.ts
+msgid "Search {0}+"
+msgstr ""
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Search and enhanced reading"
 msgstr "検索と拡張読書"
@@ -11743,6 +11973,8 @@ msgstr "検索に失敗しました"
 
 #: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/career/workspace/assessments.tsx
@@ -11788,6 +12020,10 @@ msgstr "検索または実行…"
 #: src/routes/dashboard/applications/index.tsx
 msgid "Search role, company or contact"
 msgstr "役割、会社、または連絡先を検索する"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Search tags"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Search terms go to your web search service."
@@ -12201,10 +12437,6 @@ msgstr ""
 #: src/features/career/knowledge/facts.tsx
 msgid "Show all types"
 msgstr "すべての種類を表示"
-
-#: src/routes/dashboard/applications/index.tsx
-msgid "Show closed"
-msgstr "ショーは終了しました"
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Show contacts"
@@ -12629,6 +12861,7 @@ msgstr "正方形"
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 msgid "Stage"
 msgstr "ステージ"
 
@@ -13026,6 +13259,7 @@ msgstr "タグ"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
@@ -13076,6 +13310,10 @@ msgstr "適応された履歴書と基本履歴書"
 msgid "Tamil"
 msgstr "タミル語"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "tap: + must have, again: − must not"
+msgstr ""
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Target roles"
 msgstr "希望職種"
@@ -13094,7 +13332,14 @@ msgstr ""
 msgid "Targeting {0}%"
 msgstr ""
 
+#. placeholder {0}: filters.tfit
+#: src/features/applications/filter.ts
+msgid "Targeting {0}+"
+msgstr ""
+
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/career/workspace/assessments.tsx
 msgid "Targeting fit"
 msgstr ""
@@ -13540,6 +13785,10 @@ msgstr "レビューを完了できませんでした。もう一度やり直し
 msgid "The review didn't finish."
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "the reviewers' median, after a build"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "The same line repeats on every page."
 msgstr "同じ行がすべてのページに繰り返し表示されています。"
@@ -13560,6 +13809,10 @@ msgstr "ブロッカーの問題によりスコアが上限に制限されてい
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "スコアは、可能性ではなく、テキストがどの程度確実に抽出されるかを反映します。"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "the search's read of the posting"
+msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
 msgid "The service did not respond in time."
@@ -14437,9 +14690,19 @@ msgstr "更新されました"
 msgid "Updated {0}"
 msgstr "{0} を更新しました"
 
+#. placeholder {0}: filters.updated
+#: src/features/applications/filter.ts
+msgid "Updated {0}d"
+msgstr ""
+
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
 msgstr "{total} 件中 {done} 件を更新しました。ロックされた書類と、公開リンクを設定できないカバーレターはスキップされました。"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Updated in the last"
+msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Updates"

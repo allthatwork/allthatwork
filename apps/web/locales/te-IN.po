@@ -804,6 +804,10 @@ msgstr "{lines, plural, one {దాదాపు # లైన్ ద్వార�
 msgid "{match}% match"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "{matching, plural, one {Show # application} other {Show # applications}}"
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "{minimum} minimum"
 msgstr "కనీసం {minimum}"
@@ -1016,6 +1020,10 @@ msgstr "సంవత్సరానికి {value}"
 msgid "{value} an hour"
 msgstr "గంటకు {value}"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "{value} days"
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1033,6 +1041,14 @@ msgstr "/ నెల"
 msgid "/ year"
 msgstr "/ సంవత్సరం"
 
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "+ and −"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "+ must have, − must not"
+msgstr ""
+
 #: src/features/applications/components/calendar-view.tsx
 msgid "+{extra} more"
 msgstr "+{extra} మరిన్ని"
@@ -1040,6 +1056,12 @@ msgstr "+{extra} మరిన్ని"
 #: src/features/homepage/hero.tsx
 msgid "+13 pts activation"
 msgstr "+13 పాయింట్లు యాక్టివేషన్"
+
+#. placeholder {0}: applications.length
+#: src/features/applications/components/filters/filter-bar.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "<0>{matching}</0> of {0}"
+msgstr ""
 
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "<0>Nothing to fix.</0> Every check passes."
@@ -1746,6 +1768,7 @@ msgid "Add what happened before you can save."
 msgstr "సేవ్ చేసే ముందు ఏమి జరిగిందో జోడించండి."
 
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Add your lanes in Preferences"
 msgstr ""
 
@@ -1759,10 +1782,20 @@ msgstr "మీ పేరును జోడించండి"
 msgid "Added {0} at {1}"
 msgstr "{1} వద్ద {0} జోడించబడింది"
 
+#. placeholder {0}: filters.added
+#: src/features/applications/filter.ts
+msgid "Added {0}d"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/shared.tsx
 msgid "Added by you"
 msgstr "మీరు జోడించినది"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Added in the last"
+msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private, and schedules come in switched off."
@@ -1787,6 +1820,10 @@ msgstr "నాలెడ్జ్‌లో అనుభవంగా జోడి�
 #: src/features/career/workspace/fit.tsx
 msgid "Added to Prepare"
 msgstr "సన్నద్ధతకు జోడించబడింది"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "Added, updated"
+msgstr ""
 
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
@@ -1914,6 +1951,7 @@ msgstr "ఎడమకు సమలేఖనం"
 msgid "Align right"
 msgstr "కుడికి సమలేఖనం"
 
+#: src/features/applications/filter.ts
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-contacts.tsx
 #: src/features/career/workspace/saved.tsx
@@ -1939,12 +1977,20 @@ msgstr "JSON వలె అన్ని డాక్యుమెంట్‌ల�
 msgid "All groups"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "All of them"
+msgstr ""
+
 #: src/features/career/knowledge/import.tsx
 msgid "All proposed facts have matches. Review them in Duplicates below."
 msgstr ""
 
 #: src/features/career/workspace/questions.tsx
 msgid "All questions answered"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "All stages"
 msgstr ""
 
 #: src/features/auth/pages/consent.tsx
@@ -2094,6 +2140,7 @@ msgstr "సమాధానాలు కాపీ చేయబడ్డాయి"
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
 msgstr "Anthropic, Gemini, Ollama, OpenAI-అనుకూలమైనది"
 
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/career/knowledge/preferences.tsx
 msgid "Any"
 msgstr "ఏదైనా"
@@ -2101,6 +2148,10 @@ msgstr "ఏదైనా"
 #: src/features/resume/editor/design/style-groups.tsx
 msgid "Any font, in Advanced"
 msgstr "ఏదైనా ఫాంట్, అడ్వాన్స్‌డ్‌లో"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Any of the + tags"
+msgstr ""
 
 #: src/features/resume/builder/password-dialog.tsx
 msgid "Anyone who opens the public URL will need this password."
@@ -2298,6 +2349,10 @@ msgstr "వర్తింపజేయబడింది"
 #: src/features/career/workspace/shell.tsx
 msgid "Applied {0}"
 msgstr "{0}న దరఖాస్తు చేశారు"
+
+#: src/features/applications/filter.ts
+msgid "Applied to Offer"
+msgstr ""
 
 #: src/features/applications/next-step.ts
 msgid "Applied today"
@@ -2740,6 +2795,7 @@ msgstr ""
 
 #: src/features/applications/components/build-status.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 msgid "Build"
 msgstr ""
 
@@ -2764,10 +2820,12 @@ msgid "Builder Command Palette"
 msgstr "బిల్డర్ కమాండ్ పలెట్"
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 msgid "Building"
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 msgid "Built"
 msgstr ""
 
@@ -3171,19 +3229,34 @@ msgid "Claude Desktop"
 msgstr "Claude Desktop"
 
 #: src/features/applications/components/detail/next-step-card.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/applications/components/suggestion-combobox.tsx
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Clear"
 msgstr "తొలగించు"
 
+#. placeholder {0}: getFacetLabel(facet)
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Clear {0}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-button.tsx
+msgid "Clear {label}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-bar.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Clear all"
+msgstr ""
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Clear filters"
+msgstr ""
+
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Clear formatting"
 msgstr "ఆకృతీకరణను క్లియర్ చేయండి"
-
-#: src/routes/dashboard/applications/index.tsx
-msgid "Clear search"
-msgstr "శోధనను క్లియర్ చేయండి"
 
 #: src/features/documents/documents-page.tsx
 msgid "Clear search and filters"
@@ -4259,6 +4332,8 @@ msgstr "నింపు"
 
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/detail/sent-documents.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "Cover letter"
 msgstr "కవర్ లెటర్"
@@ -4456,6 +4531,7 @@ msgstr "తేదీ"
 msgid "Date format"
 msgstr "తేదీ ఫార్మాట్"
 
+#: src/features/applications/filter.ts
 #: src/features/ats-checker/messages.ts
 #: src/features/resume/editor/check/issues.ts
 #: src/features/resume/editor/check/parser-view.tsx
@@ -4831,6 +4907,7 @@ msgstr "పత్రం రకం"
 msgid "Documentation"
 msgstr "డాక్యుమెంటేషన్"
 
+#: src/features/applications/filter.ts
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -4846,6 +4923,10 @@ msgstr "ఈ ఉద్యోగం కోసం పత్రాలు"
 #: src/features/homepage/faq.tsx
 msgid "Does it use AI?"
 msgstr "ఇది AIని ఉపయోగిస్తుందా?"
+
+#: src/features/applications/components/application-card.tsx
+msgid "Doesn't match the filters now"
+msgstr ""
 
 #: src/features/auth/pages/login.tsx
 msgid "Don't have an account? <0/>"
@@ -5168,6 +5249,7 @@ msgid "Edit keyword"
 msgstr "కీవర్డ్‌ను సవరించండి"
 
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Edit lanes in Preferences"
 msgstr ""
 
@@ -5247,6 +5329,15 @@ msgstr "విద్య"
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Effort"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "either lane"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Either lane"
 msgstr ""
 
 #: src/features/resume/editor/check/parser-view.tsx
@@ -5607,6 +5698,7 @@ msgid "Facts, stories and preferences that are switched on in Knowledge"
 msgstr "నాలెడ్జ్‌లో ఆన్ చేసిన వాస్తవాలు, కథలు, ప్రాధాన్యతలు"
 
 #: src/features/applications/components/build-status.tsx
+#: src/features/applications/filter.ts
 #: src/features/settings/ai/providers.tsx
 msgid "Failed"
 msgstr "విఫలమైంది"
@@ -5762,6 +5854,10 @@ msgstr "ఎంట్రీలను పూరించడం"
 msgid "Filter by tag"
 msgstr "ట్యాగ్ ద్వారా ఫిల్టర్ చేయండి"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Filters"
+msgstr ""
+
 #: src/features/directory/contact-picker.tsx
 msgid "Find a directory contact"
 msgstr ""
@@ -5815,6 +5911,7 @@ msgstr "మొదటి రన్"
 
 #: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5910,6 +6007,10 @@ msgstr "ఫాలో-అప్ తేదీ"
 
 #: src/features/settings/reminders.tsx
 msgid "Follow-up dates you set yourself still show. Career schedules have their own switches in Career → Today."
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "Follow-up due"
 msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
@@ -6026,6 +6127,7 @@ msgstr "{0}న కనుగొనబడింది"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 msgid "Found by"
 msgstr ""
 
@@ -6040,6 +6142,7 @@ msgstr ""
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 msgid "Found on"
 msgstr ""
 
@@ -6864,6 +6967,10 @@ msgstr "ఇంటర్ఫేస్ మాత్రమే. ప్రతి ర�
 msgid "Interview"
 msgstr "ఇంటర్వ్యూ"
 
+#: src/features/applications/filter.ts
+msgid "Interview coming"
+msgstr ""
+
 #: src/features/career/workspace/debrief.tsx
 msgid "Interview debrief"
 msgstr "ఇంటర్వ్యూ సమీక్ష"
@@ -7335,6 +7442,10 @@ msgstr "లేబుల్, ఉదా. రిక్రూటర్"
 msgid "Landscape"
 msgstr "ల్యాండ్‌స్కేప్"
 
+#: src/features/applications/filter.ts
+msgid "Lane"
+msgstr ""
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Lanes"
 msgstr ""
@@ -7523,6 +7634,7 @@ msgstr "మీ వెబ్ సెర్చ్ సర్వీస్ ద్వ�
 msgid "letter"
 msgstr "లేఖ"
 
+#: src/features/applications/filter.ts
 #: src/features/assistant/document.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
@@ -7671,6 +7783,10 @@ msgstr "లింక్ ఆఫ్ చేయబడింది. చిరున�
 #: src/features/resume/editor/check/issues.ts
 msgid "Link updated"
 msgstr "లింక్ నవీకరించబడింది"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Linked"
+msgstr ""
 
 #: src/features/applications/components/detail/sent-documents.tsx
 msgid "Linked · not sent yet"
@@ -8035,6 +8151,10 @@ msgstr "దరఖాస్తు చేసినట్లు గుర్తి�
 msgid "Marked as read"
 msgstr "చదివినట్లు గుర్తించబడింది"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Match"
+msgstr ""
+
 #. placeholder {0}: resume?.name ?? t`the resume`
 #: src/routes/builder/letter/-components/design-panel.tsx
 msgid "Match “{0}”"
@@ -8052,6 +8172,10 @@ msgstr ""
 #: src/features/command-palette/pages/preferences/theme.tsx
 msgid "Match system theme"
 msgstr "సిస్టమ్ థీమ్‌ను సరిపోల్చండి"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Match the + tags"
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Match this posting"
@@ -8190,6 +8314,10 @@ msgstr ""
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
 msgstr "మరిన్ని డౌన్‌లోడ్ ఫార్మాట్‌లు"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "More filters"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "More for {title}"
@@ -8337,6 +8465,24 @@ msgstr "{0}కి తరలించబడింది"
 msgid "Moves the application from {0}."
 msgstr "దరఖాస్తును {0} నుండి తరలిస్తుంది."
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must have"
+msgstr ""
+
+#. placeholder {0}: option.label
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must have {0}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must not have"
+msgstr ""
+
+#. placeholder {0}: option.label
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Must not have {0}"
+msgstr ""
+
 #: src/features/homepage/remember.tsx
 msgid "My job was to find out why, without adding support work."
 msgstr "సపోర్ట్ పనిని పెంచకుండా, కారణం ఏమిటో కనుగొనడం నా పని."
@@ -8419,6 +8565,7 @@ msgstr "ఇరుకైన అంచులు"
 msgid "Nearly the same words · {percent}%"
 msgstr ""
 
+#: src/features/applications/filter.ts
 #: src/features/settings/ai/providers.tsx
 msgid "Needs attention"
 msgstr "శ్రద్ధ అవసరం"
@@ -8619,10 +8766,9 @@ msgstr "ఉద్యోగ దరఖాస్తు లేదు"
 msgid "No applications at this company yet."
 msgstr ""
 
-#. placeholder {0}: query.trim()
 #: src/routes/dashboard/applications/index.tsx
-msgid "No applications match “{0}”."
-msgstr "\"{0}\"కి సరిపోలే ఉద్యోగ దరఖాస్తులు లేవు."
+msgid "No applications match these filters."
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No applications yet"
@@ -8779,8 +8925,16 @@ msgstr ""
 msgid "No keys yet."
 msgstr "ఇంకా కీలు లేవు."
 
+#: src/features/applications/filter.ts
+msgid "No lane"
+msgstr ""
+
 #: src/features/directory/lists.tsx
 msgid "No last name"
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "No letter"
 msgstr ""
 
 #: src/features/ats-checker/messages.ts
@@ -8849,6 +9003,14 @@ msgstr "ఉద్యోగ నియామకాలు ఏవీ కనుగొ
 msgid "No questions for you"
 msgstr ""
 
+#: src/features/applications/filter.ts
+msgid "No reply in {noReplyDays}+ days"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "No reply, questions…"
+msgstr ""
+
 #: src/features/applications/stages.ts
 msgid "No response"
 msgstr "స్పందన లేదు"
@@ -8857,6 +9019,7 @@ msgstr "స్పందన లేదు"
 msgid "No results found."
 msgstr "ఏ ఫలితాలు లభించలేదు."
 
+#: src/features/applications/filter.ts
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "No resume"
 msgstr "రెజ్యూమే లేదు"
@@ -8864,6 +9027,10 @@ msgstr "రెజ్యూమే లేదు"
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "No resumes yet."
 msgstr "ఇంకా రెజ్యూమ్‌లు లేవు."
+
+#: src/features/applications/filter.ts
+msgid "No search fit"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
@@ -8889,9 +9056,21 @@ msgstr "ఈ ప్రొవైడర్‌కు సూచనలు లేవు
 msgid "No supporting facts. Link one before using this story."
 msgstr "ఆధార వాస్తవాలు లేవు. ఈ కథను ఉపయోగించే ముందు ఒకదాన్ని లింక్ చేయండి."
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "No tags match."
+msgstr ""
+
 #: src/features/career/knowledge/stories.tsx
 msgid "No tags yet"
 msgstr "ఇంకా ట్యాగ్స్ లేవు"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "No tags yet."
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "No targeting fit"
+msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No terms stood out in this posting."
@@ -8920,9 +9099,14 @@ msgstr "సంఖ్య {number} · {name}"
 
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/list-view.tsx
 msgid "None"
 msgstr "ఏదీ లేదు"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "None yet"
+msgstr ""
 
 #: src/features/resume/editor/design/fit.ts
 #: src/features/resume/editor/design/style-groups.tsx
@@ -8945,6 +9129,10 @@ msgstr "Northwind Labs · Lisbon"
 #: src/libs/locale.ts
 msgid "Norwegian"
 msgstr "నార్వేజియన్"
+
+#: src/features/applications/filter.ts
+msgid "not #{tag}"
+msgstr ""
 
 #: src/features/career/knowledge/review.tsx
 msgid "Not a problem"
@@ -9009,6 +9197,10 @@ msgstr "మీ రెజ్యూమెలో లేదు · నిజమైత
 msgid "Not now"
 msgstr "ఇప్పుడు కాదు"
 
+#: src/features/applications/filter.ts
+msgid "Not queued"
+msgstr ""
+
 #: src/features/directory/page.tsx
 msgid "Not recorded"
 msgstr ""
@@ -9038,6 +9230,10 @@ msgstr "స్కోర్ చేయలేదు"
 #: src/features/applications/stages.ts
 msgid "Not selected"
 msgstr "ఎంపిక కాలేదు"
+
+#: src/features/applications/filter.ts
+msgid "Not set"
+msgstr ""
 
 #: src/features/settings/root.tsx
 msgid "Not set up"
@@ -9354,6 +9550,7 @@ msgid "Onsite"
 msgstr "ఆన్‌సైట్"
 
 #: src/features/applications/components/detail/sent-documents.tsx
+#: src/features/applications/filter.ts
 #: src/features/career/today.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/dashboard/applications/index.tsx
@@ -9418,6 +9615,10 @@ msgstr "పబ్లిక్ పేజీని తెరవండి"
 
 #: src/features/directory/boards.tsx
 msgid "Open roles"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Open stages"
 msgstr ""
 
 #: src/features/career/workspace/prepare.tsx
@@ -10160,6 +10361,15 @@ msgstr "ప్రాథమిక రంగు"
 msgid "Primary lane"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "primary only"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Primary only"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 msgid "Print"
 msgstr "ముద్రించు"
@@ -10379,6 +10589,10 @@ msgstr ""
 msgid "Questions copied"
 msgstr "ప్రశ్నలు కాపీ చేయబడ్డాయి"
 
+#: src/features/applications/filter.ts
+msgid "Questions to answer"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 #: src/features/homepage/prepare.tsx
 msgid "Questions to ask"
@@ -10386,6 +10600,10 @@ msgstr "అడగాల్సిన ప్రశ్నలు"
 
 #: src/features/applications/components/build-status.tsx
 msgid "Queue for resume build"
+msgstr ""
+
+#: src/features/applications/filter.ts
+msgid "Queued"
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
@@ -11082,7 +11300,10 @@ msgid "resume"
 msgstr "పునఃప్రారంభం"
 
 #: src/features/applications/components/application-form-sheet.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Resume"
@@ -11151,6 +11372,10 @@ msgstr "రెజ్యూమ్ పేజీ"
 #: src/features/applications/components/add-application-dialog.tsx
 msgid "Resume submitted (optional)"
 msgstr "రెజ్యూమ్ సమర్పించబడింది (ఐచ్ఛికం)"
+
+#: src/features/applications/components/filters/filter-bar.tsx
+msgid "Resume, cover letter"
+msgstr ""
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/resumes.tsx
@@ -11696,6 +11921,11 @@ msgstr "శోధన"
 msgid "Search {0}%"
 msgstr ""
 
+#. placeholder {0}: filters.fit
+#: src/features/applications/filter.ts
+msgid "Search {0}+"
+msgstr ""
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Search and enhanced reading"
 msgstr "శోధన మరియు మెరుగైన పఠనం"
@@ -11743,6 +11973,8 @@ msgstr "శోధన విఫలమైంది"
 
 #: src/features/applications/components/application-card.tsx
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/list-view.tsx
 #: src/features/career/workspace/assessments.tsx
@@ -11788,6 +12020,10 @@ msgstr "శోధించండి లేదా అమలు చేయండి
 #: src/routes/dashboard/applications/index.tsx
 msgid "Search role, company or contact"
 msgstr "శోధన పాత్ర, కంపెనీ లేదా పరిచయం"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Search tags"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Search terms go to your web search service."
@@ -12201,10 +12437,6 @@ msgstr ""
 #: src/features/career/knowledge/facts.tsx
 msgid "Show all types"
 msgstr "అన్ని రకాలను చూపు"
-
-#: src/routes/dashboard/applications/index.tsx
-msgid "Show closed"
-msgstr "షో మూసివేయబడింది"
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Show contacts"
@@ -12629,6 +12861,7 @@ msgstr "స్క్వేర్"
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/filter.ts
 msgid "Stage"
 msgstr "దశ"
 
@@ -13026,6 +13259,7 @@ msgstr "ట్యాగ్ చేయండి"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
@@ -13076,6 +13310,10 @@ msgstr "అడాప్టెడ్ vs. బేస్ రెజ్యూమే"
 msgid "Tamil"
 msgstr "తమిళ్"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "tap: + must have, again: − must not"
+msgstr ""
+
 #: src/features/career/knowledge/preferences.tsx
 msgid "Target roles"
 msgstr "లక్ష్య పదవులు"
@@ -13094,7 +13332,14 @@ msgstr ""
 msgid "Targeting {0}%"
 msgstr ""
 
+#. placeholder {0}: filters.tfit
+#: src/features/applications/filter.ts
+msgid "Targeting {0}+"
+msgstr ""
+
 #: src/features/applications/components/detail/assessments.tsx
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/career/workspace/assessments.tsx
 msgid "Targeting fit"
 msgstr ""
@@ -13540,6 +13785,10 @@ msgstr "సమీక్ష పూర్తి కాలేదు. మళ్ల�
 msgid "The review didn't finish."
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "the reviewers' median, after a build"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "The same line repeats on every page."
 msgstr "అదే లైన్ ప్రతి పేజీలో పునరావృతమవుతుంది."
@@ -13560,6 +13809,10 @@ msgstr "బ్లాకింగ్ సమస్య కారణంగా స్
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "వచనం ఎంత విశ్వసనీయంగా సంగ్రహించబడిందో స్కోర్ ప్రతిబింబిస్తుంది, మీ అవకాశాలను కాదు."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "the search's read of the posting"
+msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
 msgid "The service did not respond in time."
@@ -14437,9 +14690,19 @@ msgstr "నవీకరించబడింది"
 msgid "Updated {0}"
 msgstr "{0} నవీకరించబడింది"
 
+#. placeholder {0}: filters.updated
+#: src/features/applications/filter.ts
+msgid "Updated {0}d"
+msgstr ""
+
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
 msgstr "{total}లో {done} అప్‌డేట్ చేయబడ్డాయి. లాక్ చేయబడిన పత్రాలు, పబ్లిక్ లింక్‌ల కోసం కవర్ లెటర్‌లు దాటవేయబడ్డాయి."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "Updated in the last"
+msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Updates"

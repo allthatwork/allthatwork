@@ -12,7 +12,7 @@ To open it, select **Applications** in the sidebar (on a phone, it's in the bott
 <Frame caption="The Applications page in the List view, with the follow-up reminder at the top">
   <img
     src="/images/guides/tracking-job-applications/applications-list-view.webp"
-    alt="Applications page showing a follow-up reminder banner, the List, Board, Insights and Calendar tabs, a search field, Show closed, and applications grouped under Interview, Offer, Screening, Applied and Saved"
+    alt="Applications page showing a follow-up reminder banner, the List, Board, Insights and Calendar tabs, a search field, and applications grouped under Interview, Offer, Screening, Applied and Saved"
   />
 </Frame>
 
@@ -29,7 +29,7 @@ Every application sits in one stage. The first five stages form a pipeline you m
 | **Offer**     | You received an offer.                                                   |
 | **Closed**    | The application ended, whatever the outcome.                             |
 
-You can close an application from any stage. Closing asks for a reason (**Not selected**, **I withdrew**, **Accepted another offer** or **No response**), which Insights uses later. Closed applications are hidden until you turn on **Show closed**. See [Managing an application](/guides/managing-an-application#closing-an-application).
+You can close an application from any stage. Closing asks for a reason (**Not selected**, **I withdrew**, **Accepted another offer** or **No response**), which Insights uses later. Closed applications are hidden until you add **Closed** in the **Stage** filter (see [Finding applications](#finding-applications)). See [Managing an application](/guides/managing-an-application#closing-an-application).
 
 <Note>
   When an application with a linked resume or letter reaches **Applied** or a later stage, Reactive Resume saves a copy
@@ -43,7 +43,7 @@ Use the tabs above the list to switch views. Your choice is kept in the page add
 
 <Tabs>
   <Tab title="Board">
-    The default view. One column per stage, with a card for each application. A card shows the search fit (`Fit NN%`) and the resume **Build** status next to the next step; select **Build** on a card to queue or unqueue it for a targeted resume build. Drag a card to another column to move it to that stage. Each card also has a **⋯** menu with **Move to…**, **Close…** and **Delete…**, which is handy if you prefer the keyboard. When **Show closed** is on, a **Closed** column appears too. Dragging a card there asks why it ended before closing it, so Insights can use the outcome.
+    The default view. One column per stage, with a card for each application. A card shows the search fit (`Fit NN%`) and the resume **Build** status next to the next step; select **Build** on a card to queue or unqueue it for a targeted resume build. Drag a card to another column to move it to that stage. Each card also has a **⋯** menu with **Move to…**, **Close…** and **Delete…**, which is handy if you prefer the keyboard. The columns follow the **Stage** filter, so with **Closed** included a **Closed** column appears too, and with one stage chosen you get one column on the left. Dragging a card there asks why it ended before closing it, so Insights can use the outcome.
 
     The columns share the page's width evenly and the board fills the window's height, with each column scrolling on its own. On a narrower window the columns keep a minimum width and the board scrolls sideways; a fade on the edge shows there are more columns that way. Dragging a card toward the edge scrolls the board too.
 
@@ -57,10 +57,10 @@ Use the tabs above the list to switch views. Your choice is kept in the page add
 
   </Tab>
   <Tab title="List">
-    Applications are grouped by stage in the order that usually needs you first: **Interview**, **Offer**, **Screening**, **Applied**, **Saved**, then **Closed** when shown.
+    Applications are grouped by stage in the order that usually needs you first: **Interview**, **Offer**, **Screening**, **Applied**, **Saved**, then **Closed** when the **Stage** filter includes it. Only the stages the filter shows get a group.
 
     - Select a group heading to collapse or expand it.
-    - Select the **Role**, **Next step**, **Fit** or **Updated** column heading to sort within each group. Select it again to reverse the order. **Fit** is the search fit; applications without one sort last when sorting highest first.
+    - Select the **Role**, **Next step**, **Fit** or **Updated** column heading to sort within each group. Select it again to reverse the order. The sort is kept in the page address with the filters. **Fit** is the search fit; applications without one sort last when sorting highest first.
     - The **Next step** column shows the next interview, the follow-up you set, or how long you've been waiting. It turns amber when something is overdue or you've had no reply for 10 days or more (you can change the number of days or turn this off in **Settings → Preferences → Reminders**).
     - The **Sent** column shows an icon for a linked resume and a linked letter. It says **None** in amber when an application was sent without a linked document.
     - Select a row to open its details.
@@ -78,9 +78,36 @@ On phones, the page shows **List** and **Insights** only (it opens on List), and
 
 ## Finding applications
 
-Type in **Search applications** to filter the list as you type. Search looks at the role, company, location, contact names and tags. If nothing matches, select **Clear search**.
+Type in **Search applications** to filter as you type. Search looks at the role, company, location, contact names and tags.
 
-**Show closed** adds closed applications to the List, Board and Calendar views. Insights always counts every application.
+After the search box there's a button for each filter. Select one to open it, tick what you want, and the page shows only the applications that match. Within one filter, ticked values mean "any of these"; different filters combine, so **Build: Built** and **Found by: Dorel** shows built applications that Dorel found.
+
+| Filter       | Shows applications                                                                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stage**    | In the stages you tick. It starts at the five open stages ("Stage: Open"); add **Closed** to see closed ones. **All stages** ticks all six.                     |
+| **Build**    | By resume build status: **Not queued**, **Queued**, **Building**, **Built** or **Failed**.                                                                      |
+| **Found by** | Found by who or what you tick, or **Not set**.                                                                                                                  |
+| **Lane**     | Aimed at the lanes you tick (your lanes from **Preferences**, plus any others in use), or **No lane**. It matches either lane unless you pick **Primary only**. |
+| **Fit**      | With a search fit or targeting fit of at least 80+, 85+ and so on, or **None yet** for the ones without.                                                        |
+
+**More filters** adds five more: **Found on**, **Documents** (a linked resume or cover letter, or none), **Needs attention** (no reply for a while, a follow-up that's due, an interview coming, questions to answer), **Dates** (added or updated in the last 7, 14 or 30 days) and **Tags**. In Tags, select **+** for a tag the application must have and **−** for one it must not have; with two or more **+** tags, choose **Any of** or **All of** them.
+
+<Frame caption="Filters set to open applications Dorel found with a search fit of 85 or more, with the Build filter open">
+  <img
+    src="/images/guides/tracking-job-applications/applications-filters.webp"
+    alt="Applications page with the filter buttons Stage: Saved, Applied, Build, Found by: Dorel, Lane, Fit: Search 85+ and More filters, the Build filter open with a count beside each status, and 8 of 62 with Clear all at the end of the row"
+  />
+</Frame>
+
+- Each option shows how many applications you'd get if you picked it, given the other filters. Options at 0 stay in the list, greyed.
+- A set filter turns blue and shows its value. Select its **×** to clear just that one. **Clear all**, at the end of the row, clears every filter and the search, and says how many applications show out of the total.
+- The filters are kept in the page address, so reloading, going back, a bookmark or a copied link keeps them.
+- The browser tab remembers its filters too: going to **Applications** from the sidebar, or back from an application's workspace, brings back the filters you last used in that tab. A new tab starts with the open stages only.
+- If you change an application so it no longer matches (say you select **Build** on a card while showing **Build: Not queued**), it stays where it is, faded, with "Doesn't match the filters now", until you change the filters or reload. That way you can work through a filtered list without cards jumping away.
+- If nothing matches, select **Clear filters**.
+- On a phone, select **Filters** to open them all in one sheet. The filters you set show as chips under the search box, each with an **×**.
+
+The Board, List and Calendar follow the filters, and **Export to CSV** exports what they show. Insights always counts every application, so it hides the search and the filters.
 
 ## Acting on several applications at once
 
@@ -99,7 +126,7 @@ In the List view on a computer or tablet, select the checkboxes next to the appl
   />
 </Frame>
 
-Selection follows the visible rows. Hiding closed applications, collapsing a stage or changing the search removes hidden selections before a bulk action.
+Selection follows the visible rows. Filtering out a stage, collapsing a stage or changing the search removes hidden selections before a bulk action.
 
 ## Follow-up reminders
 
