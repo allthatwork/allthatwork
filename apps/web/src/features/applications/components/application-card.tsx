@@ -43,19 +43,22 @@ export function ApplicationCard({ application, onClick, withMenu = false, draggi
 					onClick={onClick}
 					className="grid min-w-0 flex-1 text-start after:absolute after:inset-0 after:rounded-[10px]"
 				>
-					<span className="truncate text-sm font-semibold">{application.role}</span>
+					<span className="line-clamp-2 text-sm font-semibold">{application.role}</span>
 					<span className="truncate text-xs text-ink-3">{application.company}</span>
 				</button>
 				{withMenu && <ApplicationActionsMenu application={application} className="relative z-10 -me-1.5 -mt-1.5" />}
 			</div>
-			<span
-				className={cn(
-					"flex items-center gap-1.5 text-xs",
-					next.tone === "warn" ? "text-warn-text" : next.tone === "muted" ? "text-ink-3" : "text-ink-2",
-				)}
-			>
-				<Icon name={next.icon} size={15} className="shrink-0" />
-				<span className="truncate">{next.title}</span>
+			{/* The next step keeps its full width: when it and the badges don't fit on one line, the badges wrap below. */}
+			<div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs">
+				<span
+					className={cn(
+						"flex max-w-full shrink-0 items-center gap-1.5",
+						next.tone === "warn" ? "text-warn-text" : next.tone === "muted" ? "text-ink-3" : "text-ink-2",
+					)}
+				>
+					<Icon name={next.icon} size={15} className="shrink-0" />
+					<span className="min-w-0 truncate">{next.title}</span>
+				</span>
 				<span className="ms-auto grid shrink-0 grid-cols-[54px_62px] items-center gap-2">
 					<span className="flex justify-end">
 						{application.searchFit !== null && (
@@ -75,7 +78,7 @@ export function ApplicationCard({ application, onClick, withMenu = false, draggi
 						<BuildStatusControl application={application} className="relative z-10" />
 					</span>
 				</span>
-			</span>
+			</div>
 		</div>
 	);
 }
