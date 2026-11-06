@@ -845,20 +845,36 @@ export const careerService = {
 		}),
 	/**
 	 * Marks a group private, so none of its facts (subgroups included) reach the AI unless an application includes it, or
-	 * makes it ordinary again.
+	 * makes it ordinary again. With `status`, sets how facts added to the group later start, without switching any fact
+	 * it holds; subgroups with their own setting keep it.
 	 */
-	saveFactGroup: (userId: string, input: { group: string; private: boolean }) =>
+	saveFactGroup: (
+		userId: string,
+		input: { group: string; private?: boolean | undefined; status?: FactSwitch | undefined },
+	) =>
 		db.transaction(async (tx) => {
 			await lockCareerUser(tx, userId);
-			await tx
+			const changes = {
+				...(input.private === undefined ? {} : { private: input.private }),
+				...(input.status === undefined ? {} : { status: input.status }),
+			};
+			const [row] = await tx
 				.insert(tables.careerFactGroup)
-				.values({ userId, group: input.group, private: input.private })
+				.values({ userId, group: input.group, ...changes })
 				.onConflictDoUpdate({
 					target: [tables.careerFactGroup.userId, tables.careerFactGroup.group],
-					set: { private: input.private, updatedAt: new Date() },
+					set: { ...changes, updatedAt: new Date() },
+				})
+				.returning({
+					group: tables.careerFactGroup.group,
+					private: tables.careerFactGroup.private,
+					status: tables.careerFactGroup.status,
 				});
-			await invalidateMemory(userId, "", tx);
-			return input;
+			// Privacy changes what the AI reads; a default for later facts doesn't.
+			if (input.private !== undefined) await invalidateMemory(userId, "", tx);
+			if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR");
+			const status: FactSwitch | null = row.status === "active" || row.status === "excluded" ? row.status : null;
+			return { group: row.group, private: row.private, status };
 		}),
 	/** Facts the AI can read in this scope: switched on or brought in by the application, and not private. */
 	aiFacts: async (input: Owned) => {

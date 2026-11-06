@@ -40,6 +40,7 @@
 	--danger: oklch(0.53 0.17 27); /* #BA3630 */
 	--danger-soft: oklch(0.95 0.03 27); /* #FFE7E4 */
 	--danger-text: oklch(0.48 0.17 27); /* #A92321 */
+	--success-text: oklch(0.48 0.12 150); /* #197037 on, beside danger-text for off */
 	--warn: oklch(0.72 0.14 80); /* #D29922 check issues, stale edits */
 	--warn-soft: oklch(0.95 0.045 85); /* #FCEDCD */
 	--warn-text: oklch(0.48 0.1 70); /* #81520A */
@@ -100,6 +101,7 @@
 	--danger: oklch(0.62 0.17 27); /* #D9544B */
 	--danger-soft: oklch(0.3 0.06 27); /* #47211D */
 	--danger-text: oklch(0.8 0.11 27); /* #FDA297 */
+	--success-text: oklch(0.8 0.12 150); /* #83D494 */
 	--warn: oklch(0.8 0.13 85); /* #E4B750 */
 	--warn-soft: oklch(0.31 0.05 80); /* #3E2D10 */
 	--warn-text: oklch(0.86 0.1 85); /* #EFCC83 */
@@ -119,7 +121,7 @@
 /*
  * Cobalt palette (All That Work, the default): GitHub's Primer neutrals with a blue accent. The tokens above are
  * the Original palette. `data-palette` on <html> is set before first paint (index.html) and by ThemeProvider.
- * Danger, warn, the other stages and motion are shared. Info moves to violet so it doesn't read as the accent.
+ * Danger, success, warn, the other stages and motion are shared. Info moves to violet so it doesn't read as the accent.
  */
 :root[data-palette="cobalt"] {
 	--stage-saved: oklch(0.64 0.02 255); /* #8D949C */
@@ -236,6 +238,7 @@
 	--color-danger: var(--danger);
 	--color-danger-soft: var(--danger-soft);
 	--color-danger-text: var(--danger-text);
+	--color-success-text: var(--success-text);
 	--color-warn: var(--warn);
 	--color-warn-soft: var(--warn-soft);
 	--color-warn-text: var(--warn-text);

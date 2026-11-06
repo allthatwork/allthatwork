@@ -54292,8 +54292,8 @@
 			},
 			"put": {
 				"operationId": "saveCareerFactGroup",
-				"summary": "Make a career fact group private or not",
-				"description": "A private group's facts, subgroups included, never reach the AI provider, whatever their own switches say, unless an application includes the group (see PUT /career/overrides).",
+				"summary": "Make a career fact group private, or set how its new facts start",
+				"description": "private: a private group's facts, subgroups included, never reach the AI provider, whatever their own switches say, unless an application includes the group (see PUT /career/overrides). status: how facts added to the group later start, without switching any fact it already holds; subgroups with their own setting keep it. Give either or both.",
 				"tags": [
 					"Career"
 				],
@@ -54310,11 +54310,18 @@
 									},
 									"private": {
 										"type": "boolean"
+									},
+									"status": {
+										"enum": [
+											"active",
+											"excluded"
+										],
+										"type": "string",
+										"description": "How facts added to the group later start. Facts already in it don't change."
 									}
 								},
 								"required": [
-									"group",
-									"private"
+									"group"
 								]
 							}
 						}
@@ -54333,11 +54340,26 @@
 										},
 										"private": {
 											"type": "boolean"
+										},
+										"status": {
+											"anyOf": [
+												{
+													"enum": [
+														"active",
+														"excluded"
+													],
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											]
 										}
 									},
 									"required": [
 										"group",
-										"private"
+										"private",
+										"status"
 									]
 								}
 							}
@@ -54390,7 +54412,7 @@
 					{
 						"lang": "bash",
 						"label": "cURL",
-						"source": "curl --request PUT \"https://allthat.work/api/openapi/career/facts/groups\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"group\": \"<string>\",\n  \"private\": true\n}'"
+						"source": "curl --request PUT \"https://allthat.work/api/openapi/career/facts/groups\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"group\": \"<string>\"\n}'"
 					}
 				]
 			}
