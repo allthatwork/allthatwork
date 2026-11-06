@@ -137,19 +137,20 @@ export function ApplicationList({ applications, showClosed, selectedId, onOpen }
 									<Trans>Select</Trans>
 								</span>
 							</th>
-							{header("role", t`Role`)}
-							{header("next", t`Next step`)}
-							{header("fit", t`Fit`, "max-md:hidden")}
-							<th scope="col" className="px-2 text-start font-medium max-md:hidden">
+							{/* Role and Next step share the width; the other columns keep the width of their content. */}
+							{header("role", t`Role`, "w-1/2")}
+							{header("next", t`Next step`, "w-[30%]")}
+							{header("fit", t`Fit`, "w-px whitespace-nowrap max-md:hidden")}
+							<th scope="col" className="w-px px-2 text-start font-medium whitespace-nowrap max-md:hidden">
 								<Trans>Build</Trans>
 							</th>
-							<th scope="col" className="px-2 text-start font-medium max-lg:hidden">
+							<th scope="col" className="w-px px-2 text-start font-medium whitespace-nowrap max-lg:hidden">
 								<Trans>Stage</Trans>
 							</th>
-							<th scope="col" className="px-2 text-start font-medium">
+							<th scope="col" className="w-px px-2 text-start font-medium whitespace-nowrap">
 								<Trans>Sent</Trans>
 							</th>
-							{header("updated", t`Updated`, "max-md:hidden")}
+							{header("updated", t`Updated`, "w-px whitespace-nowrap max-md:hidden")}
 						</tr>
 					</thead>
 				)}
@@ -305,7 +306,7 @@ function ApplicationRow({ application, phone, selected, checked, onCheck, onOpen
 			<td className="relative z-10 px-2 whitespace-nowrap max-md:hidden">
 				<BuildStatusControl application={application} />
 			</td>
-			<td className="px-2 max-lg:hidden">
+			<td className="px-2 whitespace-nowrap max-lg:hidden">
 				<span className="flex items-center gap-1.5 text-ink-2">
 					<span
 						aria-hidden="true"

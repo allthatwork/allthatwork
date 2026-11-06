@@ -113,7 +113,8 @@ export function AppShell({ children }: AppShellProps) {
 				<Trans>Skip to main content</Trans>
 			</a>
 			{breakpoint !== "mobile" && (breakpoint === "tablet" ? <Rail /> : <Sidebar />)}
-			<main id="main-content" className="min-w-0">
+			{/* A page marked data-fill-screen (the Applications board) takes the height below the guest banner. */}
+			<main id="main-content" className="min-w-0 has-[>[data-fill-screen]]:flex has-[>[data-fill-screen]]:flex-col">
 				<GuestBanner />
 				{children}
 			</main>

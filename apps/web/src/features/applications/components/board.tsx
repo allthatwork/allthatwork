@@ -15,7 +15,7 @@ import {
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@reactive-resume/ui/components/button";
 import {
 	Dialog,
@@ -28,6 +28,7 @@ import { cn } from "@reactive-resume/utils/style";
 import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel, PIPELINE } from "../stages";
 import { useApplicationActions } from "../use-application-actions";
 import { ApplicationCard } from "./application-card";
+import { getEdgeFadeStyle, useScrollEdges } from "@/hooks/use-scroll-edges";
 import { DRAG_SETTLE } from "@/libs/motion";
 
 type BoardProps = {
@@ -44,7 +45,8 @@ const dropSideEffects = defaultDropAnimationSideEffects({
 
 /**
  * A column per stage (Closed only when shown). Dropping a card on a column moves it, with the same toast as the
- * other ways to change stage; each card's menu has Move to… for the keyboard. Desktop and tablet only.
+ * other ways to change stage; each card's menu has Move to… for the keyboard. Desktop and tablet only. The columns share
+ * the width evenly, at least 256px each; past that the board scrolls sideways, with a fade on the side that has more.
  */
 export function ApplicationBoard({ applications, showClosed, onOpen }: BoardProps) {
 	const { moveTo, close } = useApplicationActions();
@@ -77,6 +79,10 @@ export function ApplicationBoard({ applications, showClosed, onOpen }: BoardProp
 
 	const active = activeId ? applications.find((application) => application.id === activeId) : null;
 
+	// A soft fade on the sides with columns past the edge; Show closed adds or removes one.
+	const scrollerRef = useRef<HTMLDivElement>(null);
+	const edges = useScrollEdges(scrollerRef, stages.length);
+
 	const onDragStart = (event: DragStartEvent) => setActiveId(String(event.active.id));
 
 	const onDragEnd = (event: DragEndEvent) => {
@@ -95,7 +101,7 @@ export function ApplicationBoard({ applications, showClosed, onOpen }: BoardProp
 
 	return (
 		<DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-			<div className="flex h-full min-h-0 gap-3 overflow-x-auto pb-4">
+			<div ref={scrollerRef} style={getEdgeFadeStyle(edges)} className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-3">
 				{stages.map((stage) => (
 					<Column key={stage} stage={stage} applications={byStage.get(stage) ?? []} onOpen={onOpen} />
 				))}
@@ -157,7 +163,7 @@ function Column({ stage, applications, onOpen }: ColumnProps) {
 		<section
 			aria-label={getStageLabel(stage)}
 			className={cn(
-				"flex w-[272px] shrink-0 flex-col rounded-xl border bg-sunken transition-colors duration-quick",
+				"flex min-w-64 flex-1 basis-0 flex-col rounded-xl border bg-sunken transition-colors duration-quick",
 				isOver ? "border-accent bg-accent-soft" : "border-transparent",
 			)}
 		>

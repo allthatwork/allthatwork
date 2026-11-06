@@ -18,6 +18,7 @@ import { Skeleton } from "@reactive-resume/ui/components/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
+import { FILL_SCREEN_ATTRIBUTE, PAGE_CLASS } from "@/components/layout/page";
 import { AddApplicationDialog } from "@/features/applications/components/add-application-dialog";
 import { ApplicationDetailSheet } from "@/features/applications/components/application-detail-sheet";
 import { ApplicationFormSheet } from "@/features/applications/components/application-form-sheet";
@@ -109,9 +110,15 @@ function RouteComponent() {
 	const shown: View = phone && (view === "board" || view === "calendar") ? "list" : view;
 	const empty = !!applications && applications.length === 0;
 	const noMatches = !!applications && !empty && text && filtered.length === 0;
+	// In Board view the page is the window's height and the board takes what's left below the header, the nudge and the
+	// toolbar; each column scrolls on its own. The other views scroll the page.
+	const fill = shown === "board" && !empty && !(isError && !applications);
 
 	return (
-		<div className="mx-auto grid w-full max-w-[1180px] content-start gap-5 px-8 py-8 max-sm:px-4 max-sm:py-5">
+		<div
+			{...(fill ? { [FILL_SCREEN_ATTRIBUTE]: "" } : {})}
+			className={cn(PAGE_CLASS, fill ? "flex min-h-0 flex-1 basis-0 flex-col gap-5 pb-6" : "grid content-start gap-5")}
+		>
 			<header className="flex flex-wrap items-center justify-between gap-3">
 				<h1 className="font-display text-[30px] leading-9 font-medium">
 					<Trans>Applications</Trans>
@@ -235,6 +242,7 @@ function RouteComponent() {
 						<div
 							key={shown}
 							className={cn(
+								shown === "board" && "flex min-h-96 flex-1 flex-col",
 								viewSwitched
 									? "transition-[opacity,translate] duration-standard ease-enter starting:translate-y-1 starting:opacity-0"
 									: // The list fades in on its first appearance, after its skeleton.
@@ -250,13 +258,11 @@ function RouteComponent() {
 								/>
 							)}
 							{shown === "board" && (
-								<div className="h-[calc(100svh-230px)] min-h-96">
-									<ApplicationBoard
-										applications={filtered}
-										showClosed={closed}
-										onOpen={(application) => setSelectedId(application.id)}
-									/>
-								</div>
+								<ApplicationBoard
+									applications={filtered}
+									showClosed={closed}
+									onOpen={(application) => setSelectedId(application.id)}
+								/>
 							)}
 							{shown === "insights" && <ApplicationInsights applications={applications ?? []} />}
 							{shown === "calendar" && (
@@ -399,5 +405,6 @@ function ViewSkeleton({ view }: { view: View }) {
 				))}
 			</div>
 		);
+	if (view === "board") return <Skeleton className="min-h-96 flex-1 rounded-xl" />;
 	return <Skeleton className="h-[calc(100svh-230px)] min-h-96 rounded-xl" />;
 }
