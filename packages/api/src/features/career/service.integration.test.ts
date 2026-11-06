@@ -1016,6 +1016,49 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		]);
 	});
 
+	it("sets how a group's new facts start without switching the facts it holds", async () => {
+		const held = await grouped("alice", "Pre-2017 support role.", "history");
+		const nested = await grouped("alice", "Pre-2017 wiki.", "history/initech");
+		const own = await grouped("alice", "Pre-2017 printer fix.", "history/own");
+		await service.setFactGroupStatus("alice", { group: "history/own", status: "active", subgroups: true });
+
+		expect(await service.saveFactGroup("alice", { group: "history", status: "excluded" })).toEqual({
+			group: "history",
+			private: false,
+			status: "excluded",
+		});
+		// Facts already there keep their switch.
+		const statuses = async () =>
+			Object.fromEntries(
+				(await service.facts({ userId: "alice", group: "history" })).map((row) => [row.id, row.status]),
+			);
+		expect(await statuses()).toEqual({ [held.id]: "active", [nested.id]: "active", [own.id]: "active" });
+		// New facts follow it, and a subgroup with no setting inherits it; one with its own keeps it.
+		expect((await grouped("alice", "Pre-2017 help desk.", "history")).status).toBe("excluded");
+		expect((await grouped("alice", "Pre-2017 TPS reports.", "history/initech")).status).toBe("excluded");
+		expect((await grouped("alice", "Pre-2017 toner.", "history/own")).status).toBe("active");
+		const groups = await service.factGroups("alice");
+		expect(groups.find((entry) => entry.group === "history/own")).toMatchObject({ status: "active" });
+
+		// Back on, and privacy is left as it was.
+		await service.saveFactGroup("alice", { group: "history", private: true });
+		expect(await service.saveFactGroup("alice", { group: "history", status: "active" })).toEqual({
+			group: "history",
+			private: true,
+			status: "active",
+		});
+		expect((await grouped("alice", "Pre-2017 backups.", "history")).status).toBe("active");
+		// A default alone doesn't change what the AI reads, so in-flight work isn't discarded.
+		const before = (await service.context({ userId: "alice" })).memoryVersion;
+		await service.saveFactGroup("alice", { group: "history", status: "excluded" });
+		expect((await service.context({ userId: "alice" })).memoryVersion).toBe(before);
+		// The group stays private when only its default changes.
+		expect((await service.factGroups("alice")).find((entry) => entry.group === "history")).toMatchObject({
+			private: true,
+			status: "excluded",
+		});
+	});
+
 	it("switches without subgroups, regroups and lists by group, and skips forgotten facts in bulk changes", async () => {
 		const top = await grouped("alice", "Top-level fact.", "work");
 		const nested = await grouped("alice", "Nested fact.", "work/acme");

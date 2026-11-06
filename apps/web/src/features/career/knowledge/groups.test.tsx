@@ -6,6 +6,7 @@ import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const api = vi.hoisted(() => ({ groups: [] as unknown[], setStatus: vi.fn(), savePrivacy: vi.fn() }));
+const toasts = vi.hoisted(() => ({ add: vi.fn() }));
 vi.mock("@/libs/orpc/client", () => {
 	const endpoint = (name: string) => ({
 		key: () => [name],
@@ -24,7 +25,7 @@ vi.mock("@/libs/orpc/client", () => {
 		},
 	};
 });
-vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() } }));
+vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: toasts }));
 
 i18n.loadAndActivate({ locale: "en", messages: {} });
 const { GroupsCard, groupMeta, groupTree } = await import("./groups");
@@ -118,22 +119,14 @@ describe("groupMeta", () => {
 
 	it("says private, or which parent makes it private, instead of what it adds", () => {
 		const of = meta(entry("clearance", 0, 6, null, true), entry("clearance/renewals", 0, 2));
-		expect(of("clearance")).toBe("8 facts · private · new facts start on");
-		expect(of("clearance/renewals")).toBe("2 facts · private through clearance · new facts start on");
-	});
-
-	it("names how new facts start only when that differs from the switch", () => {
-		const of = meta(
-			entry("pre-2017", 0, 13, "excluded"),
-			entry("pre-2017/initech", 0, 2),
-			entry("switched-one-by-one", 0, 3, "active"),
-			entry("back-on", 4, 1, "excluded"),
-		);
-		expect(of("pre-2017/initech")).toBe("2 facts · nothing sent");
-		expect(of("switched-one-by-one")).toBe("3 facts · nothing sent · new facts start on");
-		expect(of("back-on")).toBe("4 on · 1 off · 400 characters · new facts start off");
+		expect(of("clearance")).toBe("8 facts · private");
+		expect(of("clearance/renewals")).toBe("2 facts · private through clearance");
 	});
 });
+
+/** A row's line under its name, matched whole: the default's on/off word is its own button inside it. */
+const metaLine = (text: string) => (_: string, element: Element | null) =>
+	element?.tagName === "P" && element.textContent === text;
 
 const renderCard = () =>
 	render(
@@ -158,7 +151,7 @@ describe("GroupsCard", () => {
 
 	it("shows one switch per group, on when anything in it is on, and switches it with its subgroups", async () => {
 		renderCard();
-		expect(await screen.findByText("18 facts · nothing sent")).toBeTruthy();
+		expect(await screen.findByText(metaLine("18 facts · nothing sent · new facts default: off"))).toBeTruthy();
 		expect(screen.getByText("Not in a group: 4 on · 1 off")).toBeTruthy();
 		expect(screen.queryByRole("button", { name: /Switch .* (on|off)/ })).toBeNull();
 
@@ -193,7 +186,7 @@ describe("private groups", () => {
 		const subgroup = screen.getByRole("button", { name: "Keep clearance/ts private" });
 		expect(subgroup.getAttribute("aria-pressed")).toBe("true");
 		expect(subgroup.getAttribute("aria-disabled")).toBe("true");
-		expect(screen.getByText("1 fact · private through clearance")).toBeTruthy();
+		expect(screen.getByText(metaLine("1 fact · private through clearance · new facts default: off"))).toBeTruthy();
 		const open = screen.getByRole("button", { name: "Keep experience private" });
 		expect(open.getAttribute("aria-pressed")).toBe("false");
 
@@ -205,5 +198,67 @@ describe("private groups", () => {
 		fireEvent.click(parent);
 		await waitFor(() => expect(api.savePrivacy).toHaveBeenCalledTimes(2));
 		expect(api.savePrivacy.mock.calls[1]?.[0]).toEqual({ group: "clearance", private: false });
+	});
+});
+
+describe("new facts default", () => {
+	beforeEach(() => {
+		api.setStatus.mockReset().mockResolvedValue({ updated: 0 });
+		api.savePrivacy.mockReset().mockResolvedValue({ group: "x", private: false, status: null });
+		toasts.add.mockReset();
+		api.groups = [
+			entry("experience", 52, 0),
+			entry("experience/pre-2017", 0, 13, "excluded"),
+			entry("experience/pre-2017/initech", 0, 2),
+			entry("clearance", 0, 6, null, true),
+			entry("clearance/renewals", 0, 2),
+		];
+	});
+	afterEach(cleanup);
+
+	const defaultOf = (path: string, value: "on" | "off") =>
+		screen.getByRole("button", { name: `New facts in ${path} default to ${value}` });
+
+	it("shows on every row, inherited from the nearest parent, green for on and red for off", async () => {
+		renderCard();
+		expect(await screen.findByText(metaLine("52 on · 15 off · 5,200 characters · new facts default: on"))).toBeTruthy();
+		expect(screen.getByText(metaLine("15 facts · nothing sent · new facts default: off"))).toBeTruthy();
+		// No setting of its own: it takes its parent's, and says so even though it matches the switch.
+		expect(screen.getByText(metaLine("2 facts · nothing sent · new facts default: off"))).toBeTruthy();
+		expect(screen.getByText(metaLine("8 facts · private · new facts default: on"))).toBeTruthy();
+		expect(screen.getByText(metaLine("2 facts · private through clearance · new facts default: on"))).toBeTruthy();
+
+		const on = defaultOf("experience", "on");
+		expect(on.textContent).toBe("on");
+		expect(on.className).toContain("text-success-text");
+		const off = defaultOf("experience/pre-2017/initech", "off");
+		expect(off.textContent).toBe("off");
+		expect(off.className).toContain("text-danger-text");
+	});
+
+	it("flips only the group's own default, without switching its facts, private groups included", async () => {
+		renderCard();
+		fireEvent.click(await screen.findByRole("button", { name: "New facts in experience default to on" }));
+		await waitFor(() => expect(api.savePrivacy).toHaveBeenCalled());
+		expect(api.savePrivacy.mock.calls[0]?.[0]).toEqual({ group: "experience", status: "excluded" });
+		await waitFor(() =>
+			expect(toasts.add).toHaveBeenCalledWith({
+				type: "success",
+				description: "New facts in experience now start off.",
+			}),
+		);
+
+		fireEvent.click(defaultOf("experience/pre-2017/initech", "off"));
+		await waitFor(() => expect(api.savePrivacy).toHaveBeenCalledTimes(2));
+		expect(api.savePrivacy.mock.calls[1]?.[0]).toEqual({ group: "experience/pre-2017/initech", status: "active" });
+
+		// Still clickable through a private parent: the default matters when an application includes the group.
+		const renewals = defaultOf("clearance/renewals", "on");
+		expect(renewals.hasAttribute("disabled")).toBe(false);
+		fireEvent.click(renewals);
+		await waitFor(() => expect(api.savePrivacy).toHaveBeenCalledTimes(3));
+		expect(api.savePrivacy.mock.calls[2]?.[0]).toEqual({ group: "clearance/renewals", status: "excluded" });
+
+		expect(api.setStatus).not.toHaveBeenCalled();
 	});
 });

@@ -8490,17 +8490,31 @@ msgstr "New fact"
 msgid "New facts"
 msgstr "New facts"
 
+#: src/features/career/knowledge/groups.tsx
+msgid "new facts default:"
+msgstr "new facts default:"
+
 #: src/features/career/knowledge/import.tsx
 msgid "New facts follow their group's coaching and privacy settings. New groups start with coaching on."
 msgstr "New facts follow their group's coaching and privacy settings. New groups start with coaching on."
 
+#. placeholder {0}: node.path
 #: src/features/career/knowledge/groups.tsx
-msgid "new facts start off"
-msgstr "new facts start off"
+msgid "New facts in {0} default to off"
+msgstr "New facts in {0} default to off"
+
+#. placeholder {0}: node.path
+#: src/features/career/knowledge/groups.tsx
+msgid "New facts in {0} default to on"
+msgstr "New facts in {0} default to on"
 
 #: src/features/career/knowledge/groups.tsx
-msgid "new facts start on"
-msgstr "new facts start on"
+msgid "New facts in {group} now start off."
+msgstr "New facts in {group} now start off."
+
+#: src/features/career/knowledge/groups.tsx
+msgid "New facts in {group} now start on."
+msgstr "New facts in {group} now start on."
 
 #: src/features/settings/ai/api-keys.tsx
 msgid "New key"
@@ -9167,6 +9181,10 @@ msgstr "Observation"
 msgid "Odia"
 msgstr "Odia"
 
+#: src/features/career/knowledge/groups.tsx
+msgid "off"
+msgstr "off"
+
 #: src/features/settings/ai/providers.tsx
 msgid "Off"
 msgstr "Off"
@@ -9209,6 +9227,10 @@ msgstr "Office days not stated"
 #: src/features/resume/editor/save-status.tsx
 msgid "Offline · saved on this device"
 msgstr "Offline · saved on this device"
+
+#: src/features/career/knowledge/groups.tsx
+msgid "on"
+msgstr "on"
 
 #. Hero headline, line 3 of 4: “Everything / you’ve done, / on one / page.”
 #: src/features/homepage/hero.tsx

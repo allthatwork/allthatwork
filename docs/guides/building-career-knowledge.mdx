@@ -165,7 +165,7 @@ After you correct, switch off or forget a fact, older interview debriefs remain 
 
 Put related facts in a group, such as one per job or a group for anything you rarely want sent. Select **Group** on a fact and type a name, or pick one already in use. Use slashes for levels: `experience/acme` sits under `experience`. To add facts straight into a group, choose it in the **Group** filter first; new facts you add go into it.
 
-**Career → Knowledge → Curate → Groups** lists every group with a lock and a switch. Under its name it shows how many facts it holds (or how many are on and off, when some of each), and how many characters its switched-on shared facts add to the budget, or "private" when it's locked. The switch is on when anything in the group is on. Switching it turns every fact in the group and its subgroups on or off at once. A fact added to the group later starts the way the group, or the nearest group above it, was last switched, so a group you switched off stays off as it grows. When that differs from the switch, for example after you switched each fact off by hand in Facts, the row says **new facts start on** or **new facts start off**. Switching a parent group again also resets any subgroup you switched on its own.
+**Career → Knowledge → Curate → Groups** lists every group with a lock and a switch. Under its name it shows how many facts it holds (or how many are on and off, when some of each), and how many characters its switched-on shared facts add to the budget, or "private" when it's locked. The switch is on when anything in the group is on. Switching it turns every fact in the group and its subgroups on or off at once. Every row ends with **new facts default: on** (green) or **off** (red): how a fact added to the group later starts. Switching the group sets it, so a group you switched off stays off as it grows. Select **on** or **off** to change only the default: the facts already in the group, and its switch, stay as they are. A group with no default of its own follows the nearest group above it, and starts facts switched on when none has one. Switching a parent group again also resets any subgroup you switched on its own.
 
 <Frame caption="Each group has a lock for Private and a switch for on and off.">
   <img
@@ -174,7 +174,7 @@ Put related facts in a group, such as one per job or a group for anything you ra
   />
 </Frame>
 
-The same controls are in the API and MCP: `GET /career/facts/groups` lists groups, `POST /career/facts/groups/status` switches one (the group goes in the body, since its path can contain slashes), `PATCH /career/facts` switches or regroups many facts by id, and `GET /career/facts?group=` lists one group's facts.
+The same controls are in the API and MCP: `GET /career/facts/groups` lists groups, `POST /career/facts/groups/status` switches one (the group goes in the body, since its path can contain slashes), `PUT /career/facts/groups` sets its privacy or its new-facts default (`status`), `PATCH /career/facts` switches or regroups many facts by id, and `GET /career/facts?group=` lists one group's facts.
 
 ## Clean up duplicates
 

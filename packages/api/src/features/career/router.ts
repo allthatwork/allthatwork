@@ -432,12 +432,24 @@ export const careerRouter = {
 			path: "/career/facts/groups",
 			tags: ["Career"],
 			operationId: "saveCareerFactGroup",
-			summary: "Make a career fact group private or not",
+			summary: "Make a career fact group private, or set how its new facts start",
 			description:
-				"A private group's facts, subgroups included, never reach the AI provider, whatever their own switches say, unless an application includes the group (see PUT /career/overrides).",
+				"private: a private group's facts, subgroups included, never reach the AI provider, whatever their own switches say, unless an application includes the group (see PUT /career/overrides). status: how facts added to the group later start, without switching any fact it already holds; subgroups with their own setting keep it. Give either or both.",
 		})
-		.input(z.object({ group: factGroupSchema, private: z.boolean() }))
-		.output(z.object({ group: z.string(), private: z.boolean() }))
+		.input(
+			z
+				.object({
+					group: factGroupSchema,
+					private: z.boolean().optional(),
+					status: factSwitchSchema
+						.optional()
+						.describe("How facts added to the group later start. Facts already in it don't change."),
+				})
+				.refine((input) => input.private !== undefined || input.status !== undefined, {
+					message: "Give private, status or both.",
+				}),
+		)
+		.output(z.object({ group: z.string(), private: z.boolean(), status: factSwitchSchema.nullable() }))
 		.handler(({ context, input }) => careerService.saveFactGroup(context.user.id, input)),
 	overrides: protectedProcedure
 		.route({

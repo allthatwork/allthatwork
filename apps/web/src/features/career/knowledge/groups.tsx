@@ -118,12 +118,12 @@ export function groupTree(groups: readonly FactGroup[]): GroupNode[] {
 	});
 }
 
-/** The line under a group's name: its count, whether it's private or what it adds, and how new facts start when that differs from its switch. */
+/** The line under a group's name, before its new-facts default: its count, and whether it's private or what it adds. */
 export function groupMeta(node: GroupNode, number: Intl.NumberFormat): string {
 	const { active, excluded } = node.facts;
 	const total = active + excluded;
 	const on = active > 0;
-	const parts = [
+	return [
 		total === 0
 			? t`No facts`
 			: on && excluded > 0
@@ -136,10 +136,7 @@ export function groupMeta(node: GroupNode, number: Intl.NumberFormat): string {
 				: on
 					? t`${number.format(node.activeChars)} characters`
 					: t`nothing sent`,
-	];
-	if (node.startsAs === "active" && !on) parts.push(t`new facts start on`);
-	if (node.startsAs === "excluded" && on) parts.push(t`new facts start off`);
-	return parts.join(" · ");
+	].join(" · ");
 }
 
 /** Curate: switch whole groups of facts on or off, with how much each one adds to the budget. */
@@ -178,6 +175,22 @@ export function GroupsCard() {
 	});
 	const privacy = useMutation({
 		...orpc.career.saveFactGroup.mutationOptions(),
+		onError: (error) =>
+			toast.add({
+				type: "error",
+				description: getOrpcErrorMessage(error, { fallback: t`Couldn't change that group.` }),
+			}),
+		onSettled: () => void queryClient.invalidateQueries({ queryKey: orpc.career.factGroups.key() }),
+	});
+
+	const defaults = useMutation({
+		...orpc.career.saveFactGroup.mutationOptions(),
+		onSuccess: (_, { group, status }) =>
+			toast.add({
+				type: "success",
+				description:
+					status === "excluded" ? t`New facts in ${group} now start off.` : t`New facts in ${group} now start on.`,
+			}),
 		onError: (error) =>
 			toast.add({
 				type: "error",
@@ -227,7 +240,15 @@ export function GroupsCard() {
 									<p className="truncate text-sm font-medium" title={node.path}>
 										{node.name}
 									</p>
-									<p className="text-xs text-ink-3">{groupMeta(node, number)}</p>
+									<p className="text-xs text-ink-3">
+										{groupMeta(node, number)} · <Trans>new facts default:</Trans>{" "}
+										<NewFactsDefault
+											node={node}
+											pending={defaults.isPending && defaults.variables?.group === node.path}
+											saving={defaults.variables?.status}
+											onChange={(status) => defaults.mutate({ group: node.path, status })}
+										/>
+									</p>
 								</div>
 								<PrivateLock
 									node={node}
@@ -254,6 +275,34 @@ export function GroupsCard() {
 				</p>
 			)}
 		</section>
+	);
+}
+
+type NewFactsDefaultProps = {
+	node: GroupNode;
+	pending: boolean;
+	/** The value being saved, shown while `pending` so the word doesn't flick back until the list reloads. */
+	saving: GroupNode["startsAs"] | undefined;
+	onChange: (status: GroupNode["startsAs"]) => void;
+};
+
+/** How facts added to the group later start, green "on" or red "off"; a click flips it without switching any fact. */
+function NewFactsDefault({ node, pending, saving, onChange }: NewFactsDefaultProps) {
+	const value = pending && saving ? saving : node.startsAs;
+	const on = value === "active";
+	return (
+		<button
+			type="button"
+			disabled={pending}
+			aria-label={on ? t`New facts in ${node.path} default to on` : t`New facts in ${node.path} default to off`}
+			onClick={() => onChange(on ? "excluded" : "active")}
+			className={cn(
+				"-mx-0.5 rounded-sm px-0.5 font-medium transition-colors duration-quick hover:bg-sunken disabled:cursor-progress disabled:opacity-50",
+				on ? "text-success-text" : "text-danger-text",
+			)}
+		>
+			{on ? t`on` : t`off`}
+		</button>
 	);
 }
 
