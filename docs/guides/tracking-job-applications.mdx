@@ -12,7 +12,7 @@ To open it, select **Applications** in the sidebar (on a phone, it's in the bott
 <Frame caption="The Applications page in the List view, with the follow-up reminder at the top">
   <img
     src="/images/guides/tracking-job-applications/applications-list-view.webp"
-    alt="Applications page showing a follow-up reminder banner, the List, Board, Insights and Calendar tabs, a search field, and applications grouped under Interview, Offer, Screening, Applied and Saved"
+    alt="Applications page with the Board, List, Insights and Calendar tabs beside the title, a follow-up reminder banner, the search field and filters with Sort and Columns at the end, and applications grouped under Interview, Screening and Applied"
   />
 </Frame>
 
@@ -39,13 +39,13 @@ You can close an application from any stage. Closing asks for a reason (**Not se
 
 ## Choosing a view
 
-Use the tabs above the list to switch views. Your choice is kept in the page address, so a bookmark opens the same view.
+Use the tabs beside the **Applications** title to switch views. Your choice is kept in the page address, so a bookmark opens the same view. On a narrower window the tabs show their icons only.
 
 <Tabs>
   <Tab title="Board">
-    The default view. One column per stage, with a card for each application. A card shows the search fit (`Fit NN%`) and the resume **Build** status next to the next step; select **Build** on a card to queue or unqueue it for a targeted resume build. Drag a card to another column to move it to that stage. Each card also has a **⋯** menu with **Move to…**, **Close…** and **Delete…**, which is handy if you prefer the keyboard. The columns follow the **Stage** filter, so with **Closed** included a **Closed** column appears too, and with one stage chosen you get one column on the left. Dragging a card there asks why it ended before closing it, so Insights can use the outcome.
+    The default view. One column per stage, with a card for each application, in the order set by [Sort](#sorting). A card shows the search fit (`Fit NN%`) and the resume **Build** status next to the next step; select **Build** on a card to queue or unqueue it for a targeted resume build. Drag a card to another column to move it to that stage. Each card also has a **⋯** menu with **Move to…**, **Close…** and **Delete…**, which is handy if you prefer the keyboard. The columns follow the **Stage** filter, so with **Closed** included a **Closed** column appears too, and with one stage chosen you get one column on the left. Dragging a card there asks why it ended before closing it, so Insights can use the outcome.
 
-    The columns share the page's width evenly and the board fills the window's height, with each column scrolling on its own. On a narrower window the columns keep a minimum width and the board scrolls sideways; a fade on the edge shows there are more columns that way. Dragging a card toward the edge scrolls the board too.
+    The columns share the page's width evenly (never wider than with five stages showing) and the board fills the window's height, with each column scrolling on its own. To make them wider or narrower, drag the line in the gap after any column: every column takes that width, from 256 to 640 pixels, and it's saved to your account. Double-click the line to go back to sharing the width evenly. When the columns don't fit, the board scrolls sideways; a fade on the edge shows there are more columns that way. Dragging a card toward the edge scrolls the board too.
 
     <Frame caption="The Board view">
       <img src="/images/guides/tracking-job-applications/applications-board-view.webp" alt="Board view with Saved, Applied, Screening, Interview and Offer columns sharing the page width, each card showing the role, company, next step, fit and Build status" />
@@ -60,7 +60,9 @@ Use the tabs above the list to switch views. Your choice is kept in the page add
     Applications are grouped by stage in the order that usually needs you first: **Interview**, **Offer**, **Screening**, **Applied**, **Saved**, then **Closed** when the **Stage** filter includes it. Only the stages the filter shows get a group.
 
     - Select a group heading to collapse or expand it.
-    - Select the **Role**, **Next step**, **Fit** or **Updated** column heading to sort within each group. Select it again to reverse the order. The sort is kept in the page address with the filters. **Fit** is the search fit; applications without one sort last when sorting highest first.
+    - Select a column heading to sort within each group by that column (Role, Next step, Fit, Targeting fit, Applied, Added and Updated sort). Select it again to reverse the order. It's the same sort as the **Sort** button.
+    - Choose the columns with **Columns** at the end of the toolbar: tick a column to show it, untick it to hide it, drag the grips to change the order, or select **Reset** for the default columns. **Role** always comes first. Besides the default **Next step**, **Fit**, **Build**, **Stage**, **Sent** and **Updated**, you can show **Targeting fit**, **Found by**, **Found on**, **Lane**, **Salary**, **Tags**, **Follow-up**, **Applied** (the date you sent it) and **Added** (the date you saved it).
+    - Drag the line between two headings to make the column after it wider or narrower; **Role** takes whatever width is left. Double-click the line to put that column back to its starting width. Your columns, their order and their widths are saved to your account, so they're the same in any browser.
     - The **Next step** column shows the next interview, the follow-up you set, or how long you've been waiting. It turns amber when something is overdue or you've had no reply for 10 days or more (you can change the number of days or turn this off in **Settings → Preferences → Reminders**).
     - The **Sent** column shows an icon for a linked resume and a linked letter. It says **None** in amber when an application was sent without a linked document.
     - Select a row to open its details.
@@ -74,7 +76,13 @@ Use the tabs above the list to switch views. Your choice is kept in the page add
   </Tab>
 </Tabs>
 
-On phones, the page shows **List** and **Insights** only (it opens on List), and list rows show the company and next step on a second line.
+### Sorting
+
+**Sort** at the end of the toolbar orders the cards in each Board column and the rows in each List group by **Updated**, **Added**, **Applied**, **Next step**, **Fit** (the search fit), **Targeting fit**, **Role** or **Company**. Below the fields, pick the direction, worded for the field: **Newest first** or **Oldest first** for dates, **Highest first** or **Lowest first** for fits, **Soonest first** or **Latest first** for the next step, **A to Z** or **Z to A** for names. Applications without a value, such as no fit yet, go last either way.
+
+Your sort is saved to your account, so the page opens with it anywhere. It's also in the page address, so a link with a sort opens with that sort. Calendar and Insights don't use it.
+
+On phones, the page shows **List** and **Insights** only (it opens on List), and list rows show the company and next step on a second line. **Sort** is the icon button after **Filters**; the List's columns can't be changed there.
 
 ## Finding applications
 

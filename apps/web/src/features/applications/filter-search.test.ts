@@ -4,7 +4,7 @@ import {
 	DEFAULT_APPLICATION_SORT,
 	OPEN_STAGES,
 } from "@reactive-resume/schema/applications/filters";
-import { filtersFromSearch, hasFilterParams, searchFromFilters } from "./filter-search";
+import { filtersFromSearch, hasFilterParams, searchFromFilters, sortFromSearch } from "./filter-search";
 
 describe("filtersFromSearch", () => {
 	it("gives the defaults for an empty address", () => {
@@ -96,5 +96,23 @@ it("knows when the address holds filters", () => {
 	expect(hasFilterParams({ view: "list", applicationId: "a", create: true })).toBe(false);
 	expect(hasFilterParams({ view: "list", stage: "saved" })).toBe(true);
 	expect(hasFilterParams({ closed: true })).toBe(true);
-	expect(hasFilterParams({ sort: "role" })).toBe(true);
+	// The sort is the account's, so an address with only a sort still opens the tab's remembered filters.
+	expect(hasFilterParams({ sort: "role", dir: "asc" })).toBe(false);
+});
+
+describe("sortFromSearch", () => {
+	it("is null when the address has no sort, so the account's applies", () => {
+		expect(sortFromSearch({})).toBeNull();
+	});
+
+	it("reads a key, a direction or both, each missing half at its default", () => {
+		expect(sortFromSearch({ sort: "added" })).toEqual({ sort: "added", dir: "desc" });
+		expect(sortFromSearch({ dir: "asc" })).toEqual({ sort: "updated", dir: "asc" });
+		expect(sortFromSearch({ sort: "company", dir: "asc" })).toEqual({ sort: "company", dir: "asc" });
+	});
+
+	it("treats a value that isn't valid as no sort", () => {
+		expect(sortFromSearch({ sort: "salary" })).toBeNull();
+		expect(sortFromSearch({ sort: "fit", dir: "sideways" })).toBeNull();
+	});
 });

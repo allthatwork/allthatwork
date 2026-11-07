@@ -321,7 +321,7 @@ function ImportOptions({
 	const settingLabels: Record<ImportSetting, { label: string; description: string }> = {
 		preferences: {
 			label: t`Preferences`,
-			description: t`Resume length and reminders. Off keeps yours.`,
+			description: t`Resume length, reminders and the Applications layout. Off keeps yours.`,
 		},
 		aiLimits: {
 			label: t`AI limits`,

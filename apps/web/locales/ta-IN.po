@@ -1335,6 +1335,10 @@ msgstr "வலுவான பொருத்தம், தீர்க்க �
 msgid "A timed plan, your opening, the stories to bring and questions to ask. It becomes your checklist 10 minutes before the call."
 msgstr "நேரமிட்ட திட்டம், உங்கள் தொடக்க உரை, கொண்டுசெல்ல வேண்டிய கதைகள், கேட்க வேண்டிய கேள்விகள். அழைப்புக்கு 10 நிமிடங்களுக்கு முன் இது உங்கள் சரிபார்ப்புப் பட்டியலாக மாறும்."
 
+#: src/features/applications/sort.ts
+msgid "A to Z"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "A web address is written without https://."
 msgstr "ஒரு இணைய முகவரி https:// இல்லாமல் எழுதப்பட்டுள்ளது."
@@ -1776,6 +1780,11 @@ msgstr ""
 msgid "Add your name"
 msgstr "உங்கள் பெயரைச் சேர்க்கவும்"
 
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
+msgid "Added"
+msgstr ""
+
 #. placeholder {0}: role.trim()
 #. placeholder {1}: company.trim()
 #: src/features/applications/components/add-application-dialog.tsx
@@ -2046,6 +2055,10 @@ msgstr "{0}-க்கும் மின்னஞ்சல் அனுப்ப
 #: src/features/resume/editor/design/style-groups.tsx
 msgid "Also shows the icons on skills, profiles and interests."
 msgstr "திறன்கள், சுயவிவரங்கள் மற்றும் ஆர்வங்கள் பற்றிய ஐகான்களையும் காட்டுகிறது."
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Always first"
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Amharic"
@@ -2331,6 +2344,8 @@ msgid "Applications to export"
 msgstr "ஏற்றுமதிக்கான விண்ணப்பங்கள்"
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/applications/stages.ts
 #: src/features/homepage/prepare.tsx
 #: src/features/homepage/sections.tsx
@@ -2794,7 +2809,7 @@ msgid "Bring in documents, applications and Knowledge from an Export everything 
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Build"
 msgstr ""
@@ -3369,6 +3384,7 @@ msgstr "நிறம்"
 msgid "Column {header} goes to"
 msgstr "நெடுவரிசை {header} செல்கிறது"
 
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
@@ -3406,6 +3422,7 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/sort.ts
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/check/job-match.tsx
@@ -4160,6 +4177,10 @@ msgstr ""
 msgid "Couldn't save the follow-up."
 msgstr "பின்தொடர்வதைச் சேமிக்க முடியவில்லை."
 
+#: src/features/applications/use-applications-layout.ts
+msgid "Couldn't save the layout, so it's back to how it was."
+msgstr ""
+
 #: src/features/applications/components/application-notes.tsx
 msgid "Couldn't save the notes."
 msgstr "குறிப்புகளைச் சேமிக்க முடியவில்லை."
@@ -4334,7 +4355,7 @@ msgstr "நிரப்பு"
 #: src/features/applications/components/detail/sent-documents.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Cover letter"
 msgstr "கவர் கடிதம்"
 
@@ -4852,6 +4873,10 @@ msgstr "வேறு நாணயம், ஒப்பிடப்படவில
 msgid "Different pay period, not compared"
 msgstr "வேறு ஊதியக் காலம், ஒப்பிடப்படவில்லை"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Direction"
+msgstr ""
+
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/directory/page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -4941,6 +4966,7 @@ msgstr "{0} ஐ அனுப்ப வேண்டாம்"
 msgid "Donate"
 msgstr "நன்கொடை அளிக்கவும்"
 
+#: src/features/applications/components/sort-button.tsx
 #: src/features/career/workspace/questions.tsx
 #: src/features/resume/editor/write/rich-text-editor.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -5101,6 +5127,10 @@ msgstr "இழுக்கவும் · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "பகுதிகளை நெடுவரிசைகளுக்குள் நகர்த்த இதே இடத்திற்கு இழுத்து விடவும்"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Drag to reorder. To resize, drag the line between two headings."
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Drag to reposition and use the slider to zoom before uploading."
@@ -5910,8 +5940,9 @@ msgid "First run"
 msgstr "முதல் இயக்கம்"
 
 #: src/features/applications/components/application-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5998,6 +6029,7 @@ msgid "Follow up on {0}"
 msgstr "{0} அன்று பின்தொடரவும்"
 
 #: src/features/applications/components/detail/next-step-card.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Follow-up"
 msgstr "பின்தொடர்தல்"
 
@@ -6127,6 +6159,7 @@ msgstr "{0} அன்று கண்டறியப்பட்டது"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found by"
 msgstr ""
@@ -6142,6 +6175,7 @@ msgstr ""
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found on"
 msgstr ""
@@ -6557,6 +6591,10 @@ msgstr "புகைப்படத்தை மறை"
 msgid "High"
 msgstr "உயர்"
 
+#: src/features/applications/sort.ts
+msgid "Highest first"
+msgstr ""
+
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Highlight"
 msgstr "ஹைலைட்"
@@ -6884,6 +6922,10 @@ msgstr "மேம்படுத்துகிறது…"
 
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
+msgstr ""
+
+#: src/features/applications/components/sort-button.tsx
+msgid "in each stage"
 msgstr ""
 
 #: src/features/homepage/sections.tsx
@@ -7442,6 +7484,7 @@ msgstr "லேபிள், எ.கா. பணியமர்த்துபவ�
 msgid "Landscape"
 msgstr "கிடைமட்டப் படலம்"
 
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Lane"
 msgstr ""
@@ -7509,6 +7552,10 @@ msgstr ""
 #: src/features/settings/ai/api-keys.tsx
 msgid "Last used"
 msgstr "கடைசியாக பயன்படுத்தப்பட்டது"
+
+#: src/features/applications/sort.ts
+msgid "Latest first"
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Latvian"
@@ -8016,6 +8063,10 @@ msgstr "குறைந்த"
 msgid "Lower the design sheet"
 msgstr "வடிவமைப்பு தாளைக் குறைக்கவும்"
 
+#: src/features/applications/sort.ts
+msgid "Lowest first"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -8310,6 +8361,10 @@ msgstr "மோனோ"
 msgid "More actions"
 msgstr ""
 
+#: src/features/applications/components/columns-button.tsx
+msgid "More columns"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/editor-bar.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
@@ -8376,6 +8431,10 @@ msgstr "பெரும்பாலான அமைப்புகள் மி�
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Mostly readable"
 msgstr "பெரும்பாலும் படிக்கக்கூடியது"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Move {label}"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
@@ -8714,6 +8773,10 @@ msgstr "புதிய பிரிவு"
 msgid "New teams at Northwind were stalling in setup; most never got through."
 msgstr "Northwind-இல் புதிய குழுக்கள் அமைவில் தேங்கிக்கொண்டிருந்தன; பெரும்பாலானவை முடிக்கவே இல்லை."
 
+#: src/features/applications/sort.ts
+msgid "Newest first"
+msgstr ""
+
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Next"
 msgstr ""
@@ -8735,7 +8798,8 @@ msgid "Next question"
 msgstr "அடுத்த கேள்வி"
 
 #: src/features/applications/components/detail/next-step-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/shell.tsx
 msgid "Next step"
 msgstr "அடுத்த படி"
@@ -9100,7 +9164,7 @@ msgstr "எண். {number} · {name}"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "இல்லை"
 
@@ -9428,6 +9492,10 @@ msgstr "அலுவலக நாட்கள் குறிப்பிடப�
 #: src/features/resume/editor/save-status.tsx
 msgid "Offline · saved on this device"
 msgstr "ஆஃப்லைன் · இந்தச் சாதனத்தில் சேமிக்கப்பட்டது"
+
+#: src/features/applications/sort.ts
+msgid "Oldest first"
+msgstr ""
 
 #: src/features/career/knowledge/groups.tsx
 msgid "on"
@@ -11226,6 +11294,10 @@ msgstr "தேவைகளும் உங்கள் சான்றுகள�
 msgid "Reserve capitals for short headings. They slow reading and can defeat case-sensitive search."
 msgstr "பெரிய எழுத்துக்களை குறுகிய தலைப்புகளுக்கு மட்டும் ஒதுக்கவும். அவை படிப்பதை மெதுவாக்குவதோடு, எழுத்து-உணர்திறன் தேடலைத் தோற்கடிக்கக்கூடும்."
 
+#: src/features/applications/components/columns-button.tsx
+msgid "Reset"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 msgid "Reset design defaults"
 msgstr "வடிவமைப்பு இயல்புநிலைகளை மீட்டமைக்கவும்"
@@ -11246,6 +11318,14 @@ msgstr "உங்கள் கடவுச்சொல்லை மீட்ட�
 #: src/features/auth/pages/reset-password.tsx
 msgid "Resetting your password..."
 msgstr "உங்கள் கடவுச்சொல்லை மீட்டமைத்து கொண்டிருக்கிறது..."
+
+#: src/features/applications/components/list-view.tsx
+msgid "Resize {label}"
+msgstr ""
+
+#: src/features/applications/components/board.tsx
+msgid "Resize the columns"
+msgstr ""
 
 #: src/features/homepage/footer.tsx
 msgid "Resources"
@@ -11302,7 +11382,7 @@ msgstr "ரெஸ்யூம்"
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
@@ -11358,7 +11438,7 @@ msgid "Resume length"
 msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
-msgid "Resume length and reminders. Off keeps yours."
+msgid "Resume length, reminders and the Applications layout. Off keeps yours."
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
@@ -11514,9 +11594,11 @@ msgid "Right now"
 msgstr "இப்போதே"
 
 #: src/features/applications/components/add-application-dialog.tsx
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
 msgstr "பதவி"
@@ -11609,6 +11691,7 @@ msgstr "S"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Salary"
 msgstr "சம்பளம்"
 
@@ -11976,7 +12059,7 @@ msgstr "தேடல் தோல்வியடைந்தது"
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/career/workspace/assessments.tsx
 msgid "Search fit"
 msgstr ""
@@ -12241,7 +12324,7 @@ msgstr ""
 msgid "Senior Product Designer"
 msgstr "மூத்த தயாரிப்பு வடிவமைப்பாளர்"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/resume/share/format.ts
 msgid "Sent"
 msgstr "அனுப்பப்பட்டது"
@@ -12486,6 +12569,10 @@ msgstr "டெம்ப்ளேட்களைக் காட்டு"
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Show them again"
 msgstr "அவற்றை மீண்டும் காட்டு"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Shown"
+msgstr ""
 
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Shown in your timezone."
@@ -12783,13 +12870,26 @@ msgstr "ஏதோ தவறு நடந்துள்ளது. தயவு�
 msgid "Something went wrong. Try again."
 msgstr "ஏதோ தவறாகிவிட்டது. மீண்டும் முயற்சிக்கவும்."
 
+#: src/features/applications/sort.ts
+msgid "Soonest first"
+msgstr ""
+
+#: src/features/applications/components/sort-button.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "வரிசைப்படுத்து"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort by"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Sort by date"
 msgstr "தேதியின்படி வரிசைப்படுத்து"
+
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort: {label}"
+msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
 #: src/routes/dashboard/settings/route.tsx
@@ -12860,7 +12960,7 @@ msgstr "சதுரம்"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Stage"
 msgstr "நிலை"
@@ -13259,6 +13359,7 @@ msgstr "குறிச்சொல்"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
 #: src/features/directory/page.tsx
@@ -13340,6 +13441,8 @@ msgstr ""
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/assessments.tsx
 msgid "Targeting fit"
 msgstr ""
@@ -14681,7 +14784,8 @@ msgstr "இந்த பயன்பாட்டின் விவரங்க�
 msgid "Update your password"
 msgstr "உங்கள் கடவுச்சொல்லை புதுப்பிக்கவும்"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "புதுப்பிக்கப்பட்டது"
 
@@ -15993,6 +16097,10 @@ msgstr "உங்களுடையது"
 #: src/features/homepage/design.tsx
 msgid "Yours · {0}"
 msgstr "உங்களுடையது · {0}"
+
+#: src/features/applications/sort.ts
+msgid "Z to A"
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Zoom"

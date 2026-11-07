@@ -75,7 +75,20 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
  * Phones: the Filters button with the number set, the set filters as chips under it (scrolling sideways, each with ×),
  * and a bottom sheet with every filter as tappable pills. Filters apply as they're tapped; "Show N applications" closes.
  */
-export function PhoneFilters({ applications, filters, onChange, context, lanes, matching }: FilterBarProps) {
+type PhoneFiltersProps = FilterBarProps & {
+	/** Shown right after the Filters button, before the chips (the Sort button). */
+	trailing?: ReactNode;
+};
+
+export function PhoneFilters({
+	applications,
+	filters,
+	onChange,
+	context,
+	lanes,
+	matching,
+	trailing,
+}: PhoneFiltersProps) {
 	const [open, setOpen] = useState(false);
 	const count = activeFilterCount(filters);
 	const set = FACETS.filter((facet) => isFacetSet(filters, facet));
@@ -241,6 +254,7 @@ export function PhoneFilters({ applications, filters, onChange, context, lanes, 
 					</span>
 				)}
 			</Button>
+			{trailing}
 
 			{set.length > 0 && (
 				<div className="-mx-4 flex basis-full [scrollbar-width:none] gap-1.5 overflow-x-auto px-4 pb-0.5">

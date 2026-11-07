@@ -56,9 +56,12 @@ vi.mock("@tanstack/react-router", async (importOriginal) => ({
 
 import { APPLICATION_STATUSES } from "@reactive-resume/schema/applications/data";
 import { DEFAULT_APPLICATION_SORT, OPEN_STAGES } from "@reactive-resume/schema/applications/filters";
+import { resolveListColumns } from "@reactive-resume/schema/applications/layout";
 import { AddApplicationDialog } from "./add-application-dialog";
 import { ApplicationBoard } from "./board";
+import { ColumnsButton } from "./columns-button";
 import { ApplicationList } from "./list-view";
+import { SortButton } from "./sort-button";
 
 const application = (id: string, status: Application["status"]): Application => ({
 	id,
@@ -137,6 +140,8 @@ it("removes hidden closed applications from bulk selection before deleting visib
 			stages={stages}
 			sort={DEFAULT_APPLICATION_SORT}
 			onSortChange={vi.fn()}
+			columns={resolveListColumns({})}
+			onColumnResize={vi.fn()}
 			selectedId={null}
 			onOpen={vi.fn()}
 		/>
@@ -155,7 +160,15 @@ it("removes hidden closed applications from bulk selection before deleting visib
 it("offers one board-card open control and a separate options control without a dead draggable tab stop", async () => {
 	const row = application("open", "saved");
 	const onOpen = vi.fn();
-	const view = mount(<ApplicationBoard applications={[row]} stages={OPEN_STAGES} onOpen={onOpen} />);
+	const view = mount(
+		<ApplicationBoard
+			applications={[row]}
+			stages={OPEN_STAGES}
+			sort={DEFAULT_APPLICATION_SORT}
+			onColumnWidthChange={vi.fn()}
+			onOpen={onOpen}
+		/>,
+	);
 	const open = screen.getByRole("button", { name: "Engineer Open Co" });
 	const options = screen.getByRole("button", { name: "Options for Engineer at Open Co" });
 	expect(view.container.querySelector("button button, [role=button] button")).toBeNull();
@@ -176,6 +189,8 @@ it("shows a column per chosen stage and keeps a changed card in the column it sh
 			applications={[application("open", "saved"), moved]}
 			stages={["saved"]}
 			stale={new Map([["moved", "saved"]])}
+			sort={DEFAULT_APPLICATION_SORT}
+			onColumnWidthChange={vi.fn()}
 			onOpen={vi.fn()}
 		/>,
 	);
@@ -193,6 +208,8 @@ it("groups the list by the chosen stages and sorts by the sort it's given", () =
 			stages={["applied"]}
 			sort={{ sort: "role", dir: "asc" }}
 			onSortChange={onSortChange}
+			columns={resolveListColumns({})}
+			onColumnResize={vi.fn()}
 			selectedId={null}
 			onOpen={vi.fn()}
 		/>,
@@ -232,3 +249,170 @@ it.each(["ai", "page"])(
 		expect((screen.getByRole("button", { name: "Save job" }) as HTMLButtonElement).disabled).toBe(false);
 	},
 );
+
+it("shows the chosen columns in order, and a new column's heading sorts it newest first", () => {
+	const onSortChange = vi.fn();
+	mount(
+		<ApplicationList
+			applications={[application("a", "applied")]}
+			stages={OPEN_STAGES}
+			sort={DEFAULT_APPLICATION_SORT}
+			onSortChange={onSortChange}
+			columns={resolveListColumns({ listColumns: [{ id: "added" }, { id: "salary" }, { id: "next", width: 240 }] })}
+			onColumnResize={vi.fn()}
+			selectedId={null}
+			onOpen={vi.fn()}
+		/>,
+	);
+	const headings = [...document.querySelectorAll("thead th")].map((heading) => heading.textContent);
+	expect(headings).toEqual(["Select", "Role", "Added", "Salary", "Next step"]);
+	const widths = [...document.querySelectorAll("col")].map((col) => col.style.width);
+	expect(widths).toEqual(["40px", "", "76px", "124px", "240px"]);
+	fireEvent.click(screen.getByRole("button", { name: "Added" }));
+	expect(onSortChange).toHaveBeenCalledWith({ sort: "added", dir: "desc" });
+});
+
+it("resizes a List column with the arrow keys and resets it on double-click", () => {
+	const onColumnResize = vi.fn();
+	const width = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
+	Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 1400 });
+	try {
+		mount(
+			<ApplicationList
+				applications={[application("a", "applied")]}
+				stages={OPEN_STAGES}
+				sort={DEFAULT_APPLICATION_SORT}
+				onSortChange={vi.fn()}
+				columns={resolveListColumns({})}
+				onColumnResize={onColumnResize}
+				selectedId={null}
+				onOpen={vi.fn()}
+			/>,
+		);
+		const line = screen.getByRole("separator", { name: "Resize Next step" });
+		expect(line.getAttribute("aria-valuenow")).toBe("200");
+		// The line sits on the column's start edge: moving it left widens the column, right narrows it.
+		fireEvent.keyDown(line, { key: "ArrowLeft" });
+		expect(onColumnResize).toHaveBeenLastCalledWith("next", 208);
+		fireEvent.keyDown(line, { key: "ArrowRight", shiftKey: true });
+		expect(onColumnResize).toHaveBeenLastCalledWith("next", 168);
+		fireEvent.doubleClick(line);
+		expect(onColumnResize).toHaveBeenLastCalledWith("next", null);
+	} finally {
+		if (width) Object.defineProperty(HTMLElement.prototype, "clientWidth", width);
+	}
+});
+
+it("never resizes a List column past where Role keeps its minimum", () => {
+	const onColumnResize = vi.fn();
+	const width = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "clientWidth");
+	// 900 less 40 for the checkboxes, 240 for Role and 408 for the other default columns leaves Next step 212px at most.
+	Object.defineProperty(HTMLElement.prototype, "clientWidth", { configurable: true, get: () => 900 });
+	try {
+		mount(
+			<ApplicationList
+				applications={[application("a", "applied")]}
+				stages={OPEN_STAGES}
+				sort={DEFAULT_APPLICATION_SORT}
+				onSortChange={vi.fn()}
+				columns={resolveListColumns({})}
+				onColumnResize={onColumnResize}
+				selectedId={null}
+				onOpen={vi.fn()}
+			/>,
+		);
+		const line = screen.getByRole("separator", { name: "Resize Next step" });
+		fireEvent.keyDown(line, { key: "ArrowLeft", shiftKey: true });
+		expect(onColumnResize).toHaveBeenLastCalledWith("next", 212);
+	} finally {
+		if (width) Object.defineProperty(HTMLElement.prototype, "clientWidth", width);
+	}
+});
+
+it("sorts the cards in each Board column and resizes every column together", () => {
+	const onColumnWidthChange = vi.fn();
+	const low = { ...application("low", "saved"), company: "Low Co", searchFit: 80 };
+	const high = { ...application("high", "saved"), company: "High Co", searchFit: 95 };
+	mount(
+		<ApplicationBoard
+			applications={[low, high]}
+			stages={["saved", "applied"]}
+			sort={{ sort: "fit", dir: "desc" }}
+			columnWidth={300}
+			onColumnWidthChange={onColumnWidthChange}
+			onOpen={vi.fn()}
+		/>,
+	);
+	const saved = screen.getByRole("region", { name: "Saved" });
+	expect(saved.textContent?.indexOf("High Co")).toBeLessThan(saved.textContent?.indexOf("Low Co") ?? 0);
+	expect(saved.style.width).toBe("300px");
+	expect(screen.getByRole("region", { name: "Applied" }).style.width).toBe("300px");
+
+	const [line] = screen.getAllByRole("separator", { name: "Resize the columns" });
+	if (!line) throw new Error("no resize line");
+	// The line is on the column's end side, so moving it right widens every column.
+	fireEvent.keyDown(line, { key: "ArrowRight" });
+	expect(onColumnWidthChange).toHaveBeenLastCalledWith(308);
+	fireEvent.keyDown(line, { key: "ArrowLeft", shiftKey: true });
+	expect(onColumnWidthChange).toHaveBeenLastCalledWith(268);
+	fireEvent.doubleClick(line);
+	expect(onColumnWidthChange).toHaveBeenLastCalledWith(null);
+});
+
+it("picks a sort field in its own direction and switches the direction", async () => {
+	const onChange = vi.fn();
+	mount(<SortButton sort={DEFAULT_APPLICATION_SORT} onChange={onChange} />);
+	fireEvent.click(screen.getByRole("button", { name: /Sort: Updated/ }));
+	fireEvent.click(await screen.findByRole("radio", { name: "Company" }));
+	expect(onChange).toHaveBeenLastCalledWith({ sort: "company", dir: "asc" });
+	fireEvent.click(screen.getByRole("radio", { name: "Oldest first" }));
+	expect(onChange).toHaveBeenLastCalledWith({ sort: "updated", dir: "asc" });
+});
+
+it("adds a column at the end, hides one and resets from the Columns menu", async () => {
+	const onChange = vi.fn();
+	const onReset = vi.fn();
+	mount(<ColumnsButton columns={[{ id: "next" }, { id: "fit", width: 70 }]} onChange={onChange} onReset={onReset} />);
+	fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+	fireEvent.click(await screen.findByRole("checkbox", { name: "Added" }));
+	expect(onChange).toHaveBeenLastCalledWith([{ id: "next" }, { id: "fit", width: 70 }, { id: "added" }]);
+	fireEvent.click(screen.getByRole("checkbox", { name: "Next step" }));
+	expect(onChange).toHaveBeenLastCalledWith([{ id: "fit", width: 70 }]);
+	fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+	expect(onReset).toHaveBeenCalledOnce();
+});
+
+it("leaves the widths alone when a resize line is only clicked", () => {
+	const onColumnResize = vi.fn();
+	const onColumnWidthChange = vi.fn();
+	mount(
+		<>
+			<ApplicationList
+				applications={[application("a", "applied")]}
+				stages={OPEN_STAGES}
+				sort={DEFAULT_APPLICATION_SORT}
+				onSortChange={vi.fn()}
+				columns={resolveListColumns({})}
+				onColumnResize={onColumnResize}
+				selectedId={null}
+				onOpen={vi.fn()}
+			/>
+			<ApplicationBoard
+				applications={[application("b", "saved")]}
+				stages={OPEN_STAGES}
+				sort={DEFAULT_APPLICATION_SORT}
+				onColumnWidthChange={onColumnWidthChange}
+				onOpen={vi.fn()}
+			/>
+		</>,
+	);
+	const listLine = screen.getByRole("separator", { name: "Resize Next step" });
+	fireEvent.pointerDown(listLine, { button: 0, clientX: 300, pointerId: 1 });
+	fireEvent.pointerUp(listLine, { button: 0, clientX: 300, pointerId: 1 });
+	const [boardLine] = screen.getAllByRole("separator", { name: "Resize the columns" });
+	if (!boardLine) throw new Error("no board line");
+	fireEvent.pointerDown(boardLine, { button: 0, clientX: 300, pointerId: 2 });
+	fireEvent.pointerUp(boardLine, { button: 0, clientX: 300, pointerId: 2 });
+	expect(onColumnResize).not.toHaveBeenCalled();
+	expect(onColumnWidthChange).not.toHaveBeenCalled();
+});

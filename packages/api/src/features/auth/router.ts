@@ -220,20 +220,27 @@ export const authRouter = {
 		.output(
 			z.object({
 				exportedAt: z.string(),
-				user: createSelectSchema(schema.user).pick({
-					id: true,
-					name: true,
-					email: true,
-					username: true,
-					displayUsername: true,
-					image: true,
-					resumePages: true,
-					noReplyDays: true,
-					interviewReminders: true,
-					emailVerified: true,
-					createdAt: true,
-					updatedAt: true,
-				}),
+				user: createSelectSchema(schema.user)
+					.pick({
+						id: true,
+						name: true,
+						email: true,
+						username: true,
+						displayUsername: true,
+						image: true,
+						resumePages: true,
+						noReplyDays: true,
+						interviewReminders: true,
+						emailVerified: true,
+						createdAt: true,
+						updatedAt: true,
+					})
+					.extend({
+						applicationsLayout: z
+							.record(z.string(), z.unknown())
+							.nullable()
+							.describe("How the Applications screen is laid out: List columns, Board column width and sort."),
+					}),
 				resumes: z.array(
 					resumeDto.getById.output
 						.omit({ hasPassword: true, applicationId: true })

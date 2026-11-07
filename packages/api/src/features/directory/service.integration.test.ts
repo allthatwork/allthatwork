@@ -46,24 +46,13 @@ suite("Directory migration and account boundaries", () => {
 		for (const directory of directories) {
 			const sql = await readFile(new URL(`${directory}/migration.sql`, migrations), "utf8");
 			if (directory.endsWith("_directory")) {
-				await getDb()
-					.insert(tables.user)
-					.values([
-						{
-							id: userId,
-							name: "Owner",
-							email: "directory-owner@example.test",
-							username: "directory-owner",
-							displayUsername: "Owner",
-						},
-						{
-							id: otherId,
-							name: "Other",
-							email: "directory-other@example.test",
-							username: "directory-other",
-							displayUsername: "Other",
-						},
-					]);
+				// Plain SQL with the columns the table had at this point: the schema's insert lists every column added since.
+				await pool.query(
+					`insert into "user" (id, name, email, username, display_username) values
+						($1, 'Owner', 'directory-owner@example.test', 'directory-owner', 'Owner'),
+						($2, 'Other', 'directory-other@example.test', 'directory-other', 'Other')`,
+					[userId, otherId],
+				);
 				const contacts = [
 					{ name: "Alice Example", role: "Engineer", type: "Referral", email: "alice@example.test", phone: "123" },
 				];

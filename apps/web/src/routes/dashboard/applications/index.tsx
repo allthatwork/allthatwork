@@ -1,12 +1,15 @@
 import type { ShownSnapshot } from "@/features/applications/filter";
 import type { Application } from "@/features/applications/types";
 import type { ApplicationFilters, ApplicationSort } from "@reactive-resume/schema/applications/filters";
+import type { ListColumn, ListColumnId } from "@reactive-resume/schema/applications/layout";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, stripSearchParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import z from "zod";
+import { DEFAULT_APPLICATION_SORT } from "@reactive-resume/schema/applications/filters";
+import { DEFAULT_LIST_COLUMNS, resolveListColumns } from "@reactive-resume/schema/applications/layout";
 import { Button } from "@reactive-resume/ui/components/button";
 import {
 	DropdownMenu,
@@ -26,17 +29,26 @@ import { ApplicationDetailSheet } from "@/features/applications/components/appli
 import { ApplicationFormSheet } from "@/features/applications/components/application-form-sheet";
 import { ApplicationBoard } from "@/features/applications/components/board";
 import { ApplicationCalendar } from "@/features/applications/components/calendar-view";
+import { ColumnsButton } from "@/features/applications/components/columns-button";
 import { ExportApplicationsSheet } from "@/features/applications/components/export-applications-sheet";
 import { FilterBar } from "@/features/applications/components/filters/filter-bar";
 import { PhoneFilters } from "@/features/applications/components/filters/filter-sheet";
 import { ImportApplicationsSheet } from "@/features/applications/components/import-applications-sheet";
 import { ApplicationInsights, InsightsSkeleton } from "@/features/applications/components/insights-view";
 import { ApplicationList } from "@/features/applications/components/list-view";
+import { PhoneSortButton, SortButton } from "@/features/applications/components/sort-button";
 import { clearAll, matchesFilters, mergeSnapshot, withHeld } from "@/features/applications/filter";
-import { filterSearchShape, filtersFromSearch, searchFromFilters } from "@/features/applications/filter-search";
+import {
+	filterSearchShape,
+	filtersFromSearch,
+	searchFromFilters,
+	sortFromSearch,
+} from "@/features/applications/filter-search";
 import { getNextStep, useNoReplyDays } from "@/features/applications/next-step";
 import { applicationsListQueryOptions } from "@/features/applications/queries";
+import { useApplicationsLayout } from "@/features/applications/use-applications-layout";
 import { useRememberedFilters } from "@/features/applications/use-remembered-filters";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { ENTER_CLASS } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
@@ -48,7 +60,7 @@ const searchSchema = z.object({
 	// Deep links: open Add, or one application.
 	create: z.boolean().default(false).catch(false),
 	applicationId: z.string().optional().catch(undefined),
-	// The filters and the List's sort; each is left out of the address at its default.
+	// The filters and the sort; each is left out of the address at its default.
 	...filterSearchShape,
 });
 type Search = z.output<typeof searchSchema>;
@@ -62,12 +74,23 @@ export const Route = createFileRoute("/dashboard/applications/")({
 
 const NO_SNAPSHOT: ShownSnapshot = new Map();
 
+/**
+ * Where the tab labels don't fit beside the title (the sidebar or the rail takes the rest), the tabs go icon only and
+ * get a tooltip. The class and the query cover the same widths.
+ */
+const TAB_LABEL_CLASS = "sm:max-[880px]:sr-only lg:max-[1120px]:sr-only";
+const ICON_TABS_QUERY = "(min-width: 640px) and (max-width: 879.98px), (min-width: 1024px) and (max-width: 1119.98px)";
+
 function RouteComponent() {
 	const search = Route.useSearch();
 	const { view, create, applicationId } = search;
 	const navigate = useNavigate({ from: Route.fullPath });
 	const phone = useBreakpoint() === "mobile";
-	const { filters: addressFilters, sort } = filtersFromSearch(search);
+	const iconTabs = useMediaQuery(ICON_TABS_QUERY);
+	const { filters: addressFilters } = filtersFromSearch(search);
+	// The account's List columns, Board column width and sort. A sort in the address (a link) wins over the account's.
+	const { layout, update: updateLayout } = useApplicationsLayout();
+	const sort = sortFromSearch(search) ?? layout.sort ?? DEFAULT_APPLICATION_SORT;
 	// Typing filters at once; the address gets the text 300ms after typing stops.
 	const [query, setQuery] = useState(addressFilters.q);
 	const [addressQuery, setAddressQuery] = useState(addressFilters.q);
@@ -97,7 +120,15 @@ function RouteComponent() {
 		if (next.q !== query) setQuery(next.q);
 		setSearch(searchFromFilters(next, sort));
 	};
-	const setSort = (next: ApplicationSort) => setSearch(searchFromFilters(filters, next));
+	const setSort = (next: ApplicationSort) => {
+		updateLayout({ sort: next });
+		setSearch(searchFromFilters(filters, next));
+	};
+	const savedColumns: ListColumn[] = layout.listColumns ?? DEFAULT_LIST_COLUMNS.map((id) => ({ id }));
+	const resizeColumn = (id: ListColumnId, width: number | null) =>
+		updateLayout({
+			listColumns: savedColumns.map((column) => (column.id !== id ? column : width === null ? { id } : { id, width })),
+		});
 
 	useEffect(() => {
 		if (query.trim() === addressQuery) return;
@@ -178,22 +209,69 @@ function RouteComponent() {
 	// In Board view the page is the window's height and the board takes what's left below the header, the nudge and the
 	// toolbar; each column scrolls on its own. The other views scroll the page.
 	const fill = shown === "board" && !empty && !(isError && !applications);
+	// The tabs and the toolbar show once there are applications to look at.
+	const withViews = !empty && !(isError && !applications);
+
+	const viewTabs = (
+		<Tabs
+			value={shown}
+			onValueChange={(value) => {
+				setViewSwitched(true);
+				setSearch({ view: value as View });
+			}}
+		>
+			<TabsList aria-label={t`View`}>
+				{!phone && (
+					<TabsTrigger value="board" title={iconTabs ? t`Board` : undefined}>
+						<Icon name="kanban" size={18} />
+						<span className={TAB_LABEL_CLASS}>
+							<Trans>Board</Trans>
+						</span>
+					</TabsTrigger>
+				)}
+				<TabsTrigger value="list" title={iconTabs ? t`List` : undefined}>
+					<Icon name="rows" size={18} />
+					<span className={TAB_LABEL_CLASS}>
+						<Trans>List</Trans>
+					</span>
+				</TabsTrigger>
+				<TabsTrigger value="insights" title={iconTabs ? t`Insights` : undefined}>
+					<Icon name="chart-line-up" size={18} />
+					<span className={TAB_LABEL_CLASS}>
+						<Trans>Insights</Trans>
+					</span>
+				</TabsTrigger>
+				{!phone && (
+					<TabsTrigger value="calendar" title={iconTabs ? t`Calendar` : undefined}>
+						<Icon name="calendar-dots" size={18} />
+						<span className={TAB_LABEL_CLASS}>
+							<Trans>Calendar</Trans>
+						</span>
+					</TabsTrigger>
+				)}
+			</TabsList>
+		</Tabs>
+	);
 
 	return (
 		<div
 			{...(fill ? { [FILL_SCREEN_ATTRIBUTE]: "" } : {})}
 			className={cn(PAGE_CLASS, fill ? "flex min-h-0 flex-1 basis-0 flex-col gap-5 pb-6" : "grid content-start gap-5")}
 		>
+			{/* The title and, beside it, the views; the CSV menu and Save job on the other side. */}
 			<header className="flex flex-wrap items-center justify-between gap-3">
-				<h1 className="font-display text-[30px] leading-9 font-medium">
-					<Trans>Applications</Trans>
-				</h1>
-				<div className="flex items-center gap-2">
+				<div className="flex min-w-0 items-center gap-5">
+					<h1 className="font-display text-[30px] leading-9 font-medium whitespace-nowrap">
+						<Trans>Applications</Trans>
+					</h1>
+					{withViews && !phone && viewTabs}
+				</div>
+				<div className="flex shrink-0 items-center gap-2">
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							render={<Button size="icon" variant="secondary" aria-label={t`Import or export CSV`} />}
 						>
-							<Icon name="arrows-down-up" />
+							<Icon name="dots-three" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem onClick={() => setImporting(true)}>
@@ -231,61 +309,60 @@ function RouteComponent() {
 				<EmptyState onAdd={() => setAdding(true)} onImport={() => setImporting(true)} />
 			) : (
 				<>
-					<div className="flex flex-wrap items-center gap-2">
-						<Tabs
-							value={shown}
-							onValueChange={(value) => {
-								setViewSwitched(true);
-								setSearch({ view: value as View });
-							}}
-						>
-							<TabsList aria-label={t`View`}>
-								{!phone && (
-									<TabsTrigger value="board">
-										<Icon name="kanban" size={18} />
-										<Trans>Board</Trans>
-									</TabsTrigger>
-								)}
-								<TabsTrigger value="list">
-									<Icon name="rows" size={18} />
-									<Trans>List</Trans>
-								</TabsTrigger>
-								<TabsTrigger value="insights">
-									<Icon name="chart-line-up" size={18} />
-									<Trans>Insights</Trans>
-								</TabsTrigger>
-								{!phone && (
-									<TabsTrigger value="calendar">
-										<Icon name="calendar-dots" size={18} />
-										<Trans>Calendar</Trans>
-									</TabsTrigger>
-								)}
-							</TabsList>
-						</Tabs>
-
-						{/* Insights doesn't follow the filters, so it hides them and the search. */}
-						{shown !== "insights" && (
-							<>
-								{phone && <span className="basis-full" />}
-								<div className={cn("relative flex-1", phone ? "min-w-0 basis-0" : "max-w-72 min-w-[220px]")}>
-									<Icon
-										name="magnifying-glass"
-										size={18}
-										className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3"
-									/>
-									<Input
-										type="search"
-										aria-label={t`Search applications`}
-										placeholder={t`Search role, company or contact`}
-										value={query}
-										className="ps-8"
-										onChange={(event) => setQuery(event.target.value)}
-									/>
-								</div>
-								{phone ? <PhoneFilters {...filterProps} /> : <FilterBar {...filterProps} />}
-							</>
-						)}
-					</div>
+					{/*
+					  The toolbar takes the whole row: search, the filters, then Sort and Columns at the end. Under a 1280px window
+					  it's two lines, search with Sort and Columns, then the filters. Insights doesn't follow the filters or the
+					  sort, so it hides the toolbar. Phones keep the tabs on their own line above it.
+					*/}
+					{(phone || shown !== "insights") && (
+						<div className="flex flex-wrap items-center gap-2">
+							{phone && viewTabs}
+							{shown !== "insights" && (
+								<>
+									{phone && <span className="basis-full" />}
+									<div
+										className={cn(
+											"relative",
+											phone ? "min-w-0 flex-1 basis-0" : "max-w-[400px] min-w-[220px] flex-[4_1_220px]",
+										)}
+									>
+										<Icon
+											name="magnifying-glass"
+											size={18}
+											className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3"
+										/>
+										<Input
+											type="search"
+											aria-label={t`Search applications`}
+											placeholder={t`Search role, company or contact`}
+											value={query}
+											className="ps-8"
+											onChange={(event) => setQuery(event.target.value)}
+										/>
+									</div>
+									{phone ? (
+										<PhoneFilters {...filterProps} trailing={<PhoneSortButton sort={sort} onChange={setSort} />} />
+									) : (
+										<>
+											<FilterBar {...filterProps} className="max-xl:order-2 max-xl:basis-full xl:order-1" />
+											{shown !== "calendar" && (
+												<div className="ms-auto flex shrink-0 items-center gap-1.5 max-xl:order-1 xl:order-2">
+													<SortButton sort={sort} onChange={setSort} />
+													{shown === "list" && (
+														<ColumnsButton
+															columns={savedColumns}
+															onChange={(listColumns) => updateLayout({ listColumns })}
+															onReset={() => updateLayout({ listColumns: null })}
+														/>
+													)}
+												</div>
+											)}
+										</>
+									)}
+								</>
+							)}
+						</div>
+					)}
 
 					{isPending ? (
 						<ViewSkeleton view={shown} />
@@ -316,6 +393,8 @@ function RouteComponent() {
 									stale={stale}
 									sort={sort}
 									onSortChange={setSort}
+									columns={resolveListColumns(layout)}
+									onColumnResize={resizeColumn}
 									selectedId={selectedId}
 									onOpen={(application) => setSelectedId(application.id)}
 								/>
@@ -325,6 +404,9 @@ function RouteComponent() {
 									applications={visible}
 									stages={filters.stage}
 									stale={stale}
+									sort={sort}
+									columnWidth={layout.boardColumnWidth}
+									onColumnWidthChange={(width) => updateLayout({ boardColumnWidth: width })}
 									onOpen={(application) => setSelectedId(application.id)}
 								/>
 							)}

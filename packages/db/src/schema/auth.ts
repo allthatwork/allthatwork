@@ -1,3 +1,4 @@
+import type { ApplicationsLayout } from "@reactive-resume/schema/applications/layout";
 import type { SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
@@ -31,6 +32,8 @@ export const user = pg.pgTable(
 		noReplyDays: pg.integer("no_reply_days").notNull().default(10),
 		/** Whether Career → Today shows the next interview (Settings → Preferences). */
 		interviewReminders: pg.boolean("interview_reminders").notNull().default(true),
+		/** The Applications screen's List columns, Board column width and sort (`@reactive-resume/schema/applications/layout`). */
+		applicationsLayout: pg.jsonb("applications_layout").$type<ApplicationsLayout>(),
 		lastActiveAt: pg.timestamp("last_active_at", { withTimezone: true }),
 		role: pg.text("role").default("user"),
 		banned: pg.boolean("banned").default(false),
