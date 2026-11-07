@@ -1,12 +1,15 @@
 import type { Application } from "../types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
-import type { ApplicationSort } from "@reactive-resume/schema/applications/filters";
+import type { ApplicationSort, ApplicationSortKey } from "@reactive-resume/schema/applications/filters";
+import type { ListColumnId } from "@reactive-resume/schema/applications/layout";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useMutation } from "@tanstack/react-query";
 import { AnimatePresence, m } from "motion/react";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { defaultSortDirection } from "@reactive-resume/schema/applications/filters";
+import { LIST_COLUMN_MAX_WIDTH, LIST_COLUMN_WIDTHS, ROLE_MIN_WIDTH } from "@reactive-resume/schema/applications/layout";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
 import {
@@ -22,29 +25,19 @@ import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
+import { sortApplications } from "../sort";
 import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel, LIST_ORDER, PIPELINE } from "../stages";
 import { useInvalidateApplications } from "../use-application-actions";
 import { StaleNote } from "./application-card";
-import { BuildStatusControl } from "./build-status";
+import { LIST_COLUMNS } from "./list-columns";
 import { useConfirm } from "@/hooks/use-confirm";
-import { formatRelativeTime } from "@/libs/locale";
 import { D2, EASE, EXIT } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
-type SortKey = ApplicationSort["sort"];
+/** The checkbox column; Role takes what the others leave. */
+const CHECK_WIDTH = 40;
 
-const nextStepTime = (application: Application) => {
-	const step = getNextStep(application);
-	return step.kind === "interview" || step.kind === "follow-up" ? step.at.getTime() : Number.POSITIVE_INFINITY;
-};
-
-const compare: Record<SortKey, (a: Application, b: Application) => number> = {
-	role: (a, b) => a.role.localeCompare(b.role) || a.company.localeCompare(b.company),
-	next: (a, b) => nextStepTime(a) - nextStepTime(b),
-	// No fit sorts below every fit, so it lands last when sorting highest first.
-	fit: (a, b) => (a.searchFit ?? -1) - (b.searchFit ?? -1),
-	updated: (a, b) => new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
-};
+type ShownColumn = { id: ListColumnId; width: number };
 
 type ListViewProps = {
 	applications: Application[];
@@ -52,9 +45,12 @@ type ListViewProps = {
 	stages: readonly ApplicationStatus[];
 	/** Rows changed since the last filter change that no longer match, with the group they showed in. */
 	stale?: ReadonlyMap<string, ApplicationStatus>;
-	/** The sort, kept in the address. */
 	sort: ApplicationSort;
 	onSortChange: (sort: ApplicationSort) => void;
+	/** The columns after Role, in order, with their widths. */
+	columns: readonly ShownColumn[];
+	/** Saves a column's width; null takes it back to its starting width. */
+	onColumnResize: (id: ListColumnId, width: number | null) => void;
 	selectedId: string | null;
 	onOpen: (application: Application) => void;
 };
@@ -69,9 +65,11 @@ const groupFor = (
 ) => (stages.includes(application.status) ? application.status : (stale.get(application.id) ?? application.status));
 
 /**
- * The default view: applications grouped by stage in the order that needs you first (Interview, Offer, Screening,
- * Applied, Saved, then Closed), for the stages the filters show. Groups collapse, headers sort within groups, and row
- * checkboxes select for bulk moves, tags, closing and deleting. Phones get two-line rows.
+ * Applications grouped by stage in the order that needs you first (Interview, Offer, Screening, Applied, Saved, then
+ * Closed), for the stages the filters show, sorted within each group. Role comes first and takes the width the other
+ * columns leave; the rest are the account's choice, each with its own width, dragged by the line between two headings.
+ * Groups collapse, sortable headings sort, and row checkboxes select for bulk moves, tags, closing and deleting.
+ * Phones get two-line rows.
  */
 export function ApplicationList({
 	applications,
@@ -79,12 +77,18 @@ export function ApplicationList({
 	stale = NO_STALE,
 	sort,
 	onSortChange,
+	columns,
+	onColumnResize,
 	selectedId,
 	onOpen,
 }: ListViewProps) {
 	const phone = useBreakpoint() === "mobile";
 	const [collapsed, setCollapsed] = useState<ReadonlySet<ApplicationStatus>>(new Set());
 	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
+	// The column being dragged and its width so far; it's saved when the drag ends.
+	const [resizing, setResizing] = useState<ShownColumn | null>(null);
+	const wrapRef = useRef<HTMLDivElement>(null);
+	const guideRef = useRef<HTMLDivElement>(null);
 
 	// Selections only cover what's on screen.
 	const checkedIds = applications
@@ -95,17 +99,41 @@ export function ApplicationList({
 		.map((application) => application.id);
 	if (checkedIds.length !== checked.size) setChecked(new Set(checkedIds));
 
-	const groups = useMemo(() => {
-		const sign = sort.dir === "asc" ? 1 : -1;
-		return LIST_ORDER.filter((status) => stages.includes(status))
-			.map((status) => ({
-				status,
-				rows: applications
-					.filter((application) => groupFor(application, stages, stale) === status)
-					.sort((a, b) => sign * compare[sort.sort](a, b)),
-			}))
-			.filter((group) => group.rows.length > 0);
-	}, [applications, stages, stale, sort]);
+	const groups = useMemo(
+		() =>
+			LIST_ORDER.filter((status) => stages.includes(status))
+				.map((status) => ({
+					status,
+					rows: sortApplications(
+						applications.filter((application) => groupFor(application, stages, stale) === status),
+						sort,
+					),
+				}))
+				.filter((group) => group.rows.length > 0),
+		[applications, stages, stale, sort],
+	);
+
+	const shown = columns.map((column) => (resizing?.id === column.id ? resizing : column));
+	const minWidth = CHECK_WIDTH + ROLE_MIN_WIDTH + shown.reduce((total, column) => total + column.width, 0);
+
+	// While dragging, a line runs down the whole table at the column's start edge.
+	useLayoutEffect(() => {
+		const guide = guideRef.current;
+		const heading = resizing && wrapRef.current?.querySelector<HTMLElement>(`th[data-column="${resizing.id}"]`);
+		if (!guide || !heading) return;
+		const rtl = getComputedStyle(heading).direction === "rtl";
+		guide.style.left = `${heading.offsetLeft + (rtl ? heading.offsetWidth : 0)}px`;
+	}, [resizing]);
+
+	/** The widest a column can get while Role keeps its minimum. */
+	const maxWidthFor = (id: ListColumnId) => {
+		const available = wrapRef.current?.clientWidth ?? 0;
+		const others = columns.reduce((total, column) => total + (column.id === id ? 0 : column.width), 0);
+		return Math.max(
+			LIST_COLUMN_WIDTHS[id].min,
+			Math.min(LIST_COLUMN_MAX_WIDTH, available - CHECK_WIDTH - ROLE_MIN_WIDTH - others),
+		);
+	};
 
 	const toggleGroup = (status: ApplicationStatus) =>
 		setCollapsed((current) => {
@@ -123,105 +151,148 @@ export function ApplicationList({
 			return next;
 		});
 
-	const sortBy = (key: SortKey) =>
+	const sortBy = (key: ApplicationSortKey) =>
 		onSortChange(
 			sort.sort === key
 				? { sort: key, dir: sort.dir === "asc" ? "desc" : "asc" }
-				: { sort: key, dir: key === "updated" || key === "fit" ? "desc" : "asc" },
+				: { sort: key, dir: defaultSortDirection(key) },
 		);
 
-	const header = (key: SortKey, label: string, className?: string) => (
-		<th
-			scope="col"
-			aria-sort={sort.sort === key ? (sort.dir === "asc" ? "ascending" : "descending") : undefined}
-			className={cn("px-2 text-start font-medium", className)}
-		>
+	const heading = (key: ApplicationSortKey | undefined, label: string) =>
+		key ? (
 			<button
 				type="button"
 				onClick={() => sortBy(key)}
-				className="inline-flex h-9 items-center gap-1 rounded-md transition-colors hover:text-ink"
+				className="inline-flex h-9 max-w-full items-center gap-1 rounded-md transition-colors hover:text-ink"
 			>
-				{label}
-				{sort.sort === key && <Icon name={sort.dir === "asc" ? "arrow-up" : "arrow-down"} size={14} />}
+				<span className="truncate">{label}</span>
+				{sort.sort === key && (
+					<Icon name={sort.dir === "asc" ? "arrow-up" : "arrow-down"} size={14} className="shrink-0" />
+				)}
 			</button>
-		</th>
-	);
+		) : (
+			<span className="block truncate">{label}</span>
+		);
+
+	const ariaSort = (key: ApplicationSortKey | undefined) =>
+		key && sort.sort === key ? (sort.dir === "asc" ? "ascending" : "descending") : undefined;
 
 	return (
 		<div className="grid min-w-0 content-start gap-3">
-			<table className="w-full border-collapse text-sm">
-				{!phone && (
-					<thead>
-						<tr className="border-b border-line text-xs text-ink-3">
-							<th scope="col" className="w-10 ps-3">
-								<span className="sr-only">
-									<Trans>Select</Trans>
-								</span>
-							</th>
-							{/* Role and Next step share the width; the other columns keep the width of their content. */}
-							{header("role", t`Role`, "w-1/2")}
-							{header("next", t`Next step`, "w-[30%]")}
-							{header("fit", t`Fit`, "w-px whitespace-nowrap max-md:hidden")}
-							<th scope="col" className="w-px px-2 text-start font-medium whitespace-nowrap max-md:hidden">
-								<Trans>Build</Trans>
-							</th>
-							<th scope="col" className="w-px px-2 text-start font-medium whitespace-nowrap max-lg:hidden">
-								<Trans>Stage</Trans>
-							</th>
-							<th scope="col" className="w-px px-2 text-start font-medium whitespace-nowrap">
-								<Trans>Sent</Trans>
-							</th>
-							{header("updated", t`Updated`, "w-px whitespace-nowrap max-md:hidden")}
-						</tr>
-					</thead>
-				)}
-
-				{groups.map(({ status, rows }) => {
-					const open = !collapsed.has(status);
-					const groupId = `applications-group-${status}`;
-					return (
-						<tbody key={status} aria-labelledby={groupId}>
-							<tr>
-								<th scope="colgroup" colSpan={8} className="pt-3 text-start">
-									<button
-										type="button"
-										id={groupId}
-										aria-expanded={open}
-										onClick={() => toggleGroup(status)}
-										className="flex h-9 items-center gap-2 rounded-md px-1.5 text-sm font-semibold transition-colors hover:bg-hover"
-									>
-										<Icon
-											name="caret-right"
-											size={18}
-											className={cn("text-ink-3 transition-transform duration-standard", open && "rotate-90")}
-										/>
-										<span
-											aria-hidden="true"
-											className="size-2 rounded-full"
-											style={{ background: getStageColor(status) }}
-										/>
-										{getStageLabel(status)}
-										<span className="font-mono text-xs font-normal text-ink-3">{rows.length}</span>
-									</button>
+			<div ref={wrapRef} className="relative min-w-0 overflow-x-auto">
+				{/* Phones keep the automatic layout: their rows are one cell, and a fixed layout would split them by the group headings' span. */}
+				<table
+					className={cn("w-full border-collapse text-sm", !phone && "table-fixed")}
+					style={phone ? undefined : { minWidth }}
+				>
+					{!phone && (
+						<colgroup>
+							<col style={{ width: CHECK_WIDTH }} />
+							<col />
+							{shown.map((column) => (
+								<col key={column.id} style={{ width: column.width }} />
+							))}
+						</colgroup>
+					)}
+					{!phone && (
+						<thead>
+							<tr className="group/head border-b border-line text-xs text-ink-3">
+								<th scope="col" className="ps-3">
+									<span className="sr-only">
+										<Trans>Select</Trans>
+									</span>
 								</th>
+								<th scope="col" aria-sort={ariaSort("role")} className="px-2 text-start font-medium">
+									{heading("role", t`Role`)}
+								</th>
+								{shown.map((column) => {
+									const definition = LIST_COLUMNS[column.id];
+									const label = definition.label();
+									return (
+										<th
+											key={column.id}
+											scope="col"
+											data-column={column.id}
+											aria-sort={ariaSort(definition.sort)}
+											className="relative px-2 text-start font-medium"
+										>
+											<ColumnResizeHandle
+												label={label}
+												width={column.width}
+												min={LIST_COLUMN_WIDTHS[column.id].min}
+												active={resizing?.id === column.id}
+												maxWidth={() => maxWidthFor(column.id)}
+												onResize={(width) => setResizing({ id: column.id, width })}
+												onCommit={(width) => {
+													setResizing(null);
+													onColumnResize(column.id, width);
+												}}
+												onCancel={() => setResizing(null)}
+												onReset={() => onColumnResize(column.id, null)}
+											/>
+											{heading(definition.sort, label)}
+										</th>
+									);
+								})}
 							</tr>
-							{open &&
-								rows.map((application) => (
-									<ApplicationRow
-										key={application.id}
-										application={application}
-										phone={phone}
-										selected={application.id === selectedId}
-										stale={stale.has(application.id)}
-										checked={checked.has(application.id)}
-										onCheck={() => toggleRow(application.id)}
-										onOpen={() => onOpen(application)}
-									/>
-								))}
-						</tbody>
-					);
-				})}
-			</table>
+						</thead>
+					)}
+
+					{groups.map(({ status, rows }) => {
+						const open = !collapsed.has(status);
+						const groupId = `applications-group-${status}`;
+						return (
+							<tbody key={status} aria-labelledby={groupId}>
+								<tr>
+									<th scope="colgroup" colSpan={phone ? 1 : shown.length + 2} className="pt-3 text-start">
+										<button
+											type="button"
+											id={groupId}
+											aria-expanded={open}
+											onClick={() => toggleGroup(status)}
+											className="flex h-9 items-center gap-2 rounded-md px-1.5 text-sm font-semibold transition-colors hover:bg-hover"
+										>
+											<Icon
+												name="caret-right"
+												size={18}
+												className={cn("text-ink-3 transition-transform duration-standard", open && "rotate-90")}
+											/>
+											<span
+												aria-hidden="true"
+												className="size-2 rounded-full"
+												style={{ background: getStageColor(status) }}
+											/>
+											{getStageLabel(status)}
+											<span className="font-mono text-xs font-normal text-ink-3">{rows.length}</span>
+										</button>
+									</th>
+								</tr>
+								{open &&
+									rows.map((application) => (
+										<ApplicationRow
+											key={application.id}
+											application={application}
+											columns={shown}
+											phone={phone}
+											selected={application.id === selectedId}
+											stale={stale.has(application.id)}
+											checked={checked.has(application.id)}
+											onCheck={() => toggleRow(application.id)}
+											onOpen={() => onOpen(application)}
+										/>
+									))}
+							</tbody>
+						);
+					})}
+				</table>
+				{resizing && (
+					<div
+						ref={guideRef}
+						aria-hidden="true"
+						className="pointer-events-none absolute inset-y-0 z-20 w-0.5 -translate-x-1/2 bg-accent"
+					/>
+				)}
+			</div>
 
 			{/* The bulk bar rises from the bottom edge and floats over the list, so the rows never move. */}
 			<AnimatePresence>
@@ -242,8 +313,102 @@ export function ApplicationList({
 	);
 }
 
+type ColumnResizeHandleProps = {
+	label: string;
+	width: number;
+	min: number;
+	active: boolean;
+	/** Read when a drag starts or a key is pressed: the widest the column can get while Role keeps its minimum. */
+	maxWidth: () => number;
+	/** The width while dragging. */
+	onResize: (width: number) => void;
+	/** The width to save: at the end of a drag, or on each arrow key. */
+	onCommit: (width: number) => void;
+	onCancel: () => void;
+	/** Double-click: back to the starting width. */
+	onReset: () => void;
+};
+
+/**
+ * The line on a heading's start edge. It follows the pointer: the column it starts gets wider or narrower and Role, on
+ * the far side, takes up the difference. Arrow keys move it 8px (Shift for 32px), and a double-click resets the column.
+ */
+function ColumnResizeHandle({
+	label,
+	width,
+	min,
+	active,
+	maxWidth,
+	onResize,
+	onCommit,
+	onCancel,
+	onReset,
+}: ColumnResizeHandleProps) {
+	const drag = useRef<{ x: number; width: number; sign: number; max: number } | null>(null);
+	const sign = (element: HTMLElement) => (getComputedStyle(element).direction === "rtl" ? -1 : 1);
+	const widthAt = (clientX: number) => {
+		const start = drag.current;
+		if (!start) return width;
+		return Math.min(start.max, Math.max(min, Math.round(start.width - start.sign * (clientX - start.x))));
+	};
+
+	return (
+		<div
+			role="separator"
+			aria-orientation="vertical"
+			aria-label={t`Resize ${label}`}
+			aria-valuenow={width}
+			aria-valuemin={min}
+			aria-valuemax={LIST_COLUMN_MAX_WIDTH}
+			tabIndex={0}
+			onPointerDown={(event) => {
+				if (event.button !== 0) return;
+				event.preventDefault();
+				event.currentTarget.setPointerCapture(event.pointerId);
+				// A column already wider than the room left (the table scrolls sideways) can still be narrowed, not grown.
+				drag.current = { x: event.clientX, width, sign: sign(event.currentTarget), max: Math.max(width, maxWidth()) };
+				onResize(width);
+			}}
+			onPointerMove={(event) => {
+				if (drag.current) onResize(widthAt(event.clientX));
+			}}
+			onPointerUp={(event) => {
+				const start = drag.current;
+				if (!start) return;
+				const next = widthAt(event.clientX);
+				drag.current = null;
+				// A click without a drag (or the first click of a double-click) changes nothing.
+				if (next === start.width) onCancel();
+				else onCommit(next);
+			}}
+			onPointerCancel={() => {
+				drag.current = null;
+				onCancel();
+			}}
+			onDoubleClick={onReset}
+			onKeyDown={(event) => {
+				if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+				event.preventDefault();
+				// The line moves with the arrow, so the column grows when it moves away from it.
+				const toward = event.key === "ArrowLeft" ? 1 : -1;
+				const step = event.shiftKey ? 32 : 8;
+				onCommit(
+					Math.min(Math.max(width, maxWidth()), Math.max(min, width + toward * sign(event.currentTarget) * step)),
+				);
+			}}
+			className={cn(
+				"absolute inset-y-0 -start-1.5 z-10 w-3 cursor-col-resize touch-none outline-none",
+				"after:absolute after:inset-y-2 after:start-[5px] after:w-0.5 after:rounded-full after:transition-colors after:duration-quick",
+				"group-hover/head:after:bg-line-2 hover:after:inset-y-1 hover:after:bg-accent focus-visible:after:inset-y-1 focus-visible:after:bg-accent",
+				active && "after:inset-y-1 after:bg-accent",
+			)}
+		/>
+	);
+}
+
 type ApplicationRowProps = {
 	application: Application;
+	columns: readonly ShownColumn[];
 	phone: boolean;
 	selected: boolean;
 	/** Changed and no longer matching the filters: faded, with a note under the company. */
@@ -253,12 +418,19 @@ type ApplicationRowProps = {
 	onOpen: () => void;
 };
 
-function ApplicationRow({ application, phone, selected, stale, checked, onCheck, onOpen }: ApplicationRowProps) {
+function ApplicationRow({
+	application,
+	columns,
+	phone,
+	selected,
+	stale,
+	checked,
+	onCheck,
+	onOpen,
+}: ApplicationRowProps) {
 	const { i18n } = useLingui();
 	const noReplyDays = useNoReplyDays();
 	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, i18n.locale);
-	const sent = application.status !== "saved";
-	const tone = next.tone === "warn" ? "text-warn-text" : next.tone === "muted" ? "text-ink-3" : "text-ink-2";
 
 	const fade = stale && "opacity-55";
 	const initial = (
@@ -299,6 +471,8 @@ function ApplicationRow({ application, phone, selected, stale, checked, onCheck,
 		);
 	}
 
+	const context = { application, next, locale: i18n.locale };
+
 	return (
 		<tr
 			className={cn(
@@ -306,7 +480,7 @@ function ApplicationRow({ application, phone, selected, stale, checked, onCheck,
 				selected && "bg-accent-soft/50",
 			)}
 		>
-			<td className="relative z-10 w-10 ps-3">
+			<td className="relative z-10 ps-3">
 				<Checkbox
 					checked={checked}
 					onCheckedChange={onCheck}
@@ -314,52 +488,22 @@ function ApplicationRow({ application, phone, selected, stale, checked, onCheck,
 				/>
 			</td>
 			<td className="py-2 pe-2">
-				<div className="flex items-center gap-3">
+				<div className="flex min-w-0 items-center gap-3">
 					{initial}
 					{openButton}
 				</div>
 			</td>
-			<td className={cn("px-2", fade)}>
-				<span className={cn("flex items-center gap-1.5", tone)}>
-					<Icon name={next.icon} size={16} className="shrink-0" />
-					<span className="truncate">{next.title}</span>
-				</span>
-			</td>
-			<td className={cn("px-2 text-[13px] whitespace-nowrap text-ink-2 tabular-nums max-md:hidden", fade)}>
-				{application.searchFit === null ? (
-					<span className="text-ink-3">—</span>
-				) : (
-					<span title={t`Search fit`}>{application.searchFit}%</span>
-				)}
-			</td>
-			<td className={cn("relative z-10 px-2 whitespace-nowrap max-md:hidden", fade)}>
-				<BuildStatusControl application={application} />
-			</td>
-			<td className={cn("px-2 whitespace-nowrap max-lg:hidden", fade)}>
-				<span className="flex items-center gap-1.5 text-ink-2">
-					<span
-						aria-hidden="true"
-						className="size-2 rounded-full"
-						style={{ background: getStageColor(application.status) }}
-					/>
-					{getStageLabel(application.status)}
-				</span>
-			</td>
-			<td className={cn("px-2", fade)}>
-				{application.resumeId || application.coverLetterId ? (
-					<span className="flex items-center gap-1 text-ink-2">
-						{application.resumeId && <Icon name="file-text" size={18} aria-label={t`Resume`} />}
-						{application.coverLetterId && <Icon name="envelope-simple" size={18} aria-label={t`Cover letter`} />}
-					</span>
-				) : (
-					<span className={cn("text-xs", sent ? "text-warn-text" : "text-ink-3")}>
-						<Trans>None</Trans>
-					</span>
-				)}
-			</td>
-			<td className={cn("px-2 text-xs whitespace-nowrap text-ink-3 max-md:hidden", fade)}>
-				{formatRelativeTime(application.updatedAt, i18n.locale)}
-			</td>
+			{columns.map((column) => {
+				const definition = LIST_COLUMNS[column.id];
+				return (
+					<td
+						key={column.id}
+						className={cn("overflow-hidden px-2 whitespace-nowrap", definition.interactive && "relative z-10", fade)}
+					>
+						{definition.cell(context)}
+					</td>
+				);
+			})}
 		</tr>
 	);
 }

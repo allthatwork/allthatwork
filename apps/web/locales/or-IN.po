@@ -1335,6 +1335,10 @@ msgstr "ଦୃଢ଼ ମେଳ, ସମାଧାନ କରିବାକୁ ଗୋ�
 msgid "A timed plan, your opening, the stories to bring and questions to ask. It becomes your checklist 10 minutes before the call."
 msgstr "ସମୟ ନିର୍ଦ୍ଧାରିତ ଯୋଜନା, ଆପଣଙ୍କ ଆରମ୍ଭ, ଆଣିବାକୁ ଥିବା କାହାଣୀ ଓ ପଚାରିବାକୁ ଥିବା ପ୍ରଶ୍ନ। କଲ୍‌ର 10 ମିନିଟ୍ ପୂର୍ବରୁ ଏହା ଆପଣଙ୍କ ଚେକଲିଷ୍ଟ ହୋଇଯାଏ।"
 
+#: src/features/applications/sort.ts
+msgid "A to Z"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "A web address is written without https://."
 msgstr "ଏକ ୱେବ ଠିକଣା https:// ବିନା ଲେଖାଯାଇଛି।"
@@ -1776,6 +1780,11 @@ msgstr ""
 msgid "Add your name"
 msgstr "ଆପଣଙ୍କର ନାମ ଯୋଡନ୍ତୁ |"
 
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
+msgid "Added"
+msgstr ""
+
 #. placeholder {0}: role.trim()
 #. placeholder {1}: company.trim()
 #: src/features/applications/components/add-application-dialog.tsx
@@ -2046,6 +2055,10 @@ msgstr "{0}କୁ ମଧ୍ୟ ଇମେଲ୍ କରନ୍ତୁ"
 #: src/features/resume/editor/design/style-groups.tsx
 msgid "Also shows the icons on skills, profiles and interests."
 msgstr "କ skills ଶଳ, ପ୍ରୋଫାଇଲ୍ ଏବଂ ଆଗ୍ରହ ଉପରେ ଆଇକନ୍ ଗୁଡିକ ମଧ୍ୟ ଦେଖାଏ |"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Always first"
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Amharic"
@@ -2332,6 +2345,8 @@ msgid "Applications to export"
 msgstr "ରପ୍ତାନି ପାଇଁ ଆବେଦନଗୁଡ଼ିକ"
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/applications/stages.ts
 #: src/features/homepage/prepare.tsx
 #: src/features/homepage/sections.tsx
@@ -2795,7 +2810,7 @@ msgid "Bring in documents, applications and Knowledge from an Export everything 
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Build"
 msgstr ""
@@ -3370,6 +3385,7 @@ msgstr "ରଙ୍ଗ"
 msgid "Column {header} goes to"
 msgstr "ସ୍ତମ୍ଭ {header} କୁ ଯାଏ |"
 
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
@@ -3407,6 +3423,7 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/sort.ts
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/check/job-match.tsx
@@ -4161,6 +4178,10 @@ msgstr ""
 msgid "Couldn't save the follow-up."
 msgstr "ଅନୁସରଣ ସଞ୍ଚୟ କରିପାରିଲା ନାହିଁ |"
 
+#: src/features/applications/use-applications-layout.ts
+msgid "Couldn't save the layout, so it's back to how it was."
+msgstr ""
+
 #: src/features/applications/components/application-notes.tsx
 msgid "Couldn't save the notes."
 msgstr "ଟିପ୍ପଣୀଗୁଡିକ ସ save ୍ଚୟ କରିପାରିଲା ନାହିଁ |"
@@ -4335,7 +4356,7 @@ msgstr "ଭରନ୍ତୁ"
 #: src/features/applications/components/detail/sent-documents.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Cover letter"
 msgstr "କଭର୍ ଚିଠି"
 
@@ -4853,6 +4874,10 @@ msgstr "ଭିନ୍ନ ମୁଦ୍ରା, ତୁଳନା କରାଯାଇ�
 msgid "Different pay period, not compared"
 msgstr "ଭିନ୍ନ ଦେୟ ଅବଧି, ତୁଳନା କରାଯାଇନାହିଁ"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Direction"
+msgstr ""
+
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/directory/page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -4942,6 +4967,7 @@ msgstr "{0} ପଠାନ୍ତୁ ନାହିଁ |"
 msgid "Donate"
 msgstr "ଦାନ କରନ୍ତୁ"
 
+#: src/features/applications/components/sort-button.tsx
 #: src/features/career/workspace/questions.tsx
 #: src/features/resume/editor/write/rich-text-editor.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -5102,6 +5128,10 @@ msgstr "ଡ୍ରାଗ୍ · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "ବିଭାଗଗୁଡିକୁ କଲମ୍‌ଗୁଡିକ ମଧ୍ୟରେ ସଞ୍ଚାଳନ କରିବା ପାଇଁ ଏଠାରେ ଟାନି ଓ ଛାଡ଼ନ୍ତୁ"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Drag to reorder. To resize, drag the line between two headings."
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Drag to reposition and use the slider to zoom before uploading."
@@ -5911,8 +5941,9 @@ msgid "First run"
 msgstr "ପ୍ରଥମ ଚାଲନ"
 
 #: src/features/applications/components/application-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5999,6 +6030,7 @@ msgid "Follow up on {0}"
 msgstr "{0}ରେ ଅନୁସରଣ କରନ୍ତୁ"
 
 #: src/features/applications/components/detail/next-step-card.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Follow-up"
 msgstr "ଅନୁସରଣ"
 
@@ -6128,6 +6160,7 @@ msgstr "{0} ମିଳିଲା"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found by"
 msgstr ""
@@ -6143,6 +6176,7 @@ msgstr ""
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found on"
 msgstr ""
@@ -6558,6 +6592,10 @@ msgstr "ଫଟୋ ଲୁଚାନ୍ତୁ |"
 msgid "High"
 msgstr "ଉଚ୍ଚ"
 
+#: src/features/applications/sort.ts
+msgid "Highest first"
+msgstr ""
+
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Highlight"
 msgstr "ହାଇଲାଇଟ୍"
@@ -6887,6 +6925,10 @@ msgstr "ଉନ୍ନତି…"
 
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
+msgstr ""
+
+#: src/features/applications/components/sort-button.tsx
+msgid "in each stage"
 msgstr ""
 
 #: src/features/homepage/sections.tsx
@@ -7445,6 +7487,7 @@ msgstr "ଲେବଲ୍, ଯଥା ନିଯୁକ୍ତିକାରୀ |"
 msgid "Landscape"
 msgstr "ଲ୍ୟାଣ୍ଡସ୍କେପ୍"
 
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Lane"
 msgstr ""
@@ -7512,6 +7555,10 @@ msgstr ""
 #: src/features/settings/ai/api-keys.tsx
 msgid "Last used"
 msgstr "ଶେଷ ବ୍ୟବହୃତ |"
+
+#: src/features/applications/sort.ts
+msgid "Latest first"
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Latvian"
@@ -8019,6 +8066,10 @@ msgstr "ନିମ୍ନ"
 msgid "Lower the design sheet"
 msgstr "ଡିଜାଇନ୍ ସିଟ୍ କମ୍ କରନ୍ତୁ |"
 
+#: src/features/applications/sort.ts
+msgid "Lowest first"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -8313,6 +8364,10 @@ msgstr "ମୋନୋ |"
 msgid "More actions"
 msgstr ""
 
+#: src/features/applications/components/columns-button.tsx
+msgid "More columns"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/editor-bar.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
@@ -8379,6 +8434,10 @@ msgstr "ଅଧିକାଂଶ ସିଷ୍ଟମ୍ ଇମେଲ୍ ଠିକଣ
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Mostly readable"
 msgstr "ପ୍ରାୟତ read ପଠନୀୟ |"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Move {label}"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
@@ -8717,6 +8776,10 @@ msgstr "ନୂତନ ବିଭାଗ"
 msgid "New teams at Northwind were stalling in setup; most never got through."
 msgstr "Northwindରେ ନୂଆ ଟିମ୍ ସେଟଅପ୍‌ରେ ଅଟକି ଯାଉଥିଲେ; ଅଧିକାଂଶ କେବେ ପାର ହୋଇପାରିଲେ ନାହିଁ।"
 
+#: src/features/applications/sort.ts
+msgid "Newest first"
+msgstr ""
+
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Next"
 msgstr ""
@@ -8738,7 +8801,8 @@ msgid "Next question"
 msgstr "ପରବର୍ତ୍ତୀ ପ୍ରଶ୍ନ"
 
 #: src/features/applications/components/detail/next-step-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/shell.tsx
 msgid "Next step"
 msgstr "ପରବର୍ତ୍ତୀ ପଦକ୍ଷେପ"
@@ -9103,7 +9167,7 @@ msgstr "ନା। {number} · {name} |"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "କିଛି ନୁହେଁ |"
 
@@ -9431,6 +9495,10 @@ msgstr "ଅଫିସ୍ ଦିନ ଉଲ୍ଲେଖ ନାହିଁ"
 #: src/features/resume/editor/save-status.tsx
 msgid "Offline · saved on this device"
 msgstr "ଅଫଲାଇନ୍ · ଏହି ଡିଭାଇସରେ ସେଭ୍ ହୋଇଛି |"
+
+#: src/features/applications/sort.ts
+msgid "Oldest first"
+msgstr ""
 
 #: src/features/career/knowledge/groups.tsx
 msgid "on"
@@ -11230,6 +11298,10 @@ msgstr "ଆବଶ୍ୟକତା ଓ ଆପଣଙ୍କ ପ୍ରମାଣ"
 msgid "Reserve capitals for short headings. They slow reading and can defeat case-sensitive search."
 msgstr "ଛୋଟ ଶୀର୍ଷକ ପାଇଁ ବଡ଼ ଅକ୍ଷର ସଂରକ୍ଷିତ ରଖନ୍ତୁ। ସେଗୁଡ଼ିକ ପଠନକୁ ମନ୍ଥର କରନ୍ତି ଏବଂ କେସ୍-ସେନ୍ସିଟିଭ୍ ସନ୍ଧାନକୁ ବିଫଳ କରିପାରନ୍ତି।"
 
+#: src/features/applications/components/columns-button.tsx
+msgid "Reset"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 msgid "Reset design defaults"
 msgstr "ଡିଜାଇନ୍ ଡିଫଲ୍ଟଗୁଡିକ ପୁନ Res ସେଟ୍ କରନ୍ତୁ |"
@@ -11250,6 +11322,14 @@ msgstr "ଆପଣଙ୍କ ପାସୱାର୍ଡ ରିସେଟ୍ କରନ
 #: src/features/auth/pages/reset-password.tsx
 msgid "Resetting your password..."
 msgstr "ଆପଣଙ୍କ ପାସୱାର୍ଡ ରିସେଟ୍ ହେଉଛି..."
+
+#: src/features/applications/components/list-view.tsx
+msgid "Resize {label}"
+msgstr ""
+
+#: src/features/applications/components/board.tsx
+msgid "Resize the columns"
+msgstr ""
 
 #: src/features/homepage/footer.tsx
 msgid "Resources"
@@ -11306,7 +11386,7 @@ msgstr "ରେଜୁମ୍"
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
@@ -11362,7 +11442,7 @@ msgid "Resume length"
 msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
-msgid "Resume length and reminders. Off keeps yours."
+msgid "Resume length, reminders and the Applications layout. Off keeps yours."
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
@@ -11518,9 +11598,11 @@ msgid "Right now"
 msgstr "ଏହି ମୁହୂର୍ତ୍ତରେ"
 
 #: src/features/applications/components/add-application-dialog.tsx
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
 msgstr "ପଦବୀ"
@@ -11613,6 +11695,7 @@ msgstr "S"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Salary"
 msgstr "ଦରମା"
 
@@ -11980,7 +12063,7 @@ msgstr "ସନ୍ଧାନ ବିଫଳ ହେଲା |"
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/career/workspace/assessments.tsx
 msgid "Search fit"
 msgstr ""
@@ -12245,7 +12328,7 @@ msgstr ""
 msgid "Senior Product Designer"
 msgstr "ବରିଷ୍ଠ ଉତ୍ପାଦ ଡିଜାଇନର୍ |"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/resume/share/format.ts
 msgid "Sent"
 msgstr "ପଠାଯାଇଛି"
@@ -12490,6 +12573,10 @@ msgstr "ଟେମ୍ପଲେଟ୍ ଦେଖାନ୍ତୁ |"
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Show them again"
 msgstr "ସେମାନଙ୍କୁ ପୁନର୍ବାର ଦେଖାନ୍ତୁ |"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Shown"
+msgstr ""
 
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Shown in your timezone."
@@ -12787,13 +12874,26 @@ msgstr "କିଛି ଭୁଲ୍ ହୋଇଛି। ଦୟାକରି ପୁ�
 msgid "Something went wrong. Try again."
 msgstr "କିଛି ଭୁଲ୍ ହୋଇଗଲା | ପୁନର୍ବାର ଚେଷ୍ଟା କରନ୍ତୁ |"
 
+#: src/features/applications/sort.ts
+msgid "Soonest first"
+msgstr ""
+
+#: src/features/applications/components/sort-button.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "ସର୍ଟ କରନ୍ତୁ |"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort by"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Sort by date"
 msgstr "ତାରିଖ ଅନୁଯାୟୀ ସର୍ଟ କରନ୍ତୁ |"
+
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort: {label}"
+msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
 #: src/routes/dashboard/settings/route.tsx
@@ -12864,7 +12964,7 @@ msgstr "ଚଔକ"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Stage"
 msgstr "ପର୍ଯ୍ୟାୟ"
@@ -13263,6 +13363,7 @@ msgstr "ଟ୍ୟାଗ୍ କରନ୍ତୁ |"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
 #: src/features/directory/page.tsx
@@ -13344,6 +13445,8 @@ msgstr ""
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/assessments.tsx
 msgid "Targeting fit"
 msgstr ""
@@ -14686,7 +14789,8 @@ msgstr "ଏହି ଆବେଦନର ବିବରଣୀ ଅପଡେଟ୍ କ�
 msgid "Update your password"
 msgstr "ଆପଣଙ୍କ ପାସୱାର୍ଡ ଅଦ୍ୟତନ କରନ୍ତୁ"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "ଅଦ୍ୟତନ କରାଯାଇଛି"
 
@@ -15998,6 +16102,10 @@ msgstr "ଆପଣଙ୍କର"
 #: src/features/homepage/design.tsx
 msgid "Yours · {0}"
 msgstr "ଆପଣଙ୍କର · {0}"
+
+#: src/features/applications/sort.ts
+msgid "Z to A"
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Zoom"

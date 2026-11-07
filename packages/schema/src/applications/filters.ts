@@ -16,7 +16,10 @@ export const TARGETING_FIT_FILTER_VALUES = ["any", "60", "70", "80", "none"] as 
 export const DOCUMENT_FILTER_VALUES = ["any", "linked", "none"] as const;
 export const ATTENTION_FILTER_VALUES = ["no-reply", "follow-up", "interview", "questions"] as const;
 export const DATE_FILTER_VALUES = ["any", "7", "14", "30"] as const;
-export const APPLICATION_SORT_KEYS = ["role", "next", "fit", "updated"] as const;
+/** The sort choices, in the order the Sort menu lists them. */
+export const APPLICATION_SORT_KEYS = ["updated", "added", "applied", "next", "fit", "tfit", "role", "company"] as const;
+export type ApplicationSortKey = (typeof APPLICATION_SORT_KEYS)[number];
+export type ApplicationSortDirection = "asc" | "desc";
 
 /** The value that stands for "not set" in Found by, Found on and Lane. */
 export const NOT_SET = "none";
@@ -57,7 +60,7 @@ export type ApplicationFilters = z.output<typeof applicationFiltersSchema>;
 
 export const DEFAULT_APPLICATION_FILTERS: ApplicationFilters = applicationFiltersSchema.parse({});
 
-/** The List's sort, kept next to the filters. */
+/** The sort of the Board's columns and the List's groups, kept in the address next to the filters. */
 export const applicationSortSchema = z.object({
 	sort: z.enum(APPLICATION_SORT_KEYS).default("updated"),
 	dir: z.enum(["asc", "desc"]).default("desc"),
@@ -66,3 +69,7 @@ export const applicationSortSchema = z.object({
 export type ApplicationSort = z.output<typeof applicationSortSchema>;
 
 export const DEFAULT_APPLICATION_SORT: ApplicationSort = applicationSortSchema.parse({});
+
+/** The direction a sort starts in: dates and fits newest or highest first, Next step soonest first, text A to Z. */
+export const defaultSortDirection = (key: ApplicationSortKey): ApplicationSortDirection =>
+	key === "next" || key === "role" || key === "company" ? "asc" : "desc";

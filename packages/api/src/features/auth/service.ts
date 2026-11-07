@@ -62,6 +62,7 @@ export const authService = {
 				resumePages: schema.user.resumePages,
 				noReplyDays: schema.user.noReplyDays,
 				interviewReminders: schema.user.interviewReminders,
+				applicationsLayout: schema.user.applicationsLayout,
 				emailVerified: schema.user.emailVerified,
 				createdAt: schema.user.createdAt,
 				updatedAt: schema.user.updatedAt,

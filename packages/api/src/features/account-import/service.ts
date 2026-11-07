@@ -7,6 +7,7 @@ import { and, count, eq, inArray, isNotNull, isNull, ne } from "drizzle-orm";
 import z from "zod";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
+import { applicationsLayoutSchema } from "@reactive-resume/schema/applications/layout";
 import { aiLimitsSchema, careerProfileDataSchema } from "@reactive-resume/schema/career";
 import { coverLetterSchema } from "@reactive-resume/schema/cover-letter/data";
 import { companyFieldsSchema, contactFieldsSchema, directoryKey } from "@reactive-resume/schema/directory";
@@ -761,10 +762,12 @@ async function importSettings(userId: string, input: AreaInput<"settings">) {
 		const pages = resumePagesSchema.safeParse(input.preferences.resumePages);
 		const days = noReplyDaysSchema.safeParse(input.preferences.noReplyDays);
 		const reminders = input.preferences.interviewReminders;
+		const layout = applicationsLayoutSchema.safeParse(input.preferences.applicationsLayout);
 		const changes = {
 			...(pages.success ? { resumePages: pages.data } : {}),
 			...(days.success ? { noReplyDays: days.data } : {}),
 			...(typeof reminders === "boolean" ? { interviewReminders: reminders } : {}),
+			...(layout.success ? { applicationsLayout: layout.data } : {}),
 		};
 		if (Object.keys(changes).length > 0) {
 			await db.update(schema.user).set(changes).where(eq(schema.user.id, userId));

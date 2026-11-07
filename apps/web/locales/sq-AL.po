@@ -1335,6 +1335,10 @@ msgstr "Përputhje e fortë, me një pyetje për t’u sqaruar"
 msgid "A timed plan, your opening, the stories to bring and questions to ask. It becomes your checklist 10 minutes before the call."
 msgstr "Një plan me kohë, hyrja juaj, historitë që do të sillni dhe pyetjet që do të bëni. 10 minuta para telefonatës bëhet lista juaj e kontrollit."
 
+#: src/features/applications/sort.ts
+msgid "A to Z"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "A web address is written without https://."
 msgstr "Një adresë web është shkruar pa https://."
@@ -1776,6 +1780,11 @@ msgstr ""
 msgid "Add your name"
 msgstr "Shtoni emrin tuaj"
 
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
+msgid "Added"
+msgstr ""
+
 #. placeholder {0}: role.trim()
 #. placeholder {1}: company.trim()
 #: src/features/applications/components/add-application-dialog.tsx
@@ -2046,6 +2055,10 @@ msgstr "Dërgo email edhe te {0}"
 #: src/features/resume/editor/design/style-groups.tsx
 msgid "Also shows the icons on skills, profiles and interests."
 msgstr "Gjithashtu tregon ikonat mbi aftësitë, profilet dhe interesat."
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Always first"
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Amharic"
@@ -2331,6 +2344,8 @@ msgid "Applications to export"
 msgstr "Aplikimet për eksport"
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/applications/stages.ts
 #: src/features/homepage/prepare.tsx
 #: src/features/homepage/sections.tsx
@@ -2794,7 +2809,7 @@ msgid "Bring in documents, applications and Knowledge from an Export everything 
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Build"
 msgstr ""
@@ -3369,6 +3384,7 @@ msgstr "Ngjyra"
 msgid "Column {header} goes to"
 msgstr "Kolona {header} shkon te"
 
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
@@ -3406,6 +3422,7 @@ msgstr ""
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/sort.ts
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/check/job-match.tsx
@@ -4160,6 +4177,10 @@ msgstr ""
 msgid "Couldn't save the follow-up."
 msgstr "Vazhdimi nuk mund të ruhej."
 
+#: src/features/applications/use-applications-layout.ts
+msgid "Couldn't save the layout, so it's back to how it was."
+msgstr ""
+
 #: src/features/applications/components/application-notes.tsx
 msgid "Couldn't save the notes."
 msgstr "Shënimet nuk mund të ruheshin."
@@ -4334,7 +4355,7 @@ msgstr "Mbush"
 #: src/features/applications/components/detail/sent-documents.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Cover letter"
 msgstr "Letër motivuese"
 
@@ -4852,6 +4873,10 @@ msgstr "Monedhë tjetër, nuk krahasohet"
 msgid "Different pay period, not compared"
 msgstr "Periudhë tjetër pagese, nuk krahasohet"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Direction"
+msgstr ""
+
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/directory/page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -4941,6 +4966,7 @@ msgstr "Mos dërgo {0}"
 msgid "Donate"
 msgstr "Dhuro"
 
+#: src/features/applications/components/sort-button.tsx
 #: src/features/career/workspace/questions.tsx
 #: src/features/resume/editor/write/rich-text-editor.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -5101,6 +5127,10 @@ msgstr "zvarrit · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "Tërhiqni dhe lini seksionet këtu për t’i lëvizur midis kolonave"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Drag to reorder. To resize, drag the line between two headings."
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Drag to reposition and use the slider to zoom before uploading."
@@ -5910,8 +5940,9 @@ msgid "First run"
 msgstr "Ekzekutimi i parë"
 
 #: src/features/applications/components/application-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5998,6 +6029,7 @@ msgid "Follow up on {0}"
 msgstr "Ndjekje më {0}"
 
 #: src/features/applications/components/detail/next-step-card.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Follow-up"
 msgstr "Përcjellja"
 
@@ -6127,6 +6159,7 @@ msgstr "Gjetur {0}"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found by"
 msgstr ""
@@ -6142,6 +6175,7 @@ msgstr ""
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found on"
 msgstr ""
@@ -6557,6 +6591,10 @@ msgstr "Fshihe foton"
 msgid "High"
 msgstr "Lartë"
 
+#: src/features/applications/sort.ts
+msgid "Highest first"
+msgstr ""
+
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Highlight"
 msgstr "Theksim"
@@ -6884,6 +6922,10 @@ msgstr "Po përmirësohet…"
 
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
+msgstr ""
+
+#: src/features/applications/components/sort-button.tsx
+msgid "in each stage"
 msgstr ""
 
 #: src/features/homepage/sections.tsx
@@ -7442,6 +7484,7 @@ msgstr "Etiketa, p.sh. Rekrutuesi"
 msgid "Landscape"
 msgstr "Peizazh"
 
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Lane"
 msgstr ""
@@ -7509,6 +7552,10 @@ msgstr ""
 #: src/features/settings/ai/api-keys.tsx
 msgid "Last used"
 msgstr "Përdorur për herë të fundit"
+
+#: src/features/applications/sort.ts
+msgid "Latest first"
+msgstr ""
 
 #: src/libs/locale.ts
 msgid "Latvian"
@@ -8016,6 +8063,10 @@ msgstr "E ulët"
 msgid "Lower the design sheet"
 msgstr "Ulni fletën e projektimit"
 
+#: src/features/applications/sort.ts
+msgid "Lowest first"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -8310,6 +8361,10 @@ msgstr "Mono"
 msgid "More actions"
 msgstr ""
 
+#: src/features/applications/components/columns-button.tsx
+msgid "More columns"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/editor-bar.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
@@ -8376,6 +8431,10 @@ msgstr "Shumica e sistemeve paraqesin kandidatët me adresë emaili."
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Mostly readable"
 msgstr "Kryesisht i lexueshëm"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Move {label}"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
@@ -8714,6 +8773,10 @@ msgstr "Seksion i ri"
 msgid "New teams at Northwind were stalling in setup; most never got through."
 msgstr "Ekipet e reja në Northwind ngecnin në konfigurim; shumica nuk e përfundonin kurrë."
 
+#: src/features/applications/sort.ts
+msgid "Newest first"
+msgstr ""
+
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Next"
 msgstr ""
@@ -8735,7 +8798,8 @@ msgid "Next question"
 msgstr "Pyetja tjetër"
 
 #: src/features/applications/components/detail/next-step-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/shell.tsx
 msgid "Next step"
 msgstr "Hapi tjetër"
@@ -9100,7 +9164,7 @@ msgstr "Nr {number} · {name}"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "Asnjë"
 
@@ -9428,6 +9492,10 @@ msgstr "Ditët në zyrë nuk përmenden"
 #: src/features/resume/editor/save-status.tsx
 msgid "Offline · saved on this device"
 msgstr "Jashtë linje · ruajtur në këtë pajisje"
+
+#: src/features/applications/sort.ts
+msgid "Oldest first"
+msgstr ""
 
 #: src/features/career/knowledge/groups.tsx
 msgid "on"
@@ -11226,6 +11294,10 @@ msgstr "Kërkesat dhe provat tuaja"
 msgid "Reserve capitals for short headings. They slow reading and can defeat case-sensitive search."
 msgstr "Rezervoni shkronjat e mëdha për titujt e shkurtër. Ato ngadalësojnë leximin dhe mund të prishin kërkimin që dallon shkronjat e mëdha nga të vogla."
 
+#: src/features/applications/components/columns-button.tsx
+msgid "Reset"
+msgstr ""
+
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 msgid "Reset design defaults"
 msgstr "Rivendos standardet e dizajnit"
@@ -11246,6 +11318,14 @@ msgstr "Rivendosni fjalëkalimin tuaj"
 #: src/features/auth/pages/reset-password.tsx
 msgid "Resetting your password..."
 msgstr "Po rivendoset fjalëkalimi juaj..."
+
+#: src/features/applications/components/list-view.tsx
+msgid "Resize {label}"
+msgstr ""
+
+#: src/features/applications/components/board.tsx
+msgid "Resize the columns"
+msgstr ""
 
 #: src/features/homepage/footer.tsx
 msgid "Resources"
@@ -11302,7 +11382,7 @@ msgstr "rezyme"
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
@@ -11358,7 +11438,7 @@ msgid "Resume length"
 msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
-msgid "Resume length and reminders. Off keeps yours."
+msgid "Resume length, reminders and the Applications layout. Off keeps yours."
 msgstr ""
 
 #: src/features/applications/components/build-status.tsx
@@ -11514,9 +11594,11 @@ msgid "Right now"
 msgstr "Pikërisht tani"
 
 #: src/features/applications/components/add-application-dialog.tsx
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
 msgstr "Pozicioni"
@@ -11609,6 +11691,7 @@ msgstr "S"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Salary"
 msgstr "Paga"
 
@@ -11976,7 +12059,7 @@ msgstr "Kërkimi dështoi"
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/career/workspace/assessments.tsx
 msgid "Search fit"
 msgstr ""
@@ -12241,7 +12324,7 @@ msgstr ""
 msgid "Senior Product Designer"
 msgstr "Dizajner i lartë i produktit"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/resume/share/format.ts
 msgid "Sent"
 msgstr "Dërguar"
@@ -12486,6 +12569,10 @@ msgstr "Shfaq shabllonet"
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Show them again"
 msgstr "Tregojini ato përsëri"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Shown"
+msgstr ""
 
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Shown in your timezone."
@@ -12783,13 +12870,26 @@ msgstr "Diçka shkoi keq. Ju lutemi provoni përsëri."
 msgid "Something went wrong. Try again."
 msgstr "Diçka shkoi keq. Provo sërish."
 
+#: src/features/applications/sort.ts
+msgid "Soonest first"
+msgstr ""
+
+#: src/features/applications/components/sort-button.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "Rendit"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort by"
+msgstr ""
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Sort by date"
 msgstr "Rendit sipas datës"
+
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort: {label}"
+msgstr ""
 
 #: src/features/career/knowledge/facts.tsx
 #: src/routes/dashboard/settings/route.tsx
@@ -12860,7 +12960,7 @@ msgstr "Katrori"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Stage"
 msgstr "Skena"
@@ -13259,6 +13359,7 @@ msgstr "Etiketë"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
 #: src/features/directory/page.tsx
@@ -13340,6 +13441,8 @@ msgstr ""
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/assessments.tsx
 msgid "Targeting fit"
 msgstr ""
@@ -14681,7 +14784,8 @@ msgstr "Përditësoni detajet e këtij aplikimi."
 msgid "Update your password"
 msgstr "Përditësoni fjalëkalimin tuaj"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "Përditësuar"
 
@@ -15993,6 +16097,10 @@ msgstr "E juaja"
 #: src/features/homepage/design.tsx
 msgid "Yours · {0}"
 msgstr "E juaja · {0}"
+
+#: src/features/applications/sort.ts
+msgid "Z to A"
+msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Zoom"

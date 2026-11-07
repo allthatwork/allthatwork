@@ -155,7 +155,7 @@ export function archiveCounts(archive: AccountArchive) {
 	} satisfies Record<ImportListArea, Record<string, number>>;
 }
 
-const PREFERENCE_KEYS = ["resumePages", "noReplyDays", "interviewReminders"];
+const PREFERENCE_KEYS = ["resumePages", "noReplyDays", "interviewReminders", "applicationsLayout"];
 
 /** The single settings the archive has; each is either kept as the account has it or taken from the file. */
 export function archiveSettings(archive: AccountArchive) {

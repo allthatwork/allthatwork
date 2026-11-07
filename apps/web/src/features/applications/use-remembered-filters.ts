@@ -1,6 +1,6 @@
 import type { FilterSearch } from "./filter-search";
 import { useEffect, useEffectEvent, useRef } from "react";
-import { FILTER_SEARCH_KEYS, hasFilterParams } from "./filter-search";
+import { hasFilterParams, REMEMBERED_SEARCH_KEYS } from "./filter-search";
 
 export const REMEMBERED_FILTERS_KEY = "applications-filters";
 
@@ -31,9 +31,9 @@ function write(storage: Storage | null, search: FilterSearch) {
 	}
 }
 
-/** Only the filter and sort params, without the undefined ones. */
+/** Only the filter params, without the undefined ones; the sort is the account's, not the tab's. */
 const pickFilterParams = (search: FilterSearch): FilterSearch =>
-	Object.fromEntries(FILTER_SEARCH_KEYS.flatMap((key) => (search[key] === undefined ? [] : [[key, search[key]]])));
+	Object.fromEntries(REMEMBERED_SEARCH_KEYS.flatMap((key) => (search[key] === undefined ? [] : [[key, search[key]]])));
 
 type RememberedFiltersOptions = {
 	/** The filter and sort params in the address now. */

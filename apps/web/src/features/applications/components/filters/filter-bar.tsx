@@ -12,6 +12,7 @@ import {
 	DropdownMenuTrigger,
 } from "@reactive-resume/ui/components/dropdown-menu";
 import { Icon } from "@reactive-resume/ui/components/icon";
+import { cn } from "@reactive-resume/utils/style";
 import {
 	clearAll,
 	clearFacet,
@@ -35,6 +36,7 @@ export type FilterBarProps = {
 	lanes: readonly string[];
 	/** How many match, for "6 of 180". */
 	matching: number;
+	className?: string;
 };
 
 const WIDE: ReadonlySet<FilterFacet> = new Set(["lane", "fit", "tags"]);
@@ -52,7 +54,7 @@ const EXTRA_ICONS: Record<(typeof EXTRA_FACETS)[number], IconName> = {
  * filters, and "6 of 180" with Clear all once anything differs from the default. It's one flex item, so on a narrow
  * window it moves to its own line as a group and the search box keeps its width.
  */
-export function FilterBar({ applications, filters, onChange, context, lanes, matching }: FilterBarProps) {
+export function FilterBar({ applications, filters, onChange, context, lanes, matching, className }: FilterBarProps) {
 	const [open, setOpen] = useState<FilterFacet | null>(null);
 	// Extra filters picked from More filters; each stays while it's set or open.
 	const [added, setAdded] = useState<FilterFacet[]>([]);
@@ -112,7 +114,7 @@ export function FilterBar({ applications, filters, onChange, context, lanes, mat
 	};
 
 	return (
-		<div className="flex min-w-0 flex-auto flex-wrap items-center gap-1.5">
+		<div className={cn("flex min-w-0 flex-auto flex-wrap items-center gap-1.5", className)}>
 			{PRIMARY_FACETS.map(button)}
 			{extras.map(button)}
 			{notShown.length > 0 && (

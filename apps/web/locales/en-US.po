@@ -1330,6 +1330,10 @@ msgstr "A strong match, with one question to resolve"
 msgid "A timed plan, your opening, the stories to bring and questions to ask. It becomes your checklist 10 minutes before the call."
 msgstr "A timed plan, your opening, the stories to bring and questions to ask. It becomes your checklist 10 minutes before the call."
 
+#: src/features/applications/sort.ts
+msgid "A to Z"
+msgstr "A to Z"
+
 #: src/features/ats-checker/messages.ts
 msgid "A web address is written without https://."
 msgstr "A web address is written without https://."
@@ -1771,6 +1775,11 @@ msgstr "Add your lanes in Preferences"
 msgid "Add your name"
 msgstr "Add your name"
 
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
+msgid "Added"
+msgstr "Added"
+
 #. placeholder {0}: role.trim()
 #. placeholder {1}: company.trim()
 #: src/features/applications/components/add-application-dialog.tsx
@@ -2041,6 +2050,10 @@ msgstr "Also email {0}"
 #: src/features/resume/editor/design/style-groups.tsx
 msgid "Also shows the icons on skills, profiles and interests."
 msgstr "Also shows the icons on skills, profiles and interests."
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Always first"
+msgstr "Always first"
 
 #: src/libs/locale.ts
 msgid "Amharic"
@@ -2326,6 +2339,8 @@ msgid "Applications to export"
 msgstr "Applications to export"
 
 #: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/applications/stages.ts
 #: src/features/homepage/prepare.tsx
 #: src/features/homepage/sections.tsx
@@ -2789,7 +2804,7 @@ msgid "Bring in documents, applications and Knowledge from an Export everything 
 msgstr "Bring in documents, applications and Knowledge from an Export everything zip, made in Reactive Resume or {APP_NAME}."
 
 #: src/features/applications/components/build-status.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Build"
 msgstr "Build"
@@ -3364,6 +3379,7 @@ msgstr "Color"
 msgid "Column {header} goes to"
 msgstr "Column {header} goes to"
 
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
@@ -3401,6 +3417,7 @@ msgstr "Companies"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/sort.ts
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/check/job-match.tsx
@@ -4155,6 +4172,10 @@ msgstr "Couldn't save the context window."
 msgid "Couldn't save the follow-up."
 msgstr "Couldn't save the follow-up."
 
+#: src/features/applications/use-applications-layout.ts
+msgid "Couldn't save the layout, so it's back to how it was."
+msgstr "Couldn't save the layout, so it's back to how it was."
+
 #: src/features/applications/components/application-notes.tsx
 msgid "Couldn't save the notes."
 msgstr "Couldn't save the notes."
@@ -4329,7 +4350,7 @@ msgstr "Cover"
 #: src/features/applications/components/detail/sent-documents.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Cover letter"
 msgstr "Cover letter"
 
@@ -4847,6 +4868,10 @@ msgstr "Different currency, not compared"
 msgid "Different pay period, not compared"
 msgstr "Different pay period, not compared"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Direction"
+msgstr "Direction"
+
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/directory/page.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -4936,6 +4961,7 @@ msgstr "Don't send {0}"
 msgid "Donate"
 msgstr "Donate"
 
+#: src/features/applications/components/sort-button.tsx
 #: src/features/career/workspace/questions.tsx
 #: src/features/resume/editor/write/rich-text-editor.tsx
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -5096,6 +5122,10 @@ msgstr "drag · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "Drag and drop sections here to move them between columns"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Drag to reorder. To resize, drag the line between two headings."
+msgstr "Drag to reorder. To resize, drag the line between two headings."
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Drag to reposition and use the slider to zoom before uploading."
@@ -5905,8 +5935,9 @@ msgid "First run"
 msgstr "First run"
 
 #: src/features/applications/components/application-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/chrome.tsx
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Fit"
@@ -5993,6 +6024,7 @@ msgid "Follow up on {0}"
 msgstr "Follow up on {0}"
 
 #: src/features/applications/components/detail/next-step-card.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Follow-up"
 msgstr "Follow-up"
 
@@ -6122,6 +6154,7 @@ msgstr "Found {0}"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found by"
 msgstr "Found by"
@@ -6137,6 +6170,7 @@ msgstr "Found by {foundBy} on {source}"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Found on"
 msgstr "Found on"
@@ -6552,6 +6586,10 @@ msgstr "Hide the photo"
 msgid "High"
 msgstr "High"
 
+#: src/features/applications/sort.ts
+msgid "Highest first"
+msgstr "Highest first"
+
 #: src/features/resume/editor/write/rich-text-editor.tsx
 msgid "Highlight"
 msgstr "Highlight"
@@ -6880,6 +6918,10 @@ msgstr "Improving…"
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
 msgstr "In a private group: “{quote}”"
+
+#: src/features/applications/components/sort-button.tsx
+msgid "in each stage"
+msgstr "in each stage"
 
 #: src/features/homepage/sections.tsx
 msgid "In good company"
@@ -7437,6 +7479,7 @@ msgstr "Label, e.g. Recruiter"
 msgid "Landscape"
 msgstr "Landscape"
 
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Lane"
 msgstr "Lane"
@@ -7504,6 +7547,10 @@ msgstr "Last review {0} on {1}: read {2} of {3} facts."
 #: src/features/settings/ai/api-keys.tsx
 msgid "Last used"
 msgstr "Last used"
+
+#: src/features/applications/sort.ts
+msgid "Latest first"
+msgstr "Latest first"
 
 #: src/libs/locale.ts
 msgid "Latvian"
@@ -8011,6 +8058,10 @@ msgstr "Low"
 msgid "Lower the design sheet"
 msgstr "Lower the design sheet"
 
+#: src/features/applications/sort.ts
+msgid "Lowest first"
+msgstr "Lowest first"
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr "Made with {APP_NAME}, free and open source"
@@ -8305,6 +8356,10 @@ msgstr "Mono"
 msgid "More actions"
 msgstr "More actions"
 
+#: src/features/applications/components/columns-button.tsx
+msgid "More columns"
+msgstr "More columns"
+
 #: src/routes/builder/$resumeId/-components/editor-bar.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
 msgid "More download formats"
@@ -8371,6 +8426,10 @@ msgstr "Most systems file candidates by email address."
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Mostly readable"
 msgstr "Mostly readable"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Move {label}"
+msgstr "Move {label}"
 
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
@@ -8709,6 +8768,10 @@ msgstr "New section"
 msgid "New teams at Northwind were stalling in setup; most never got through."
 msgstr "New teams at Northwind were stalling in setup; most never got through."
 
+#: src/features/applications/sort.ts
+msgid "Newest first"
+msgstr "Newest first"
+
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Next"
 msgstr "Next"
@@ -8730,7 +8793,8 @@ msgid "Next question"
 msgstr "Next question"
 
 #: src/features/applications/components/detail/next-step-card.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/shell.tsx
 msgid "Next step"
 msgstr "Next step"
@@ -9095,7 +9159,7 @@ msgstr "No. {number} · {name}"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "None"
 
@@ -9423,6 +9487,10 @@ msgstr "Office days not stated"
 #: src/features/resume/editor/save-status.tsx
 msgid "Offline · saved on this device"
 msgstr "Offline · saved on this device"
+
+#: src/features/applications/sort.ts
+msgid "Oldest first"
+msgstr "Oldest first"
 
 #: src/features/career/knowledge/groups.tsx
 msgid "on"
@@ -11221,6 +11289,10 @@ msgstr "Requirements and your evidence"
 msgid "Reserve capitals for short headings. They slow reading and can defeat case-sensitive search."
 msgstr "Reserve capitals for short headings. They slow reading and can defeat case-sensitive search."
 
+#: src/features/applications/components/columns-button.tsx
+msgid "Reset"
+msgstr "Reset"
+
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 msgid "Reset design defaults"
 msgstr "Reset design defaults"
@@ -11241,6 +11313,14 @@ msgstr "Reset your password"
 #: src/features/auth/pages/reset-password.tsx
 msgid "Resetting your password..."
 msgstr "Resetting your password..."
+
+#: src/features/applications/components/list-view.tsx
+msgid "Resize {label}"
+msgstr "Resize {label}"
+
+#: src/features/applications/components/board.tsx
+msgid "Resize the columns"
+msgstr "Resize the columns"
 
 #: src/features/homepage/footer.tsx
 msgid "Resources"
@@ -11297,7 +11377,7 @@ msgstr "resume"
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/documents/document-card.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
@@ -11353,8 +11433,8 @@ msgid "Resume length"
 msgstr "Resume length"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
-msgid "Resume length and reminders. Off keeps yours."
-msgstr "Resume length and reminders. Off keeps yours."
+msgid "Resume length, reminders and the Applications layout. Off keeps yours."
+msgstr "Resume length, reminders and the Applications layout. Off keeps yours."
 
 #: src/features/applications/components/build-status.tsx
 msgid "Resume package built"
@@ -11509,9 +11589,11 @@ msgid "Right now"
 msgstr "Right now"
 
 #: src/features/applications/components/add-application-dialog.tsx
+#: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
 msgstr "Role"
@@ -11604,6 +11686,7 @@ msgstr "S"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 msgid "Salary"
 msgstr "Salary"
 
@@ -11971,7 +12054,7 @@ msgstr "Search failed"
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/career/workspace/assessments.tsx
 msgid "Search fit"
 msgstr "Search fit"
@@ -12236,7 +12319,7 @@ msgstr "Sends your shared, switched-on facts to {0}, in requests within your AI 
 msgid "Senior Product Designer"
 msgstr "Senior Product Designer"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/resume/share/format.ts
 msgid "Sent"
 msgstr "Sent"
@@ -12481,6 +12564,10 @@ msgstr "Show templates"
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "Show them again"
 msgstr "Show them again"
+
+#: src/features/applications/components/columns-button.tsx
+msgid "Shown"
+msgstr "Shown"
 
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Shown in your timezone."
@@ -12778,13 +12865,26 @@ msgstr "Something went wrong. Please try again."
 msgid "Something went wrong. Try again."
 msgstr "Something went wrong. Try again."
 
+#: src/features/applications/sort.ts
+msgid "Soonest first"
+msgstr "Soonest first"
+
+#: src/features/applications/components/sort-button.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "Sort"
 
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort by"
+msgstr "Sort by"
+
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Sort by date"
 msgstr "Sort by date"
+
+#: src/features/applications/components/sort-button.tsx
+msgid "Sort: {label}"
+msgstr "Sort: {label}"
 
 #: src/features/career/knowledge/facts.tsx
 #: src/routes/dashboard/settings/route.tsx
@@ -12855,7 +12955,7 @@ msgstr "Square"
 #: src/features/applications/components/add-application-dialog.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 msgid "Stage"
 msgstr "Stage"
@@ -13254,6 +13354,7 @@ msgstr "Tag"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/application-form-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
 #: src/features/directory/page.tsx
@@ -13335,6 +13436,8 @@ msgstr "Targeting {0}+"
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 #: src/features/career/workspace/assessments.tsx
 msgid "Targeting fit"
 msgstr "Targeting fit"
@@ -14676,7 +14779,8 @@ msgstr "Update this application's details."
 msgid "Update your password"
 msgstr "Update your password"
 
-#: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/list-columns.tsx
+#: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "Updated"
 
@@ -15988,6 +16092,10 @@ msgstr "Yours"
 #: src/features/homepage/design.tsx
 msgid "Yours · {0}"
 msgstr "Yours · {0}"
+
+#: src/features/applications/sort.ts
+msgid "Z to A"
+msgstr "Z to A"
 
 #: src/features/resume/editor/write/picture-settings.tsx
 msgid "Zoom"

@@ -22,6 +22,7 @@ import * as schema from "@reactive-resume/db/schema";
 import { ResetPasswordEmail, VerifyEmail, VerifyEmailChange } from "@reactive-resume/email/templates/auth";
 import { sendEmail } from "@reactive-resume/email/transport";
 import { env } from "@reactive-resume/env/server";
+import { applicationsLayoutSchema } from "@reactive-resume/schema/applications/layout";
 import { APP_NAME } from "@reactive-resume/utils/brand";
 import { rateLimitConfig } from "@reactive-resume/utils/rate-limit";
 import { NO_REPLY_DAYS, noReplyDaysSchema } from "@reactive-resume/utils/reminders";
@@ -386,6 +387,11 @@ const getAuthConfig = () => {
 					type: "boolean",
 					required: false,
 					defaultValue: true,
+				},
+				applicationsLayout: {
+					type: "json",
+					required: false,
+					validator: { input: applicationsLayoutSchema },
 				},
 			},
 		},

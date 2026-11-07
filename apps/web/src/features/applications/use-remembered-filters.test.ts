@@ -28,11 +28,17 @@ describe("useRememberedFilters", () => {
 		expect(storage.stored()).toEqual({ stage: "saved", fit: 85 });
 	});
 
-	it("restores the stored filters when the address has none", () => {
+	it("restores the stored filters when the address has none, without a sort stored before", () => {
 		const storage = memoryStorage({ build: "built", sort: "role" });
 		const onRestore = vi.fn();
 		renderHook(() => useRememberedFilters({ search: {}, onRestore, storage }));
-		expect(onRestore).toHaveBeenCalledExactlyOnceWith({ build: "built", sort: "role" });
+		expect(onRestore).toHaveBeenCalledExactlyOnceWith({ build: "built" });
+	});
+
+	it("doesn't remember the sort, which the account keeps", () => {
+		const storage = memoryStorage();
+		renderHook(() => useRememberedFilters({ search: { stage: "saved", sort: "added" }, onRestore: vi.fn(), storage }));
+		expect(storage.stored()).toEqual({ stage: "saved" });
 	});
 
 	it("starts at the default with nothing stored, and saves each change", () => {

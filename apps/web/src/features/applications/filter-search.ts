@@ -49,12 +49,15 @@ type Scalar = z.output<typeof scalar>;
 
 export const FILTER_SEARCH_KEYS = Object.keys(filterSearchShape) as (keyof FilterSearch)[];
 
+/** The params a tab remembers: the filters without the sort, which the account keeps instead. */
+export const REMEMBERED_SEARCH_KEYS = FILTER_SEARCH_KEYS.filter((key) => key !== "sort" && key !== "dir");
+
 const ARRAY_KEYS = new Set(["stage", "build", "foundBy", "lane", "source", "attention", "tag", "notTag"]);
 const NUMBER_KEYS = new Set(["fit", "tfit", "added", "updated"]);
 
-/** Whether the address holds any filter or sort param (view, create and applicationId don't count). */
+/** Whether the address holds any filter param (the sort, view, create and applicationId don't count). */
 export const hasFilterParams = (search: Partial<Record<string, unknown>>) =>
-	FILTER_SEARCH_KEYS.some((key) => search[key] !== undefined);
+	REMEMBERED_SEARCH_KEYS.some((key) => search[key] !== undefined);
 
 const asList = (value: Scalar | Scalar[] | undefined) =>
 	value === undefined ? undefined : (Array.isArray(value) ? value : [value]).map(String);
@@ -74,11 +77,20 @@ export function filtersFromSearch(search: FilterSearch): { filters: ApplicationF
 		filters.stage = search.stage === undefined ? [...OPEN_STAGES, "closed"] : [...filters.stage, "closed"];
 	}
 
+	return { filters, sort: sortFromSearch(search) ?? DEFAULT_APPLICATION_SORT };
+}
+
+/**
+ * The sort in the address, or null when it has none, so the account's sort applies. Each half left out is at its
+ * default (Updated, descending), as the address has always written it; a value that isn't valid counts as none.
+ */
+export function sortFromSearch(search: Pick<FilterSearch, "sort" | "dir">): ApplicationSort | null {
+	if (search.sort === undefined && search.dir === undefined) return null;
 	const sort = applicationSortSchema.safeParse({
 		sort: search.sort === undefined ? undefined : String(search.sort),
 		dir: search.dir === undefined ? undefined : String(search.dir),
 	});
-	return { filters, sort: sort.success ? sort.data : DEFAULT_APPLICATION_SORT };
+	return sort.success ? sort.data : null;
 }
 
 /**
@@ -98,6 +110,7 @@ export function searchFromFilters(filters: ApplicationFilters, sort: Application
 		else if (key === "q") search[key] = value.trim();
 		else search[key] = NUMBER_KEYS.has(key) && /^\d+$/.test(value) ? Number(value) : value;
 	}
+	// The default sort stays out of the address; with no sort there, the account's applies.
 	if (sort.sort !== DEFAULT_APPLICATION_SORT.sort) search.sort = sort.sort;
 	if (sort.dir !== DEFAULT_APPLICATION_SORT.dir) search.dir = sort.dir;
 	return search as FilterSearch;
