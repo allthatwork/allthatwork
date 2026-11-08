@@ -1033,10 +1033,6 @@ msgstr "{value} a year"
 msgid "{value} an hour"
 msgstr "{value} an hour"
 
-#: src/features/applications/components/filters/filter-panel.tsx
-msgid "{value} days"
-msgstr "{value} days"
-
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1851,10 +1847,6 @@ msgstr "Added to Knowledge as an experience."
 msgid "Added to Prepare"
 msgstr "Added to Prepare"
 
-#: src/features/applications/components/filters/filter-bar.tsx
-msgid "Added, updated"
-msgstr "Added, updated"
-
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
 msgstr "Address"
@@ -2550,6 +2542,11 @@ msgstr "Assistant conversations"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "Assistant."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "At least"
+msgstr "At least"
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -4604,6 +4601,19 @@ msgstr "Dates use one format"
 #: src/features/resume/editor/check/issues.ts
 msgid "Dates won't be read"
 msgstr "Dates won't be read"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "days"
+msgstr "days"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since added"
+msgstr "Days since added"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since updated"
+msgstr "Days since updated"
 
 #: src/features/settings/reminders.tsx
 msgid "Days without a reply"
@@ -8122,6 +8132,14 @@ msgstr "Lower the design sheet"
 msgid "Lowest first"
 msgstr "Lowest first"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest search fit"
+msgstr "Lowest search fit"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest targeting fit"
+msgstr "Lowest targeting fit"
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr "Made with {APP_NAME}, free and open source"
@@ -9238,6 +9256,7 @@ msgid "None"
 msgstr "None"
 
 #: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 msgid "None yet"
 msgstr "None yet"
 
@@ -14001,6 +14020,10 @@ msgstr "The review couldn't finish. Try again."
 msgid "The review didn't finish."
 msgstr "The review didn't finish."
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the reviewers' median"
+msgstr "the reviewers' median"
+
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr "the reviewers' median, after a build"
@@ -14025,6 +14048,10 @@ msgstr "The score is capped because of a blocking problem: {0}"
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "The score reflects how reliably text is extracted, not your chances."
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the search's read"
+msgstr "the search's read"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"

@@ -1038,10 +1038,6 @@ msgstr "సంవత్సరానికి {value}"
 msgid "{value} an hour"
 msgstr "గంటకు {value}"
 
-#: src/features/applications/components/filters/filter-panel.tsx
-msgid "{value} days"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1856,10 +1852,6 @@ msgstr "నాలెడ్జ్‌లో అనుభవంగా జోడి�
 msgid "Added to Prepare"
 msgstr "సన్నద్ధతకు జోడించబడింది"
 
-#: src/features/applications/components/filters/filter-bar.tsx
-msgid "Added, updated"
-msgstr ""
-
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
 msgstr "చిరునామా"
@@ -2555,6 +2547,11 @@ msgstr "అసిస్టెంట్ సంభాషణలు"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "సహాయకుడు."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "At least"
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -4609,6 +4606,19 @@ msgstr "తేదీలు ఒక ఆకృతిని ఉపయోగిస్
 #: src/features/resume/editor/check/issues.ts
 msgid "Dates won't be read"
 msgstr "తేదీలు చదవబడవు"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "days"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since added"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since updated"
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "Days without a reply"
@@ -8127,6 +8137,14 @@ msgstr "డిజైన్ షీట్‌ను తగ్గించండి"
 msgid "Lowest first"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest search fit"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest targeting fit"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -9243,6 +9261,7 @@ msgid "None"
 msgstr "ఏదీ లేదు"
 
 #: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 msgid "None yet"
 msgstr ""
 
@@ -14006,6 +14025,10 @@ msgstr "సమీక్ష పూర్తి కాలేదు. మళ్ల�
 msgid "The review didn't finish."
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the reviewers' median"
+msgstr ""
+
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14030,6 +14053,10 @@ msgstr "బ్లాకింగ్ సమస్య కారణంగా స్
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "వచనం ఎంత విశ్వసనీయంగా సంగ్రహించబడిందో స్కోర్ ప్రతిబింబిస్తుంది, మీ అవకాశాలను కాదు."
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the search's read"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"

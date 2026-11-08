@@ -7,6 +7,10 @@ import {
 	ATTENTION_FILTER_VALUES,
 	BUILD_FILTER_VALUES,
 	DEFAULT_APPLICATION_FILTERS,
+	DAYS_FILTER_MAX,
+	FIT_FILTER_MAX,
+	normalizeDaysFilter,
+	normalizeFitFilter,
 	NOT_SET,
 	OPEN_STAGES,
 } from "@reactive-resume/schema/applications/filters";
@@ -17,9 +21,9 @@ import { suggestValues } from "./suggestions";
 
 const DAY_MS = 86_400_000;
 
-/** The filter buttons in the order they show: these five always, then the "More filters" ones once picked or set. */
-export const PRIMARY_FACETS = ["stage", "build", "foundBy", "lane", "fit"] as const;
-export const EXTRA_FACETS = ["source", "documents", "attention", "dates", "tags"] as const;
+/** The filter buttons in the order they show: these six always, then the "More filters" ones once picked or set. */
+export const PRIMARY_FACETS = ["stage", "build", "foundBy", "lane", "fit", "dates"] as const;
+export const EXTRA_FACETS = ["source", "documents", "attention", "tags"] as const;
 export type FilterFacet = (typeof PRIMARY_FACETS)[number] | (typeof EXTRA_FACETS)[number];
 export const FACETS: readonly FilterFacet[] = [...PRIMARY_FACETS, ...EXTRA_FACETS];
 
@@ -28,6 +32,9 @@ export type ListFacet = "stage" | "build" | "foundBy" | "lane" | "source" | "att
 
 export type BuildFilterValue = (typeof BUILD_FILTER_VALUES)[number];
 export type AttentionKind = (typeof ATTENTION_FILTER_VALUES)[number];
+
+/** Applies new filters; `replace` updates the address in place (while typing a number) instead of adding a step. */
+export type FiltersChange = (filters: ApplicationFilters, options?: { replace?: boolean }) => void;
 
 export type FilterContext = {
 	now: Date;
@@ -85,13 +92,15 @@ function valuesOf(application: Application, facet: ListFacet, filters: Applicati
 	}
 }
 
+/** `wanted` is "any", "none" or a number: that fit and up (75 keeps 75). */
 const fitOk = (fit: number | null, wanted: string) =>
 	wanted === "any" ? true : wanted === NOT_SET ? fit === null : fit !== null && fit >= Number(wanted);
 
 const documentOk = (linked: boolean, wanted: ApplicationFilters["resume"]) =>
 	wanted === "any" ? true : wanted === "linked" ? linked : !linked;
 
-const withinDays = (date: Date | string, days: ApplicationFilters["added"], now: Date) =>
+/** Within the last `days` days, counted back from now: 10 keeps one added exactly 10 days ago, not 10 days and a bit. */
+const withinDays = (date: Date | string, days: string, now: Date) =>
 	days === "any" || now.getTime() - new Date(date).getTime() <= Number(days) * DAY_MS;
 
 /** Search reads role, company, location, contacts and tags. */
@@ -403,6 +412,33 @@ export function summary(
 			return listValue(parts);
 		}
 	}
+}
+
+// The Fit and Dates number fields
+
+/** Fit fields take 0 to 100, day fields 1 to 365. */
+export type NumberFilterKind = "fit" | "days";
+
+const isNumberValue = (value: string) => /^\d+$/.test(value);
+
+/** What a number field shows for a filter value: the number, or nothing for any and none. */
+export const numberFieldText = (value: string) => (isNumberValue(value) ? value : "");
+
+/** The filter value for what's typed in a number field: its digits, clamped; nothing (or 0 days) is any. */
+export function typedNumberValue(text: string, kind: NumberFilterKind): string {
+	const digits = text.replace(/\D/g, "");
+	return kind === "fit" ? normalizeFitFilter(digits) : normalizeDaysFilter(digits);
+}
+
+/** Where Up and Down start from an empty field. */
+const STEP_START: Record<NumberFilterKind, number> = { fit: 80, days: 7 };
+const STEP_RANGE: Record<NumberFilterKind, [number, number]> = { fit: [0, FIT_FILTER_MAX], days: [1, DAYS_FILTER_MAX] };
+
+/** Up and Down in a number field: `delta` from the number (kept in range), or the starting number from empty. */
+export function steppedNumberValue(value: string, kind: NumberFilterKind, delta: number): string {
+	if (!isNumberValue(value)) return String(STEP_START[kind]);
+	const [min, max] = STEP_RANGE[kind];
+	return String(Math.min(max, Math.max(min, Number(value) + delta)));
 }
 
 // Cards changed while filtered

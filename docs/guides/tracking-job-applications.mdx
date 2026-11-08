@@ -88,7 +88,7 @@ On phones, the page shows **List** and **Insights** only (it opens on List), and
 
 Type in **Search applications** to filter as you type. Search looks at the role, company, location, contact names and tags.
 
-After the search box there's a button for each filter. Select one to open it, tick what you want, and the page shows only the applications that match. Within one filter, ticked values mean "any of these"; different filters combine, so **Build: Built** and **Found by: Dorel** shows built applications that Dorel found.
+After the search box there's a button for each filter. Select one to open it, tick or type what you want, and the page shows only the applications that match. Within one filter, ticked values mean "any of these"; different filters combine, so **Build: Built** and **Found by: Dorel** shows built applications that Dorel found.
 
 | Filter       | Shows applications                                                                                                                                              |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -96,14 +96,17 @@ After the search box there's a button for each filter. Select one to open it, ti
 | **Build**    | By resume build status: **Not queued**, **Queued**, **Building**, **Built** or **Failed**.                                                                      |
 | **Found by** | Found by who or what you tick, or **Not set**.                                                                                                                  |
 | **Lane**     | Aimed at the lanes you tick (your lanes from **Preferences**, plus any others in use), or **No lane**. It matches either lane unless you pick **Primary only**. |
-| **Fit**      | With a search fit or targeting fit of at least 80+, 85+ and so on, or **None yet** for the ones without.                                                        |
+| **Fit**      | With a search fit or targeting fit of at least the number you type (75 means 75 and up), or **None yet** for the ones without.                                  |
+| **Dates**    | Added or updated in the last so many days: type a number from 1 to 365.                                                                                         |
 
-**More filters** adds five more: **Found on**, **Documents** (a linked resume or cover letter, or none), **Needs attention** (no reply for a while, a follow-up that's due, an interview coming, questions to answer), **Dates** (added or updated in the last 7, 14 or 30 days) and **Tags**. In Tags, select **+** for a tag the application must have and **−** for one it must not have; with two or more **+** tags, choose **Any of** or **All of** them.
+Fit and Dates filter as you type. The number at the right of a filled row says how many applications show with it, Up and Down step by 1 (Shift with them by 5), and Enter or Esc closes the filter. Leave a field empty for any.
+
+**More filters** adds four more: **Found on**, **Documents** (a linked resume or cover letter, or none), **Needs attention** (no reply for a while, a follow-up that's due, an interview coming, questions to answer) and **Tags**. In Tags, select **+** for a tag the application must have and **−** for one it must not have; with two or more **+** tags, choose **Any of** or **All of** them.
 
 <Frame caption="Filters set to open applications Dorel found with a search fit of 85 or more, with the Build filter open">
   <img
     src="/images/guides/tracking-job-applications/applications-filters.webp"
-    alt="Applications page with the filter buttons Stage: Saved, Applied, Build, Found by: Dorel, Lane, Fit: Search 85+ and More filters, the Build filter open with a count beside each status, and 8 of 62 with Clear all at the end of the row"
+    alt="Applications page with the search box and Sort on the first line and the filter buttons Stage: Saved, Applied, Build, Found by: Dorel, Lane, Fit: Search 85+, Dates and More filters on the second, the Build filter open with a count beside each status, and 3 of 40 with Clear all at the end of the row"
   />
 </Frame>
 
@@ -113,6 +116,7 @@ After the search box there's a button for each filter. Select one to open it, ti
 - The browser tab remembers its filters too: going to **Applications** from the sidebar, or back from an application's workspace, brings back the filters you last used in that tab, and the saved view if one was on. A new tab opens your default view (see [Saved views](#saved-views)), or the open stages only without one.
 - If you change an application so it no longer matches (say you select **Build** on a card while showing **Build: Not queued**), it stays where it is, faded, with "Doesn't match the filters now", until you change the filters or reload. That way you can work through a filtered list without cards jumping away.
 - If nothing matches, select **Clear filters**.
+- When the window can't hold the search box, the filters, and Sort and Columns on one line, the toolbar takes two: the search box with Sort and Columns, then all the filters.
 - On a phone, select **Filters** to open them all in one sheet. The filters you set show as chips under the search box, each with an **×**.
 
 The Board, List and Calendar follow the filters, and **Export to CSV** exports what they show. Insights always counts every application, so it hides the search and the filters.

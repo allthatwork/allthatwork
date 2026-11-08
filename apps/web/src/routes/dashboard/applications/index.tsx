@@ -1,4 +1,4 @@
-import type { ShownSnapshot } from "@/features/applications/filter";
+import type { FiltersChange, ShownSnapshot } from "@/features/applications/filter";
 import type { Application } from "@/features/applications/types";
 import type { ApplicationFilters, ApplicationSort } from "@reactive-resume/schema/applications/filters";
 import type { ListColumn, ListColumnId } from "@reactive-resume/schema/applications/layout";
@@ -60,6 +60,7 @@ import { resizeColumnChange, useApplicationsLayout } from "@/features/applicatio
 import { useRememberedFilters } from "@/features/applications/use-remembered-filters";
 import { isNameTaken, useSavedViews } from "@/features/applications/use-saved-views";
 import { useTabLabels } from "@/features/applications/use-tab-labels";
+import { useToolbarLines } from "@/features/applications/use-toolbar-lines";
 import { ENTER_CLASS } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
@@ -139,11 +140,12 @@ function RouteComponent() {
 	const [now] = useState(() => new Date());
 	const context = { now, noReplyDays };
 
-	const setSearch = (patch: Partial<Search>) =>
-		void navigate({ resetScroll: false, search: (prev: Search) => ({ ...prev, ...patch }) });
-	const setFilters = (next: ApplicationFilters) => {
+	const setSearch = (patch: Partial<Search>, replace = false) =>
+		void navigate({ replace, resetScroll: false, search: (prev: Search) => ({ ...prev, ...patch }) });
+	// Typing a number in Fit or Dates replaces the address after its first keystroke, so Back skips the digits.
+	const setFilters: FiltersChange = (next, options) => {
 		if (next.q !== query) setQuery(next.q);
-		setSearch(searchFromFilters(next, sort));
+		setSearch(searchFromFilters(next, sort), options?.replace ?? false);
 	};
 	const setSort = (next: ApplicationSort) => {
 		// A view's sort is the view's until Update; the account's changes only with no view on.
@@ -362,6 +364,11 @@ function RouteComponent() {
 		viewsRef,
 		actionsRef,
 	} = useTabLabels(withViews && !phone, showViewsButton ? `${activeView?.name ?? ""}${edited}` : "");
+	// The toolbar takes two lines when one can't hold it (measured).
+	const { twoLines, toolbarRef, filtersRef, endRef } = useToolbarLines(
+		withViews && !phone && shown !== "insights",
+		shown,
+	);
 
 	const viewTabs = (
 		<Tabs
@@ -468,12 +475,13 @@ function RouteComponent() {
 			) : (
 				<>
 					{/*
-					  The toolbar takes the whole row: search, the filters, then Sort and Columns at the end. Under a 1280px window
-					  it's two lines, search with Sort and Columns, then the filters. Insights doesn't follow the filters or the
-					  sort, so it hides the toolbar. Phones keep the tabs on their own line above it.
+					  The toolbar takes the whole row: search, the filters, then Sort and Columns at the end. When one line can't
+					  hold them (measured, at any width), it's two lines: search with Sort and Columns, then all the filters.
+					  Insights doesn't follow the filters or the sort, so it hides the toolbar. Phones keep the tabs on their own
+					  line above it.
 					*/}
 					{(phone || shown !== "insights") && (
-						<div className="flex flex-wrap items-center gap-2">
+						<div ref={toolbarRef} className="flex flex-wrap items-center gap-2">
 							{phone && viewTabs}
 							{phone && showViewsButton && viewsMenu && (
 								<div className="ms-auto flex min-w-0">
@@ -507,9 +515,16 @@ function RouteComponent() {
 										<PhoneFilters {...filterProps} trailing={<PhoneSortButton sort={sort} onChange={setSort} />} />
 									) : (
 										<>
-											<FilterBar {...filterProps} className="max-xl:order-2 max-xl:basis-full xl:order-1" />
+											<FilterBar
+												{...filterProps}
+												ref={filtersRef}
+												className={twoLines ? "order-2 basis-full" : "order-1"}
+											/>
 											{shown !== "calendar" && (
-												<div className="ms-auto flex shrink-0 items-center gap-1.5 max-xl:order-1 xl:order-2">
+												<div
+													ref={endRef}
+													className={cn("ms-auto flex shrink-0 items-center gap-1.5", twoLines ? "order-1" : "order-2")}
+												>
 													<SortButton sort={sort} onChange={setSort} />
 													{shown === "list" && (
 														<ColumnsButton

@@ -11,11 +11,16 @@ import {
 	filterApplications,
 	isDefaultFilters,
 	markTag,
+	EXTRA_FACETS,
 	mergeSnapshot,
+	numberFieldText,
 	optionCounts,
+	PRIMARY_FACETS,
 	sameFilters,
 	snapshotOf,
+	steppedNumberValue,
 	summary,
+	typedNumberValue,
 	toggleStage,
 	valuesInUse,
 	withHeld,
@@ -163,6 +168,15 @@ describe("each filter on its own", () => {
 		expect(run(all, f({ tfit: "none" }))).toEqual([edge.id, low.id, none.id]);
 	});
 
+	it("a typed fit keeps that fit and up, at the edge too", () => {
+		const at = app({ searchFit: 75, targetingFit: 88 });
+		const below = app({ searchFit: 74, targetingFit: 87 });
+		const all = [at, below];
+		expect(run(all, f({ fit: "75" }))).toEqual([at.id]);
+		expect(run(all, f({ tfit: "88" }))).toEqual([at.id]);
+		expect(run(all, f({ fit: "0" }))).toEqual([at.id, below.id]);
+	});
+
 	it("documents count a linked resume or file, and a letter or letter file", () => {
 		const resume = app({ resumeId: "r" });
 		const file = app({ resumeFileUrl: "https://files.example/r.pdf" });
@@ -213,6 +227,11 @@ describe("each filter on its own", () => {
 		expect(run(all, f({ added: "30" }))).toEqual([fresh.id, older.id]);
 		expect(run(all, f({ updated: "14" }))).toEqual([fresh.id, older.id]);
 		expect(run(all, f({ updated: "30" }))).toEqual([fresh.id, older.id]);
+		// Any number of days: 10 keeps one added 10 days ago and drops one added 11 days ago.
+		const ten = app({ createdAt: daysAgo(10), updatedAt: daysAgo(10) });
+		const eleven = app({ createdAt: daysAgo(11), updatedAt: daysAgo(11) });
+		expect(run([ten, eleven], f({ added: "10" }))).toEqual([ten.id]);
+		expect(run([ten, eleven], f({ updated: "10" }))).toEqual([ten.id]);
 	});
 
 	it("tags match exactly, ignoring case, any or all of them, and exclusion wins", () => {
@@ -354,6 +373,45 @@ describe("defaults and comparisons", () => {
 	});
 });
 
+describe("the bar", () => {
+	it("shows Dates after Fit, before More filters", () => {
+		expect(PRIMARY_FACETS).toEqual(["stage", "build", "foundBy", "lane", "fit", "dates"]);
+		expect(EXTRA_FACETS).toEqual(["source", "documents", "attention", "tags"]);
+	});
+});
+
+describe("the Fit and Dates number fields", () => {
+	it("show the number, and nothing for any and none", () => {
+		expect(numberFieldText("75")).toBe("75");
+		expect(numberFieldText("any")).toBe("");
+		expect(numberFieldText("none")).toBe("");
+	});
+
+	it("take digits only, clamped, with nothing (or 0 days) as any", () => {
+		expect(typedNumberValue("75", "fit")).toBe("75");
+		expect(typedNumberValue("7a5", "fit")).toBe("75");
+		expect(typedNumberValue("150", "fit")).toBe("100");
+		expect(typedNumberValue("0", "fit")).toBe("0");
+		expect(typedNumberValue("", "fit")).toBe("any");
+		expect(typedNumberValue("10", "days")).toBe("10");
+		expect(typedNumberValue("400", "days")).toBe("365");
+		expect(typedNumberValue("0", "days")).toBe("any");
+		expect(typedNumberValue("", "days")).toBe("any");
+	});
+
+	it("step with Up and Down, in range, and start at 80 or 7 from empty", () => {
+		expect(steppedNumberValue("any", "fit", 1)).toBe("80");
+		expect(steppedNumberValue("none", "fit", -1)).toBe("80");
+		expect(steppedNumberValue("any", "days", 5)).toBe("7");
+		expect(steppedNumberValue("75", "fit", 1)).toBe("76");
+		expect(steppedNumberValue("75", "fit", -5)).toBe("70");
+		expect(steppedNumberValue("98", "fit", 5)).toBe("100");
+		expect(steppedNumberValue("2", "fit", -5)).toBe("0");
+		expect(steppedNumberValue("1", "days", -1)).toBe("1");
+		expect(steppedNumberValue("364", "days", 5)).toBe("365");
+	});
+});
+
 describe("summary labels", () => {
 	it("say what each button shows", () => {
 		expect(summary(f(), "stage")).toBe("Open");
@@ -375,6 +433,8 @@ describe("summary labels", () => {
 		expect(summary(f({ resume: "linked", letter: "none" }), "documents")).toBe("Resume, No letter");
 		expect(summary(f({ attention: ["no-reply"] }), "attention", { noReplyDays: 14 })).toBe("No reply in 14+ days");
 		expect(summary(f({ added: "7" }), "dates")).toBe("Added 7d");
+		expect(summary(f({ fit: "75", tfit: "none" }), "fit")).toBe("Search 75+, No targeting fit");
+		expect(summary(f({ added: "10", updated: "3" }), "dates")).toBe("Added 10d, Updated 3d");
 		expect(summary(f({ tag: ["remote"], notTag: ["agency"] }), "tags")).toBe("#remote, not #agency");
 	});
 });

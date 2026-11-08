@@ -5,12 +5,7 @@ import type { ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useState } from "react";
-import {
-	DATE_FILTER_VALUES,
-	DOCUMENT_FILTER_VALUES,
-	SEARCH_FIT_FILTER_VALUES,
-	TARGETING_FIT_FILTER_VALUES,
-} from "@reactive-resume/schema/applications/filters";
+import { DOCUMENT_FILTER_VALUES, NOT_SET } from "@reactive-resume/schema/applications/filters";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Sheet, SheetContent, SheetTitle } from "@reactive-resume/ui/components/sheet";
@@ -26,17 +21,26 @@ import {
 	isDefaultFilters,
 	isFacetSet,
 	markTag,
+	matchesFilters,
 	PRIMARY_FACETS,
 	summary,
 	tagMark,
 	toggleStage,
 	toggleValue,
 } from "../../filter";
-import { dateLabel, documentLabel, searchFitLabel, targetingFitLabel } from "./filter-panel";
+import { documentLabel, numberFieldLabel } from "./filter-panel";
+import { NumberFilterField } from "./number-filter-field";
 
-type PillProps = { on: boolean; onClick: () => void; count?: number; tone?: "out"; children: ReactNode };
+type PillProps = {
+	on: boolean;
+	onClick: () => void;
+	count?: number;
+	tone?: "out";
+	className?: string;
+	children: ReactNode;
+};
 
-function Pill({ on, onClick, count, tone, children }: PillProps) {
+function Pill({ on, onClick, count, tone, className, children }: PillProps) {
 	return (
 		<button
 			type="button"
@@ -49,6 +53,7 @@ function Pill({ on, onClick, count, tone, children }: PillProps) {
 						? "border-transparent bg-danger-soft font-semibold text-danger-text line-through"
 						: "border-transparent bg-accent-soft font-semibold text-accent-text"
 					: "border-line-2 text-ink",
+				className,
 			)}
 		>
 			{children}
@@ -93,6 +98,50 @@ export function PhoneFilters({
 	const count = activeFilterCount(filters);
 	const set = FACETS.filter((facet) => isFacetSet(filters, facet));
 	const options = (facet: ListFacet) => facetOptions(facet, { applications, filters, context, lanes });
+	const countWith = (patch: Partial<typeof filters>) => {
+		const next = { ...filters, ...patch };
+		return applications.filter((application) => matchesFilters(application, next, context)).length;
+	};
+	const setNumber = (key: "fit" | "tfit" | "added" | "updated", value: string, replace: boolean) =>
+		onChange({ ...filters, [key]: value }, { replace });
+
+	// The same fields as the popovers, sized for touch, with the phone's number keypad.
+	const numberField = (key: "fit" | "tfit" | "added" | "updated") => (
+		<NumberFilterField
+			value={filters[key]}
+			kind={key === "fit" || key === "tfit" ? "fit" : "days"}
+			label={numberFieldLabel(key)}
+			onChange={(value, replace) => setNumber(key, value, replace)}
+			className="h-11 w-16 rounded-lg text-base"
+		/>
+	);
+
+	const fitRow = (key: "fit" | "tfit") => (
+		<div className="flex basis-full items-center gap-2.5">
+			<span className="text-sm whitespace-nowrap text-ink-2">
+				<Trans>At least</Trans>
+			</span>
+			{numberField(key)}
+			<Pill
+				on={filters[key] === NOT_SET}
+				count={countWith({ [key]: NOT_SET })}
+				onClick={() => onChange({ ...filters, [key]: filters[key] === NOT_SET ? "any" : NOT_SET })}
+				className="ms-auto h-9"
+			>
+				<Trans>None yet</Trans>
+			</Pill>
+		</div>
+	);
+
+	const dayRow = (key: "added" | "updated", label: ReactNode) => (
+		<div className="flex basis-full items-center gap-2.5">
+			<span className="w-32 text-sm whitespace-nowrap text-ink-2">{label}</span>
+			{numberField(key)}
+			<span className="text-sm text-ink-2">
+				<Trans>days</Trans>
+			</span>
+		</div>
+	);
 
 	const valuePills = (facet: "build" | "foundBy" | "lane" | "source" | "attention", list: FilterOption[]) =>
 		list.map((option) => {
@@ -170,15 +219,11 @@ export function PhoneFilters({
 			case "fit":
 				return (
 					<div key={facet}>
-						<Section title={t`Search fit`}>
-							{choicePills(filters.fit, SEARCH_FIT_FILTER_VALUES, searchFitLabel, (fit) =>
-								onChange({ ...filters, fit }),
-							)}
+						<Section title={t`Search fit`} hint={t`the search's read`}>
+							{fitRow("fit")}
 						</Section>
-						<Section title={t`Targeting fit`}>
-							{choicePills(filters.tfit, TARGETING_FIT_FILTER_VALUES, targetingFitLabel, (tfit) =>
-								onChange({ ...filters, tfit }),
-							)}
+						<Section title={t`Targeting fit`} hint={t`the reviewers' median`}>
+							{fitRow("tfit")}
 						</Section>
 					</div>
 				);
@@ -199,16 +244,10 @@ export function PhoneFilters({
 				);
 			case "dates":
 				return (
-					<div key={facet}>
-						<Section title={t`Added in the last`}>
-							{choicePills(filters.added, DATE_FILTER_VALUES, dateLabel, (added) => onChange({ ...filters, added }))}
-						</Section>
-						<Section title={t`Updated in the last`}>
-							{choicePills(filters.updated, DATE_FILTER_VALUES, dateLabel, (updated) =>
-								onChange({ ...filters, updated }),
-							)}
-						</Section>
-					</div>
+					<Section key={facet} title={getFacetLabel(facet)}>
+						{dayRow("added", <Trans>Added in the last</Trans>)}
+						{dayRow("updated", <Trans>Updated in the last</Trans>)}
+					</Section>
 				);
 			case "tags": {
 				const tags = options("tags");
