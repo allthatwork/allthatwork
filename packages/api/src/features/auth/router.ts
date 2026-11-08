@@ -4,6 +4,7 @@ import { createSelectSchema } from "drizzle-zod";
 import z from "zod";
 import { accountAuth, auth } from "@reactive-resume/auth/config";
 import * as schema from "@reactive-resume/db/schema";
+import { applicationViewSchema } from "@reactive-resume/schema/applications/views";
 import { boardPaySchema } from "@reactive-resume/schema/boards";
 import {
 	aiLimitsSchema,
@@ -248,6 +249,9 @@ export const authRouter = {
 				),
 				coverLetters: z.array(coverLetterSchema),
 				applications: z.array(applicationDto.getById.output),
+				applicationViews: z
+					.array(applicationViewSchema)
+					.describe("Saved views of the Applications screen: filters, sort and List columns."),
 				directory: z.object({
 					companies: z.array(directoryDto.company.output.shape.company),
 					contacts: directoryDto.contacts.output,

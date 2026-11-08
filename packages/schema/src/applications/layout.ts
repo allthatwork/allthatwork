@@ -77,6 +77,13 @@ export const applicationsLayoutSchema = z.object({
 		})
 		.optional(),
 	boardColumnWidth: z.number().int().min(BOARD_COLUMN_WIDTH.min).max(BOARD_COLUMN_WIDTH.max).optional(),
+	/**
+	 * Widths for columns the account's own list doesn't show, set while a saved view showed them. A width in
+	 * `listColumns` wins; a column added to the list later starts at the width kept here.
+	 */
+	columnWidths: z
+		.partialRecord(z.enum(LIST_COLUMN_IDS), z.number().int().min(LIST_COLUMN_WIDTHS.fit.min).max(LIST_COLUMN_MAX_WIDTH))
+		.optional(),
 });
 
 export type ApplicationsLayout = z.output<typeof applicationsLayoutSchema>;
@@ -122,11 +129,34 @@ export function readApplicationsLayout(value: unknown): ApplicationsLayout {
 		layout.boardColumnWidth = clampBoardColumnWidth(raw.boardColumnWidth);
 	}
 
+	if (raw.columnWidths && typeof raw.columnWidths === "object" && !Array.isArray(raw.columnWidths)) {
+		const widths: Partial<Record<ListColumnId, number>> = {};
+		for (const [id, width] of Object.entries(raw.columnWidths as Record<string, unknown>)) {
+			if (!(LIST_COLUMN_IDS as readonly string[]).includes(id)) continue;
+			if (typeof width !== "number" || !Number.isFinite(width)) continue;
+			widths[id as ListColumnId] = clampListColumnWidth(id as ListColumnId, width);
+		}
+		if (Object.keys(widths).length > 0) layout.columnWidths = widths;
+	}
+
 	return layout;
+}
+
+/** The width the account gives a column: set in its list, else kept from a view, else the starting width. */
+export function columnWidth(layout: ApplicationsLayout, id: ListColumnId): number {
+	return (
+		layout.listColumns?.find((column) => column.id === id)?.width ??
+		layout.columnWidths?.[id] ??
+		LIST_COLUMN_WIDTHS[id].width
+	);
 }
 
 /** The List's columns after Role with their widths, the defaults filled in. */
 export function resolveListColumns(layout: ApplicationsLayout): { id: ListColumnId; width: number }[] {
 	const columns: readonly ListColumn[] = layout.listColumns ?? DEFAULT_LIST_COLUMNS.map((id) => ({ id }));
-	return columns.map((column) => ({ id: column.id, width: column.width ?? LIST_COLUMN_WIDTHS[column.id].width }));
+	return columns.map((column) => ({ id: column.id, width: column.width ?? columnWidth(layout, column.id) }));
 }
+
+/** These columns, in this order, with the account's widths (a saved view's columns). */
+export const resolveColumnsWithWidths = (layout: ApplicationsLayout, ids: readonly ListColumnId[]) =>
+	ids.map((id) => ({ id, width: columnWidth(layout, id) }));

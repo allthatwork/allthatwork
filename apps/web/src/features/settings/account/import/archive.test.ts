@@ -34,6 +34,7 @@ const exportZip = (extra: Record<string, unknown>) =>
 		resumes: [{ id: "r1", name: "Resume", data: defaultResumeData }],
 		coverLetters: [],
 		applications: [{ id: "a1" }],
+		applicationViews: [{ id: "v1", name: "Ready to apply" }],
 		career: { ...career, ...extra },
 		aiContentReports: [],
 	} as never);
@@ -47,14 +48,21 @@ describe("readAccountArchive", () => {
 		expect(archiveCounts(archive)).toEqual({
 			documents: { resumes: 1, letters: 0 },
 			directory: { companies: 0, contacts: 0 },
-			applications: { applications: 1 },
+			applications: { applications: 1, views: 1 },
 			knowledge: { facts: 1, stories: 0, groups: 1 },
 			jobSearch: { opportunities: 0, schedules: 0 },
 			coach: { threads: 1 },
 		});
 		expect(archiveSettings(archive)).toEqual({ preferences: true, aiLimits: false, profile: true });
 
+		expect(archive.applicationViews).toEqual([{ id: "v1", name: "Ready to apply" }]);
+
 		expect(readAccountArchive(exportZip({})).source).toBe("reactive-resume");
+		// Exports from before saved views have no file for them.
+		const old = readAccountArchive(
+			zipSync({ "account.json": strToU8("{}"), "career.json": strToU8("{}"), "applications.json": strToU8("[]") }),
+		);
+		expect(old.applicationViews).toEqual([]);
 	});
 
 	it("rejects files that aren't account exports", () => {

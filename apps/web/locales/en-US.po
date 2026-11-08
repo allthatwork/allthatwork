@@ -67,6 +67,10 @@ msgstr "“{written}” added to Skills"
 msgid "“How did you measure the onboarding redesign?”"
 msgstr "“How did you measure the onboarding redesign?”"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "(edited)"
+msgstr "(edited)"
+
 #: src/features/career/knowledge/review.tsx
 msgid "(newer)"
 msgstr "(newer)"
@@ -270,6 +274,12 @@ msgstr "{0, plural, one {# row has no company or role and will be skipped.} othe
 #: src/features/career/coach.tsx
 msgid "{0, plural, one {# saved offer} other {# saved offers}}"
 msgstr "{0, plural, one {# saved offer} other {# saved offers}}"
+
+#. placeholder {0}: counts.applications.views
+#. placeholder {0}: current.applications.views
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "{0, plural, one {# saved view} other {# saved views}}"
+msgstr "{0, plural, one {# saved view} other {# saved views}}"
 
 #. placeholder {0}: counts.jobSearch.schedules
 #. placeholder {0}: current.jobSearch.schedules
@@ -693,6 +703,10 @@ msgstr "{count, plural, one {# entry} other {# entries}}"
 msgid "{count, plural, one {Apply # change} other {Apply # changes}}"
 msgstr "{count, plural, one {Apply # change} other {Apply # changes}}"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "{count} of {APPLICATION_VIEWS_MAX} views. Names up to {APPLICATION_VIEW_NAME_MAX} characters."
+msgstr "{count} of {APPLICATION_VIEWS_MAX} views. Names up to {APPLICATION_VIEW_NAME_MAX} characters."
+
 #: src/features/documents/documents-page.tsx
 msgid "{count} selected"
 msgstr "{count} selected"
@@ -761,6 +775,10 @@ msgstr "{facts, plural, one {# fact} other {# facts}}"
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "{failing, plural, one {# to review} other {# to review}}"
 msgstr "{failing, plural, one {# to review} other {# to review}}"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "{field}, {lower}"
+msgstr "{field}, {lower}"
 
 #: src/features/career/knowledge/stories.tsx
 msgid "{filled} of 5 parts"
@@ -1273,6 +1291,14 @@ msgstr "A model's opinion, not a verdict. It can be wrong."
 #: src/features/settings/account/security.tsx
 msgid "A name helps you tell passkeys apart, like \"Work laptop\"."
 msgstr "A name helps you tell passkeys apart, like \"Work laptop\"."
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "A new tab opens with this view"
+msgstr "A new tab opens with this view"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "A new tab opens with this view. Click to clear."
+msgstr "A new tab opens with this view. Click to clear."
 
 #: src/features/career/knowledge/review.tsx
 msgid "A newer fact replaces an older one"
@@ -1964,6 +1990,7 @@ msgstr "Align right"
 msgid "All"
 msgstr "All"
 
+#: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
 msgid "All applications"
@@ -2903,6 +2930,7 @@ msgstr "Can software read your resume?"
 #: src/features/applications/components/export-applications-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/career/knowledge/budget.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import.tsx
@@ -3381,6 +3409,7 @@ msgstr "Column {header} goes to"
 
 #: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
 msgstr "Columns"
@@ -4209,6 +4238,11 @@ msgstr "Couldn't save the tags."
 msgid "Couldn't save the timezone."
 msgstr "Couldn't save the timezone."
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+#: src/routes/dashboard/applications/index.tsx
+msgid "Couldn't save the view. Try again."
+msgstr "Couldn't save the view. Try again."
+
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't save this correction. Your edit is still here; try again."
 msgstr "Couldn't save this correction. Your edit is still here; try again."
@@ -4618,6 +4652,7 @@ msgstr "Degree"
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/assistant/assistant-panel.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/schedule-sheet.tsx
@@ -4758,6 +4793,10 @@ msgstr "Deleted"
 msgid "Deleted “{0}”"
 msgstr "Deleted “{0}”"
 
+#: src/routes/dashboard/applications/index.tsx
+msgid "Deleted “{name}”."
+msgstr "Deleted “{name}”."
+
 #: src/features/resume/share/history-tab.tsx
 msgid "Deleted “{title}”"
 msgstr "Deleted “{title}”"
@@ -4896,6 +4935,10 @@ msgstr "Disabling two-factor authentication..."
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Discard"
 msgstr "Discard"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Discard changes"
+msgstr "Discard changes"
 
 #: src/features/career/schedule-sheet.tsx
 msgid "Discard changes?"
@@ -5122,6 +5165,10 @@ msgstr "drag · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "Drag and drop sections here to move them between columns"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Drag to reorder. The star marks the view a new tab opens with."
+msgstr "Drag to reorder. The star marks the view a new tab opens with."
 
 #: src/features/applications/components/columns-button.tsx
 msgid "Drag to reorder. To resize, drag the line between two headings."
@@ -5880,8 +5927,13 @@ msgid "Filter by tag"
 msgstr "Filter by tag"
 
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 msgid "Filters"
 msgstr "Filters"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "filters, sort and columns"
+msgstr "filters, sort and columns"
 
 #: src/features/directory/contact-picker.tsx
 msgid "Find a directory contact"
@@ -6915,6 +6967,10 @@ msgstr "Improve selected line"
 msgid "Improving…"
 msgstr "Improving…"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "in a new tab"
+msgstr "in a new tab"
+
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
 msgstr "In a private group: “{quote}”"
@@ -7619,6 +7675,10 @@ msgstr "Leave out"
 msgid "Leave out titles with"
 msgstr "Leave out titles with"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Leave the view"
+msgstr "Leave the view"
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
@@ -8124,6 +8184,10 @@ msgstr "Malay"
 msgid "Malayalam"
 msgstr "Malayalam"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Manage views…"
+msgstr "Manage views…"
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Managed by server"
 msgstr "Managed by server"
@@ -8431,6 +8495,10 @@ msgstr "Mostly readable"
 msgid "Move {label}"
 msgstr "Move {label}"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Move {name}"
+msgstr "Move {name}"
+
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
 msgstr "Move all content inside the page boundaries and re-export."
@@ -8543,6 +8611,8 @@ msgstr "My job was to find out why, without adding support work."
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/auth/pages/register.tsx
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
@@ -9144,6 +9214,10 @@ msgstr "No text could be read from this file."
 msgid "No timezone matches."
 msgstr "No timezone matches."
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "No views yet."
+msgstr "No views yet."
+
 #: src/features/resume/editor/check/issues.ts
 msgid "No work experience shows"
 msgstr "No work experience shows"
@@ -9166,6 +9240,10 @@ msgstr "None"
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "None yet"
 msgstr "None yet"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "None, all open applications"
+msgstr "None, all open applications"
 
 #: src/features/resume/editor/design/fit.ts
 #: src/features/resume/editor/design/style-groups.tsx
@@ -9628,6 +9706,11 @@ msgstr "Open {title}"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "Open AI settings"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Open Applications with this view"
+msgstr "Open Applications with this view"
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -10889,6 +10972,10 @@ msgstr "Reads supported public job pages. No account needed."
 msgid "Ready"
 msgstr "Ready"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Ready to apply"
+msgstr "Ready to apply"
+
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Reason"
 msgstr "Reason"
@@ -11180,6 +11267,7 @@ msgstr "Removes copies of shared facts, then asks your AI connection which facts
 msgid "Removing copies"
 msgstr "Removing copies"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/career/coach.tsx
 #: src/features/documents/document-actions.tsx
 #: src/features/settings/account/security.tsx
@@ -11593,6 +11681,7 @@ msgstr "Right now"
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
@@ -11757,9 +11846,17 @@ msgstr "Save and test"
 msgid "Save another offer to compare"
 msgstr "Save another offer to compare"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save as a view"
+msgstr "Save as a view"
+
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save as application…"
 msgstr "Save as application…"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save as new view…"
+msgstr "Save as new view…"
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Save changes"
@@ -11811,6 +11908,10 @@ msgstr "Save story"
 msgid "Save the file with every page upright."
 msgstr "Save the file with every page upright."
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save the filters, sort and columns you use often as a view, and come back to them in one click."
+msgstr "Save the filters, sort and columns you use often as a view, and come back to them in one click."
+
 #: src/features/career/workspace/messages.tsx
 msgid "Save these offer terms to compare"
 msgstr "Save these offer terms to compare"
@@ -11823,6 +11924,10 @@ msgstr "Save to Knowledge"
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save to the application"
 msgstr "Save to the application"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save view"
+msgstr "Save view"
 
 #: src/features/resume/share/format.ts
 msgid "saved"
@@ -11847,6 +11952,10 @@ msgstr "Saved"
 #: src/features/homepage/write.tsx
 msgid "Saved · version {version}"
 msgstr "Saved · version {version}"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Saved “{saved}”."
+msgstr "Saved “{saved}”."
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Saved “{trimmed}”"
@@ -11911,6 +12020,14 @@ msgstr "Saved to Knowledge, private to this application."
 #: src/features/career/workspace/practise.tsx
 msgid "Saved to Saved · Practice"
 msgstr "Saved to Saved · Practice"
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "Saved views"
+msgstr "Saved views"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Saves the filters, sort and List columns you have now."
+msgstr "Saves the filters, sort and List columns you have now."
 
 #. placeholder {0}: window.location.host
 #: src/features/resume/share/link-tab.tsx
@@ -12870,6 +12987,7 @@ msgid "Soonest first"
 msgstr "Soonest first"
 
 #: src/features/applications/components/sort-button.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "Sort"
@@ -14673,6 +14791,7 @@ msgstr "Underline links"
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
+#: src/routes/dashboard/applications/index.tsx
 msgid "Undo"
 msgstr "Undo"
 
@@ -14753,6 +14872,10 @@ msgstr "Up to 25 MB · checked in your browser, never uploaded"
 msgid "Upcoming interviews"
 msgstr "Upcoming interviews"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Update “{name}”"
+msgstr "Update “{name}”"
+
 #. placeholder {0}: candidate.name
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Update {0}"
@@ -14783,6 +14906,10 @@ msgstr "Update your password"
 #: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "Updated"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Updated “{name}”."
+msgstr "Updated “{name}”."
 
 #. placeholder {0}: result.updated
 #: src/features/applications/components/list-view.tsx
@@ -15118,6 +15245,14 @@ msgstr "View facts"
 msgid "View posting"
 msgstr "View posting"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: {name}"
+msgstr "View: {name}"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: <0>{name}</0>"
+msgstr "View: <0>{name}</0>"
+
 #. placeholder {0}: formatVersionTime(viewing.createdAt, i18n.locale)
 #. placeholder {0}: when(selected)
 #. placeholder {1}: getVersionTitle(selected)
@@ -15127,6 +15262,11 @@ msgstr "View posting"
 #: src/routes/builder/letter/-components/letter-page.tsx
 msgid "Viewing {0} · {1} · read-only"
 msgstr "Viewing {0} · {1} · read-only"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/views-button.tsx
+msgid "Views"
+msgstr "Views"
 
 #: src/features/resume/share/link-tab.tsx
 msgid "views · 30 days"
@@ -15305,6 +15445,10 @@ msgstr "Went well"
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "were already in your account"
 msgstr "were already in your account"
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "were over the limit of 50"
+msgstr "were over the limit of 50"
 
 #: src/features/resume/editor/check/page-layer.tsx
 msgid "What a parser reads"
@@ -15710,6 +15854,14 @@ msgstr "Yesterday {time}"
 #: src/features/career/coach.tsx
 msgid "You"
 msgstr "You"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "You already have a view called “{name}”."
+msgstr "You already have a view called “{name}”."
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "You already have a view called “{taken}”. Pick another name, or use Update in the Views menu."
+msgstr "You already have a view called “{taken}”. Pick another name, or use Update in the Views menu."
 
 #: src/features/career/schedule-sheet.tsx
 msgid "You already have a Watched companies schedule. Edit that one instead."

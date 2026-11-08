@@ -2,6 +2,7 @@ import type { ShownSnapshot } from "@/features/applications/filter";
 import type { Application } from "@/features/applications/types";
 import type { ApplicationFilters, ApplicationSort } from "@reactive-resume/schema/applications/filters";
 import type { ListColumn, ListColumnId } from "@reactive-resume/schema/applications/layout";
+import type { ApplicationView } from "@reactive-resume/schema/applications/views";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
@@ -9,7 +10,11 @@ import { createFileRoute, stripSearchParams, useNavigate } from "@tanstack/react
 import { useEffect, useState } from "react";
 import z from "zod";
 import { DEFAULT_APPLICATION_SORT } from "@reactive-resume/schema/applications/filters";
-import { DEFAULT_LIST_COLUMNS, resolveListColumns } from "@reactive-resume/schema/applications/layout";
+import {
+	DEFAULT_LIST_COLUMNS,
+	resolveColumnsWithWidths,
+	resolveListColumns,
+} from "@reactive-resume/schema/applications/layout";
 import { Button } from "@reactive-resume/ui/components/button";
 import {
 	DropdownMenu,
@@ -21,6 +26,7 @@ import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Skeleton } from "@reactive-resume/ui/components/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs";
+import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
 import { FILL_SCREEN_ATTRIBUTE, PAGE_CLASS } from "@/components/layout/page";
@@ -37,6 +43,9 @@ import { ImportApplicationsSheet } from "@/features/applications/components/impo
 import { ApplicationInsights, InsightsSkeleton } from "@/features/applications/components/insights-view";
 import { ApplicationList } from "@/features/applications/components/list-view";
 import { PhoneSortButton, SortButton } from "@/features/applications/components/sort-button";
+import { ManageViewsSheet } from "@/features/applications/components/views/manage-views-sheet";
+import { SaveViewDialog } from "@/features/applications/components/views/save-view-dialog";
+import { ViewsButton } from "@/features/applications/components/views/views-button";
 import { clearAll, matchesFilters, mergeSnapshot, withHeld } from "@/features/applications/filter";
 import {
 	filterSearchShape,
@@ -46,9 +55,11 @@ import {
 } from "@/features/applications/filter-search";
 import { getNextStep, useNoReplyDays } from "@/features/applications/next-step";
 import { applicationsListQueryOptions } from "@/features/applications/queries";
-import { useApplicationsLayout } from "@/features/applications/use-applications-layout";
+import { filtersOfView, isViewEdited, viewFiltersOf } from "@/features/applications/saved-views";
+import { resizeColumnChange, useApplicationsLayout } from "@/features/applications/use-applications-layout";
 import { useRememberedFilters } from "@/features/applications/use-remembered-filters";
-import { useMediaQuery } from "@/hooks/use-media-query";
+import { isNameTaken, useSavedViews } from "@/features/applications/use-saved-views";
+import { useTabLabels } from "@/features/applications/use-tab-labels";
 import { ENTER_CLASS } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
@@ -74,23 +85,35 @@ export const Route = createFileRoute("/dashboard/applications/")({
 
 const NO_SNAPSHOT: ShownSnapshot = new Map();
 
-/**
- * Where the tab labels don't fit beside the title (the sidebar or the rail takes the rest), the tabs go icon only and
- * get a tooltip. The class and the query cover the same widths.
- */
-const TAB_LABEL_CLASS = "sm:max-[880px]:sr-only lg:max-[1120px]:sr-only";
-const ICON_TABS_QUERY = "(min-width: 640px) and (max-width: 879.98px), (min-width: 1024px) and (max-width: 1119.98px)";
+const NO_VIEW = { viewId: null, viewColumns: null };
 
 function RouteComponent() {
 	const search = Route.useSearch();
 	const { view, create, applicationId } = search;
 	const navigate = useNavigate({ from: Route.fullPath });
 	const phone = useBreakpoint() === "mobile";
-	const iconTabs = useMediaQuery(ICON_TABS_QUERY);
 	const { filters: addressFilters } = filtersFromSearch(search);
 	// The account's List columns, Board column width and sort. A sort in the address (a link) wins over the account's.
 	const { layout, update: updateLayout } = useApplicationsLayout();
-	const sort = sortFromSearch(search) ?? layout.sort ?? DEFAULT_APPLICATION_SORT;
+	// Saved views: the one that's on and its unsaved columns live in the tab's state, its filters and sort in the
+	// address. With no view on, the sort and columns are the account's; with one on, they're the view's (a copy, so
+	// changing them doesn't touch the account's). Column widths stay the account's either way.
+	const savedViews = useSavedViews();
+	const views = savedViews.views;
+	const { viewId, viewColumns, setTabView } = useRememberedFilters({
+		search,
+		views,
+		onRestore: (stored) =>
+			void navigate({ replace: true, resetScroll: false, search: (prev: Search) => ({ ...prev, ...stored }) }),
+	});
+	const activeView = (viewId !== null && views?.find((item) => item.id === viewId)) || null;
+	const inView = viewId !== null && (views === undefined || activeView !== null);
+	const sort =
+		sortFromSearch(search) ?? (inView ? DEFAULT_APPLICATION_SORT : (layout.sort ?? DEFAULT_APPLICATION_SORT));
+	const accountColumns: ListColumn[] = layout.listColumns ?? DEFAULT_LIST_COLUMNS.map((id) => ({ id }));
+	const columnIds: ListColumnId[] = inView
+		? (viewColumns ?? activeView?.layout.listColumns ?? accountColumns.map((column) => column.id))
+		: accountColumns.map((column) => column.id);
 	// Typing filters at once; the address gets the text 300ms after typing stops.
 	const [query, setQuery] = useState(addressFilters.q);
 	const [addressQuery, setAddressQuery] = useState(addressFilters.q);
@@ -107,6 +130,8 @@ function RouteComponent() {
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	// Views animate in only after a switch, never on the page's first render.
 	const [viewSwitched, setViewSwitched] = useState(false);
+	const [savingView, setSavingView] = useState(false);
+	const [managingViews, setManagingViews] = useState(false);
 
 	const { data: applications, isPending, isError, isFetching, refetch } = useQuery(applicationsListQueryOptions());
 	const { data: profile } = useQuery(orpc.career.profile.queryOptions());
@@ -121,14 +146,17 @@ function RouteComponent() {
 		setSearch(searchFromFilters(next, sort));
 	};
 	const setSort = (next: ApplicationSort) => {
-		updateLayout({ sort: next });
+		// A view's sort is the view's until Update; the account's changes only with no view on.
+		if (!inView) updateLayout({ sort: next });
 		setSearch(searchFromFilters(filters, next));
 	};
-	const savedColumns: ListColumn[] = layout.listColumns ?? DEFAULT_LIST_COLUMNS.map((id) => ({ id }));
-	const resizeColumn = (id: ListColumnId, width: number | null) =>
-		updateLayout({
-			listColumns: savedColumns.map((column) => (column.id !== id ? column : width === null ? { id } : { id, width })),
-		});
+	// Columns: a view's on-screen copy while one is on, the account's otherwise.
+	const setColumns = (next: ListColumn[]) =>
+		inView ? setTabView({ viewId, viewColumns: next.map((column) => column.id) }) : updateLayout({ listColumns: next });
+	const resetColumns = () =>
+		inView ? setTabView({ viewId, viewColumns: [...DEFAULT_LIST_COLUMNS] }) : updateLayout({ listColumns: null });
+	// Widths are the account's in every view; resizing never makes a view edited.
+	const resizeColumn = (id: ListColumnId, width: number | null) => updateLayout(resizeColumnChange(layout, id, width));
 
 	useEffect(() => {
 		if (query.trim() === addressQuery) return;
@@ -158,11 +186,17 @@ function RouteComponent() {
 		});
 	}, [legacyClosed, navigate]);
 
-	useRememberedFilters({
-		search,
-		onRestore: (stored) =>
-			void navigate({ replace: true, resetScroll: false, search: (prev: Search) => ({ ...prev, ...stored }) }),
-	});
+	// A view deleted elsewhere (another tab) turns off; the filters stay and the sort goes back to the account's.
+	const viewGone = viewId !== null && views !== undefined && activeView === null;
+	useEffect(() => {
+		if (!viewGone) return;
+		setTabView(NO_VIEW);
+		void navigate({
+			replace: true,
+			resetScroll: false,
+			search: (prev: Search) => ({ ...prev, sort: undefined, dir: undefined }),
+		});
+	}, [viewGone, setTabView, navigate]);
 
 	useEffect(() => {
 		if (!create) return;
@@ -201,6 +235,113 @@ function RouteComponent() {
 		matching: matching.length,
 	};
 
+	// Saved views
+	const edited = activeView ? isViewEdited(activeView, { filters, sort, columns: columnIds }) : false;
+	const countOf = (view: ApplicationView | null) =>
+		(applications ?? []).filter((application) =>
+			matchesFilters(application, view ? filtersOfView(view) : clearAll(), context),
+		).length;
+	const failed = () => toast.add({ type: "error", description: t`Couldn't save the view. Try again.` });
+
+	/** Picks a view, or All applications (null): its filters, sort and columns, and an empty search box. */
+	const applyView = (next: ApplicationView | null) => {
+		setQuery("");
+		setTabView(next ? { viewId: next.id, viewColumns: null } : NO_VIEW);
+		// All applications leaves the sort out of the address, so the account's applies.
+		setSearch(
+			next
+				? searchFromFilters(filtersOfView(next), next.layout.sort)
+				: searchFromFilters(clearAll(), DEFAULT_APPLICATION_SORT),
+		);
+	};
+	/** Turns the view off and keeps the filters; the sort and columns go back to the account's. */
+	const leaveViewKeepingFilters = () => {
+		setTabView(NO_VIEW);
+		setSearch({ sort: undefined, dir: undefined });
+	};
+	const viewLayout = () => ({ sort, listColumns: [...columnIds] });
+
+	const saveNewView = async (name: string, isDefault: boolean) => {
+		const created = await savedViews.create({ name, filters: viewFiltersOf(filters), layout: viewLayout(), isDefault });
+		setTabView({ viewId: created.id, viewColumns: null });
+		// With the view on, the sort lives in the address.
+		setSearch(searchFromFilters(filters, sort));
+		const saved = created.name;
+		toast.add({ type: "success", description: t`Saved “${saved}”.` });
+	};
+
+	const updateActiveView = async () => {
+		if (!activeView) return;
+		const before = activeView;
+		const name = before.name;
+		try {
+			await savedViews.update({ id: before.id, filters: viewFiltersOf(filters), layout: viewLayout() });
+		} catch {
+			return failed();
+		}
+		toast.add({
+			type: "success",
+			description: t`Updated “${name}”.`,
+			actionProps: {
+				children: t`Undo`,
+				onClick: () =>
+					void savedViews.update({ id: before.id, filters: before.filters, layout: before.layout }).catch(failed),
+			},
+		});
+	};
+
+	const renameView = async (view: ApplicationView, name: string) => {
+		try {
+			await savedViews.update({ id: view.id, name });
+			return true;
+		} catch (error) {
+			if (isNameTaken(error)) toast.add({ type: "error", description: t`You already have a view called “${name}”.` });
+			else failed();
+			return false;
+		}
+	};
+
+	const deleteView = async (view: ApplicationView) => {
+		const index = (views ?? []).findIndex((item) => item.id === view.id);
+		try {
+			await savedViews.remove({ id: view.id });
+		} catch {
+			return failed();
+		}
+		if (view.id === viewId) leaveViewKeepingFilters();
+		const name = view.name;
+		const undo = async () => {
+			try {
+				const again = await savedViews.create({
+					name: view.name,
+					filters: view.filters,
+					layout: view.layout,
+					isDefault: view.isDefault,
+				});
+				// Back where it was in the list.
+				const ids = savedViews.current().flatMap((item) => (item.id === again.id ? [] : [item.id]));
+				ids.splice(index < 0 ? ids.length : index, 0, again.id);
+				await savedViews.reorder({ ids });
+			} catch (error) {
+				if (isNameTaken(error)) toast.add({ type: "error", description: t`You already have a view called “${name}”.` });
+				else failed();
+			}
+		};
+		toast.add({ description: t`Deleted “${name}”.`, actionProps: { children: t`Undo`, onClick: () => void undo() } });
+	};
+
+	const viewsMenu = views && {
+		views,
+		active: activeView,
+		edited,
+		countOf,
+		onPick: applyView,
+		onUpdate: () => void updateActiveView(),
+		onDiscard: () => applyView(activeView),
+		onSaveNew: () => setSavingView(true),
+		onManage: () => setManagingViews(true),
+	};
+
 	const selected = applications?.find((application) => application.id === selectedId) ?? null;
 	// The board needs room to drag: phones get the list instead.
 	const shown: View = phone && (view === "board" || view === "calendar") ? "list" : view;
@@ -211,6 +352,16 @@ function RouteComponent() {
 	const fill = shown === "board" && !empty && !(isError && !applications);
 	// The tabs and the toolbar show once there are applications to look at.
 	const withViews = !empty && !(isError && !applications);
+	// The tabs beside the title go icon only when the title row can't hold their labels (measured).
+	const showViewsButton = withViews && shown !== "insights" && Boolean(viewsMenu);
+	const {
+		labels: tabLabels,
+		rowRef,
+		titleRef,
+		tabsRef,
+		viewsRef,
+		actionsRef,
+	} = useTabLabels(withViews && !phone, showViewsButton ? `${activeView?.name ?? ""}${edited}` : "");
 
 	const viewTabs = (
 		<Tabs
@@ -222,29 +373,29 @@ function RouteComponent() {
 		>
 			<TabsList aria-label={t`View`}>
 				{!phone && (
-					<TabsTrigger value="board" title={iconTabs ? t`Board` : undefined}>
+					<TabsTrigger value="board" title={tabLabels ? undefined : t`Board`}>
 						<Icon name="kanban" size={18} />
-						<span className={TAB_LABEL_CLASS}>
+						<span className={cn(!tabLabels && "sr-only")}>
 							<Trans>Board</Trans>
 						</span>
 					</TabsTrigger>
 				)}
-				<TabsTrigger value="list" title={iconTabs ? t`List` : undefined}>
+				<TabsTrigger value="list" title={tabLabels ? undefined : t`List`}>
 					<Icon name="rows" size={18} />
-					<span className={TAB_LABEL_CLASS}>
+					<span className={cn(!tabLabels && "sr-only")}>
 						<Trans>List</Trans>
 					</span>
 				</TabsTrigger>
-				<TabsTrigger value="insights" title={iconTabs ? t`Insights` : undefined}>
+				<TabsTrigger value="insights" title={tabLabels ? undefined : t`Insights`}>
 					<Icon name="chart-line-up" size={18} />
-					<span className={TAB_LABEL_CLASS}>
+					<span className={cn(!tabLabels && "sr-only")}>
 						<Trans>Insights</Trans>
 					</span>
 				</TabsTrigger>
 				{!phone && (
-					<TabsTrigger value="calendar" title={iconTabs ? t`Calendar` : undefined}>
+					<TabsTrigger value="calendar" title={tabLabels ? undefined : t`Calendar`}>
 						<Icon name="calendar-dots" size={18} />
-						<span className={TAB_LABEL_CLASS}>
+						<span className={cn(!tabLabels && "sr-only")}>
 							<Trans>Calendar</Trans>
 						</span>
 					</TabsTrigger>
@@ -259,14 +410,21 @@ function RouteComponent() {
 			className={cn(PAGE_CLASS, fill ? "flex min-h-0 flex-1 basis-0 flex-col gap-5 pb-6" : "grid content-start gap-5")}
 		>
 			{/* The title and, beside it, the views; the CSV menu and Save job on the other side. */}
-			<header className="flex flex-wrap items-center justify-between gap-3">
+			<header ref={rowRef} className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap">
 				<div className="flex min-w-0 items-center gap-5">
-					<h1 className="font-display text-[30px] leading-9 font-medium whitespace-nowrap">
+					<h1 ref={titleRef} className="shrink-0 font-display text-[30px] leading-9 font-medium whitespace-nowrap">
 						<Trans>Applications</Trans>
 					</h1>
-					{withViews && !phone && viewTabs}
+					{withViews && !phone && (
+						<div className="flex min-w-0 items-center gap-3">
+							<div ref={tabsRef} className="shrink-0">
+								{viewTabs}
+							</div>
+							{showViewsButton && viewsMenu && <ViewsButton ref={viewsRef} phone={false} {...viewsMenu} />}
+						</div>
+					)}
 				</div>
-				<div className="flex shrink-0 items-center gap-2">
+				<div ref={actionsRef} className="flex shrink-0 items-center gap-2">
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							render={<Button size="icon" variant="secondary" aria-label={t`Import or export CSV`} />}
@@ -317,6 +475,11 @@ function RouteComponent() {
 					{(phone || shown !== "insights") && (
 						<div className="flex flex-wrap items-center gap-2">
 							{phone && viewTabs}
+							{phone && showViewsButton && viewsMenu && (
+								<div className="ms-auto flex min-w-0">
+									<ViewsButton phone {...viewsMenu} />
+								</div>
+							)}
 							{shown !== "insights" && (
 								<>
 									{phone && <span className="basis-full" />}
@@ -350,9 +513,9 @@ function RouteComponent() {
 													<SortButton sort={sort} onChange={setSort} />
 													{shown === "list" && (
 														<ColumnsButton
-															columns={savedColumns}
-															onChange={(listColumns) => updateLayout({ listColumns })}
-															onReset={() => updateLayout({ listColumns: null })}
+															columns={inView ? columnIds.map((id) => ({ id })) : accountColumns}
+															onChange={setColumns}
+															onReset={resetColumns}
 														/>
 													)}
 												</div>
@@ -393,7 +556,7 @@ function RouteComponent() {
 									stale={stale}
 									sort={sort}
 									onSortChange={setSort}
-									columns={resolveListColumns(layout)}
+									columns={inView ? resolveColumnsWithWidths(layout, columnIds) : resolveListColumns(layout)}
 									onColumnResize={resizeColumn}
 									selectedId={selectedId}
 									onOpen={(application) => setSelectedId(application.id)}
@@ -423,6 +586,29 @@ function RouteComponent() {
 				</>
 			)}
 
+			<SaveViewDialog
+				open={savingView}
+				onOpenChange={setSavingView}
+				filters={filters}
+				sort={sort}
+				columns={columnIds}
+				noReplyDays={noReplyDays}
+				onSave={saveNewView}
+				existingName={(name) =>
+					views?.find((view) => view.name.toLocaleLowerCase() === name.toLocaleLowerCase())?.name ?? name
+				}
+			/>
+			<ManageViewsSheet
+				open={managingViews}
+				onOpenChange={setManagingViews}
+				phone={phone}
+				views={views ?? []}
+				countOf={countOf}
+				onReorder={(ids) => void savedViews.reorder({ ids }).catch(failed)}
+				onRename={renameView}
+				onToggleDefault={(view) => void savedViews.update({ id: view.id, isDefault: !view.isDefault }).catch(failed)}
+				onDelete={(view) => void deleteView(view)}
+			/>
 			<AddApplicationDialog open={adding} onOpenChange={setAdding} onAdded={setSelectedId} />
 			<ApplicationFormSheet
 				open={Boolean(editing)}

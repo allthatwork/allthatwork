@@ -72,6 +72,10 @@ msgstr "„{written}“ је додато у вештине"
 msgid "“How did you measure the onboarding redesign?”"
 msgstr "„Како сте мерили редизајн увођења корисника?“"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "(edited)"
+msgstr ""
+
 #: src/features/career/knowledge/review.tsx
 msgid "(newer)"
 msgstr ""
@@ -275,6 +279,12 @@ msgstr "{0, plural, one {# ред нема компанију или улогу 
 #: src/features/career/coach.tsx
 msgid "{0, plural, one {# saved offer} other {# saved offers}}"
 msgstr "{0, plural, one {# сачувана понуда} few {# сачуване понуде} other {# сачуваних понуда}}"
+
+#. placeholder {0}: counts.applications.views
+#. placeholder {0}: current.applications.views
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "{0, plural, one {# saved view} other {# saved views}}"
+msgstr ""
 
 #. placeholder {0}: counts.jobSearch.schedules
 #. placeholder {0}: current.jobSearch.schedules
@@ -698,6 +708,10 @@ msgstr "{count, plural, one {# унос} other {# уноси}}"
 msgid "{count, plural, one {Apply # change} other {Apply # changes}}"
 msgstr "{count, plural, one {Примени # измену} few {Примени # измене} other {Примени # измена}}"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "{count} of {APPLICATION_VIEWS_MAX} views. Names up to {APPLICATION_VIEW_NAME_MAX} characters."
+msgstr ""
+
 #: src/features/documents/documents-page.tsx
 msgid "{count} selected"
 msgstr "Изабрано: {count}"
@@ -766,6 +780,10 @@ msgstr "{facts, plural, one {# чињеница} few {# чињенице} other 
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "{failing, plural, one {# to review} other {# to review}}"
 msgstr "{failing, plural, one {# за преглед} other {# за преглед}}"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "{field}, {lower}"
+msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
 msgid "{filled} of 5 parts"
@@ -1278,6 +1296,14 @@ msgstr "Мишљење модела, а не пресуда. Може бити �
 #: src/features/settings/account/security.tsx
 msgid "A name helps you tell passkeys apart, like \"Work laptop\"."
 msgstr "Име вам помаже да разликујете приступне кључеве, на пример „Пословни лаптоп“."
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "A new tab opens with this view"
+msgstr ""
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "A new tab opens with this view. Click to clear."
+msgstr ""
 
 #: src/features/career/knowledge/review.tsx
 msgid "A newer fact replaces an older one"
@@ -1969,6 +1995,7 @@ msgstr "Поравнај десно"
 msgid "All"
 msgstr "Све"
 
+#: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
 msgid "All applications"
@@ -2908,6 +2935,7 @@ msgstr "Може ли софтвер да прочита ваш резиме?"
 #: src/features/applications/components/export-applications-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/career/knowledge/budget.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import.tsx
@@ -3386,6 +3414,7 @@ msgstr "Колона {header} иде у"
 
 #: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
 msgstr "Колоне"
@@ -4214,6 +4243,11 @@ msgstr "Није могуће сачувати ознаке."
 msgid "Couldn't save the timezone."
 msgstr "Није могуће сачувати временску зону."
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+#: src/routes/dashboard/applications/index.tsx
+msgid "Couldn't save the view. Try again."
+msgstr ""
+
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't save this correction. Your edit is still here; try again."
 msgstr ""
@@ -4623,6 +4657,7 @@ msgstr "Степен"
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/assistant/assistant-panel.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/schedule-sheet.tsx
@@ -4763,6 +4798,10 @@ msgstr "Избрисано"
 msgid "Deleted “{0}”"
 msgstr "Избрисан „{0}“"
 
+#: src/routes/dashboard/applications/index.tsx
+msgid "Deleted “{name}”."
+msgstr ""
+
 #: src/features/resume/share/history-tab.tsx
 msgid "Deleted “{title}”"
 msgstr "Избрисан „{title}“"
@@ -4901,6 +4940,10 @@ msgstr "Онемогућавање двофакторске аутентифик
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Discard"
 msgstr "Одбаци"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Discard changes"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "Discard changes?"
@@ -5127,6 +5170,10 @@ msgstr "превуците · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "Превуците и пустите одељке овде да бисте их преместили између колона"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Drag to reorder. The star marks the view a new tab opens with."
+msgstr ""
 
 #: src/features/applications/components/columns-button.tsx
 msgid "Drag to reorder. To resize, drag the line between two headings."
@@ -5885,7 +5932,12 @@ msgid "Filter by tag"
 msgstr "Филтрирајте према ознаци"
 
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 msgid "Filters"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "filters, sort and columns"
 msgstr ""
 
 #: src/features/directory/contact-picker.tsx
@@ -6920,6 +6972,10 @@ msgstr "Побољшајте изабрану линију"
 msgid "Improving…"
 msgstr "Побољшање…"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "in a new tab"
+msgstr ""
+
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
 msgstr ""
@@ -7624,6 +7680,10 @@ msgstr "Изостави"
 msgid "Leave out titles with"
 msgstr ""
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Leave the view"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "Водио сам <0>истраживање корисника</0> за редизајн увођења нових корисника; активација је порасла са 31% на 44%."
@@ -8129,6 +8189,10 @@ msgstr "Малајски"
 msgid "Malayalam"
 msgstr "Малајалам"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Manage views…"
+msgstr ""
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Managed by server"
 msgstr "Управља сервер"
@@ -8436,6 +8500,10 @@ msgstr "Углавном читљиво"
 msgid "Move {label}"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Move {name}"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
 msgstr "Преместите сав садржај унутар граница странице и поново извезите."
@@ -8548,6 +8616,8 @@ msgstr "Мој задатак је био да откријем зашто, бе
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/auth/pages/register.tsx
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
@@ -9149,6 +9219,10 @@ msgstr "Из ове датотеке није могао да се прочит�
 msgid "No timezone matches."
 msgstr "Ниједна временска зона се не поклапа."
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "No views yet."
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "No work experience shows"
 msgstr "Не показује радно искуство"
@@ -9170,6 +9244,10 @@ msgstr "Ниједан"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "None yet"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "None, all open applications"
 msgstr ""
 
 #: src/features/resume/editor/design/fit.ts
@@ -9633,6 +9711,11 @@ msgstr "Отворите {title}"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "Отворите подешавања АИ"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Open Applications with this view"
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -10894,6 +10977,10 @@ msgstr "Чита подржане јавне странице послова. Н
 msgid "Ready"
 msgstr "Спреман"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Ready to apply"
+msgstr ""
+
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Reason"
 msgstr "Разлог"
@@ -11185,6 +11272,7 @@ msgstr ""
 msgid "Removing copies"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/career/coach.tsx
 #: src/features/documents/document-actions.tsx
 #: src/features/settings/account/security.tsx
@@ -11598,6 +11686,7 @@ msgstr "Управо сада"
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
@@ -11762,9 +11851,17 @@ msgstr "Сачувајте и тестирајте"
 msgid "Save another offer to compare"
 msgstr "Сачувајте још једну понуду за поређење"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save as a view"
+msgstr ""
+
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save as application…"
 msgstr "Сачувај као пријаву за посао…"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save as new view…"
+msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Save changes"
@@ -11816,6 +11913,10 @@ msgstr "Сачувај причу"
 msgid "Save the file with every page upright."
 msgstr "Сачувајте датотеку тако да свака страница буде усправна."
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save the filters, sort and columns you use often as a view, and come back to them in one click."
+msgstr ""
+
 #: src/features/career/workspace/messages.tsx
 msgid "Save these offer terms to compare"
 msgstr "Сачувај ове услове понуде за поређење"
@@ -11828,6 +11929,10 @@ msgstr "Сачувај у Знање"
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save to the application"
 msgstr "Сачувајте у пријави за посао"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save view"
+msgstr ""
 
 #: src/features/resume/share/format.ts
 msgid "saved"
@@ -11852,6 +11957,10 @@ msgstr "Сачувано"
 #: src/features/homepage/write.tsx
 msgid "Saved · version {version}"
 msgstr "Сачувано · верзија {version}"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Saved “{saved}”."
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Saved “{trimmed}”"
@@ -11916,6 +12025,14 @@ msgstr "Сачувано у Знање, приватно за ову прија�
 #: src/features/career/workspace/practise.tsx
 msgid "Saved to Saved · Practice"
 msgstr "Сачувано у картицу Сачувано · Вежба"
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "Saved views"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Saves the filters, sort and List columns you have now."
+msgstr ""
 
 #. placeholder {0}: window.location.host
 #: src/features/resume/share/link-tab.tsx
@@ -12875,6 +12992,7 @@ msgid "Soonest first"
 msgstr ""
 
 #: src/features/applications/components/sort-button.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "Сортирај"
@@ -14678,6 +14796,7 @@ msgstr "Подвуци везе"
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
+#: src/routes/dashboard/applications/index.tsx
 msgid "Undo"
 msgstr "Поништи"
 
@@ -14758,6 +14877,10 @@ msgstr "До 25 MB · проверено у вашем претраживачу,
 msgid "Upcoming interviews"
 msgstr "Предстојећи интервјуи"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Update “{name}”"
+msgstr ""
+
 #. placeholder {0}: candidate.name
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Update {0}"
@@ -14788,6 +14911,10 @@ msgstr "Ажурирајте своју лозинку"
 #: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "Ажурирано"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Updated “{name}”."
+msgstr ""
 
 #. placeholder {0}: result.updated
 #: src/features/applications/components/list-view.tsx
@@ -15123,6 +15250,14 @@ msgstr ""
 msgid "View posting"
 msgstr "Погледајте оглас за посао"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: {name}"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: <0>{name}</0>"
+msgstr ""
+
 #. placeholder {0}: formatVersionTime(viewing.createdAt, i18n.locale)
 #. placeholder {0}: when(selected)
 #. placeholder {1}: getVersionTitle(selected)
@@ -15132,6 +15267,11 @@ msgstr "Погледајте оглас за посао"
 #: src/routes/builder/letter/-components/letter-page.tsx
 msgid "Viewing {0} · {1} · read-only"
 msgstr "Прегледање {0} · {1} · само за читање"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/views-button.tsx
+msgid "Views"
+msgstr ""
 
 #: src/features/resume/share/link-tab.tsx
 msgid "views · 30 days"
@@ -15309,6 +15449,10 @@ msgstr "Прошло је добро"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "were already in your account"
+msgstr ""
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "were over the limit of 50"
 msgstr ""
 
 #: src/features/resume/editor/check/page-layer.tsx
@@ -15715,6 +15859,14 @@ msgstr "Јуче {time}"
 #: src/features/career/coach.tsx
 msgid "You"
 msgstr "Ви"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "You already have a view called “{name}”."
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "You already have a view called “{taken}”. Pick another name, or use Update in the Views menu."
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "You already have a Watched companies schedule. Edit that one instead."

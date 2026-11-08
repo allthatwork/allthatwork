@@ -84,6 +84,7 @@ describe("buildAccountZip", () => {
 				notes: [],
 			},
 			applications: [{ id: "app-1", company: "Lumen", role: "Designer" }],
+			applicationViews: [{ id: "view-1", name: "Ready to apply" }],
 			aiContentReports: [{ id: "report-1", content: "Unsafe generated content", reason: "dangerous" }],
 			career: {
 				...emptyCareer,
@@ -123,6 +124,7 @@ describe("buildAccountZip", () => {
 		expect(Object.keys(files).sort()).toEqual([
 			"account.json",
 			"ai-content-reports.json",
+			"application-views.json",
 			"applications.json",
 			"career.json",
 			"directory.json",
@@ -136,6 +138,9 @@ describe("buildAccountZip", () => {
 		});
 		expect(JSON.parse(strFromU8(files["applications.json"] as Uint8Array))).toEqual([
 			{ id: "app-1", company: "Lumen", role: "Designer" },
+		]);
+		expect(JSON.parse(strFromU8(files["application-views.json"] as Uint8Array))).toEqual([
+			{ id: "view-1", name: "Ready to apply" },
 		]);
 		const career = JSON.parse(strFromU8(files["career.json"] as Uint8Array));
 		expect(JSON.parse(strFromU8(files["ai-content-reports.json"] as Uint8Array))).toEqual([

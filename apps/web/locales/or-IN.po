@@ -72,6 +72,10 @@ msgstr "“{written}” କ ills ଶଳ ସହିତ ଯୋଡି ହୋଇଗ�
 msgid "“How did you measure the onboarding redesign?”"
 msgstr "“ଆପଣ ଅନବୋର୍ଡିଂ ରିଡିଜାଇନ୍ କିପରି ମାପିଲେ?”"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "(edited)"
+msgstr ""
+
 #: src/features/career/knowledge/review.tsx
 msgid "(newer)"
 msgstr ""
@@ -275,6 +279,12 @@ msgstr "{0, plural, one {# ଧାଡିରେ କ company ଣସି କମ୍ପ
 #: src/features/career/coach.tsx
 msgid "{0, plural, one {# saved offer} other {# saved offers}}"
 msgstr "{0, plural, one {#ଟି ସେଭ୍ ହୋଇଥିବା ଅଫର୍} other {#ଟି ସେଭ୍ ହୋଇଥିବା ଅଫର୍}}"
+
+#. placeholder {0}: counts.applications.views
+#. placeholder {0}: current.applications.views
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "{0, plural, one {# saved view} other {# saved views}}"
+msgstr ""
 
 #. placeholder {0}: counts.jobSearch.schedules
 #. placeholder {0}: current.jobSearch.schedules
@@ -698,6 +708,10 @@ msgstr "{count, plural, one {# ପ୍ରବେଶ} other {# ଭରଣଗୁଡ�
 msgid "{count, plural, one {Apply # change} other {Apply # changes}}"
 msgstr "{count, plural, one {#ଟି ପରିବର୍ତ୍ତନ ପ୍ରୟୋଗ କରନ୍ତୁ} other {#ଟି ପରିବର୍ତ୍ତନ ପ୍ରୟୋଗ କରନ୍ତୁ}}"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "{count} of {APPLICATION_VIEWS_MAX} views. Names up to {APPLICATION_VIEW_NAME_MAX} characters."
+msgstr ""
+
 #: src/features/documents/documents-page.tsx
 msgid "{count} selected"
 msgstr "{count}ଟି ଚୟନ କରାଯାଇଛି"
@@ -766,6 +780,10 @@ msgstr "{facts, plural, one {#ଟି ତଥ୍ୟ} other {#ଟି ତଥ୍ୟ}}
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "{failing, plural, one {# to review} other {# to review}}"
 msgstr "{failing, plural, one {ସମୀକ୍ଷା କରିବାକୁ # |} other {ସମୀକ୍ଷା କରିବାକୁ # |}}"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "{field}, {lower}"
+msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
 msgid "{filled} of 5 parts"
@@ -1278,6 +1296,14 @@ msgstr "ଏକ ମଡେଲର ମତ, ଏକ ନିଷ୍ପତ୍ତି ନୁ
 #: src/features/settings/account/security.tsx
 msgid "A name helps you tell passkeys apart, like \"Work laptop\"."
 msgstr "“ୱାର୍କ ଲାପଟପ୍” ପରି ଏକ ନାମ ଆପଣଙ୍କୁ ପାସ୍କିଗୁଡ଼ିକୁ ପୃଥକ ଭାବରେ କହିବାକୁ ସାହାଯ୍ୟ କରେ |"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "A new tab opens with this view"
+msgstr ""
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "A new tab opens with this view. Click to clear."
+msgstr ""
 
 #: src/features/career/knowledge/review.tsx
 msgid "A newer fact replaces an older one"
@@ -1969,6 +1995,7 @@ msgstr "ଡାହାଣକୁ ସଜାନ୍ତୁ"
 msgid "All"
 msgstr "ସମସ୍ତ"
 
+#: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
 msgid "All applications"
@@ -2909,6 +2936,7 @@ msgstr "ସଫ୍ଟୱେର୍ ତୁମର ରେଜୁମ୍ ପ read ି �
 #: src/features/applications/components/export-applications-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/career/knowledge/budget.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import.tsx
@@ -3387,6 +3415,7 @@ msgstr "ସ୍ତମ୍ଭ {header} କୁ ଯାଏ |"
 
 #: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
 msgstr "କଲମ୍‌ଗୁଡିକ"
@@ -4215,6 +4244,11 @@ msgstr "ଟ୍ୟାଗ୍ ସଞ୍ଚୟ କରିପାରିଲା ନାହ
 msgid "Couldn't save the timezone."
 msgstr "ସମୟ ଅଞ୍ଚଳ ସେଭ୍ କରିହେଲା ନାହିଁ।"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+#: src/routes/dashboard/applications/index.tsx
+msgid "Couldn't save the view. Try again."
+msgstr ""
+
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't save this correction. Your edit is still here; try again."
 msgstr ""
@@ -4624,6 +4658,7 @@ msgstr "ଡିଗ୍ରୀ"
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/assistant/assistant-panel.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/schedule-sheet.tsx
@@ -4764,6 +4799,10 @@ msgstr "ବିଲୋପ ହୋଇଛି"
 msgid "Deleted “{0}”"
 msgstr "“{0}” ବିଲୋପ ହୋଇଛି"
 
+#: src/routes/dashboard/applications/index.tsx
+msgid "Deleted “{name}”."
+msgstr ""
+
 #: src/features/resume/share/history-tab.tsx
 msgid "Deleted “{title}”"
 msgstr "“{title}” ବିଲୋପ ହୋଇଛି"
@@ -4902,6 +4941,10 @@ msgstr "ଦ୍ୱି-ଘଟକ ପରିଚୟ ପ୍ରମାଣିକରଣ �
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Discard"
 msgstr "ପରିତ୍ୟାଗ କରନ୍ତୁ |"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Discard changes"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "Discard changes?"
@@ -5128,6 +5171,10 @@ msgstr "ଡ୍ରାଗ୍ · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "ବିଭାଗଗୁଡିକୁ କଲମ୍‌ଗୁଡିକ ମଧ୍ୟରେ ସଞ୍ଚାଳନ କରିବା ପାଇଁ ଏଠାରେ ଟାନି ଓ ଛାଡ଼ନ୍ତୁ"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Drag to reorder. The star marks the view a new tab opens with."
+msgstr ""
 
 #: src/features/applications/components/columns-button.tsx
 msgid "Drag to reorder. To resize, drag the line between two headings."
@@ -5886,7 +5933,12 @@ msgid "Filter by tag"
 msgstr "ଟ୍ୟାଗ୍ ଦ୍ୱାରା ଫିଲ୍ଟର୍ କରନ୍ତୁ |"
 
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 msgid "Filters"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "filters, sort and columns"
 msgstr ""
 
 #: src/features/directory/contact-picker.tsx
@@ -6923,6 +6975,10 @@ msgstr "ମନୋନୀତ ରେଖା ଉନ୍ନତ କରନ୍ତୁ |"
 msgid "Improving…"
 msgstr "ଉନ୍ନତି…"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "in a new tab"
+msgstr ""
+
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
 msgstr ""
@@ -7627,6 +7683,10 @@ msgstr "ଛାଡିଦିଅ |"
 msgid "Leave out titles with"
 msgstr ""
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Leave the view"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "ନୂଆ ବ୍ୟବହାରକାରୀଙ୍କ ପ୍ରାରମ୍ଭିକ ଅନୁଭୂତିକୁ ପୁନଃ ଡିଜାଇନ୍ କରିବା ପାଇଁ <0>ବ୍ୟବହାରକାରୀ ଗବେଷଣାର</0> ନେତୃତ୍ୱ ନେଲି; ସକ୍ରିୟତା ହାର 31% ରୁ 44% କୁ ବଢ଼ିଲା।"
@@ -8132,6 +8192,10 @@ msgstr "ମାଲୟ"
 msgid "Malayalam"
 msgstr "ମଲୟାଳମ"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Manage views…"
+msgstr ""
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Managed by server"
 msgstr "ସର୍ଭର ଦ୍ୱାରା ପରିଚାଳିତ |"
@@ -8439,6 +8503,10 @@ msgstr "ପ୍ରାୟତ read ପଠନୀୟ |"
 msgid "Move {label}"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Move {name}"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
 msgstr "ସମସ୍ତ ବିଷୟବସ୍ତୁକୁ ପୃଷ୍ଠା ସୀମା ମଧ୍ୟରେ ଆଣନ୍ତୁ ଏବଂ ପୁନଃ-ରପ୍ତାନି କରନ୍ତୁ।"
@@ -8551,6 +8619,8 @@ msgstr "ମୋ କାମ ଥିଲା ସପୋର୍ଟ କାମ ନ ବଢ଼
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/auth/pages/register.tsx
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
@@ -9152,6 +9222,10 @@ msgstr "ଏହି ଫାଇଲରୁ କୌଣସି ଟେକ୍ସଟ୍ ପ�
 msgid "No timezone matches."
 msgstr "କୌଣସି ସମୟ ଅଞ୍ଚଳ ମେଳ ଖାଉନାହିଁ।"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "No views yet."
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "No work experience shows"
 msgstr "କ work ଣସି କାର୍ଯ୍ୟ ଅଭିଜ୍ଞତା ଦେଖାଏ ନାହିଁ |"
@@ -9173,6 +9247,10 @@ msgstr "କିଛି ନୁହେଁ |"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "None yet"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "None, all open applications"
 msgstr ""
 
 #: src/features/resume/editor/design/fit.ts
@@ -9636,6 +9714,11 @@ msgstr "{title} ଖୋଲନ୍ତୁ |"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "AI ସେଟିଂସମୂହ ଖୋଲନ୍ତୁ |"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Open Applications with this view"
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -10898,6 +10981,10 @@ msgstr "ସମର୍ଥିତ ସାର୍ବଜନୀନ କାର୍ଯ୍ୟ 
 msgid "Ready"
 msgstr "ପ୍ରସ୍ତୁତ |"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Ready to apply"
+msgstr ""
+
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Reason"
 msgstr "କାରଣ"
@@ -11189,6 +11276,7 @@ msgstr ""
 msgid "Removing copies"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/career/coach.tsx
 #: src/features/documents/document-actions.tsx
 #: src/features/settings/account/security.tsx
@@ -11602,6 +11690,7 @@ msgstr "ଏହି ମୁହୂର୍ତ୍ତରେ"
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
@@ -11766,9 +11855,17 @@ msgstr "ସଞ୍ଚୟ ଏବଂ ପରୀକ୍ଷା କର |"
 msgid "Save another offer to compare"
 msgstr "ତୁଳନା କରିବାକୁ ଅନ୍ୟ ଏକ ଅଫର୍ ସେଭ୍ କରନ୍ତୁ"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save as a view"
+msgstr ""
+
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save as application…"
 msgstr "ଚାକିରି ଆବେଦନ ଭାବରେ ସଞ୍ଚୟ କରନ୍ତୁ…"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save as new view…"
+msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Save changes"
@@ -11820,6 +11917,10 @@ msgstr "କାହାଣୀ ସେଭ୍ କରନ୍ତୁ"
 msgid "Save the file with every page upright."
 msgstr "ପ୍ରତ୍ୟେକ ପୃଷ୍ଠା ସିଧା ରଖି ଫାଇଲ୍ ସେଭ୍ କରନ୍ତୁ।"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save the filters, sort and columns you use often as a view, and come back to them in one click."
+msgstr ""
+
 #: src/features/career/workspace/messages.tsx
 msgid "Save these offer terms to compare"
 msgstr "ତୁଳନା କରିବାକୁ ଏହି ଅଫର୍ ସର୍ତ୍ତାବଳୀ ସେଭ୍ କରନ୍ତୁ"
@@ -11832,6 +11933,10 @@ msgstr "ଜ୍ଞାନରେ ସେଭ୍ କରନ୍ତୁ"
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save to the application"
 msgstr "ଚାକିରି ଆବେଦନକୁ ସଞ୍ଚୟ କରନ୍ତୁ |"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save view"
+msgstr ""
 
 #: src/features/resume/share/format.ts
 msgid "saved"
@@ -11856,6 +11961,10 @@ msgstr "ସେଭ୍‍ କରାଯାଇଛି"
 #: src/features/homepage/write.tsx
 msgid "Saved · version {version}"
 msgstr "ସଞ୍ଚୟ · ସଂସ୍କରଣ {version} |"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Saved “{saved}”."
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Saved “{trimmed}”"
@@ -11920,6 +12029,14 @@ msgstr "ଜ୍ଞାନରେ ସେଭ୍ ହେଲା, କେବଳ ଏହି 
 #: src/features/career/workspace/practise.tsx
 msgid "Saved to Saved · Practice"
 msgstr "“ସେଭ୍‍ କରାଯାଇଛି”ରେ ସେଭ୍ ହେଲା · ଅଭ୍ୟାସ"
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "Saved views"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Saves the filters, sort and List columns you have now."
+msgstr ""
 
 #. placeholder {0}: window.location.host
 #: src/features/resume/share/link-tab.tsx
@@ -12879,6 +12996,7 @@ msgid "Soonest first"
 msgstr ""
 
 #: src/features/applications/components/sort-button.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "ସର୍ଟ କରନ୍ତୁ |"
@@ -14683,6 +14801,7 @@ msgstr "ଲିଙ୍କଗୁଡିକ ଅଣ୍ଡରଲାଇନ୍ କରନ�
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
+#: src/routes/dashboard/applications/index.tsx
 msgid "Undo"
 msgstr "ପୂର୍ବବତ୍ କରନ୍ତୁ"
 
@@ -14763,6 +14882,10 @@ msgstr "25 MB ପର୍ଯ୍ୟନ୍ତ your ଆପଣଙ୍କର ବ୍ର�
 msgid "Upcoming interviews"
 msgstr "ଆଗାମୀ ସାକ୍ଷାତକାର |"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Update “{name}”"
+msgstr ""
+
 #. placeholder {0}: candidate.name
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Update {0}"
@@ -14793,6 +14916,10 @@ msgstr "ଆପଣଙ୍କ ପାସୱାର୍ଡ ଅଦ୍ୟତନ କରନ
 #: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "ଅଦ୍ୟତନ କରାଯାଇଛି"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Updated “{name}”."
+msgstr ""
 
 #. placeholder {0}: result.updated
 #: src/features/applications/components/list-view.tsx
@@ -15128,6 +15255,14 @@ msgstr ""
 msgid "View posting"
 msgstr "ଚାକିରି ପୋଷ୍ଟିଂ ଦେଖନ୍ତୁ |"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: {name}"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: <0>{name}</0>"
+msgstr ""
+
 #. placeholder {0}: formatVersionTime(viewing.createdAt, i18n.locale)
 #. placeholder {0}: when(selected)
 #. placeholder {1}: getVersionTitle(selected)
@@ -15137,6 +15272,11 @@ msgstr "ଚାକିରି ପୋଷ୍ଟିଂ ଦେଖନ୍ତୁ |"
 #: src/routes/builder/letter/-components/letter-page.tsx
 msgid "Viewing {0} · {1} · read-only"
 msgstr "{0} · {1} · କେବଳ ପଠନୀୟ |"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/views-button.tsx
+msgid "Views"
+msgstr ""
 
 #: src/features/resume/share/link-tab.tsx
 msgid "views · 30 days"
@@ -15314,6 +15454,10 @@ msgstr "ଭଲ ହେଲା"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "were already in your account"
+msgstr ""
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "were over the limit of 50"
 msgstr ""
 
 #: src/features/resume/editor/check/page-layer.tsx
@@ -15720,6 +15864,14 @@ msgstr "ଗତକାଲି {time} |"
 #: src/features/career/coach.tsx
 msgid "You"
 msgstr "ତୁମେ"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "You already have a view called “{name}”."
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "You already have a view called “{taken}”. Pick another name, or use Update in the Views menu."
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "You already have a Watched companies schedule. Edit that one instead."

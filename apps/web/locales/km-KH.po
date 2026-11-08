@@ -72,6 +72,10 @@ msgstr "\"{written}\" បានបន្ថែមទៅជំនាញ"
 msgid "“How did you measure the onboarding redesign?”"
 msgstr "“តើអ្នកបានវាស់ការរចនាឡើងវិញនូវការណែនាំអ្នកប្រើថ្មីយ៉ាងដូចម្តេច?”"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "(edited)"
+msgstr ""
+
 #: src/features/career/knowledge/review.tsx
 msgid "(newer)"
 msgstr ""
@@ -275,6 +279,12 @@ msgstr "{0, plural, one {ជួរ # មិនមានក្រុមហ៊ុ�
 #: src/features/career/coach.tsx
 msgid "{0, plural, one {# saved offer} other {# saved offers}}"
 msgstr "{0, plural, other {ការផ្តល់ការងារដែលបានរក្សាទុក #}}"
+
+#. placeholder {0}: counts.applications.views
+#. placeholder {0}: current.applications.views
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "{0, plural, one {# saved view} other {# saved views}}"
+msgstr ""
 
 #. placeholder {0}: counts.jobSearch.schedules
 #. placeholder {0}: current.jobSearch.schedules
@@ -698,6 +708,10 @@ msgstr "{count, plural, one {ធាតុ #} other {ធាតុ #}}"
 msgid "{count, plural, one {Apply # change} other {Apply # changes}}"
 msgstr "{count, plural, other {អនុវត្តការផ្លាស់ប្តូរ #}}"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "{count} of {APPLICATION_VIEWS_MAX} views. Names up to {APPLICATION_VIEW_NAME_MAX} characters."
+msgstr ""
+
 #: src/features/documents/documents-page.tsx
 msgid "{count} selected"
 msgstr "បានជ្រើសរើស {count}"
@@ -766,6 +780,10 @@ msgstr "{facts, plural, other {ការពិត #}}"
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "{failing, plural, one {# to review} other {# to review}}"
 msgstr "{failing, plural, one {# ដើម្បីពិនិត្យ} other {# ដើម្បីពិនិត្យ}}"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "{field}, {lower}"
+msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
 msgid "{filled} of 5 parts"
@@ -1278,6 +1296,14 @@ msgstr "គំនិតរបស់តារាម៉ូដែល មិនម�
 #: src/features/settings/account/security.tsx
 msgid "A name helps you tell passkeys apart, like \"Work laptop\"."
 msgstr "ឈ្មោះ​មួយ​ជួយ​អ្នក​ប្រាប់​លេខ​សម្ងាត់​ដាច់​ពី​គ្នា ដូចជា \"កុំព្យូទ័រ​យួរដៃ​ការងារ\"។"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "A new tab opens with this view"
+msgstr ""
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "A new tab opens with this view. Click to clear."
+msgstr ""
 
 #: src/features/career/knowledge/review.tsx
 msgid "A newer fact replaces an older one"
@@ -1969,6 +1995,7 @@ msgstr "តម្រឹមស្តាំ"
 msgid "All"
 msgstr "ទាំងអស់។"
 
+#: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
 msgid "All applications"
@@ -2908,6 +2935,7 @@ msgstr "តើកម្មវិធីអាចអានប្រវត្តិ
 #: src/features/applications/components/export-applications-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/career/knowledge/budget.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import.tsx
@@ -3386,6 +3414,7 @@ msgstr "ជួរឈរ {header} ទៅ"
 
 #: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
 msgstr "ជួរឈរ"
@@ -4214,6 +4243,11 @@ msgstr "មិនអាចរក្សាទុកស្លាកបានទេ
 msgid "Couldn't save the timezone."
 msgstr "មិនអាចរក្សាទុកតំបន់ពេលវេលាបានទេ។"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+#: src/routes/dashboard/applications/index.tsx
+msgid "Couldn't save the view. Try again."
+msgstr ""
+
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't save this correction. Your edit is still here; try again."
 msgstr ""
@@ -4623,6 +4657,7 @@ msgstr "សញ្ញាប័ត្រ"
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/assistant/assistant-panel.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/schedule-sheet.tsx
@@ -4763,6 +4798,10 @@ msgstr "បានលុប"
 msgid "Deleted “{0}”"
 msgstr "បានលុប “{0}”"
 
+#: src/routes/dashboard/applications/index.tsx
+msgid "Deleted “{name}”."
+msgstr ""
+
 #: src/features/resume/share/history-tab.tsx
 msgid "Deleted “{title}”"
 msgstr "បានលុប “{title}”"
@@ -4901,6 +4940,10 @@ msgstr "កំពុង​បិទ​ការ​ផ្ទៀងផ្ទាត
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Discard"
 msgstr "បោះបង់"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Discard changes"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "Discard changes?"
@@ -5127,6 +5170,10 @@ msgstr "អូស · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "អូស និង​ទម្លាក់​ផ្នែក​មក​ទីនេះ ដើម្បី​ផ្លាស់ទី​ពួកវា​រវាង​ជួរឈរ"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Drag to reorder. The star marks the view a new tab opens with."
+msgstr ""
 
 #: src/features/applications/components/columns-button.tsx
 msgid "Drag to reorder. To resize, drag the line between two headings."
@@ -5885,7 +5932,12 @@ msgid "Filter by tag"
 msgstr "ត្រងតាមស្លាក"
 
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 msgid "Filters"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "filters, sort and columns"
 msgstr ""
 
 #: src/features/directory/contact-picker.tsx
@@ -6920,6 +6972,10 @@ msgstr "កែលម្អបន្ទាត់ដែលបានជ្រើស
 msgid "Improving…"
 msgstr "កំពុងកែលម្អ…"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "in a new tab"
+msgstr ""
+
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
 msgstr ""
@@ -7624,6 +7680,10 @@ msgstr "ចាកចេញ"
 msgid "Leave out titles with"
 msgstr ""
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Leave the view"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "បានដឹកនាំ<0>ការស្រាវជ្រាវអ្នកប្រើប្រាស់</0> ដើម្បីរចនាបទពិសោធន៍ចាប់ផ្តើមប្រើប្រាស់ឡើងវិញ; អត្រាធ្វើឱ្យសកម្មបានកើនពី 31% ទៅ 44%។"
@@ -8129,6 +8189,10 @@ msgstr "Malay"
 msgid "Malayalam"
 msgstr "Malayalam"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Manage views…"
+msgstr ""
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Managed by server"
 msgstr "គ្រប់គ្រងដោយម៉ាស៊ីនមេ"
@@ -8436,6 +8500,10 @@ msgstr "ភាគច្រើនអាចអានបាន។"
 msgid "Move {label}"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Move {name}"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
 msgstr "ផ្លាស់ទីមាតិកាទាំងអស់ទៅក្នុងព្រំដែនទំព័រ ហើយនាំចេញម្តងទៀត។"
@@ -8548,6 +8616,8 @@ msgstr "ការងាររបស់ខ្ញុំគឺស្វែងរក
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/auth/pages/register.tsx
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
@@ -9149,6 +9219,10 @@ msgstr "មិនអាចអានអត្ថបទណាមួយពីឯក
 msgid "No timezone matches."
 msgstr "គ្មានតំបន់ពេលវេលាដែលត្រូវគ្នាទេ។"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "No views yet."
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "No work experience shows"
 msgstr "គ្មានបទពិសោធន៍ការងារបង្ហាញ"
@@ -9170,6 +9244,10 @@ msgstr "គ្មាន"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "None yet"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "None, all open applications"
 msgstr ""
 
 #: src/features/resume/editor/design/fit.ts
@@ -9633,6 +9711,11 @@ msgstr "បើក {title}"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "បើកការកំណត់ AI"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Open Applications with this view"
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -10894,6 +10977,10 @@ msgstr "អានទំព័រការងារសាធារណៈដែល
 msgid "Ready"
 msgstr "រួចរាល់"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Ready to apply"
+msgstr ""
+
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Reason"
 msgstr "ហេតុផល"
@@ -11185,6 +11272,7 @@ msgstr ""
 msgid "Removing copies"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/career/coach.tsx
 #: src/features/documents/document-actions.tsx
 #: src/features/settings/account/security.tsx
@@ -11598,6 +11686,7 @@ msgstr "ឥឡូវនេះ"
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
@@ -11762,9 +11851,17 @@ msgstr "រក្សាទុកនិងសាកល្បង"
 msgid "Save another offer to compare"
 msgstr "រក្សាទុកការផ្តល់ការងារមួយទៀតដើម្បីប្រៀបធៀប"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save as a view"
+msgstr ""
+
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save as application…"
 msgstr "រក្សាទុកជាពាក្យសុំការងារ…"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save as new view…"
+msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Save changes"
@@ -11816,6 +11913,10 @@ msgstr "រក្សាទុករឿង"
 msgid "Save the file with every page upright."
 msgstr "រក្សាទុកឯកសារជាមួយគ្រប់ទំព័រទាំងអស់ត្រង់ត្រូវ។"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save the filters, sort and columns you use often as a view, and come back to them in one click."
+msgstr ""
+
 #: src/features/career/workspace/messages.tsx
 msgid "Save these offer terms to compare"
 msgstr "រក្សាទុកលក្ខខណ្ឌការផ្តល់ការងារទាំងនេះដើម្បីប្រៀបធៀប"
@@ -11828,6 +11929,10 @@ msgstr "រក្សាទុកទៅចំណេះដឹង"
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save to the application"
 msgstr "រក្សាទុកក្នុងពាក្យសុំការងារ"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save view"
+msgstr ""
 
 #: src/features/resume/share/format.ts
 msgid "saved"
@@ -11852,6 +11957,10 @@ msgstr "បានរក្សាទុក"
 #: src/features/homepage/write.tsx
 msgid "Saved · version {version}"
 msgstr "បានរក្សាទុក · កំណែ {version}"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Saved “{saved}”."
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Saved “{trimmed}”"
@@ -11916,6 +12025,14 @@ msgstr "បានរក្សាទុកទៅចំណេះដឹង ឯក�
 #: src/features/career/workspace/practise.tsx
 msgid "Saved to Saved · Practice"
 msgstr "បានរក្សាទុកទៅ “បានរក្សាទុក” · ការហាត់សម"
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "Saved views"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Saves the filters, sort and List columns you have now."
+msgstr ""
 
 #. placeholder {0}: window.location.host
 #: src/features/resume/share/link-tab.tsx
@@ -12875,6 +12992,7 @@ msgid "Soonest first"
 msgstr ""
 
 #: src/features/applications/components/sort-button.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "តម្រៀប"
@@ -14678,6 +14796,7 @@ msgstr "គូសបន្ទាត់ក្រោមតំណ"
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
+#: src/routes/dashboard/applications/index.tsx
 msgid "Undo"
 msgstr "មិនធ្វើវិញ"
 
@@ -14758,6 +14877,10 @@ msgstr "រហូតដល់ទៅ 25 MB · បានពិនិត្យន�
 msgid "Upcoming interviews"
 msgstr "ការសម្ភាសន៍នាពេលខាងមុខ"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Update “{name}”"
+msgstr ""
+
 #. placeholder {0}: candidate.name
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Update {0}"
@@ -14788,6 +14911,10 @@ msgstr "បច្ចុប្បន្នភាព​ពាក្យសម្ង
 #: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "បានធ្វើបច្ចុប្បន្នភាព"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Updated “{name}”."
+msgstr ""
 
 #. placeholder {0}: result.updated
 #: src/features/applications/components/list-view.tsx
@@ -15123,6 +15250,14 @@ msgstr ""
 msgid "View posting"
 msgstr "មើលការប្រកាសការងារ"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: {name}"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: <0>{name}</0>"
+msgstr ""
+
 #. placeholder {0}: formatVersionTime(viewing.createdAt, i18n.locale)
 #. placeholder {0}: when(selected)
 #. placeholder {1}: getVersionTitle(selected)
@@ -15132,6 +15267,11 @@ msgstr "មើលការប្រកាសការងារ"
 #: src/routes/builder/letter/-components/letter-page.tsx
 msgid "Viewing {0} · {1} · read-only"
 msgstr "កំពុងមើល {0} · {1} · បានតែអាន"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/views-button.tsx
+msgid "Views"
+msgstr ""
 
 #: src/features/resume/share/link-tab.tsx
 msgid "views · 30 days"
@@ -15309,6 +15449,10 @@ msgstr "ដំណើរការល្អ"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "were already in your account"
+msgstr ""
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "were over the limit of 50"
 msgstr ""
 
 #: src/features/resume/editor/check/page-layer.tsx
@@ -15715,6 +15859,14 @@ msgstr "ម្សិលមិញ {time}"
 #: src/features/career/coach.tsx
 msgid "You"
 msgstr "អ្នក"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "You already have a view called “{name}”."
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "You already have a view called “{taken}”. Pick another name, or use Update in the Views menu."
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "You already have a Watched companies schedule. Edit that one instead."

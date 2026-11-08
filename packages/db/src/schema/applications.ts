@@ -9,7 +9,9 @@ import type {
 	TargetingQuestion,
 	TargetingReview,
 } from "@reactive-resume/schema/applications/data";
+import type { ApplicationViewFilters, ApplicationViewLayout } from "@reactive-resume/schema/applications/views";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import * as pg from "drizzle-orm/pg-core";
 import { generateId } from "@reactive-resume/utils/string";
 import { user } from "./auth";
@@ -102,4 +104,40 @@ export const application = pg.pgTable(
 			.$onUpdate(() => /* @__PURE__ */ new Date()),
 	},
 	(t) => [pg.index().on(t.userId), pg.index().on(t.userId, t.updatedAt.desc())],
+);
+
+// A saved view of the Applications screen: a name for a set of filters (by value, no ids), a sort and the List
+// columns. Read with the lenient readers in @reactive-resume/schema/applications/views, so old values never break one.
+export const applicationView = pg.pgTable(
+	"application_view",
+	{
+		id: pg
+			.text("id")
+			.notNull()
+			.primaryKey()
+			.$defaultFn(() => generateId()),
+		userId: pg
+			.text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		name: pg.text("name").notNull(),
+		filters: pg.jsonb("filters").notNull().$type<ApplicationViewFilters>(),
+		layout: pg.jsonb("layout").notNull().$type<ApplicationViewLayout>(),
+		position: pg.integer("position").notNull().default(0),
+		// The view a new tab opens with; one per user at most.
+		isDefault: pg.boolean("is_default").notNull().default(false),
+		createdAt: pg.timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+		updatedAt: pg
+			.timestamp("updated_at", { withTimezone: true })
+			.notNull()
+			.defaultNow()
+			.$onUpdate(() => /* @__PURE__ */ new Date()),
+	},
+	(t) => [
+		pg.uniqueIndex("application_view_user_name_unique_idx").on(t.userId, sql`lower(${t.name})`),
+		pg
+			.uniqueIndex("application_view_user_default_unique_idx")
+			.on(t.userId)
+			.where(sql`${t.isDefault}`),
+	],
 );

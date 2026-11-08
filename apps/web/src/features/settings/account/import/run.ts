@@ -54,6 +54,7 @@ function request(archive: AccountArchive, area: ImportStep, mode: ImportMode, id
 				mode,
 				ids,
 				applications: archive.applications,
+				views: archive.applicationViews,
 				workspaces: career.workspaces,
 				letterLinks: archive.letters.flatMap((letter) => {
 					const letterId = id(letter.id);

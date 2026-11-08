@@ -72,6 +72,10 @@ msgstr "\"{written}\" നൈപുണ്യത്തിലേക്ക് ചേ
 msgid "“How did you measure the onboarding redesign?”"
 msgstr "“ഓൺബോർഡിംഗ് പുനർരൂപകൽപ്പന നിങ്ങൾ എങ്ങനെയാണ് അളന്നത്?”"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "(edited)"
+msgstr ""
+
 #: src/features/career/knowledge/review.tsx
 msgid "(newer)"
 msgstr ""
@@ -275,6 +279,12 @@ msgstr "{0, plural, one {# വരിയിൽ കമ്പനിയോ റോള
 #: src/features/career/coach.tsx
 msgid "{0, plural, one {# saved offer} other {# saved offers}}"
 msgstr "{0, plural, one {സംരക്ഷിച്ച # ഓഫർ} other {സംരക്ഷിച്ച # ഓഫറുകൾ}}"
+
+#. placeholder {0}: counts.applications.views
+#. placeholder {0}: current.applications.views
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "{0, plural, one {# saved view} other {# saved views}}"
+msgstr ""
 
 #. placeholder {0}: counts.jobSearch.schedules
 #. placeholder {0}: current.jobSearch.schedules
@@ -698,6 +708,10 @@ msgstr "{count, plural, one {# എൻട്രി} other {# എൻട്രി�
 msgid "{count, plural, one {Apply # change} other {Apply # changes}}"
 msgstr "{count, plural, one {# മാറ്റം പ്രയോഗിക്കുക} other {# മാറ്റങ്ങൾ പ്രയോഗിക്കുക}}"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "{count} of {APPLICATION_VIEWS_MAX} views. Names up to {APPLICATION_VIEW_NAME_MAX} characters."
+msgstr ""
+
 #: src/features/documents/documents-page.tsx
 msgid "{count} selected"
 msgstr "{count} എണ്ണം തിരഞ്ഞെടുത്തു"
@@ -766,6 +780,10 @@ msgstr "{facts, plural, one {# വസ്തുത} other {# വസ്തുത�
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "{failing, plural, one {# to review} other {# to review}}"
 msgstr "{failing, plural, one {അവലോകനം ചെയ്യാൻ #} other {അവലോകനം ചെയ്യാൻ #}}"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "{field}, {lower}"
+msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
 msgid "{filled} of 5 parts"
@@ -1278,6 +1296,14 @@ msgstr "ഒരു മോഡലിൻ്റെ അഭിപ്രായം, ഒ�
 #: src/features/settings/account/security.tsx
 msgid "A name helps you tell passkeys apart, like \"Work laptop\"."
 msgstr "\"വർക്ക് ലാപ്‌ടോപ്പ്\" പോലെയുള്ള പാസ്‌കീകളെ വേർതിരിച്ചറിയാൻ ഒരു പേര് നിങ്ങളെ സഹായിക്കുന്നു."
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "A new tab opens with this view"
+msgstr ""
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "A new tab opens with this view. Click to clear."
+msgstr ""
 
 #: src/features/career/knowledge/review.tsx
 msgid "A newer fact replaces an older one"
@@ -1969,6 +1995,7 @@ msgstr "വലത്തേക്ക് വിന്യസിക്കുക"
 msgid "All"
 msgstr "എല്ലാം"
 
+#: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
 msgid "All applications"
@@ -2908,6 +2935,7 @@ msgstr "സോഫ്റ്റ്‌വെയറിന് നിങ്ങളു�
 #: src/features/applications/components/export-applications-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/career/knowledge/budget.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import.tsx
@@ -3386,6 +3414,7 @@ msgstr "{header} എന്ന കോളം പോകുന്നു"
 
 #: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
 msgstr "കോളങ്ങൾ"
@@ -4214,6 +4243,11 @@ msgstr "ടാഗുകൾ സംരക്ഷിക്കാൻ കഴിഞ്�
 msgid "Couldn't save the timezone."
 msgstr "സമയമേഖല സേവ് ചെയ്യാനായില്ല."
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+#: src/routes/dashboard/applications/index.tsx
+msgid "Couldn't save the view. Try again."
+msgstr ""
+
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't save this correction. Your edit is still here; try again."
 msgstr ""
@@ -4623,6 +4657,7 @@ msgstr "ഡിഗ്രി"
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/assistant/assistant-panel.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/schedule-sheet.tsx
@@ -4763,6 +4798,10 @@ msgstr "ഇല്ലാതാക്കി"
 msgid "Deleted “{0}”"
 msgstr "\"{0}\" ഇല്ലാതാക്കി"
 
+#: src/routes/dashboard/applications/index.tsx
+msgid "Deleted “{name}”."
+msgstr ""
+
 #: src/features/resume/share/history-tab.tsx
 msgid "Deleted “{title}”"
 msgstr "\"{title}\" ഇല്ലാതാക്കി"
@@ -4901,6 +4940,10 @@ msgstr "ടു‑ഫാക്ടർ ഓത്‌ന്റിക്കേഷൻ �
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Discard"
 msgstr "നിരസിക്കുക"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Discard changes"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "Discard changes?"
@@ -5127,6 +5170,10 @@ msgstr "വലിച്ചിടുക · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "സെക്ഷനുകൾ കോളങ്ങൾക്കിടയിൽ നീക്കാൻ ഇവിടെ ഡ്രാഗ് ചെയ്ത് ഡ്രോപ്പ് ചെയ്യുക"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Drag to reorder. The star marks the view a new tab opens with."
+msgstr ""
 
 #: src/features/applications/components/columns-button.tsx
 msgid "Drag to reorder. To resize, drag the line between two headings."
@@ -5885,7 +5932,12 @@ msgid "Filter by tag"
 msgstr "ടാഗ് പ്രകാരം ഫിൽട്ടർ ചെയ്യുക"
 
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 msgid "Filters"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "filters, sort and columns"
 msgstr ""
 
 #: src/features/directory/contact-picker.tsx
@@ -6920,6 +6972,10 @@ msgstr "തിരഞ്ഞെടുത്ത ലൈൻ മെച്ചപ്പ�
 msgid "Improving…"
 msgstr "മെച്ചപ്പെടുത്തുന്നു..."
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "in a new tab"
+msgstr ""
+
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
 msgstr ""
@@ -7624,6 +7680,10 @@ msgstr "പുറത്ത് വിടുക"
 msgid "Leave out titles with"
 msgstr ""
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Leave the view"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "പുതിയ ഉപയോക്താക്കളുടെ തുടക്കത്തിലെ അനുഭവം പുനർരൂപകൽപ്പന ചെയ്യാൻ <0>ഉപയോക്തൃ ഗവേഷണത്തിന്</0> നേതൃത്വം നൽകി; സജീവമാക്കൽ നിരക്ക് 31% ൽ നിന്ന് 44% ആയി ഉയർന്നു."
@@ -8129,6 +8189,10 @@ msgstr "മലൈ"
 msgid "Malayalam"
 msgstr "മലയാളം"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Manage views…"
+msgstr ""
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Managed by server"
 msgstr "സെർവർ നിയന്ത്രിക്കുന്നത്"
@@ -8436,6 +8500,10 @@ msgstr "മിക്കവാറും വായിക്കാൻ കഴിയ�
 msgid "Move {label}"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Move {name}"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
 msgstr "എല്ലാ ഉള്ളടക്കവും പേജ് അതിർത്തിക്കുള്ളിലേക്ക് നീക്കി വീണ്ടും എക്സ്പോർട്ട് ചെയ്യുക."
@@ -8548,6 +8616,8 @@ msgstr "സപ്പോർട്ട് ജോലി കൂട്ടാതെ ക
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/auth/pages/register.tsx
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
@@ -9149,6 +9219,10 @@ msgstr "ഈ ഫയലിൽ നിന്ന് ടെക്സ്റ്റൊന
 msgid "No timezone matches."
 msgstr "പൊരുത്തപ്പെടുന്ന സമയമേഖലയില്ല."
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "No views yet."
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "No work experience shows"
 msgstr "പ്രവൃത്തി പരിചയം കാണിക്കുന്നില്ല"
@@ -9170,6 +9244,10 @@ msgstr "ഒന്നുമില്ല"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "None yet"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "None, all open applications"
 msgstr ""
 
 #: src/features/resume/editor/design/fit.ts
@@ -9633,6 +9711,11 @@ msgstr "{title} തുറക്കുക"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "AI ക്രമീകരണങ്ങൾ തുറക്കുക"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Open Applications with this view"
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -10894,6 +10977,10 @@ msgstr "പിന്തുണയ്ക്കുന്ന പൊതു ജോല�
 msgid "Ready"
 msgstr "തയ്യാറാണ്"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Ready to apply"
+msgstr ""
+
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Reason"
 msgstr "കാരണം"
@@ -11185,6 +11272,7 @@ msgstr ""
 msgid "Removing copies"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/career/coach.tsx
 #: src/features/documents/document-actions.tsx
 #: src/features/settings/account/security.tsx
@@ -11598,6 +11686,7 @@ msgstr "ഇപ്പോൾ"
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
@@ -11762,9 +11851,17 @@ msgstr "സംരക്ഷിച്ച് പരീക്ഷിക്കുക"
 msgid "Save another offer to compare"
 msgstr "താരതമ്യം ചെയ്യാൻ മറ്റൊരു ഓഫർ സേവ് ചെയ്യുക"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save as a view"
+msgstr ""
+
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save as application…"
 msgstr "ജോലി അപേക്ഷയായി സംരക്ഷിക്കുക..."
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save as new view…"
+msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Save changes"
@@ -11816,6 +11913,10 @@ msgstr "കഥ സേവ് ചെയ്യുക"
 msgid "Save the file with every page upright."
 msgstr "എല്ലാ പേജും നിവർന്ന നിലയിൽ ഫയൽ സേവ് ചെയ്യുക."
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save the filters, sort and columns you use often as a view, and come back to them in one click."
+msgstr ""
+
 #: src/features/career/workspace/messages.tsx
 msgid "Save these offer terms to compare"
 msgstr "താരതമ്യം ചെയ്യാൻ ഈ ഓഫർ വ്യവസ്ഥകൾ സേവ് ചെയ്യുക"
@@ -11828,6 +11929,10 @@ msgstr "അറിവിലേക്ക് സേവ് ചെയ്യുക"
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save to the application"
 msgstr "ജോലി അപേക്ഷയിൽ സംരക്ഷിക്കുക"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save view"
+msgstr ""
 
 #: src/features/resume/share/format.ts
 msgid "saved"
@@ -11852,6 +11957,10 @@ msgstr "സംരക്ഷിച്ചു"
 #: src/features/homepage/write.tsx
 msgid "Saved · version {version}"
 msgstr "സംരക്ഷിച്ചു · പതിപ്പ് {version}"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Saved “{saved}”."
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Saved “{trimmed}”"
@@ -11916,6 +12025,14 @@ msgstr "ഈ അപേക്ഷയ്ക്ക് മാത്രമായി അ
 #: src/features/career/workspace/practise.tsx
 msgid "Saved to Saved · Practice"
 msgstr "“സംരക്ഷിച്ചു · പരിശീലനം” എന്നതിലേക്ക് സേവ് ചെയ്തു"
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "Saved views"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Saves the filters, sort and List columns you have now."
+msgstr ""
 
 #. placeholder {0}: window.location.host
 #: src/features/resume/share/link-tab.tsx
@@ -12875,6 +12992,7 @@ msgid "Soonest first"
 msgstr ""
 
 #: src/features/applications/components/sort-button.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "അടുക്കുക"
@@ -14678,6 +14796,7 @@ msgstr "ലിങ്കുകൾക്ക് അടിവരയിടുക"
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
+#: src/routes/dashboard/applications/index.tsx
 msgid "Undo"
 msgstr "പഴയപടിയാക്കുക"
 
@@ -14758,6 +14877,10 @@ msgstr "25 MB വരെ · നിങ്ങളുടെ ബ്രൗസറിൽ 
 msgid "Upcoming interviews"
 msgstr "വരാനിരിക്കുന്ന അഭിമുഖങ്ങൾ"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Update “{name}”"
+msgstr ""
+
 #. placeholder {0}: candidate.name
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Update {0}"
@@ -14788,6 +14911,10 @@ msgstr "നിങ്ങളുടെ പാസ്‌വേഡ് അപ്‌ഡ�
 #: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "അപ്ഡേറ്റ് ചെയ്തു"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Updated “{name}”."
+msgstr ""
 
 #. placeholder {0}: result.updated
 #: src/features/applications/components/list-view.tsx
@@ -15123,6 +15250,14 @@ msgstr ""
 msgid "View posting"
 msgstr "ജോലി പോസ്റ്റിംഗ് കാണുക"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: {name}"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: <0>{name}</0>"
+msgstr ""
+
 #. placeholder {0}: formatVersionTime(viewing.createdAt, i18n.locale)
 #. placeholder {0}: when(selected)
 #. placeholder {1}: getVersionTitle(selected)
@@ -15132,6 +15267,11 @@ msgstr "ജോലി പോസ്റ്റിംഗ് കാണുക"
 #: src/routes/builder/letter/-components/letter-page.tsx
 msgid "Viewing {0} · {1} · read-only"
 msgstr "{0} കാണുന്നു · {1} · വായിക്കാൻ മാത്രം"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/views-button.tsx
+msgid "Views"
+msgstr ""
 
 #: src/features/resume/share/link-tab.tsx
 msgid "views · 30 days"
@@ -15309,6 +15449,10 @@ msgstr "നന്നായി പോയി"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "were already in your account"
+msgstr ""
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "were over the limit of 50"
 msgstr ""
 
 #: src/features/resume/editor/check/page-layer.tsx
@@ -15715,6 +15859,14 @@ msgstr "ഇന്നലെ {time}"
 #: src/features/career/coach.tsx
 msgid "You"
 msgstr "നിങ്ങൾ"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "You already have a view called “{name}”."
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "You already have a view called “{taken}”. Pick another name, or use Update in the Views menu."
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "You already have a Watched companies schedule. Edit that one instead."

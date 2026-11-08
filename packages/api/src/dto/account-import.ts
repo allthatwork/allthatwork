@@ -49,6 +49,7 @@ export const accountImportDto = {
 			applications: z.object({
 				applications: z.number(),
 				linked: z.number().describe("Facts, stories, saved items, schedules and conversations tied to an application."),
+				views: z.number().describe("Saved views of the Applications screen."),
 			}),
 			knowledge: z.object({ facts: z.number(), stories: z.number(), groups: z.number() }),
 			jobSearch: z.object({ opportunities: z.number(), schedules: z.number() }),
@@ -77,6 +78,11 @@ export const accountImportDto = {
 				mode: modeSchema,
 				ids: importIdsSchema,
 				applications: records("applications.json."),
+				views: z
+					.array(z.record(z.string(), z.unknown()))
+					.max(1000)
+					.default([])
+					.describe("application-views.json: saved views of the Applications screen."),
 				workspaces: records("career.json workspaces."),
 				letterLinks: z
 					.array(z.object({ letterId: z.string().max(64), applicationId: z.string().max(64) }))
@@ -124,9 +130,9 @@ export const accountImportDto = {
 					z.object({
 						kind: z.string(),
 						reason: z
-							.enum(["unreadable", "unlinked", "exists", "files"])
+							.enum(["unreadable", "unlinked", "exists", "files", "limit"])
 							.describe(
-								"unreadable: not valid; unlinked: tied to something not imported; exists: already in the account; files: the file isn't in the export.",
+								"unreadable: not valid; unlinked: tied to something not imported; exists: already in the account; files: the file isn't in the export; limit: over the account's limit (50 saved views).",
 							),
 						count: z.number().int(),
 					}),
