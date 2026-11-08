@@ -36947,6 +36947,2223 @@
 				]
 			}
 		},
+		"/applications/views": {
+			"get": {
+				"operationId": "listApplicationViews",
+				"summary": "List saved views",
+				"description": "Returns the authenticated user's saved views of the Applications screen in menu order. A view is a name for a set of filters, a sort and the List columns. Requires authentication.",
+				"tags": [
+					"Applications"
+				],
+				"parameters": [],
+				"responses": {
+					"200": {
+						"description": "The user's saved views.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string"
+											},
+											"name": {
+												"type": "string"
+											},
+											"filters": {
+												"type": "object",
+												"properties": {
+													"stage": {
+														"type": "array",
+														"minItems": 1,
+														"items": {
+															"enum": [
+																"saved",
+																"applied",
+																"screening",
+																"interview",
+																"offer",
+																"closed"
+															],
+															"type": "string"
+														},
+														"default": [
+															"saved",
+															"applied",
+															"screening",
+															"interview",
+															"offer"
+														]
+													},
+													"build": {
+														"type": "array",
+														"items": {
+															"enum": [
+																"none",
+																"build",
+																"building",
+																"built",
+																"failed"
+															],
+															"type": "string"
+														},
+														"default": []
+													},
+													"foundBy": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"lane": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"laneMode": {
+														"enum": [
+															"either",
+															"primary"
+														],
+														"type": "string",
+														"default": "either"
+													},
+													"fit": {
+														"enum": [
+															"80",
+															"85",
+															"90",
+															"95",
+															"any",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"tfit": {
+														"enum": [
+															"60",
+															"70",
+															"80",
+															"any",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"source": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"resume": {
+														"enum": [
+															"any",
+															"linked",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"letter": {
+														"enum": [
+															"any",
+															"linked",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"attention": {
+														"type": "array",
+														"items": {
+															"enum": [
+																"no-reply",
+																"follow-up",
+																"interview",
+																"questions"
+															],
+															"type": "string"
+														},
+														"default": []
+													},
+													"added": {
+														"enum": [
+															"7",
+															"14",
+															"30",
+															"any"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"updated": {
+														"enum": [
+															"7",
+															"14",
+															"30",
+															"any"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"tag": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"notTag": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"tagMode": {
+														"enum": [
+															"any",
+															"all"
+														],
+														"type": "string",
+														"default": "any"
+													}
+												}
+											},
+											"layout": {
+												"type": "object",
+												"properties": {
+													"sort": {
+														"type": "object",
+														"properties": {
+															"sort": {
+																"enum": [
+																	"updated",
+																	"added",
+																	"applied",
+																	"next",
+																	"fit",
+																	"tfit",
+																	"role",
+																	"company"
+																],
+																"type": "string",
+																"default": "updated"
+															},
+															"dir": {
+																"enum": [
+																	"asc",
+																	"desc"
+																],
+																"type": "string",
+																"default": "desc"
+															}
+														}
+													},
+													"listColumns": {
+														"type": "array",
+														"maxItems": 15,
+														"items": {
+															"enum": [
+																"next",
+																"fit",
+																"tfit",
+																"build",
+																"stage",
+																"sent",
+																"foundBy",
+																"source",
+																"lane",
+																"salary",
+																"tags",
+																"followUp",
+																"applied",
+																"added",
+																"updated"
+															],
+															"type": "string"
+														}
+													}
+												},
+												"required": [
+													"sort",
+													"listColumns"
+												]
+											},
+											"isDefault": {
+												"type": "boolean"
+											},
+											"position": {
+												"type": "integer",
+												"minimum": -9007199254740991,
+												"maximum": 9007199254740991
+											},
+											"createdAt": {
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											"updatedAt": {
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											}
+										},
+										"required": [
+											"id",
+											"name",
+											"filters",
+											"layout",
+											"isDefault",
+											"position",
+											"createdAt",
+											"updatedAt"
+										]
+									}
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl \"https://allthat.work/api/openapi/applications/views\" --header \"x-api-key: <api-key>\""
+					}
+				]
+			},
+			"post": {
+				"operationId": "createApplicationView",
+				"summary": "Save a view",
+				"description": "Saves a view at the end of the list. Names are unique per user ignoring case (409 when taken), up to 50 views. Making it the default clears the previous default. Requires authentication.",
+				"tags": [
+					"Applications"
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 60
+									},
+									"filters": {
+										"type": "object",
+										"properties": {
+											"stage": {
+												"type": "array",
+												"minItems": 1,
+												"items": {
+													"enum": [
+														"saved",
+														"applied",
+														"screening",
+														"interview",
+														"offer",
+														"closed"
+													],
+													"type": "string"
+												},
+												"default": [
+													"saved",
+													"applied",
+													"screening",
+													"interview",
+													"offer"
+												]
+											},
+											"build": {
+												"type": "array",
+												"items": {
+													"enum": [
+														"none",
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												"default": []
+											},
+											"foundBy": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"lane": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"laneMode": {
+												"enum": [
+													"either",
+													"primary"
+												],
+												"type": "string",
+												"default": "either"
+											},
+											"fit": {
+												"enum": [
+													"80",
+													"85",
+													"90",
+													"95",
+													"any",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"tfit": {
+												"enum": [
+													"60",
+													"70",
+													"80",
+													"any",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"source": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"resume": {
+												"enum": [
+													"any",
+													"linked",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"letter": {
+												"enum": [
+													"any",
+													"linked",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"attention": {
+												"type": "array",
+												"items": {
+													"enum": [
+														"no-reply",
+														"follow-up",
+														"interview",
+														"questions"
+													],
+													"type": "string"
+												},
+												"default": []
+											},
+											"added": {
+												"enum": [
+													"7",
+													"14",
+													"30",
+													"any"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"updated": {
+												"enum": [
+													"7",
+													"14",
+													"30",
+													"any"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"tag": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"notTag": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"tagMode": {
+												"enum": [
+													"any",
+													"all"
+												],
+												"type": "string",
+												"default": "any"
+											}
+										}
+									},
+									"layout": {
+										"type": "object",
+										"properties": {
+											"sort": {
+												"type": "object",
+												"properties": {
+													"sort": {
+														"enum": [
+															"updated",
+															"added",
+															"applied",
+															"next",
+															"fit",
+															"tfit",
+															"role",
+															"company"
+														],
+														"type": "string",
+														"default": "updated"
+													},
+													"dir": {
+														"enum": [
+															"asc",
+															"desc"
+														],
+														"type": "string",
+														"default": "desc"
+													}
+												}
+											},
+											"listColumns": {
+												"type": "array",
+												"maxItems": 15,
+												"items": {
+													"enum": [
+														"next",
+														"fit",
+														"tfit",
+														"build",
+														"stage",
+														"sent",
+														"foundBy",
+														"source",
+														"lane",
+														"salary",
+														"tags",
+														"followUp",
+														"applied",
+														"added",
+														"updated"
+													],
+													"type": "string"
+												}
+											}
+										},
+										"required": [
+											"sort",
+											"listColumns"
+										]
+									},
+									"isDefault": {
+										"type": "boolean",
+										"description": "Open Applications with this view in a new tab."
+									}
+								},
+								"required": [
+									"name",
+									"filters",
+									"layout"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "The new view.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "string"
+										},
+										"name": {
+											"type": "string"
+										},
+										"filters": {
+											"type": "object",
+											"properties": {
+												"stage": {
+													"type": "array",
+													"minItems": 1,
+													"items": {
+														"enum": [
+															"saved",
+															"applied",
+															"screening",
+															"interview",
+															"offer",
+															"closed"
+														],
+														"type": "string"
+													},
+													"default": [
+														"saved",
+														"applied",
+														"screening",
+														"interview",
+														"offer"
+													]
+												},
+												"build": {
+													"type": "array",
+													"items": {
+														"enum": [
+															"none",
+															"build",
+															"building",
+															"built",
+															"failed"
+														],
+														"type": "string"
+													},
+													"default": []
+												},
+												"foundBy": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"lane": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"laneMode": {
+													"enum": [
+														"either",
+														"primary"
+													],
+													"type": "string",
+													"default": "either"
+												},
+												"fit": {
+													"enum": [
+														"80",
+														"85",
+														"90",
+														"95",
+														"any",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"tfit": {
+													"enum": [
+														"60",
+														"70",
+														"80",
+														"any",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"source": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"resume": {
+													"enum": [
+														"any",
+														"linked",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"letter": {
+													"enum": [
+														"any",
+														"linked",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"attention": {
+													"type": "array",
+													"items": {
+														"enum": [
+															"no-reply",
+															"follow-up",
+															"interview",
+															"questions"
+														],
+														"type": "string"
+													},
+													"default": []
+												},
+												"added": {
+													"enum": [
+														"7",
+														"14",
+														"30",
+														"any"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"updated": {
+													"enum": [
+														"7",
+														"14",
+														"30",
+														"any"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"tag": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"notTag": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"tagMode": {
+													"enum": [
+														"any",
+														"all"
+													],
+													"type": "string",
+													"default": "any"
+												}
+											}
+										},
+										"layout": {
+											"type": "object",
+											"properties": {
+												"sort": {
+													"type": "object",
+													"properties": {
+														"sort": {
+															"enum": [
+																"updated",
+																"added",
+																"applied",
+																"next",
+																"fit",
+																"tfit",
+																"role",
+																"company"
+															],
+															"type": "string",
+															"default": "updated"
+														},
+														"dir": {
+															"enum": [
+																"asc",
+																"desc"
+															],
+															"type": "string",
+															"default": "desc"
+														}
+													}
+												},
+												"listColumns": {
+													"type": "array",
+													"maxItems": 15,
+													"items": {
+														"enum": [
+															"next",
+															"fit",
+															"tfit",
+															"build",
+															"stage",
+															"sent",
+															"foundBy",
+															"source",
+															"lane",
+															"salary",
+															"tags",
+															"followUp",
+															"applied",
+															"added",
+															"updated"
+														],
+														"type": "string"
+													}
+												}
+											},
+											"required": [
+												"sort",
+												"listColumns"
+											]
+										},
+										"isDefault": {
+											"type": "boolean"
+										},
+										"position": {
+											"type": "integer",
+											"minimum": -9007199254740991,
+											"maximum": 9007199254740991
+										},
+										"createdAt": {
+											"type": "string",
+											"format": "date-time",
+											"x-native-type": "date"
+										},
+										"updatedAt": {
+											"type": "string",
+											"format": "date-time",
+											"x-native-type": "date"
+										}
+									},
+									"required": [
+										"id",
+										"name",
+										"filters",
+										"layout",
+										"isDefault",
+										"position",
+										"createdAt",
+										"updatedAt"
+									]
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request POST \"https://allthat.work/api/openapi/applications/views\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"name\": \"<string>\",\n  \"filters\": {},\n  \"layout\": {\n    \"sort\": {},\n    \"listColumns\": [\n      \"next\"\n    ]\n  }\n}'"
+					}
+				]
+			}
+		},
+		"/applications/views/{id}": {
+			"put": {
+				"operationId": "updateApplicationView",
+				"summary": "Update a saved view",
+				"description": "Renames a view, replaces its filters or layout, or sets or clears it as the default. Only given fields change. Requires authentication.",
+				"tags": [
+					"Applications"
+				],
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 64,
+							"description": "The view's ID."
+						}
+					}
+				],
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"name": {
+										"type": "string",
+										"minLength": 1,
+										"maxLength": 60
+									},
+									"filters": {
+										"type": "object",
+										"properties": {
+											"stage": {
+												"type": "array",
+												"minItems": 1,
+												"items": {
+													"enum": [
+														"saved",
+														"applied",
+														"screening",
+														"interview",
+														"offer",
+														"closed"
+													],
+													"type": "string"
+												},
+												"default": [
+													"saved",
+													"applied",
+													"screening",
+													"interview",
+													"offer"
+												]
+											},
+											"build": {
+												"type": "array",
+												"items": {
+													"enum": [
+														"none",
+														"build",
+														"building",
+														"built",
+														"failed"
+													],
+													"type": "string"
+												},
+												"default": []
+											},
+											"foundBy": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"lane": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"laneMode": {
+												"enum": [
+													"either",
+													"primary"
+												],
+												"type": "string",
+												"default": "either"
+											},
+											"fit": {
+												"enum": [
+													"80",
+													"85",
+													"90",
+													"95",
+													"any",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"tfit": {
+												"enum": [
+													"60",
+													"70",
+													"80",
+													"any",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"source": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"resume": {
+												"enum": [
+													"any",
+													"linked",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"letter": {
+												"enum": [
+													"any",
+													"linked",
+													"none"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"attention": {
+												"type": "array",
+												"items": {
+													"enum": [
+														"no-reply",
+														"follow-up",
+														"interview",
+														"questions"
+													],
+													"type": "string"
+												},
+												"default": []
+											},
+											"added": {
+												"enum": [
+													"7",
+													"14",
+													"30",
+													"any"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"updated": {
+												"enum": [
+													"7",
+													"14",
+													"30",
+													"any"
+												],
+												"type": "string",
+												"default": "any"
+											},
+											"tag": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"notTag": {
+												"type": "array",
+												"items": {
+													"type": "string"
+												},
+												"default": []
+											},
+											"tagMode": {
+												"enum": [
+													"any",
+													"all"
+												],
+												"type": "string",
+												"default": "any"
+											}
+										}
+									},
+									"layout": {
+										"type": "object",
+										"properties": {
+											"sort": {
+												"type": "object",
+												"properties": {
+													"sort": {
+														"enum": [
+															"updated",
+															"added",
+															"applied",
+															"next",
+															"fit",
+															"tfit",
+															"role",
+															"company"
+														],
+														"type": "string",
+														"default": "updated"
+													},
+													"dir": {
+														"enum": [
+															"asc",
+															"desc"
+														],
+														"type": "string",
+														"default": "desc"
+													}
+												}
+											},
+											"listColumns": {
+												"type": "array",
+												"maxItems": 15,
+												"items": {
+													"enum": [
+														"next",
+														"fit",
+														"tfit",
+														"build",
+														"stage",
+														"sent",
+														"foundBy",
+														"source",
+														"lane",
+														"salary",
+														"tags",
+														"followUp",
+														"applied",
+														"added",
+														"updated"
+													],
+													"type": "string"
+												}
+											}
+										},
+										"required": [
+											"sort",
+											"listColumns"
+										]
+									},
+									"isDefault": {
+										"type": "boolean"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "The updated view.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "string"
+										},
+										"name": {
+											"type": "string"
+										},
+										"filters": {
+											"type": "object",
+											"properties": {
+												"stage": {
+													"type": "array",
+													"minItems": 1,
+													"items": {
+														"enum": [
+															"saved",
+															"applied",
+															"screening",
+															"interview",
+															"offer",
+															"closed"
+														],
+														"type": "string"
+													},
+													"default": [
+														"saved",
+														"applied",
+														"screening",
+														"interview",
+														"offer"
+													]
+												},
+												"build": {
+													"type": "array",
+													"items": {
+														"enum": [
+															"none",
+															"build",
+															"building",
+															"built",
+															"failed"
+														],
+														"type": "string"
+													},
+													"default": []
+												},
+												"foundBy": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"lane": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"laneMode": {
+													"enum": [
+														"either",
+														"primary"
+													],
+													"type": "string",
+													"default": "either"
+												},
+												"fit": {
+													"enum": [
+														"80",
+														"85",
+														"90",
+														"95",
+														"any",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"tfit": {
+													"enum": [
+														"60",
+														"70",
+														"80",
+														"any",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"source": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"resume": {
+													"enum": [
+														"any",
+														"linked",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"letter": {
+													"enum": [
+														"any",
+														"linked",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"attention": {
+													"type": "array",
+													"items": {
+														"enum": [
+															"no-reply",
+															"follow-up",
+															"interview",
+															"questions"
+														],
+														"type": "string"
+													},
+													"default": []
+												},
+												"added": {
+													"enum": [
+														"7",
+														"14",
+														"30",
+														"any"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"updated": {
+													"enum": [
+														"7",
+														"14",
+														"30",
+														"any"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"tag": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"notTag": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"tagMode": {
+													"enum": [
+														"any",
+														"all"
+													],
+													"type": "string",
+													"default": "any"
+												}
+											}
+										},
+										"layout": {
+											"type": "object",
+											"properties": {
+												"sort": {
+													"type": "object",
+													"properties": {
+														"sort": {
+															"enum": [
+																"updated",
+																"added",
+																"applied",
+																"next",
+																"fit",
+																"tfit",
+																"role",
+																"company"
+															],
+															"type": "string",
+															"default": "updated"
+														},
+														"dir": {
+															"enum": [
+																"asc",
+																"desc"
+															],
+															"type": "string",
+															"default": "desc"
+														}
+													}
+												},
+												"listColumns": {
+													"type": "array",
+													"maxItems": 15,
+													"items": {
+														"enum": [
+															"next",
+															"fit",
+															"tfit",
+															"build",
+															"stage",
+															"sent",
+															"foundBy",
+															"source",
+															"lane",
+															"salary",
+															"tags",
+															"followUp",
+															"applied",
+															"added",
+															"updated"
+														],
+														"type": "string"
+													}
+												}
+											},
+											"required": [
+												"sort",
+												"listColumns"
+											]
+										},
+										"isDefault": {
+											"type": "boolean"
+										},
+										"position": {
+											"type": "integer",
+											"minimum": -9007199254740991,
+											"maximum": 9007199254740991
+										},
+										"createdAt": {
+											"type": "string",
+											"format": "date-time",
+											"x-native-type": "date"
+										},
+										"updatedAt": {
+											"type": "string",
+											"format": "date-time",
+											"x-native-type": "date"
+										}
+									},
+									"required": [
+										"id",
+										"name",
+										"filters",
+										"layout",
+										"isDefault",
+										"position",
+										"createdAt",
+										"updatedAt"
+									]
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request PUT \"https://allthat.work/api/openapi/applications/views/<id>\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{}'"
+					}
+				]
+			},
+			"delete": {
+				"operationId": "deleteApplicationView",
+				"summary": "Delete a saved view",
+				"description": "Deletes one saved view and returns it. Requires authentication.",
+				"tags": [
+					"Applications"
+				],
+				"parameters": [
+					{
+						"name": "id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string",
+							"minLength": 1,
+							"maxLength": 64,
+							"description": "The view's ID."
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The deleted view.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"id": {
+											"type": "string"
+										},
+										"name": {
+											"type": "string"
+										},
+										"filters": {
+											"type": "object",
+											"properties": {
+												"stage": {
+													"type": "array",
+													"minItems": 1,
+													"items": {
+														"enum": [
+															"saved",
+															"applied",
+															"screening",
+															"interview",
+															"offer",
+															"closed"
+														],
+														"type": "string"
+													},
+													"default": [
+														"saved",
+														"applied",
+														"screening",
+														"interview",
+														"offer"
+													]
+												},
+												"build": {
+													"type": "array",
+													"items": {
+														"enum": [
+															"none",
+															"build",
+															"building",
+															"built",
+															"failed"
+														],
+														"type": "string"
+													},
+													"default": []
+												},
+												"foundBy": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"lane": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"laneMode": {
+													"enum": [
+														"either",
+														"primary"
+													],
+													"type": "string",
+													"default": "either"
+												},
+												"fit": {
+													"enum": [
+														"80",
+														"85",
+														"90",
+														"95",
+														"any",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"tfit": {
+													"enum": [
+														"60",
+														"70",
+														"80",
+														"any",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"source": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"resume": {
+													"enum": [
+														"any",
+														"linked",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"letter": {
+													"enum": [
+														"any",
+														"linked",
+														"none"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"attention": {
+													"type": "array",
+													"items": {
+														"enum": [
+															"no-reply",
+															"follow-up",
+															"interview",
+															"questions"
+														],
+														"type": "string"
+													},
+													"default": []
+												},
+												"added": {
+													"enum": [
+														"7",
+														"14",
+														"30",
+														"any"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"updated": {
+													"enum": [
+														"7",
+														"14",
+														"30",
+														"any"
+													],
+													"type": "string",
+													"default": "any"
+												},
+												"tag": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"notTag": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": []
+												},
+												"tagMode": {
+													"enum": [
+														"any",
+														"all"
+													],
+													"type": "string",
+													"default": "any"
+												}
+											}
+										},
+										"layout": {
+											"type": "object",
+											"properties": {
+												"sort": {
+													"type": "object",
+													"properties": {
+														"sort": {
+															"enum": [
+																"updated",
+																"added",
+																"applied",
+																"next",
+																"fit",
+																"tfit",
+																"role",
+																"company"
+															],
+															"type": "string",
+															"default": "updated"
+														},
+														"dir": {
+															"enum": [
+																"asc",
+																"desc"
+															],
+															"type": "string",
+															"default": "desc"
+														}
+													}
+												},
+												"listColumns": {
+													"type": "array",
+													"maxItems": 15,
+													"items": {
+														"enum": [
+															"next",
+															"fit",
+															"tfit",
+															"build",
+															"stage",
+															"sent",
+															"foundBy",
+															"source",
+															"lane",
+															"salary",
+															"tags",
+															"followUp",
+															"applied",
+															"added",
+															"updated"
+														],
+														"type": "string"
+													}
+												}
+											},
+											"required": [
+												"sort",
+												"listColumns"
+											]
+										},
+										"isDefault": {
+											"type": "boolean"
+										},
+										"position": {
+											"type": "integer",
+											"minimum": -9007199254740991,
+											"maximum": 9007199254740991
+										},
+										"createdAt": {
+											"type": "string",
+											"format": "date-time",
+											"x-native-type": "date"
+										},
+										"updatedAt": {
+											"type": "string",
+											"format": "date-time",
+											"x-native-type": "date"
+										}
+									},
+									"required": [
+										"id",
+										"name",
+										"filters",
+										"layout",
+										"isDefault",
+										"position",
+										"createdAt",
+										"updatedAt"
+									]
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request DELETE \"https://allthat.work/api/openapi/applications/views/<id>\" --header \"x-api-key: <api-key>\""
+					}
+				]
+			}
+		},
+		"/applications/views/reorder": {
+			"post": {
+				"operationId": "reorderApplicationViews",
+				"summary": "Reorder saved views",
+				"description": "Puts the user's views in the given order. Views left out keep their order after the listed ones. Requires authentication.",
+				"tags": [
+					"Applications"
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"ids": {
+										"type": "array",
+										"maxItems": 100,
+										"items": {
+											"type": "string",
+											"minLength": 1,
+											"maxLength": 64,
+											"description": "The view's ID."
+										}
+									}
+								},
+								"required": [
+									"ids"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "The views in their new order.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"id": {
+												"type": "string"
+											},
+											"name": {
+												"type": "string"
+											},
+											"filters": {
+												"type": "object",
+												"properties": {
+													"stage": {
+														"type": "array",
+														"minItems": 1,
+														"items": {
+															"enum": [
+																"saved",
+																"applied",
+																"screening",
+																"interview",
+																"offer",
+																"closed"
+															],
+															"type": "string"
+														},
+														"default": [
+															"saved",
+															"applied",
+															"screening",
+															"interview",
+															"offer"
+														]
+													},
+													"build": {
+														"type": "array",
+														"items": {
+															"enum": [
+																"none",
+																"build",
+																"building",
+																"built",
+																"failed"
+															],
+															"type": "string"
+														},
+														"default": []
+													},
+													"foundBy": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"lane": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"laneMode": {
+														"enum": [
+															"either",
+															"primary"
+														],
+														"type": "string",
+														"default": "either"
+													},
+													"fit": {
+														"enum": [
+															"80",
+															"85",
+															"90",
+															"95",
+															"any",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"tfit": {
+														"enum": [
+															"60",
+															"70",
+															"80",
+															"any",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"source": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"resume": {
+														"enum": [
+															"any",
+															"linked",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"letter": {
+														"enum": [
+															"any",
+															"linked",
+															"none"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"attention": {
+														"type": "array",
+														"items": {
+															"enum": [
+																"no-reply",
+																"follow-up",
+																"interview",
+																"questions"
+															],
+															"type": "string"
+														},
+														"default": []
+													},
+													"added": {
+														"enum": [
+															"7",
+															"14",
+															"30",
+															"any"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"updated": {
+														"enum": [
+															"7",
+															"14",
+															"30",
+															"any"
+														],
+														"type": "string",
+														"default": "any"
+													},
+													"tag": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"notTag": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": []
+													},
+													"tagMode": {
+														"enum": [
+															"any",
+															"all"
+														],
+														"type": "string",
+														"default": "any"
+													}
+												}
+											},
+											"layout": {
+												"type": "object",
+												"properties": {
+													"sort": {
+														"type": "object",
+														"properties": {
+															"sort": {
+																"enum": [
+																	"updated",
+																	"added",
+																	"applied",
+																	"next",
+																	"fit",
+																	"tfit",
+																	"role",
+																	"company"
+																],
+																"type": "string",
+																"default": "updated"
+															},
+															"dir": {
+																"enum": [
+																	"asc",
+																	"desc"
+																],
+																"type": "string",
+																"default": "desc"
+															}
+														}
+													},
+													"listColumns": {
+														"type": "array",
+														"maxItems": 15,
+														"items": {
+															"enum": [
+																"next",
+																"fit",
+																"tfit",
+																"build",
+																"stage",
+																"sent",
+																"foundBy",
+																"source",
+																"lane",
+																"salary",
+																"tags",
+																"followUp",
+																"applied",
+																"added",
+																"updated"
+															],
+															"type": "string"
+														}
+													}
+												},
+												"required": [
+													"sort",
+													"listColumns"
+												]
+											},
+											"isDefault": {
+												"type": "boolean"
+											},
+											"position": {
+												"type": "integer",
+												"minimum": -9007199254740991,
+												"maximum": 9007199254740991
+											},
+											"createdAt": {
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											"updatedAt": {
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											}
+										},
+										"required": [
+											"id",
+											"name",
+											"filters",
+											"layout",
+											"isDefault",
+											"position",
+											"createdAt",
+											"updatedAt"
+										]
+									}
+								}
+							}
+						}
+					},
+					"default": {
+						"description": "Structured API error. See status and code; do not branch on message text.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"required": [
+										"defined",
+										"code",
+										"status",
+										"message"
+									],
+									"properties": {
+										"defined": {
+											"type": "boolean"
+										},
+										"code": {
+											"type": "string"
+										},
+										"status": {
+											"type": "integer"
+										},
+										"message": {
+											"type": "string"
+										},
+										"data": {}
+									}
+								}
+							}
+						}
+					}
+				},
+				"security": [
+					{
+						"apiKey": []
+					},
+					{
+						"bearerAuth": []
+					},
+					{
+						"cookieAuth": []
+					}
+				],
+				"x-codeSamples": [
+					{
+						"lang": "bash",
+						"label": "cURL",
+						"source": "curl --request POST \"https://allthat.work/api/openapi/applications/views/reorder\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"ids\": [\n    \"<string>\"\n  ]\n}'"
+					}
+				]
+			}
+		},
 		"/auth/profile": {
 			"get": {
 				"operationId": "getProfile",
@@ -37726,6 +39943,21 @@
 													"type": "string",
 													"format": "date-time",
 													"x-native-type": "date"
+												},
+												"applicationsLayout": {
+													"anyOf": [
+														{
+															"type": "object",
+															"propertyNames": {
+																"type": "string"
+															},
+															"additionalProperties": {}
+														},
+														{
+															"type": "null"
+														}
+													],
+													"description": "How the Applications screen is laid out: List columns, Board column width and sort."
 												}
 											},
 											"required": [
@@ -37740,7 +39972,8 @@
 												"interviewReminders",
 												"emailVerified",
 												"createdAt",
-												"updatedAt"
+												"updatedAt",
+												"applicationsLayout"
 											]
 										},
 										"resumes": {
@@ -43568,6 +45801,275 @@
 												]
 											}
 										},
+										"applicationViews": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"id": {
+														"type": "string"
+													},
+													"name": {
+														"type": "string"
+													},
+													"filters": {
+														"type": "object",
+														"properties": {
+															"stage": {
+																"type": "array",
+																"minItems": 1,
+																"items": {
+																	"enum": [
+																		"saved",
+																		"applied",
+																		"screening",
+																		"interview",
+																		"offer",
+																		"closed"
+																	],
+																	"type": "string"
+																},
+																"default": [
+																	"saved",
+																	"applied",
+																	"screening",
+																	"interview",
+																	"offer"
+																]
+															},
+															"build": {
+																"type": "array",
+																"items": {
+																	"enum": [
+																		"none",
+																		"build",
+																		"building",
+																		"built",
+																		"failed"
+																	],
+																	"type": "string"
+																},
+																"default": []
+															},
+															"foundBy": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																},
+																"default": []
+															},
+															"lane": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																},
+																"default": []
+															},
+															"laneMode": {
+																"enum": [
+																	"either",
+																	"primary"
+																],
+																"type": "string",
+																"default": "either"
+															},
+															"fit": {
+																"enum": [
+																	"80",
+																	"85",
+																	"90",
+																	"95",
+																	"any",
+																	"none"
+																],
+																"type": "string",
+																"default": "any"
+															},
+															"tfit": {
+																"enum": [
+																	"60",
+																	"70",
+																	"80",
+																	"any",
+																	"none"
+																],
+																"type": "string",
+																"default": "any"
+															},
+															"source": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																},
+																"default": []
+															},
+															"resume": {
+																"enum": [
+																	"any",
+																	"linked",
+																	"none"
+																],
+																"type": "string",
+																"default": "any"
+															},
+															"letter": {
+																"enum": [
+																	"any",
+																	"linked",
+																	"none"
+																],
+																"type": "string",
+																"default": "any"
+															},
+															"attention": {
+																"type": "array",
+																"items": {
+																	"enum": [
+																		"no-reply",
+																		"follow-up",
+																		"interview",
+																		"questions"
+																	],
+																	"type": "string"
+																},
+																"default": []
+															},
+															"added": {
+																"enum": [
+																	"7",
+																	"14",
+																	"30",
+																	"any"
+																],
+																"type": "string",
+																"default": "any"
+															},
+															"updated": {
+																"enum": [
+																	"7",
+																	"14",
+																	"30",
+																	"any"
+																],
+																"type": "string",
+																"default": "any"
+															},
+															"tag": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																},
+																"default": []
+															},
+															"notTag": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																},
+																"default": []
+															},
+															"tagMode": {
+																"enum": [
+																	"any",
+																	"all"
+																],
+																"type": "string",
+																"default": "any"
+															}
+														}
+													},
+													"layout": {
+														"type": "object",
+														"properties": {
+															"sort": {
+																"type": "object",
+																"properties": {
+																	"sort": {
+																		"enum": [
+																			"updated",
+																			"added",
+																			"applied",
+																			"next",
+																			"fit",
+																			"tfit",
+																			"role",
+																			"company"
+																		],
+																		"type": "string",
+																		"default": "updated"
+																	},
+																	"dir": {
+																		"enum": [
+																			"asc",
+																			"desc"
+																		],
+																		"type": "string",
+																		"default": "desc"
+																	}
+																}
+															},
+															"listColumns": {
+																"type": "array",
+																"maxItems": 15,
+																"items": {
+																	"enum": [
+																		"next",
+																		"fit",
+																		"tfit",
+																		"build",
+																		"stage",
+																		"sent",
+																		"foundBy",
+																		"source",
+																		"lane",
+																		"salary",
+																		"tags",
+																		"followUp",
+																		"applied",
+																		"added",
+																		"updated"
+																	],
+																	"type": "string"
+																}
+															}
+														},
+														"required": [
+															"sort",
+															"listColumns"
+														]
+													},
+													"isDefault": {
+														"type": "boolean"
+													},
+													"position": {
+														"type": "integer",
+														"minimum": -9007199254740991,
+														"maximum": 9007199254740991
+													},
+													"createdAt": {
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													},
+													"updatedAt": {
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													}
+												},
+												"required": [
+													"id",
+													"name",
+													"filters",
+													"layout",
+													"isDefault",
+													"position",
+													"createdAt",
+													"updatedAt"
+												]
+											},
+											"description": "Saved views of the Applications screen: filters, sort and List columns."
+										},
 										"directory": {
 											"type": "object",
 											"properties": {
@@ -46800,6 +49302,7 @@
 										"resumes",
 										"coverLetters",
 										"applications",
+										"applicationViews",
 										"directory",
 										"aiContentReports",
 										"career"
@@ -46920,11 +49423,16 @@
 												"linked": {
 													"type": "number",
 													"description": "Facts, stories, saved items, schedules and conversations tied to an application."
+												},
+												"views": {
+													"type": "number",
+													"description": "Saved views of the Applications screen."
 												}
 											},
 											"required": [
 												"applications",
-												"linked"
+												"linked",
+												"views"
 											]
 										},
 										"knowledge": {
@@ -47313,6 +49821,19 @@
 												},
 												"default": [],
 												"description": "applications.json."
+											},
+											"views": {
+												"type": "array",
+												"maxItems": 1000,
+												"items": {
+													"type": "object",
+													"propertyNames": {
+														"type": "string"
+													},
+													"additionalProperties": {}
+												},
+												"default": [],
+												"description": "application-views.json: saved views of the Applications screen."
 											},
 											"workspaces": {
 												"type": "array",
@@ -48110,10 +50631,11 @@
 															"unreadable",
 															"unlinked",
 															"exists",
-															"files"
+															"files",
+															"limit"
 														],
 														"type": "string",
-														"description": "unreadable: not valid; unlinked: tied to something not imported; exists: already in the account; files: the file isn't in the export."
+														"description": "unreadable: not valid; unlinked: tied to something not imported; exists: already in the account; files: the file isn't in the export; limit: over the account's limit (50 saved views)."
 													},
 													"count": {
 														"type": "integer",

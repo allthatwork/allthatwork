@@ -72,6 +72,10 @@ msgstr "\"{written}\" నైపుణ్యాలకు జోడించబడ
 msgid "“How did you measure the onboarding redesign?”"
 msgstr "“ఆన్‌బోర్డింగ్ రీడిజైన్‌ను మీరు ఎలా కొలిచారు?”"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "(edited)"
+msgstr ""
+
 #: src/features/career/knowledge/review.tsx
 msgid "(newer)"
 msgstr ""
@@ -275,6 +279,12 @@ msgstr "{0, plural, one {# అడ్డు వరుసలో కంపెనీ
 #: src/features/career/coach.tsx
 msgid "{0, plural, one {# saved offer} other {# saved offers}}"
 msgstr "{0, plural, one {సేవ్ చేసిన # ఆఫర్} other {సేవ్ చేసిన # ఆఫర్‌లు}}"
+
+#. placeholder {0}: counts.applications.views
+#. placeholder {0}: current.applications.views
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "{0, plural, one {# saved view} other {# saved views}}"
+msgstr ""
 
 #. placeholder {0}: counts.jobSearch.schedules
 #. placeholder {0}: current.jobSearch.schedules
@@ -698,6 +708,10 @@ msgstr "{count, plural, one {# ఎంట్రీ} other {# ఎంట్రీ�
 msgid "{count, plural, one {Apply # change} other {Apply # changes}}"
 msgstr "{count, plural, one {# మార్పును వర్తింపజేయి} other {# మార్పులను వర్తింపజేయి}}"
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "{count} of {APPLICATION_VIEWS_MAX} views. Names up to {APPLICATION_VIEW_NAME_MAX} characters."
+msgstr ""
+
 #: src/features/documents/documents-page.tsx
 msgid "{count} selected"
 msgstr "{count} ఎంచుకోబడ్డాయి"
@@ -766,6 +780,10 @@ msgstr "{facts, plural, one {# వాస్తవం} other {# వాస్త�
 #: src/features/resume/editor/check/check-panel.tsx
 msgid "{failing, plural, one {# to review} other {# to review}}"
 msgstr "{failing, plural, one {సమీక్షించడానికి #} other {సమీక్షించడానికి #}}"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "{field}, {lower}"
+msgstr ""
 
 #: src/features/career/knowledge/stories.tsx
 msgid "{filled} of 5 parts"
@@ -1278,6 +1296,14 @@ msgstr "మోడల్ అభిప్రాయం, తీర్పు కా�
 #: src/features/settings/account/security.tsx
 msgid "A name helps you tell passkeys apart, like \"Work laptop\"."
 msgstr "\"వర్క్ ల్యాప్‌టాప్\" వంటి పాస్‌కీలను వేరుగా చెప్పడంలో పేరు మీకు సహాయపడుతుంది."
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "A new tab opens with this view"
+msgstr ""
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "A new tab opens with this view. Click to clear."
+msgstr ""
 
 #: src/features/career/knowledge/review.tsx
 msgid "A newer fact replaces an older one"
@@ -1969,6 +1995,7 @@ msgstr "కుడికి సమలేఖనం"
 msgid "All"
 msgstr "అన్నీ"
 
+#: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
 msgid "All applications"
@@ -2908,6 +2935,7 @@ msgstr "సాఫ్ట్‌వేర్ మీ రెజ్యూమెను 
 #: src/features/applications/components/export-applications-sheet.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/career/knowledge/budget.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import.tsx
@@ -3386,6 +3414,7 @@ msgstr "కాలమ్ {header}కి వెళుతుంది"
 
 #: src/features/applications/components/columns-button.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/resume/editor/write/section-row.tsx
 msgid "Columns"
 msgstr "నిలువు వరుసలు"
@@ -4214,6 +4243,11 @@ msgstr "ట్యాగ్‌లను సేవ్ చేయడం సాధ్
 msgid "Couldn't save the timezone."
 msgstr "టైమ్ జోన్‌ను సేవ్ చేయడం సాధ్యపడలేదు."
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+#: src/routes/dashboard/applications/index.tsx
+msgid "Couldn't save the view. Try again."
+msgstr ""
+
 #: src/features/career/knowledge/import.tsx
 msgid "Couldn't save this correction. Your edit is still here; try again."
 msgstr ""
@@ -4623,6 +4657,7 @@ msgstr "డిగ్రీ"
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/assistant/assistant-panel.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/schedule-sheet.tsx
@@ -4763,6 +4798,10 @@ msgstr "తొలగించబడింది"
 msgid "Deleted “{0}”"
 msgstr "\"{0}\" తొలగించబడింది"
 
+#: src/routes/dashboard/applications/index.tsx
+msgid "Deleted “{name}”."
+msgstr ""
+
 #: src/features/resume/share/history-tab.tsx
 msgid "Deleted “{title}”"
 msgstr "\"{title}\" తొలగించబడింది"
@@ -4901,6 +4940,10 @@ msgstr "రెండు దశల ధృవీకరణను నిలిపి
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Discard"
 msgstr "విస్మరించండి"
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Discard changes"
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "Discard changes?"
@@ -5127,6 +5170,10 @@ msgstr "లాగండి · ⌥↑↓"
 #: src/routes/builder/$resumeId/-sidebar/right/sections/layout/pages.tsx
 msgid "Drag and drop sections here to move them between columns"
 msgstr "విభాగాలను ఇక్కడకి డ్రాగ్ చేసి వదలండి, వీటిని కాలమ్స్ మధ్యలో తరలించేందుకు"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Drag to reorder. The star marks the view a new tab opens with."
+msgstr ""
 
 #: src/features/applications/components/columns-button.tsx
 msgid "Drag to reorder. To resize, drag the line between two headings."
@@ -5885,7 +5932,12 @@ msgid "Filter by tag"
 msgstr "ట్యాగ్ ద్వారా ఫిల్టర్ చేయండి"
 
 #: src/features/applications/components/filters/filter-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 msgid "Filters"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "filters, sort and columns"
 msgstr ""
 
 #: src/features/directory/contact-picker.tsx
@@ -6920,6 +6972,10 @@ msgstr "ఎంచుకున్న పంక్తిని మెరుగు�
 msgid "Improving…"
 msgstr "మెరుగుపడుతోంది..."
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "in a new tab"
+msgstr ""
+
 #: src/features/career/knowledge/upkeep.tsx
 msgid "In a private group: “{quote}”"
 msgstr ""
@@ -7624,6 +7680,10 @@ msgstr "వదిలేయండి"
 msgid "Leave out titles with"
 msgstr ""
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Leave the view"
+msgstr ""
+
 #: src/features/homepage/sheet.tsx
 msgid "Led <0>user research</0> for the onboarding redesign; activation rose from 31% to 44%."
 msgstr "కొత్త వినియోగదారుల ప్రారంభ అనుభవాన్ని మళ్లీ రూపొందించడానికి <0>వినియోగదారు పరిశోధనకు</0> నాయకత్వం వహించాను; యాక్టివేషన్ రేటు 31% నుండి 44% కి పెరిగింది."
@@ -8129,6 +8189,10 @@ msgstr "మలయ్"
 msgid "Malayalam"
 msgstr "మలయాళం"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Manage views…"
+msgstr ""
+
 #: src/features/settings/ai/web-access.tsx
 msgid "Managed by server"
 msgstr "సర్వర్ ద్వారా నిర్వహించబడుతుంది"
@@ -8436,6 +8500,10 @@ msgstr "ఎక్కువగా చదవగలిగేది"
 msgid "Move {label}"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "Move {name}"
+msgstr ""
+
 #: src/features/ats-checker/messages.ts
 msgid "Move all content inside the page boundaries and re-export."
 msgstr "మొత్తం కంటెంట్‌ను పేజీ హద్దుల లోపలికి తరలించి, తిరిగి ఎగుమతి చేయండి."
@@ -8548,6 +8616,8 @@ msgstr "సపోర్ట్ పనిని పెంచకుండా, క�
 
 #. Label for full name input on registration form
 #: src/dialogs/resume/index.tsx
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/auth/pages/register.tsx
 #: src/features/directory/lists.tsx
 #: src/features/directory/page.tsx
@@ -9149,6 +9219,10 @@ msgstr "ఈ ఫైల్ నుండి టెక్స్ట్ చదవల�
 msgid "No timezone matches."
 msgstr "ఏ టైమ్ జోన్ సరిపోలలేదు."
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
+msgid "No views yet."
+msgstr ""
+
 #: src/features/resume/editor/check/issues.ts
 msgid "No work experience shows"
 msgstr "పని అనుభవం చూపడం లేదు"
@@ -9170,6 +9244,10 @@ msgstr "ఏదీ లేదు"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "None yet"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "None, all open applications"
 msgstr ""
 
 #: src/features/resume/editor/design/fit.ts
@@ -9633,6 +9711,11 @@ msgstr "{title}ని తెరవండి"
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "Open AI settings"
 msgstr "AI సెట్టింగ్‌లను తెరవండి"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Open Applications with this view"
+msgstr ""
 
 #: src/features/career/today.tsx
 msgid "Open briefing"
@@ -10894,6 +10977,10 @@ msgstr "మద్దతు ఉన్న పబ్లిక్ జాబ్ ప�
 msgid "Ready"
 msgstr "సిద్ధంగా ఉంది"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Ready to apply"
+msgstr ""
+
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Reason"
 msgstr "కారణం"
@@ -11185,6 +11272,7 @@ msgstr ""
 msgid "Removing copies"
 msgstr ""
 
+#: src/features/applications/components/views/manage-views-sheet.tsx
 #: src/features/career/coach.tsx
 #: src/features/documents/document-actions.tsx
 #: src/features/settings/account/security.tsx
@@ -11598,6 +11686,7 @@ msgstr "ఇప్పుడే"
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/applications/components/interview-dialog.tsx
 #: src/features/applications/components/list-view.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/applications/sort.ts
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Role"
@@ -11762,9 +11851,17 @@ msgstr "సేవ్ చేసి పరీక్షించండి"
 msgid "Save another offer to compare"
 msgstr "పోల్చడానికి మరో ఆఫర్‌ను సేవ్ చేయండి"
 
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save as a view"
+msgstr ""
+
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save as application…"
 msgstr "జాబ్ అప్లికేషన్‌గా సేవ్ చేయండి..."
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save as new view…"
+msgstr ""
 
 #: src/features/applications/components/application-form-sheet.tsx
 msgid "Save changes"
@@ -11816,6 +11913,10 @@ msgstr "కథను సేవ్ చేయి"
 msgid "Save the file with every page upright."
 msgstr "ప్రతి పేజీ నిటారుగా ఉండేలా ఫైల్‌ను సేవ్ చేయండి."
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Save the filters, sort and columns you use often as a view, and come back to them in one click."
+msgstr ""
+
 #: src/features/career/workspace/messages.tsx
 msgid "Save these offer terms to compare"
 msgstr "పోల్చడానికి ఈ ఆఫర్ నిబంధనలను సేవ్ చేయండి"
@@ -11828,6 +11929,10 @@ msgstr "నాలెడ్జ్‌లో సేవ్ చేయి"
 #: src/features/resume/editor/check/job-match.tsx
 msgid "Save to the application"
 msgstr "జాబ్ అప్లికేషన్‌లో సేవ్ చేయండి"
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Save view"
+msgstr ""
 
 #: src/features/resume/share/format.ts
 msgid "saved"
@@ -11852,6 +11957,10 @@ msgstr "సేవ్ చేయబడింది"
 #: src/features/homepage/write.tsx
 msgid "Saved · version {version}"
 msgstr "సేవ్ చేయబడింది · వెర్షన్ {version}"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Saved “{saved}”."
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Saved “{trimmed}”"
@@ -11916,6 +12025,14 @@ msgstr "నాలెడ్జ్‌లో సేవ్ చేయబడింద�
 #: src/features/career/workspace/practise.tsx
 msgid "Saved to Saved · Practice"
 msgstr "‘సేవ్ చేయబడింది’ · సాధనలో సేవ్ చేయబడింది"
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "Saved views"
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "Saves the filters, sort and List columns you have now."
+msgstr ""
 
 #. placeholder {0}: window.location.host
 #: src/features/resume/share/link-tab.tsx
@@ -12875,6 +12992,7 @@ msgid "Soonest first"
 msgstr ""
 
 #: src/features/applications/components/sort-button.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/documents/documents-page.tsx
 msgid "Sort"
 msgstr "క్రమబద్ధీకరించు"
@@ -14678,6 +14796,7 @@ msgstr "లింక్‌లను అండర్లైన్ చేయండ�
 #: src/routes/builder/$resumeId/-components/design-panel.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
 #: src/routes/builder/letter/-components/letter-bar.tsx
+#: src/routes/dashboard/applications/index.tsx
 msgid "Undo"
 msgstr "రద్దు చేయి"
 
@@ -14758,6 +14877,10 @@ msgstr "25 MB వరకు · మీ బ్రౌజర్‌లో తనిఖ
 msgid "Upcoming interviews"
 msgstr "రాబోయే ఇంటర్వ్యూలు"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "Update “{name}”"
+msgstr ""
+
 #. placeholder {0}: candidate.name
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Update {0}"
@@ -14788,6 +14911,10 @@ msgstr "మీ పాస్‌వర్డ్‌ను నవీకరించ�
 #: src/features/applications/sort.ts
 msgid "Updated"
 msgstr "నవీకరించబడింది"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "Updated “{name}”."
+msgstr ""
 
 #. placeholder {0}: result.updated
 #: src/features/applications/components/list-view.tsx
@@ -15123,6 +15250,14 @@ msgstr ""
 msgid "View posting"
 msgstr "ఉద్యోగ పోస్టింగ్‌ని వీక్షించండి"
 
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: {name}"
+msgstr ""
+
+#: src/features/applications/components/views/views-button.tsx
+msgid "View: <0>{name}</0>"
+msgstr ""
+
 #. placeholder {0}: formatVersionTime(viewing.createdAt, i18n.locale)
 #. placeholder {0}: when(selected)
 #. placeholder {1}: getVersionTitle(selected)
@@ -15132,6 +15267,11 @@ msgstr "ఉద్యోగ పోస్టింగ్‌ని వీక్ష�
 #: src/routes/builder/letter/-components/letter-page.tsx
 msgid "Viewing {0} · {1} · read-only"
 msgstr "{0} · {1} · చదవడానికి మాత్రమే వీక్షిస్తున్నారు"
+
+#: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/views-button.tsx
+msgid "Views"
+msgstr ""
 
 #: src/features/resume/share/link-tab.tsx
 msgid "views · 30 days"
@@ -15309,6 +15449,10 @@ msgstr "బాగా జరిగింది"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "were already in your account"
+msgstr ""
+
+#: src/features/settings/account/import/import-account-dialog.tsx
+msgid "were over the limit of 50"
 msgstr ""
 
 #: src/features/resume/editor/check/page-layer.tsx
@@ -15715,6 +15859,14 @@ msgstr "నిన్న {time}"
 #: src/features/career/coach.tsx
 msgid "You"
 msgstr "మీరు"
+
+#: src/routes/dashboard/applications/index.tsx
+msgid "You already have a view called “{name}”."
+msgstr ""
+
+#: src/features/applications/components/views/save-view-dialog.tsx
+msgid "You already have a view called “{taken}”. Pick another name, or use Update in the Views menu."
+msgstr ""
 
 #: src/features/career/schedule-sheet.tsx
 msgid "You already have a Watched companies schedule. Edit that one instead."

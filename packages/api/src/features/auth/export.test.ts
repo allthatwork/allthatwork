@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
 	getLetter: vi.fn(),
 	exportCareer: vi.fn(),
 	exportDirectory: vi.fn().mockResolvedValue({ companies: [], contacts: [], employment: [], notes: [] }),
+	listViews: vi.fn(),
 }));
 vi.mock("@reactive-resume/db/client", () => ({ db: { select: mocks.select } }));
 vi.mock("@reactive-resume/db/schema", () => ({
@@ -24,6 +25,7 @@ vi.mock("../storage/service", () => ({ getStorageService: vi.fn() }));
 vi.mock("../cover-letters/service", () => ({ coverLetterService: { getById: mocks.getLetter } }));
 vi.mock("../career/service", () => ({ careerService: { exportData: mocks.exportCareer } }));
 vi.mock("../directory/service", () => ({ directoryService: { exportData: mocks.exportDirectory } }));
+vi.mock("../applications/views", () => ({ applicationViewService: { list: mocks.listViews } }));
 const { authService } = await import("./service");
 
 describe("account backup", () => {
@@ -78,6 +80,8 @@ describe("account backup", () => {
 				transcripts: [{ id: "transcript", original: "I lead the migration.", edited: "I led the migration." }],
 			};
 			mocks.exportCareer.mockResolvedValue(career);
+			const view = { id: "view", name: "Ready to apply", filters: {}, layout: {}, isDefault: true, position: 0 };
+			mocks.listViews.mockResolvedValue([view]);
 			const application = { id: "application", userId: "owner", company: "Lumen", role: "Designer" };
 			for (const rows of [
 				[{ id: "owner", name: "Owner" }],
@@ -101,6 +105,9 @@ describe("account backup", () => {
 			expect(exported.applications).toEqual([{ id: "application", company: "Lumen", role: "Designer" }]);
 			expect(mocks.predicates).toContainEqual({ column: "coverLetter.userId", value: "owner" });
 			expect(mocks.exportCareer).toHaveBeenCalledExactlyOnceWith("owner");
+			// Saved views come along beside the applications.
+			expect(mocks.listViews).toHaveBeenCalledExactlyOnceWith("owner");
+			expect(exported.applicationViews).toEqual([view]);
 			expect(exported.career).toEqual(career);
 			expect(mocks.exportDirectory).toHaveBeenCalledExactlyOnceWith("owner");
 			expect(exported.directory).toEqual({ companies: [], contacts: [], employment: [], notes: [] });

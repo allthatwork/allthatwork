@@ -6,6 +6,7 @@ import {
 	LIST_COLUMN_MAX_WIDTH,
 	LIST_COLUMN_WIDTHS,
 	readApplicationsLayout,
+	resolveColumnsWithWidths,
 	resolveListColumns,
 } from "./layout";
 
@@ -86,6 +87,29 @@ describe("resolveListColumns", () => {
 		expect(resolveListColumns({ listColumns: [{ id: "added" }, { id: "next", width: 240 }] })).toEqual([
 			{ id: "added", width: LIST_COLUMN_WIDTHS.added.width },
 			{ id: "next", width: 240 },
+		]);
+	});
+});
+
+describe("columnWidths", () => {
+	it("reads widths for any known column, clamped, and drops the rest", () => {
+		expect(readApplicationsLayout({ columnWidths: { lane: 300, fit: 1, nope: 100, tags: "wide" } })).toEqual({
+			columnWidths: { lane: 300, fit: LIST_COLUMN_WIDTHS.fit.min },
+		});
+	});
+
+	it("gives a column its list width first, then the kept width, then the starting width", () => {
+		const layout = {
+			listColumns: [{ id: "lane" as const, width: 222 }, { id: "fit" as const }],
+			columnWidths: { lane: 333, fit: 77 },
+		};
+		expect(resolveListColumns(layout)).toEqual([
+			{ id: "lane", width: 222 },
+			{ id: "fit", width: 77 },
+		]);
+		expect(resolveColumnsWithWidths(layout, ["tags", "lane"])).toEqual([
+			{ id: "tags", width: LIST_COLUMN_WIDTHS.tags.width },
+			{ id: "lane", width: 222 },
 		]);
 	});
 });

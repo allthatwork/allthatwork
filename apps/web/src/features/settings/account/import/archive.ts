@@ -13,6 +13,8 @@ export type AccountArchive = {
 	resumes: Rows;
 	letters: Rows;
 	applications: Rows;
+	/** Saved views of the Applications screen; exports from before them, and upstream's, have none. */
+	applicationViews: Rows;
 	directory?: { companies: Rows; contacts: Rows; employment: Rows; notes: Rows };
 	career: {
 		profile: Record<string, unknown> | null;
@@ -40,6 +42,7 @@ const MAX_ENTRIES = 20_000;
 const wanted = (name: string) =>
 	name === "account.json" ||
 	name === "applications.json" ||
+	name === "application-views.json" ||
 	name === "career.json" ||
 	name === "directory.json" ||
 	/^(resumes|letters)\/[^/]+\.json$/.test(name);
@@ -105,6 +108,7 @@ export function readAccountArchive(bytes: Uint8Array): AccountArchive {
 		resumes: documents("resumes"),
 		letters: documents("letters"),
 		applications: rows(json("applications.json")),
+		applicationViews: rows(json("application-views.json")),
 		directory: {
 			companies: rows(isRecord(directory) ? directory.companies : []),
 			contacts: rows(isRecord(directory) ? directory.contacts : []),
@@ -144,7 +148,7 @@ export function archiveCounts(archive: AccountArchive) {
 			contacts: archive.directory?.contacts.length ?? 0,
 		},
 		documents: { resumes: archive.resumes.length, letters: archive.letters.length },
-		applications: { applications: archive.applications.length },
+		applications: { applications: archive.applications.length, views: archive.applicationViews.length },
 		knowledge: {
 			facts: career.facts.filter((fact) => fact.status !== "forgotten").length,
 			stories: career.stories.length,

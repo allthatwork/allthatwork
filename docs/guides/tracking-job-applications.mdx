@@ -110,12 +110,26 @@ After the search box there's a button for each filter. Select one to open it, ti
 - Each option shows how many applications you'd get if you picked it, given the other filters. Options at 0 stay in the list, greyed.
 - A set filter turns blue and shows its value. Select its **×** to clear just that one. **Clear all**, at the end of the row, clears every filter and the search, and says how many applications show out of the total.
 - The filters are kept in the page address, so reloading, going back, a bookmark or a copied link keeps them.
-- The browser tab remembers its filters too: going to **Applications** from the sidebar, or back from an application's workspace, brings back the filters you last used in that tab. A new tab starts with the open stages only.
+- The browser tab remembers its filters too: going to **Applications** from the sidebar, or back from an application's workspace, brings back the filters you last used in that tab, and the saved view if one was on. A new tab opens your default view (see [Saved views](#saved-views)), or the open stages only without one.
 - If you change an application so it no longer matches (say you select **Build** on a card while showing **Build: Not queued**), it stays where it is, faded, with "Doesn't match the filters now", until you change the filters or reload. That way you can work through a filtered list without cards jumping away.
 - If nothing matches, select **Clear filters**.
 - On a phone, select **Filters** to open them all in one sheet. The filters you set show as chips under the search box, each with an **×**.
 
 The Board, List and Calendar follow the filters, and **Export to CSV** exports what they show. Insights always counts every application, so it hides the search and the filters.
+
+## Saved views
+
+A saved view is a name for a set of filters, a sort and the List's columns, so a combination you use often, like "Ready to apply" or "In flight", is one click away. **Views**, beside the tabs at the top of the page, opens the menu: **All applications**, then your views, each with how many applications it matches right now.
+
+- **Picking a view** sets its filters, its sort and its List columns, and empties the search box. The button turns blue and reads "View: Ready to apply". Its **×**, or **All applications** in the menu, leaves the view and puts back your own sort and columns.
+- **All applications** is the page as it is without views: the open stages, no other filters, and your own sort and columns, which save to your account as you change them.
+- **Edited**: change a filter, the sort or the columns while a view is on, and the button adds "(edited)". Nothing changes the saved view until you select **Update "name"** in the menu (the toast has **Undo**). **Discard changes** puts the view back as it was saved. **Clear all** clears the filters and keeps you in the view, edited. The search text never counts.
+- **Save as new view…** asks for a name (up to 60 characters; names are unique, ignoring case) and shows what the view keeps. The new view goes at the end of the list and is on straight away. Tick **Open Applications with this view** to make it your default.
+- **Your default view**, marked with a star, is what a new browser tab opens with. A tab you've already used keeps its last filters and view, and a link with filters in it opens those filters with no view on.
+- **Column widths** are yours in every view: drag a column wider once and it's wider everywhere. A view keeps which columns show and their order.
+- **Manage views…** opens a panel where you drag the grips to reorder your views, select the pencil to rename one (Enter saves, Esc cancels), the star to set or clear the default, and the bin to delete one (the toast has **Undo**). Changes save as you make them. You can keep up to 50 views.
+
+The Board and Calendar follow a view's filters, and the Board its sort too; the columns only matter on the List. Insights hides **Views**, as it hides the filters. On phones, **Views** sits at the end of the tabs' line and opens a sheet with the same menu; phones have no column picker, so a view's columns only show on a wider window. Your views are in **Export everything** and come back with the account import.
 
 ## Acting on several applications at once
 

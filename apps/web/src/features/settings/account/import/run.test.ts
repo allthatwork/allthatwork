@@ -16,6 +16,7 @@ const archive: AccountArchive = {
 		{ id: "l2", sourceApplicationId: null },
 	],
 	applications: [{ id: "a1" }],
+	applicationViews: [{ name: "Ready to apply" }],
 	career: {
 		profile: null,
 		aiLimits: { coachFacts: 40 },
@@ -64,6 +65,7 @@ describe("runAccountImport", () => {
 		expect(calls[1]).toMatchObject({
 			area: "applications",
 			ids: { resume: { r1: "R1" } },
+			views: [{ name: "Ready to apply" }],
 			letterLinks: [{ letterId: "l1", applicationId: "a1" }],
 		});
 		expect(calls[2]).toMatchObject({ area: "coach", ids: { resume: { r1: "R1" }, application: { a1: "A1" } } });

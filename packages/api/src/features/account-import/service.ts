@@ -8,6 +8,7 @@ import z from "zod";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { applicationsLayoutSchema } from "@reactive-resume/schema/applications/layout";
+import { APPLICATION_VIEW_NAME_MAX, APPLICATION_VIEWS_MAX } from "@reactive-resume/schema/applications/views";
 import { aiLimitsSchema, careerProfileDataSchema } from "@reactive-resume/schema/career";
 import { coverLetterSchema } from "@reactive-resume/schema/cover-letter/data";
 import { companyFieldsSchema, contactFieldsSchema, directoryKey } from "@reactive-resume/schema/directory";
@@ -363,16 +364,77 @@ async function importDirectory(userId: string, input: AreaInput<"directory">) {
 	return report.result();
 }
 
+/** " (2)", " (3)"… after a name the account already has (ignoring case), kept within the name limit. */
+export function freeViewName(name: string, taken: ReadonlySet<string>): string {
+	if (!taken.has(name.toLocaleLowerCase())) return name;
+	for (let n = 2; ; n++) {
+		const suffix = ` (${n})`;
+		const candidate = `${name.slice(0, APPLICATION_VIEW_NAME_MAX - suffix.length).trimEnd()}${suffix}`;
+		if (!taken.has(candidate.toLocaleLowerCase())) return candidate;
+	}
+}
+
+/**
+ * Saved views come in after the account's own, in the archive's order. A name the account has gets " (2)"; the
+ * imported default stays the default only when the account has none; views past the limit of 50 are skipped.
+ */
+async function importApplicationViews(
+	tx: DbOrTx,
+	userId: string,
+	views: z.infer<typeof records.applicationViewRecord>[],
+	report: Report,
+) {
+	if (views.length === 0) return;
+	const existing = await tx
+		.select({
+			name: schema.applicationView.name,
+			position: schema.applicationView.position,
+			isDefault: schema.applicationView.isDefault,
+		})
+		.from(schema.applicationView)
+		.where(eq(schema.applicationView.userId, userId));
+	const taken = new Set(existing.map((view) => view.name.toLocaleLowerCase()));
+	let hasDefault = existing.some((view) => view.isDefault);
+	let position = existing.reduce((last, view) => Math.max(last, view.position), -1) + 1;
+	const room = Math.max(0, APPLICATION_VIEWS_MAX - existing.length);
+
+	// The export lists them in menu order.
+	const rows = views.slice(0, room).map((view) => {
+		const name = freeViewName(view.name, taken);
+		taken.add(name.toLocaleLowerCase());
+		const isDefault = view.isDefault && !hasDefault;
+		if (isDefault) hasDefault = true;
+		return defined({
+			userId,
+			name,
+			filters: view.filters,
+			layout: view.layout,
+			isDefault,
+			position: position++,
+			createdAt: view.createdAt,
+			updatedAt: view.updatedAt,
+		});
+	});
+	if (rows.length > 0) await tx.insert(schema.applicationView).values(rows);
+	report.add("views", rows.length);
+	report.skip("views", "limit", views.length - rows.length);
+}
+
 async function importApplications(userId: string, input: AreaInput<"applications">) {
 	const report = new Report();
 	const applications = readAll(report, "applications", records.applicationRecord, input.applications);
 	const workspaces = readAll(report, "workspaces", records.workspaceRecord, input.workspaces);
 	const letterLinks = readAll(report, "letterLinks", records.letterLink, input.letterLinks);
+	const views = readAll(report, "views", records.applicationViewRecord, input.views);
 
 	await db.transaction(async (tx) => {
 		await lockDocumentOwner(tx, userId);
 		// Everything tied to an application goes with it (facts, stories, saved items, conversations...).
-		if (input.mode === "replace") await tx.delete(schema.application).where(eq(schema.application.userId, userId));
+		if (input.mode === "replace") {
+			await tx.delete(schema.application).where(eq(schema.application.userId, userId));
+			await tx.delete(schema.applicationView).where(eq(schema.applicationView.userId, userId));
+		}
+		await importApplicationViews(tx, userId, views, report);
 
 		const known = flattenIds(await verifiedIds(tx, userId, input.ids, ["resume", "letter", "company", "contact"]));
 		const rows = applications.map(({ id: oldId, resumeId, coverLetterId, companyId, ...application }) => {
@@ -847,9 +909,10 @@ export const accountImportService = {
 				.from(schema.careerArtifact)
 				.where(and(owned(schema.careerArtifact.userId), isNotNull(schema.careerArtifact.applicationId))),
 		]);
-		const [companies, contacts] = await Promise.all([
+		const [companies, contacts, views] = await Promise.all([
 			db.select({ value: count() }).from(schema.company).where(owned(schema.company.userId)),
 			db.select({ value: count() }).from(schema.contact).where(owned(schema.contact.userId)),
+			db.select({ value: count() }).from(schema.applicationView).where(owned(schema.applicationView.userId)),
 		]);
 		return {
 			directory: { companies: total(companies), contacts: total(contacts) },
@@ -862,6 +925,7 @@ export const accountImportService = {
 					total(scopedArtifacts) +
 					total(scopedSchedules) +
 					total(scopedThreads),
+				views: total(views),
 			},
 			knowledge: { facts: total(facts), stories: total(stories), groups: total(groups) },
 			jobSearch: { opportunities: total(opportunities), schedules: total(schedules) },

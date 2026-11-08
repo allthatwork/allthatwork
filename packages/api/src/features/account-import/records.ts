@@ -11,6 +11,11 @@ import {
 	targetingReviewSchema,
 } from "@reactive-resume/schema/applications/data";
 import {
+	APPLICATION_VIEW_NAME_MAX,
+	readApplicationViewFilters,
+	readApplicationViewLayout,
+} from "@reactive-resume/schema/applications/views";
+import {
 	careerSourceSchema,
 	careerStoryInputSchema,
 	careerWorkspaceSchema,
@@ -241,6 +246,16 @@ export const transcriptRecord = z.object({
 	original: z.string().max(200_000),
 	edited: z.string().max(200_000),
 	model: z.string().max(200).catch("").default(""),
+	createdAt: stamp,
+	updatedAt: stamp,
+});
+
+/** A saved view of the Applications screen. Its filters and layout are read leniently, field by field. */
+export const applicationViewRecord = z.object({
+	name: z.string().trim().min(1).max(APPLICATION_VIEW_NAME_MAX),
+	filters: z.unknown().transform(readApplicationViewFilters),
+	layout: z.unknown().transform(readApplicationViewLayout),
+	isDefault: z.boolean().catch(false).default(false),
 	createdAt: stamp,
 	updatedAt: stamp,
 });

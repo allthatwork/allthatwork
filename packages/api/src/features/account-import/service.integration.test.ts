@@ -243,6 +243,7 @@ describe.skipIf(!databaseUrl)("account import", () => {
 			mode: "append",
 			ids: documents.ids,
 			applications: [archive.application],
+			views: [],
 			workspaces: [archive.workspace],
 			letterLinks: [{ letterId: "old-letter", applicationId: "old-application" }],
 		});
@@ -390,6 +391,7 @@ describe.skipIf(!databaseUrl)("account import", () => {
 			mode: "append",
 			ids: { resume: { "old-resume": foreign?.id ?? "" } },
 			applications: [{ ...archive.application, id: "another-application" }],
+			views: [],
 			workspaces: [],
 			letterLinks: [],
 		});
@@ -410,11 +412,12 @@ describe.skipIf(!databaseUrl)("account import", () => {
 			mode: "replace",
 			ids: {},
 			applications: [{ ...archive.application, id: "fresh", resumeId: null, coverLetterId: null }],
+			views: [],
 			workspaces: [],
 			letterLinks: [],
 		});
 		const after = await service.preview(userId);
-		expect(after.applications).toEqual({ applications: 1, linked: 0 });
+		expect(after.applications).toEqual({ applications: 1, linked: 0, views: 0 });
 		// The scoped fact went with its application; the shared one stays.
 		expect(after.knowledge.facts).toBe(1);
 
@@ -460,5 +463,92 @@ describe.skipIf(!databaseUrl)("account import", () => {
 			"https://lumenfreight.wd5.myworkdayjobs.com/careers",
 		);
 		expect(rows.find((row) => row.name === "Tidepool")?.careersUrl).toBeNull();
+	});
+
+	it("brings saved views back through export and import, renaming clashes on merge and clearing them on replace", async () => {
+		const { applicationViewService } = await import("../applications/views");
+		const { authService } = await import("../auth/service");
+		const layout = {
+			sort: { sort: "fit" as const, dir: "desc" as const },
+			listColumns: ["fit" as const, "lane" as const],
+		};
+		const filters = { stage: ["saved" as const], build: ["built" as const] };
+		const parse = (await import("@reactive-resume/schema/applications/views")).applicationViewFiltersSchema.parse;
+		await applicationViewService.create({
+			userId: otherId,
+			name: "Ready to apply",
+			filters: parse(filters),
+			layout,
+			isDefault: true,
+		});
+		await applicationViewService.create({ userId: otherId, name: "In flight", filters: parse({}), layout });
+		// Through JSON, as application-views.json in the zip, plus a record a later version might write.
+		const exported = JSON.parse(
+			JSON.stringify((await authService.exportData({ userId: otherId })).applicationViews),
+		) as Record<string, unknown>[];
+		expect(exported.map((view) => view.name)).toEqual(["Ready to apply", "In flight"]);
+		const views = [
+			...exported,
+			{ name: "Later", filters: { fit: { min: 80 } }, layout: { listColumns: ["gone", "tags"] } },
+			{ name: "" },
+		];
+
+		await applicationViewService.create({
+			userId,
+			name: "ready to apply",
+			filters: parse({}),
+			layout,
+			isDefault: true,
+		});
+		const merged = await service.run(userId, {
+			area: "applications",
+			mode: "append",
+			ids: {},
+			applications: [],
+			views,
+			workspaces: [],
+			letterLinks: [],
+		});
+		expect(merged.added.views).toBe(3);
+		expect(merged.skipped).toContainEqual({ kind: "views", reason: "unreadable", count: 1 });
+		const afterMerge = await applicationViewService.list(userId);
+		expect(afterMerge.map((view) => [view.name, view.isDefault])).toEqual([
+			["ready to apply", true],
+			["Ready to apply (2)", false],
+			["In flight", false],
+			["Later", false],
+		]);
+		expect(afterMerge[1]?.filters.build).toEqual(["built"]);
+		expect(afterMerge[1]?.layout).toEqual(layout);
+		expect(afterMerge[3]?.filters.fit).toBe("any");
+		expect(afterMerge[3]?.layout.listColumns).toEqual(["tags"]);
+
+		await service.run(userId, {
+			area: "applications",
+			mode: "replace",
+			ids: {},
+			applications: [],
+			views: exported,
+			workspaces: [],
+			letterLinks: [],
+		});
+		const afterReplace = await applicationViewService.list(userId);
+		expect(afterReplace.map((view) => [view.name, view.isDefault, view.position])).toEqual([
+			["Ready to apply", true, 0],
+			["In flight", false, 1],
+		]);
+
+		// An archive from before saved views (no key) imports as before.
+		const old = await service.run(userId, {
+			area: "applications",
+			mode: "append",
+			ids: {},
+			applications: [],
+			views: [],
+			workspaces: [],
+			letterLinks: [],
+		});
+		expect(old.added.views).toBeUndefined();
+		expect(await applicationViewService.list(userId)).toHaveLength(2);
 	});
 });

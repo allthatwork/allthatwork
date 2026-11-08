@@ -303,7 +303,12 @@ function ImportOptions({
 			plural(counts.directory.companies, { one: "# company", other: "# companies" }),
 			plural(counts.directory.contacts, { one: "# contact", other: "# contacts" }),
 		].join(", "),
-		applications: plural(counts.applications.applications, { one: "# application", other: "# applications" }),
+		applications: [
+			plural(counts.applications.applications, { one: "# application", other: "# applications" }),
+			...(counts.applications.views > 0
+				? [plural(counts.applications.views, { one: "# saved view", other: "# saved views" })]
+				: []),
+		].join(", "),
 		knowledge: [
 			plural(counts.knowledge.facts, { one: "# fact", other: "# facts" }),
 			plural(counts.knowledge.stories, { one: "# story", other: "# stories" }),
@@ -444,6 +449,9 @@ function ReplaceConfirmation({ open, onOpenChange, areas, onConfirm }: ReplaceCo
 				].join(", "),
 				applications: [
 					plural(current.applications.applications, { one: "# application", other: "# applications" }),
+					...(current.applications.views > 0
+						? [plural(current.applications.views, { one: "# saved view", other: "# saved views" })]
+						: []),
 					...(current.applications.linked > 0
 						? [
 								plural(current.applications.linked, {
@@ -520,6 +528,7 @@ const KIND_LABELS = (): Record<string, string> => ({
 	applications: t`Applications`,
 	directory: t`Directory`,
 	workspaces: t`Application workspaces`,
+	views: t`Saved views`,
 	letterLinks: t`Letter links`,
 	facts: t`Facts`,
 	groups: t`Fact groups`,
@@ -545,6 +554,7 @@ function ImportReport({ summary }: ImportReportProps) {
 		unlinked: t`belonged to something that wasn't imported`,
 		exists: t`were already in your account`,
 		files: t`only their names are in the export`,
+		limit: t`were over the limit of 50`,
 	};
 	const added = Object.entries(summary.added).filter(([kind]) => kind !== "messages");
 
