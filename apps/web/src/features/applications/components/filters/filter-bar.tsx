@@ -1,7 +1,8 @@
-import type { FilterContext, FilterFacet } from "../../filter";
+import type { FilterContext, FilterFacet, FiltersChange } from "../../filter";
 import type { Application } from "../../types";
 import type { ApplicationFilters } from "@reactive-resume/schema/applications/filters";
 import type { IconName } from "@reactive-resume/ui/components/icon";
+import type { Ref } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
@@ -31,30 +32,46 @@ export type FilterBarProps = {
 	/** Every application, for the options and their counts. */
 	applications: readonly Application[];
 	filters: ApplicationFilters;
-	onChange: (filters: ApplicationFilters) => void;
+	onChange: FiltersChange;
 	context: FilterContext;
 	lanes: readonly string[];
 	/** How many match, for "6 of 180". */
 	matching: number;
 	className?: string;
+	/** The group's box, which the toolbar measures to choose one line or two. */
+	ref?: Ref<HTMLDivElement>;
 };
 
-const WIDE: ReadonlySet<FilterFacet> = new Set(["lane", "fit", "tags"]);
+/** Popover widths other than the default: wider for Lane and Tags, sized to their fields for Fit and Dates. */
+const POPOVER_WIDTH: Partial<Record<FilterFacet, string>> = {
+	lane: "w-[340px]",
+	tags: "w-[340px]",
+	fit: "w-[324px]",
+	dates: "w-[272px]",
+};
 
 const EXTRA_ICONS: Record<(typeof EXTRA_FACETS)[number], IconName> = {
 	source: "globe-simple",
 	documents: "file-text",
 	attention: "bell",
-	dates: "calendar-blank",
 	tags: "tag",
 };
 
 /**
- * The filter buttons after the search box: Stage, Build, Found by, Lane, Fit, any set "More filters" ones, then More
- * filters, and "6 of 180" with Clear all once anything differs from the default. It's one flex item, so on a narrow
- * window it moves to its own line as a group and the search box keeps its width.
+ * The filter buttons after the search box: Stage, Build, Found by, Lane, Fit, Dates, any set "More filters" ones, then More
+ * filters, and "6 of 180" with Clear all once anything differs from the default. It's one flex item, so when the toolbar
+ * can't hold it on one line it moves to its own line as a group and the search box keeps its width.
  */
-export function FilterBar({ applications, filters, onChange, context, lanes, matching, className }: FilterBarProps) {
+export function FilterBar({
+	applications,
+	filters,
+	onChange,
+	context,
+	lanes,
+	matching,
+	className,
+	ref,
+}: FilterBarProps) {
 	const [open, setOpen] = useState<FilterFacet | null>(null);
 	// Extra filters picked from More filters; each stays while it's set or open.
 	const [added, setAdded] = useState<FilterFacet[]>([]);
@@ -78,8 +95,6 @@ export function FilterBar({ applications, filters, onChange, context, lanes, mat
 				return t`Resume, cover letter`;
 			case "attention":
 				return t`No reply, questions…`;
-			case "dates":
-				return t`Added, updated`;
 			case "tags":
 				return t`+ and −`;
 		}
@@ -99,7 +114,7 @@ export function FilterBar({ applications, filters, onChange, context, lanes, mat
 					onChange(clearFacet(filters, facet));
 					setOpenFacet(facet, false);
 				}}
-				wide={WIDE.has(facet)}
+				popoverClassName={POPOVER_WIDTH[facet]}
 			>
 				<FilterPanel
 					facet={facet}
@@ -108,13 +123,14 @@ export function FilterBar({ applications, filters, onChange, context, lanes, mat
 					applications={applications}
 					context={context}
 					lanes={lanes}
+					onDone={() => setOpenFacet(facet, false)}
 				/>
 			</FilterButton>
 		);
 	};
 
 	return (
-		<div className={cn("flex min-w-0 flex-auto flex-wrap items-center gap-1.5", className)}>
+		<div ref={ref} className={cn("flex min-w-0 flex-auto flex-wrap items-center gap-1.5", className)}>
 			{PRIMARY_FACETS.map(button)}
 			{extras.map(button)}
 			{notShown.length > 0 && (

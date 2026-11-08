@@ -11,11 +11,11 @@ export const OPEN_STAGES = ["saved", "applied", "screening", "interview", "offer
 
 /** `none` is an application that isn't queued (`targetingBuildStatus` null). */
 export const BUILD_FILTER_VALUES = ["none", "build", "building", "built", "failed"] as const;
-export const SEARCH_FIT_FILTER_VALUES = ["any", "80", "85", "90", "95", "none"] as const;
-export const TARGETING_FIT_FILTER_VALUES = ["any", "60", "70", "80", "none"] as const;
 export const DOCUMENT_FILTER_VALUES = ["any", "linked", "none"] as const;
 export const ATTENTION_FILTER_VALUES = ["no-reply", "follow-up", "interview", "questions"] as const;
-export const DATE_FILTER_VALUES = ["any", "7", "14", "30"] as const;
+/** The highest fit a filter can ask for, and the most days the date filters reach back. */
+export const FIT_FILTER_MAX = 100;
+export const DAYS_FILTER_MAX = 365;
 /** The sort choices, in the order the Sort menu lists them. */
 export const APPLICATION_SORT_KEYS = ["updated", "added", "applied", "next", "fit", "tfit", "role", "company"] as const;
 export type ApplicationSortKey = (typeof APPLICATION_SORT_KEYS)[number];
@@ -23,6 +23,46 @@ export type ApplicationSortDirection = "asc" | "desc";
 
 /** The value that stands for "not set" in Found by, Found on and Lane. */
 export const NOT_SET = "none";
+
+/** A whole number from the text, or null when it isn't one ("75", " 075 " and 75 are; "7.5", "-3" and "abc" aren't). */
+const wholeNumber = (value: string | number): number | null => {
+	const text = String(value).trim();
+	return /^\d+$/.test(text) ? Number(text) : null;
+};
+
+/**
+ * A fit filter's value: "any", "none" (no fit yet) or a whole number 0 to 100 as text, meaning that fit and up. Never
+ * fails: more than 100 reads as 100, and anything else that isn't a whole number reads as "any".
+ */
+export function normalizeFitFilter(value: string | number): string {
+	if (value === "none") return "none";
+	const number = wholeNumber(value);
+	return number === null ? "any" : String(Math.min(number, FIT_FILTER_MAX));
+}
+
+/**
+ * A date filter's value: "any" or a whole number of days 1 to 365 as text. Never fails: more than 365 reads as 365,
+ * and 0 or anything that isn't a whole number reads as "any".
+ */
+export function normalizeDaysFilter(value: string | number): string {
+	const number = wholeNumber(value);
+	return number === null || number === 0 ? "any" : String(Math.min(number, DAYS_FILTER_MAX));
+}
+
+// Old links and stored views hold the same text ("85", "14"), so they read as before. The router hands numbers over as
+// numbers, so those are taken too.
+const fitFilterSchema = z
+	.union([z.string(), z.number()])
+	.transform(normalizeFitFilter)
+	.pipe(z.string())
+	.default("any")
+	.describe('"any", "none" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100.');
+const daysFilterSchema = z
+	.union([z.string(), z.number()])
+	.transform(normalizeDaysFilter)
+	.pipe(z.string())
+	.default("any")
+	.describe('"any" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as "any".');
 
 export const applicationFiltersSchema = z.object({
 	/** Role, company, location, contact names and tags, as one substring. */
@@ -36,19 +76,19 @@ export const applicationFiltersSchema = z.object({
 	lane: z.array(z.string()).default(() => []),
 	/** Match either lane, or the primary lane only. */
 	laneMode: z.enum(["either", "primary"]).default("either"),
-	/** Search fit at least this, or `none` for no search fit yet. */
-	fit: z.enum(SEARCH_FIT_FILTER_VALUES).default("any"),
-	/** Targeting fit at least this, or `none` for no targeting fit yet. */
-	tfit: z.enum(TARGETING_FIT_FILTER_VALUES).default("any"),
+	/** Search fit at least this (0 to 100), or `none` for no search fit yet. */
+	fit: fitFilterSchema,
+	/** Targeting fit at least this (0 to 100), or `none` for no targeting fit yet. */
+	tfit: fitFilterSchema,
 	/** Found on. */
 	source: z.array(z.string()).default(() => []),
 	resume: z.enum(DOCUMENT_FILTER_VALUES).default("any"),
 	letter: z.enum(DOCUMENT_FILTER_VALUES).default("any"),
 	attention: z.array(z.enum(ATTENTION_FILTER_VALUES)).default(() => []),
-	/** Added within this many days. */
-	added: z.enum(DATE_FILTER_VALUES).default("any"),
-	/** Updated within this many days. */
-	updated: z.enum(DATE_FILTER_VALUES).default("any"),
+	/** Added within this many days (1 to 365). */
+	added: daysFilterSchema,
+	/** Updated within this many days (1 to 365). */
+	updated: daysFilterSchema,
 	/** Tags the application must have (any or all of them, by `tagMode`). */
 	tag: z.array(z.string()).default(() => []),
 	/** Tags it must not have; these win over `tag`. */

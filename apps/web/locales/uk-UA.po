@@ -1038,10 +1038,6 @@ msgstr "{value} на рік"
 msgid "{value} an hour"
 msgstr "{value} на годину"
 
-#: src/features/applications/components/filters/filter-panel.tsx
-msgid "{value} days"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1856,10 +1852,6 @@ msgstr "Додано до Знань як досвід."
 msgid "Added to Prepare"
 msgstr "Додано до Підготовки"
 
-#: src/features/applications/components/filters/filter-bar.tsx
-msgid "Added, updated"
-msgstr ""
-
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
 msgstr "Адреса"
@@ -2555,6 +2547,11 @@ msgstr "Розмови помічника"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "помічник."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "At least"
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -4609,6 +4606,19 @@ msgstr "Для дат використовується один формат"
 #: src/features/resume/editor/check/issues.ts
 msgid "Dates won't be read"
 msgstr "Дати не читаються"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "days"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since added"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since updated"
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "Days without a reply"
@@ -8127,6 +8137,14 @@ msgstr "Опустіть лист дизайну"
 msgid "Lowest first"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest search fit"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest targeting fit"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -9243,6 +9261,7 @@ msgid "None"
 msgstr "Жодного"
 
 #: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 msgid "None yet"
 msgstr ""
 
@@ -14006,6 +14025,10 @@ msgstr "Не вдалося завершити огляд. Спробуйте з
 msgid "The review didn't finish."
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the reviewers' median"
+msgstr ""
+
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14030,6 +14053,10 @@ msgstr "Оцінку обмежено через блокувальну проб
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "Оцінка відображає, наскільки надійно видобуто текст, а не ваші шанси."
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the search's read"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"

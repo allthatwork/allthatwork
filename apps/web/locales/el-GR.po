@@ -1038,10 +1038,6 @@ msgstr "{value} τον χρόνο"
 msgid "{value} an hour"
 msgstr "{value} την ώρα"
 
-#: src/features/applications/components/filters/filter-panel.tsx
-msgid "{value} days"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1856,10 +1852,6 @@ msgstr "Προστέθηκε στη Γνώση ως εμπειρία."
 msgid "Added to Prepare"
 msgstr "Προστέθηκε στην Προετοιμασία"
 
-#: src/features/applications/components/filters/filter-bar.tsx
-msgid "Added, updated"
-msgstr ""
-
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
 msgstr "Διεύθυνση"
@@ -2555,6 +2547,11 @@ msgstr "Βοηθητικές συνομιλίες"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "Βοηθός."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "At least"
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -4609,6 +4606,19 @@ msgstr "Οι ημερομηνίες χρησιμοποιούν μία μορφή
 #: src/features/resume/editor/check/issues.ts
 msgid "Dates won't be read"
 msgstr "Οι ημερομηνίες δεν θα διαβαστούν"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "days"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since added"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since updated"
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "Days without a reply"
@@ -8127,6 +8137,14 @@ msgstr "Χαμηλώστε το φύλλο σχεδίασης"
 msgid "Lowest first"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest search fit"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest targeting fit"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -9243,6 +9261,7 @@ msgid "None"
 msgstr "Κανένας"
 
 #: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 msgid "None yet"
 msgstr ""
 
@@ -14006,6 +14025,10 @@ msgstr "Η κριτική δεν μπορούσε να ολοκληρωθεί. �
 msgid "The review didn't finish."
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the reviewers' median"
+msgstr ""
+
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14030,6 +14053,10 @@ msgstr "Η βαθμολογία περιορίζεται λόγω ενός απ�
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "Η βαθμολογία αντικατοπτρίζει πόσο αξιόπιστα εξάγεται το κείμενο, όχι τις πιθανότητές σας."
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the search's read"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"

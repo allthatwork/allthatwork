@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { t } from "@lingui/core/macro";
+import { useRef } from "react";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
 import { cn } from "@reactive-resume/utils/style";
+import { INITIAL_FOCUS_ATTRIBUTE } from "./number-filter-field";
 
 type FilterButtonProps = {
 	label: string;
@@ -13,8 +15,8 @@ type FilterButtonProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onClear: () => void;
-	/** The wider popover, for Lane, Fit and Tags. */
-	wide?: boolean;
+	/** The popover's width, when not the default. */
+	popoverClassName?: string | undefined;
 	children: ReactNode;
 };
 
@@ -22,7 +24,17 @@ type FilterButtonProps = {
  * A filter's button and its popover. Unset: the label and a caret, plain. Set: "Label: value" on the accent tint,
  * with an × beside the trigger that clears just this filter. Stage's default reads "Stage: Open" in the plain style.
  */
-export function FilterButton({ label, value, active, open, onOpenChange, onClear, wide, children }: FilterButtonProps) {
+export function FilterButton({
+	label,
+	value,
+	active,
+	open,
+	onOpenChange,
+	onClear,
+	popoverClassName,
+	children,
+}: FilterButtonProps) {
+	const focusTarget = useRef<HTMLDivElement>(null);
 	return (
 		<Popover open={open} onOpenChange={onOpenChange}>
 			<span
@@ -57,7 +69,14 @@ export function FilterButton({ label, value, active, open, onOpenChange, onClear
 					</button>
 				)}
 			</span>
-			<PopoverContent align="start" sideOffset={6} className={cn("w-[284px] gap-0 p-1.5", wide && "w-[340px]")}>
+			<PopoverContent
+				align="start"
+				sideOffset={6}
+				// Fit and Dates open with the cursor in their first field; the others focus as before.
+				initialFocus={() => focusTarget.current?.querySelector<HTMLElement>(`[${INITIAL_FOCUS_ATTRIBUTE}]`) ?? true}
+				ref={focusTarget}
+				className={cn("w-[284px] gap-0 p-1.5", popoverClassName)}
+			>
 				{children}
 			</PopoverContent>
 		</Popover>

@@ -36,11 +36,16 @@ describe("filtersFromSearch", () => {
 	});
 
 	it("falls back to the default for values that aren't valid", () => {
-		const { filters, sort } = filtersFromSearch({ stage: ["nope"], fit: 42, build: ["built", "soon"], sort: "x" });
+		const { filters, sort } = filtersFromSearch({ stage: ["nope"], fit: "high", build: ["built", "soon"], sort: "x" });
 		expect(filters.stage).toEqual([...OPEN_STAGES]);
 		expect(filters.fit).toBe("any");
 		expect(filters.build).toEqual([]);
 		expect(sort).toEqual(DEFAULT_APPLICATION_SORT);
+	});
+
+	it("reads any whole number for Fit and Dates, clamped", () => {
+		const { filters } = filtersFromSearch({ fit: 42, tfit: 150, added: 400, updated: 0 });
+		expect([filters.fit, filters.tfit, filters.added, filters.updated]).toEqual(["42", "100", "365", "any"]);
 	});
 
 	it("maps old closed=true links onto the stages", () => {
@@ -74,6 +79,15 @@ describe("searchFromFilters", () => {
 		);
 		expect(search.stage).toBeUndefined();
 		expect([search.sort, search.dir]).toEqual(["role", "asc"]);
+	});
+
+	it("round-trips typed numbers: fit=75&tfit=none&added=10", () => {
+		const filters = { ...DEFAULT_APPLICATION_FILTERS, fit: "75", tfit: "none", added: "10", updated: "3" };
+		const search = searchFromFilters(filters, DEFAULT_APPLICATION_SORT);
+		expect([search.fit, search.tfit, search.added, search.updated]).toEqual([75, "none", 10, 3]);
+		expect(filtersFromSearch(search).filters).toEqual(filters);
+		// The router may hand the numbers back as text; they read the same.
+		expect(filtersFromSearch({ fit: "75", tfit: "none", added: "10", updated: "3" }).filters).toEqual(filters);
 	});
 
 	it("round-trips", () => {

@@ -37034,27 +37034,14 @@
 														"default": "either"
 													},
 													"fit": {
-														"enum": [
-															"80",
-															"85",
-															"90",
-															"95",
-															"any",
-															"none"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 													},
 													"tfit": {
-														"enum": [
-															"60",
-															"70",
-															"80",
-															"any",
-															"none"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 													},
 													"source": {
 														"type": "array",
@@ -37095,24 +37082,14 @@
 														"default": []
 													},
 													"added": {
-														"enum": [
-															"7",
-															"14",
-															"30",
-															"any"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 													},
 													"updated": {
-														"enum": [
-															"7",
-															"14",
-															"30",
-															"any"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 													},
 													"tag": {
 														"type": "array",
@@ -37364,27 +37341,28 @@
 												"default": "either"
 											},
 											"fit": {
-												"enum": [
-													"80",
-													"85",
-													"90",
-													"95",
-													"any",
-													"none"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 											},
 											"tfit": {
-												"enum": [
-													"60",
-													"70",
-													"80",
-													"any",
-													"none"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 											},
 											"source": {
 												"type": "array",
@@ -37425,24 +37403,28 @@
 												"default": []
 											},
 											"added": {
-												"enum": [
-													"7",
-													"14",
-													"30",
-													"any"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 											},
 											"updated": {
-												"enum": [
-													"7",
-													"14",
-													"30",
-													"any"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 											},
 											"tag": {
 												"type": "array",
@@ -37618,27 +37600,14 @@
 													"default": "either"
 												},
 												"fit": {
-													"enum": [
-														"80",
-														"85",
-														"90",
-														"95",
-														"any",
-														"none"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"tfit": {
-													"enum": [
-														"60",
-														"70",
-														"80",
-														"any",
-														"none"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"source": {
 													"type": "array",
@@ -37679,24 +37648,14 @@
 													"default": []
 												},
 												"added": {
-													"enum": [
-														"7",
-														"14",
-														"30",
-														"any"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 												},
 												"updated": {
-													"enum": [
-														"7",
-														"14",
-														"30",
-														"any"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 												},
 												"tag": {
 													"type": "array",
@@ -37962,27 +37921,28 @@
 												"default": "either"
 											},
 											"fit": {
-												"enum": [
-													"80",
-													"85",
-													"90",
-													"95",
-													"any",
-													"none"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 											},
 											"tfit": {
-												"enum": [
-													"60",
-													"70",
-													"80",
-													"any",
-													"none"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 											},
 											"source": {
 												"type": "array",
@@ -38023,24 +37983,28 @@
 												"default": []
 											},
 											"added": {
-												"enum": [
-													"7",
-													"14",
-													"30",
-													"any"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 											},
 											"updated": {
-												"enum": [
-													"7",
-													"14",
-													"30",
-													"any"
+												"anyOf": [
+													{
+														"type": "string"
+													},
+													{
+														"type": "number"
+													}
 												],
-												"type": "string",
-												"default": "any"
+												"default": "any",
+												"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 											},
 											"tag": {
 												"type": "array",
@@ -38210,27 +38174,14 @@
 													"default": "either"
 												},
 												"fit": {
-													"enum": [
-														"80",
-														"85",
-														"90",
-														"95",
-														"any",
-														"none"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"tfit": {
-													"enum": [
-														"60",
-														"70",
-														"80",
-														"any",
-														"none"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"source": {
 													"type": "array",
@@ -38271,24 +38222,14 @@
 													"default": []
 												},
 												"added": {
-													"enum": [
-														"7",
-														"14",
-														"30",
-														"any"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 												},
 												"updated": {
-													"enum": [
-														"7",
-														"14",
-														"30",
-														"any"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 												},
 												"tag": {
 													"type": "array",
@@ -38554,27 +38495,14 @@
 													"default": "either"
 												},
 												"fit": {
-													"enum": [
-														"80",
-														"85",
-														"90",
-														"95",
-														"any",
-														"none"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"tfit": {
-													"enum": [
-														"60",
-														"70",
-														"80",
-														"any",
-														"none"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"source": {
 													"type": "array",
@@ -38615,24 +38543,14 @@
 													"default": []
 												},
 												"added": {
-													"enum": [
-														"7",
-														"14",
-														"30",
-														"any"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 												},
 												"updated": {
-													"enum": [
-														"7",
-														"14",
-														"30",
-														"any"
-													],
 													"type": "string",
-													"default": "any"
+													"default": "any",
+													"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 												},
 												"tag": {
 													"type": "array",
@@ -38914,27 +38832,14 @@
 														"default": "either"
 													},
 													"fit": {
-														"enum": [
-															"80",
-															"85",
-															"90",
-															"95",
-															"any",
-															"none"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 													},
 													"tfit": {
-														"enum": [
-															"60",
-															"70",
-															"80",
-															"any",
-															"none"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 													},
 													"source": {
 														"type": "array",
@@ -38975,24 +38880,14 @@
 														"default": []
 													},
 													"added": {
-														"enum": [
-															"7",
-															"14",
-															"30",
-															"any"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 													},
 													"updated": {
-														"enum": [
-															"7",
-															"14",
-															"30",
-															"any"
-														],
 														"type": "string",
-														"default": "any"
+														"default": "any",
+														"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 													},
 													"tag": {
 														"type": "array",
@@ -45874,27 +45769,14 @@
 																"default": "either"
 															},
 															"fit": {
-																"enum": [
-																	"80",
-																	"85",
-																	"90",
-																	"95",
-																	"any",
-																	"none"
-																],
 																"type": "string",
-																"default": "any"
+																"default": "any",
+																"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 															},
 															"tfit": {
-																"enum": [
-																	"60",
-																	"70",
-																	"80",
-																	"any",
-																	"none"
-																],
 																"type": "string",
-																"default": "any"
+																"default": "any",
+																"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 															},
 															"source": {
 																"type": "array",
@@ -45935,24 +45817,14 @@
 																"default": []
 															},
 															"added": {
-																"enum": [
-																	"7",
-																	"14",
-																	"30",
-																	"any"
-																],
 																"type": "string",
-																"default": "any"
+																"default": "any",
+																"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 															},
 															"updated": {
-																"enum": [
-																	"7",
-																	"14",
-																	"30",
-																	"any"
-																],
 																"type": "string",
-																"default": "any"
+																"default": "any",
+																"description": "\"any\" or a whole number of days 1 to 365. More than 365 reads as 365; 0 reads as \"any\"."
 															},
 															"tag": {
 																"type": "array",

@@ -1038,10 +1038,6 @@ msgstr "每年 {value}"
 msgid "{value} an hour"
 msgstr "每小时 {value}"
 
-#: src/features/applications/components/filters/filter-panel.tsx
-msgid "{value} days"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1856,10 +1852,6 @@ msgstr "已作为经历添加到知识库。"
 msgid "Added to Prepare"
 msgstr "已添加到“准备”"
 
-#: src/features/applications/components/filters/filter-bar.tsx
-msgid "Added, updated"
-msgstr ""
-
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
 msgstr "地址"
@@ -2555,6 +2547,11 @@ msgstr "助理对话"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "助手。"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "At least"
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -4609,6 +4606,19 @@ msgstr "日期使用一种格式"
 #: src/features/resume/editor/check/issues.ts
 msgid "Dates won't be read"
 msgstr "日期不会被读取"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "days"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since added"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since updated"
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "Days without a reply"
@@ -8127,6 +8137,14 @@ msgstr "降低设计表"
 msgid "Lowest first"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest search fit"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest targeting fit"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -9243,6 +9261,7 @@ msgid "None"
 msgstr "没有任何"
 
 #: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 msgid "None yet"
 msgstr ""
 
@@ -14006,6 +14025,10 @@ msgstr "审核无法完成。再试一次。"
 msgid "The review didn't finish."
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the reviewers' median"
+msgstr ""
+
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14030,6 +14053,10 @@ msgstr "由于一个阻断性问题，分数被封顶：{0}"
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "分数反映了提取文本的可靠性，而不是您的机会。"
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the search's read"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"

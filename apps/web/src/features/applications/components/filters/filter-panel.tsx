@@ -1,4 +1,11 @@
-import type { BuildFilterValue, FilterContext, FilterFacet, FilterOption, ListFacet } from "../../filter";
+import type {
+	BuildFilterValue,
+	FilterContext,
+	FilterFacet,
+	FilterOption,
+	FiltersChange,
+	ListFacet,
+} from "../../filter";
 import type { Application } from "../../types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ApplicationFilters } from "@reactive-resume/schema/applications/filters";
@@ -8,39 +15,48 @@ import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { APPLICATION_STATUSES } from "@reactive-resume/schema/applications/data";
-import {
-	DATE_FILTER_VALUES,
-	DOCUMENT_FILTER_VALUES,
-	OPEN_STAGES,
-	SEARCH_FIT_FILTER_VALUES,
-	TARGETING_FIT_FILTER_VALUES,
-} from "@reactive-resume/schema/applications/filters";
+import { DOCUMENT_FILTER_VALUES, NOT_SET, OPEN_STAGES } from "@reactive-resume/schema/applications/filters";
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { SegmentedControl, SegmentedControlItem } from "@reactive-resume/ui/components/segmented-control";
 import { cn } from "@reactive-resume/utils/style";
-import { clearFacet, facetOptions, markTag, tagMark, toggleStage, toggleValue } from "../../filter";
+import {
+	clearFacet,
+	facetOptions,
+	markTag,
+	matchesFilters,
+	numberFieldText,
+	tagMark,
+	toggleStage,
+	toggleValue,
+} from "../../filter";
 import { getStageColor } from "../../stages";
+import { NumberFilterField } from "./number-filter-field";
 
 export type FilterPanelProps = {
 	facet: FilterFacet;
 	filters: ApplicationFilters;
-	onChange: (filters: ApplicationFilters) => void;
+	onChange: FiltersChange;
 	applications: readonly Application[];
 	context: FilterContext;
 	/** The lanes from Preferences. */
 	lanes: readonly string[];
+	/** Closes the popover (Enter in a number field). */
+	onDone?: () => void;
 };
 
-/** The fit and date presets' labels; the values are the filter values. */
-export const searchFitLabel = (value: (typeof SEARCH_FIT_FILTER_VALUES)[number]) =>
-	value === "any" ? t`Any` : value === "none" ? t`None yet` : `${value}+`;
-export const targetingFitLabel = (value: (typeof TARGETING_FIT_FILTER_VALUES)[number]) =>
-	value === "any" ? t`Any` : value === "none" ? t`None yet` : `${value}+`;
 export const documentLabel = (value: (typeof DOCUMENT_FILTER_VALUES)[number]) =>
 	({ any: t`Any`, linked: t`Linked`, none: t`None` })[value];
-export const dateLabel = (value: (typeof DATE_FILTER_VALUES)[number]) => (value === "any" ? t`Any` : t`${value} days`);
+
+/** The Fit and Dates fields' labels for screen readers; the rows show "At least" and "Added in the last … days". */
+export const numberFieldLabel = (key: "fit" | "tfit" | "added" | "updated") =>
+	({
+		fit: t`Lowest search fit`,
+		tfit: t`Lowest targeting fit`,
+		added: t`Days since added`,
+		updated: t`Days since updated`,
+	})[key];
 
 /** Build statuses with the cards' icons and colors; no second checkbox for Not queued and Queued, a ring instead. */
 export function BuildMark({ value, label }: { value: BuildFilterValue; label: string }) {
@@ -159,9 +175,63 @@ const LinkButton = ({ onClick, children }: { onClick: () => void; children: Reac
 );
 
 /** One filter's popover body, as drawn in the mockup: checkbox lists with counts, segmented rows, or the tag list. */
-export function FilterPanel({ facet, filters, onChange, applications, context, lanes }: FilterPanelProps) {
+export function FilterPanel({ facet, filters, onChange, applications, context, lanes, onDone }: FilterPanelProps) {
 	const options = (list: ListFacet) => facetOptions(list, { applications, filters, context, lanes });
 	const clear = () => onChange(clearFacet(filters, facet));
+	/** How many show with these filters, changed by `patch`. */
+	const countWith = (patch: Partial<ApplicationFilters>) => {
+		const next = { ...filters, ...patch };
+		return applications.filter((application) => matchesFilters(application, next, context)).length;
+	};
+	const setNumber = (key: "fit" | "tfit" | "added" | "updated", value: string, replace: boolean) =>
+		onChange({ ...filters, [key]: value }, { replace });
+
+	const fitSection = (key: "fit" | "tfit", title: ReactNode, hint: string) => (
+		<>
+			<Heading hint={hint}>{title}</Heading>
+			<div className="flex min-h-9 items-center gap-2 px-2 py-[3px]">
+				<span className="whitespace-nowrap text-ink-2">
+					<Trans>At least</Trans>
+				</span>
+				<NumberFilterField
+					value={filters[key]}
+					kind="fit"
+					label={numberFieldLabel(key)}
+					onChange={(value, replace) => setNumber(key, value, replace)}
+					initialFocus={key === "fit"}
+					{...(onDone ? { onDone } : {})}
+				/>
+				{numberFieldText(filters[key]) && <span className="ms-auto font-mono text-xs text-ink-3">{countWith({})}</span>}
+			</div>
+			<OptionRow
+				checked={filters[key] === NOT_SET}
+				count={countWith({ [key]: NOT_SET })}
+				onToggle={() => onChange({ ...filters, [key]: filters[key] === NOT_SET ? "any" : NOT_SET })}
+			>
+				<Trans>None yet</Trans>
+			</OptionRow>
+		</>
+	);
+
+	const dayRow = (key: "added" | "updated", label: ReactNode) => (
+		<>
+			<span className="whitespace-nowrap text-ink-2">{label}</span>
+			<NumberFilterField
+				value={filters[key]}
+				kind="days"
+				label={numberFieldLabel(key)}
+				onChange={(value, replace) => setNumber(key, value, replace)}
+				initialFocus={key === "added"}
+				{...(onDone ? { onDone } : {})}
+			/>
+			<span className="whitespace-nowrap text-ink-2">
+				<Trans>days</Trans>
+			</span>
+			<span className="text-end font-mono text-xs text-ink-3">
+				{numberFieldText(filters[key]) ? countWith({}) : ""}
+			</span>
+		</>
+	);
 
 	switch (facet) {
 		case "stage":
@@ -257,26 +327,8 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 		case "fit":
 			return (
 				<>
-					<Heading hint={t`the search's read of the posting`}>
-						<Trans>Search fit</Trans>
-					</Heading>
-					<Segments
-						label={t`Search fit`}
-						value={filters.fit}
-						values={SEARCH_FIT_FILTER_VALUES}
-						labelOf={searchFitLabel}
-						onChange={(fit) => onChange({ ...filters, fit })}
-					/>
-					<Heading hint={t`the reviewers' median, after a build`}>
-						<Trans>Targeting fit</Trans>
-					</Heading>
-					<Segments
-						label={t`Targeting fit`}
-						value={filters.tfit}
-						values={TARGETING_FIT_FILTER_VALUES}
-						labelOf={targetingFitLabel}
-						onChange={(tfit) => onChange({ ...filters, tfit })}
-					/>
+					{fitSection("fit", <Trans>Search fit</Trans>, t`the search's read of the posting`)}
+					{fitSection("tfit", <Trans>Targeting fit</Trans>, t`the reviewers' median, after a build`)}
 					<Footer onClear={clear} />
 				</>
 			);
@@ -311,26 +363,10 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 		case "dates":
 			return (
 				<>
-					<Heading>
-						<Trans>Added in the last</Trans>
-					</Heading>
-					<Segments
-						label={t`Added in the last`}
-						value={filters.added}
-						values={DATE_FILTER_VALUES}
-						labelOf={dateLabel}
-						onChange={(added) => onChange({ ...filters, added })}
-					/>
-					<Heading>
-						<Trans>Updated in the last</Trans>
-					</Heading>
-					<Segments
-						label={t`Updated in the last`}
-						value={filters.updated}
-						values={DATE_FILTER_VALUES}
-						labelOf={dateLabel}
-						onChange={(updated) => onChange({ ...filters, updated })}
-					/>
+					<div className="grid grid-cols-[max-content_52px_max-content_1fr] items-center gap-x-2 gap-y-1.5 px-2 pt-1.5 pb-1">
+						{dayRow("added", <Trans>Added in the last</Trans>)}
+						{dayRow("updated", <Trans>Updated in the last</Trans>)}
+					</div>
 					<Footer onClear={clear} />
 				</>
 			);

@@ -51,7 +51,8 @@ describe("readApplicationViewFilters", () => {
 			build: ["built"],
 			// A shape a later change might give Fit: not readable now, so Fit is back at any.
 			fit: { min: 85 },
-			added: "365",
+			added: "400",
+			updated: true,
 			foundBy: ["Dorel"],
 			q: "dropped",
 			retired: true,
@@ -59,7 +60,9 @@ describe("readApplicationViewFilters", () => {
 		expect(filters.stage).toEqual(["saved"]);
 		expect(filters.build).toEqual(["built"]);
 		expect(filters.fit).toBe("any");
-		expect(filters.added).toBe("any");
+		// Days past a year clamp to 365; a value that's no number at all is back at any.
+		expect(filters.added).toBe("365");
+		expect(filters.updated).toBe("any");
 		expect(filters.foundBy).toEqual(["Dorel"]);
 		expect(filters).not.toHaveProperty("q");
 		expect(filters).not.toHaveProperty("retired");

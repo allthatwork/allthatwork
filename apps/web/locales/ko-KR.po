@@ -1038,10 +1038,6 @@ msgstr "연 {value}"
 msgid "{value} an hour"
 msgstr "시간당 {value}"
 
-#: src/features/applications/components/filters/filter-panel.tsx
-msgid "{value} days"
-msgstr ""
-
 #: src/features/career/workspace/apply.tsx
 #: src/routes/builder/letter/-components/write-panel.tsx
 msgid "{words, plural, one {# word} other {# words}}"
@@ -1856,10 +1852,6 @@ msgstr "경력으로 지식에 추가했습니다."
 msgid "Added to Prepare"
 msgstr "준비에 추가됨"
 
-#: src/features/applications/components/filters/filter-bar.tsx
-msgid "Added, updated"
-msgstr ""
-
 #: src/features/resume/share/link-tab.tsx
 msgid "Address"
 msgstr "주소"
@@ -2555,6 +2547,11 @@ msgstr "어시스턴트 대화"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "어시스턴트."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "At least"
+msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -4609,6 +4606,19 @@ msgstr "날짜는 하나의 형식을 사용합니다."
 #: src/features/resume/editor/check/issues.ts
 msgid "Dates won't be read"
 msgstr "날짜를 읽을 수 없습니다."
+
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "days"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since added"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Days since updated"
+msgstr ""
 
 #: src/features/settings/reminders.tsx
 msgid "Days without a reply"
@@ -8127,6 +8137,14 @@ msgstr "디자인 시트를 내리세요"
 msgid "Lowest first"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest search fit"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest targeting fit"
+msgstr ""
+
 #: src/features/resume/public/public-resume.tsx
 msgid "Made with {APP_NAME}, free and open source"
 msgstr ""
@@ -9243,6 +9261,7 @@ msgid "None"
 msgstr "없음"
 
 #: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 msgid "None yet"
 msgstr ""
 
@@ -14006,6 +14025,10 @@ msgstr "검토가 완료되지 못했습니다. 다시 시도해 보세요."
 msgid "The review didn't finish."
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the reviewers' median"
+msgstr ""
+
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14030,6 +14053,10 @@ msgstr "차단 문제로 인해 점수가 제한됩니다: {0}"
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "점수는 기회가 아니라 텍스트가 얼마나 안정적으로 추출되는지를 반영합니다."
+
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "the search's read"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"
