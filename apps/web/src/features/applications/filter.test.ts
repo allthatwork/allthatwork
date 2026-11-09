@@ -13,9 +13,13 @@ import {
 	markTag,
 	EXTRA_FACETS,
 	mergeSnapshot,
+	modelLabel,
 	numberFieldText,
 	optionCounts,
 	PRIMARY_FACETS,
+	reviewerFitOf,
+	reviewerFitValue,
+	reviewerSlots,
 	sameFilters,
 	snapshotOf,
 	steppedNumberValue,
@@ -24,6 +28,7 @@ import {
 	toggleStage,
 	valuesInUse,
 	withHeld,
+	withReviewerFit,
 } from "./filter";
 
 const NOW = new Date("2026-11-06T12:00:00Z");
@@ -156,16 +161,89 @@ describe("each filter on its own", () => {
 		expect(run(all, f({ lane: ["none"], laneMode: "primary" }))).toEqual([none.id]);
 	});
 
-	it("fit thresholds are at least that, and none finds the ones without", () => {
+	it("fit thresholds are at least that; any keeps the ones without a fit, a number drops them", () => {
 		const high = app({ searchFit: 90, targetingFit: 72 });
 		const edge = app({ searchFit: 85, targetingFit: null });
 		const low = app({ searchFit: 80 });
 		const none = app();
 		const all = [high, edge, low, none];
+		expect(run(all, f())).toEqual([high.id, edge.id, low.id, none.id]);
 		expect(run(all, f({ fit: "85" }))).toEqual([high.id, edge.id]);
-		expect(run(all, f({ fit: "none" }))).toEqual([none.id]);
 		expect(run(all, f({ tfit: "70" }))).toEqual([high.id]);
-		expect(run(all, f({ tfit: "none" }))).toEqual([edge.id, low.id, none.id]);
+	});
+
+	it("a reviewer's fit is read from the latest round, and a skipped or missing reviewer doesn't match a number", () => {
+		const review = (round: number, reviewer: string, fit: number | null, status: "ran" | "skipped" = "ran") => ({
+			round,
+			reviewer,
+			model: "",
+			status,
+			fit,
+			verdict: "",
+			reason: null,
+		});
+		const reviewed = app({
+			targetingReviews: [
+				review(1, "A", 60),
+				review(1, "B", 90),
+				review(2, "A", 80),
+				review(2, "B", null, "skipped"),
+				review(2, "C", 70),
+			],
+		});
+		const other = app({ targetingReviews: [review(1, "A", 74), review(1, "B", 85)] });
+		const unreviewed = app();
+		expect([
+			reviewerFitOf(reviewed, "A"),
+			reviewerFitOf(reviewed, "b"),
+			reviewerFitOf(reviewed, "C"),
+			reviewerFitOf(reviewed, "D"),
+		]).toEqual([80, null, 70, null]);
+		const all = [reviewed, other, unreviewed];
+		expect(run(all, f({ rfit: ["A:75"] }))).toEqual([reviewed.id]);
+		expect(run(all, f({ rfit: ["B:50"] }))).toEqual([other.id]);
+		expect(run(all, f({ rfit: ["A:70", "C:70"] }))).toEqual([reviewed.id]);
+		expect(run(all, f({ rfit: ["A:74"] }))).toEqual([reviewed.id, other.id]);
+	});
+
+	it("sets and clears one reviewer's fit, keeping the others in slot order", () => {
+		const both = withReviewerFit(withReviewerFit(f(), "B", "80"), "A", "75");
+		expect(both.rfit).toEqual(["A:75", "B:80"]);
+		expect(reviewerFitValue(both, "b")).toBe("80");
+		expect(reviewerFitValue(both, "C")).toBe("any");
+		expect(withReviewerFit(both, "B", "85").rfit).toEqual(["A:75", "B:85"]);
+		expect(withReviewerFit(both, "B", "any").rfit).toEqual(["A:75"]);
+	});
+
+	it("lists the reviewer slots in use, each with the model it used last, shortened", () => {
+		const review = (reviewer: string, model: string) => ({
+			round: 1,
+			reviewer,
+			model,
+			status: "ran" as const,
+			fit: 80,
+			verdict: "",
+			reason: null,
+		});
+		const older = app({
+			targetingAt: daysAgo(5),
+			targetingReviews: [review("A", "Claude Opus (saw rendered pages)"), review("C", "glm-5.3-flash (text)")],
+		});
+		const newer = app({
+			targetingAt: daysAgo(1),
+			targetingReviews: [
+				review("B", "openai/gpt-6.1-sol"),
+				review("C", "deepseek/deepseek-v4.1-flash-1017 (extracted text)"),
+				review("D", "acme/widget-2 (notes)"),
+			],
+		});
+		expect(reviewerSlots([older, newer, app()])).toEqual([
+			{ slot: "A", model: "Opus" },
+			{ slot: "B", model: "GPT" },
+			{ slot: "C", model: "DeepSeek" },
+			{ slot: "D", model: "widget-2" },
+		]);
+		expect(modelLabel("gemini-3.8-flash (rendered pages)")).toBe("Gemini");
 	});
 
 	it("a typed fit keeps that fit and up, at the edge too", () => {
@@ -342,6 +420,8 @@ describe("defaults and comparisons", () => {
 	it("counts set filters, not the search", () => {
 		expect(activeFilterCount(f({ q: "sre" }))).toBe(0);
 		expect(activeFilterCount(f({ stage: ["saved"], build: ["built"], fit: "85", tfit: "70" }))).toBe(3);
+		expect(activeFilterCount(f({ rfit: ["B:80"] }))).toBe(1);
+		expect(clearFacet(f({ fit: "85", rfit: ["B:80"] }), "fit")).toEqual(f());
 	});
 
 	it("compares filters whatever the order of values", () => {
@@ -428,12 +508,12 @@ describe("summary labels", () => {
 		expect(summary(f({ foundBy: ["Dorel", "Muse", "none"] }), "foundBy")).toBe("3");
 		expect(summary(f({ source: ["none"] }), "source")).toBe("Not set");
 		expect(summary(f({ lane: ["none"] }), "lane")).toBe("No lane");
-		expect(summary(f({ fit: "85" }), "fit")).toBe("Search 85+");
-		expect(summary(f({ fit: "none", tfit: "70" }), "fit")).toBe("No search fit, Targeting 70+");
+		expect(summary(f({ fit: "85" }), "fit")).toBe("Search ≥ 85");
+		expect(summary(f({ tfit: "70", rfit: ["A:75", "B:80"] }), "fit")).toBe("Targeting ≥ 70, A ≥ 75, B ≥ 80");
 		expect(summary(f({ resume: "linked", letter: "none" }), "documents")).toBe("Resume, No letter");
 		expect(summary(f({ attention: ["no-reply"] }), "attention", { noReplyDays: 14 })).toBe("No reply in 14+ days");
 		expect(summary(f({ added: "7" }), "dates")).toBe("Added 7d");
-		expect(summary(f({ fit: "75", tfit: "none" }), "fit")).toBe("Search 75+, No targeting fit");
+		expect(summary(f({ rfit: ["C:70"] }), "fit")).toBe("C ≥ 70");
 		expect(summary(f({ added: "10", updated: "3" }), "dates")).toBe("Added 10d, Updated 3d");
 		expect(summary(f({ tag: ["remote"], notTag: ["agency"] }), "tags")).toBe("#remote, not #agency");
 	});

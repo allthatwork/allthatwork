@@ -1797,6 +1797,8 @@ msgstr "Add your lanes in Preferences"
 msgid "Add your name"
 msgstr "Add your name"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Added"
@@ -1817,11 +1819,6 @@ msgstr "Added {0}d"
 #: src/features/career/shared.tsx
 msgid "Added by you"
 msgstr "Added by you"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Added in the last"
-msgstr "Added in the last"
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private, and schedules come in switched off."
@@ -2166,6 +2163,10 @@ msgstr "Answers copied"
 #: src/features/settings/ai/providers.tsx
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
 msgstr "Anthropic, Gemini, Ollama, OpenAI-compatible"
+
+#: src/features/applications/components/filters/number-filter-field.tsx
+msgid "any"
+msgstr "any"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/career/knowledge/preferences.tsx
@@ -2542,11 +2543,6 @@ msgstr "Assistant conversations"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "Assistant."
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "At least"
-msgstr "At least"
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -7001,6 +6997,14 @@ msgstr "in Knowledge"
 msgid "In Knowledge"
 msgstr "In Knowledge"
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "in the last"
+msgstr "in the last"
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "In the last"
+msgstr "In the last"
+
 #: src/features/career/workspace/knowledge.tsx
 msgid "Include"
 msgstr "Include"
@@ -8133,6 +8137,10 @@ msgid "Lowest first"
 msgstr "Lowest first"
 
 #: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest fit from reviewer {slot}"
+msgstr "Lowest fit from reviewer {slot}"
+
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Lowest search fit"
 msgstr "Lowest search fit"
 
@@ -9175,10 +9183,6 @@ msgstr "No resume"
 msgid "No resumes yet."
 msgstr "No resumes yet."
 
-#: src/features/applications/filter.ts
-msgid "No search fit"
-msgstr "No search fit"
-
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
 msgstr "No skills section was found."
@@ -9215,10 +9219,6 @@ msgstr "No tags yet"
 msgid "No tags yet."
 msgstr "No tags yet."
 
-#: src/features/applications/filter.ts
-msgid "No targeting fit"
-msgstr "No targeting fit"
-
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No terms stood out in this posting."
 msgstr "No terms stood out in this posting."
@@ -9254,11 +9254,6 @@ msgstr "No. {number} · {name}"
 #: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "None"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "None yet"
-msgstr "None yet"
 
 #: src/features/applications/components/views/save-view-dialog.tsx
 msgid "None, all open applications"
@@ -12137,8 +12132,8 @@ msgstr "Search {0}%"
 
 #. placeholder {0}: filters.fit
 #: src/features/applications/filter.ts
-msgid "Search {0}+"
-msgstr "Search {0}+"
+msgid "Search ≥ {0}"
+msgstr "Search ≥ {0}"
 
 #: src/features/settings/ai/web-access.tsx
 msgid "Search and enhanced reading"
@@ -13567,8 +13562,8 @@ msgstr "Targeting {0}%"
 
 #. placeholder {0}: filters.tfit
 #: src/features/applications/filter.ts
-msgid "Targeting {0}+"
-msgstr "Targeting {0}+"
+msgid "Targeting ≥ {0}"
+msgstr "Targeting ≥ {0}"
 
 #: src/features/applications/components/detail/assessments.tsx
 #: src/features/applications/components/filters/filter-panel.tsx
@@ -14020,10 +14015,6 @@ msgstr "The review couldn't finish. Try again."
 msgid "The review didn't finish."
 msgstr "The review didn't finish."
 
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the reviewers' median"
-msgstr "the reviewers' median"
-
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr "the reviewers' median, after a build"
@@ -14048,10 +14039,6 @@ msgstr "The score is capped because of a blocking problem: {0}"
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "The score reflects how reliably text is extracted, not your chances."
-
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the search's read"
-msgstr "the search's read"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"
@@ -14929,6 +14916,8 @@ msgstr "Update this application's details."
 msgid "Update your password"
 msgstr "Update your password"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Updated"
@@ -14951,11 +14940,6 @@ msgstr "Updated {0}d"
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
 msgstr "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Updated in the last"
-msgstr "Updated in the last"
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Updates"

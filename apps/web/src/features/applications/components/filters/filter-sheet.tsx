@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useState } from "react";
-import { DOCUMENT_FILTER_VALUES, NOT_SET } from "@reactive-resume/schema/applications/filters";
+import { DOCUMENT_FILTER_VALUES } from "@reactive-resume/schema/applications/filters";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Sheet, SheetContent, SheetTitle } from "@reactive-resume/ui/components/sheet";
@@ -21,14 +21,16 @@ import {
 	isDefaultFilters,
 	isFacetSet,
 	markTag,
-	matchesFilters,
 	PRIMARY_FACETS,
+	reviewerFitValue,
+	reviewerSlots,
 	summary,
 	tagMark,
 	toggleStage,
 	toggleValue,
+	withReviewerFit,
 } from "../../filter";
-import { documentLabel, numberFieldLabel } from "./filter-panel";
+import { documentLabel, numberFieldLabel, ReviewerLabel, reviewerFieldLabel } from "./filter-panel";
 import { NumberFilterField } from "./number-filter-field";
 
 type PillProps = {
@@ -98,10 +100,6 @@ export function PhoneFilters({
 	const count = activeFilterCount(filters);
 	const set = FACETS.filter((facet) => isFacetSet(filters, facet));
 	const options = (facet: ListFacet) => facetOptions(facet, { applications, filters, context, lanes });
-	const countWith = (patch: Partial<typeof filters>) => {
-		const next = { ...filters, ...patch };
-		return applications.filter((application) => matchesFilters(application, next, context)).length;
-	};
 	const setNumber = (key: "fit" | "tfit" | "added" | "updated", value: string, replace: boolean) =>
 		onChange({ ...filters, [key]: value }, { replace });
 
@@ -116,30 +114,21 @@ export function PhoneFilters({
 		/>
 	);
 
-	const fitRow = (key: "fit" | "tfit") => (
-		<div className="flex basis-full items-center gap-2.5">
-			<span className="text-sm whitespace-nowrap text-ink-2">
-				<Trans>At least</Trans>
-			</span>
-			{numberField(key)}
-			<Pill
-				on={filters[key] === NOT_SET}
-				count={countWith({ [key]: NOT_SET })}
-				onClick={() => onChange({ ...filters, [key]: filters[key] === NOT_SET ? "any" : NOT_SET })}
-				className="ms-auto h-9"
-			>
-				<Trans>None yet</Trans>
-			</Pill>
-		</div>
-	);
-
-	const dayRow = (key: "added" | "updated", label: ReactNode) => (
-		<div className="flex basis-full items-center gap-2.5">
-			<span className="w-32 text-sm whitespace-nowrap text-ink-2">{label}</span>
-			{numberField(key)}
-			<span className="text-sm text-ink-2">
-				<Trans>days</Trans>
-			</span>
+	/** One Fit or Dates row: the label, ≥ for a fit, the field, its unit. */
+	const numberRow = (
+		label: ReactNode,
+		field: ReactNode,
+		options: { sign?: boolean; unit?: ReactNode; indent?: boolean },
+	) => (
+		<div className={cn("flex basis-full items-center gap-2.5", options.indent && "ps-4")}>
+			<span className="min-w-0 flex-1 text-sm text-ink-2">{label}</span>
+			{options.sign && (
+				<span aria-hidden="true" className="text-base text-ink-3">
+					≥
+				</span>
+			)}
+			{field}
+			{options.unit && <span className="w-9 text-sm text-ink-2">{options.unit}</span>}
 		</div>
 	);
 
@@ -218,14 +207,25 @@ export function PhoneFilters({
 				);
 			case "fit":
 				return (
-					<div key={facet}>
-						<Section title={t`Search fit`} hint={t`the search's read`}>
-							{fitRow("fit")}
-						</Section>
-						<Section title={t`Targeting fit`} hint={t`the reviewers' median`}>
-							{fitRow("tfit")}
-						</Section>
-					</div>
+					<Section key={facet} title={getFacetLabel(facet)}>
+						{numberRow(<Trans>Search fit</Trans>, numberField("fit"), { sign: true })}
+						{numberRow(<Trans>Targeting fit</Trans>, numberField("tfit"), { sign: true })}
+						{reviewerSlots(applications).map(({ slot, model }) => (
+							<div key={slot} className="contents">
+								{numberRow(
+									<ReviewerLabel slot={slot} model={model} />,
+									<NumberFilterField
+										value={reviewerFitValue(filters, slot)}
+										kind="fit"
+										label={reviewerFieldLabel(slot)}
+										onChange={(value, replace) => onChange(withReviewerFit(filters, slot, value), { replace })}
+										className="h-11 w-16 rounded-lg text-base"
+									/>,
+									{ sign: true, indent: true },
+								)}
+							</div>
+						))}
+					</Section>
 				);
 			case "documents":
 				return (
@@ -244,9 +244,9 @@ export function PhoneFilters({
 				);
 			case "dates":
 				return (
-					<Section key={facet} title={getFacetLabel(facet)}>
-						{dayRow("added", <Trans>Added in the last</Trans>)}
-						{dayRow("updated", <Trans>Updated in the last</Trans>)}
+					<Section key={facet} title={getFacetLabel(facet)} hint={t`in the last`}>
+						{numberRow(<Trans>Added</Trans>, numberField("added"), { unit: <Trans>days</Trans> })}
+						{numberRow(<Trans>Updated</Trans>, numberField("updated"), { unit: <Trans>days</Trans> })}
 					</Section>
 				);
 			case "tags": {

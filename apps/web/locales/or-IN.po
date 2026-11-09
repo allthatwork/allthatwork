@@ -1802,6 +1802,8 @@ msgstr ""
 msgid "Add your name"
 msgstr "ଆପଣଙ୍କର ନାମ ଯୋଡନ୍ତୁ |"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Added"
@@ -1822,11 +1824,6 @@ msgstr ""
 #: src/features/career/shared.tsx
 msgid "Added by you"
 msgstr "ଆପଣଙ୍କ ଦ୍ୱାରା ଯୋଡ଼ାଯାଇଛି"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Added in the last"
-msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private, and schedules come in switched off."
@@ -2171,6 +2168,10 @@ msgstr "ଉତ୍ତରଗୁଡ଼ିକ କପି ହେଲା"
 #: src/features/settings/ai/providers.tsx
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
 msgstr "Anthropic, Gemini, Ollama, OpenAI- ସୁସଙ୍ଗତ |"
+
+#: src/features/applications/components/filters/number-filter-field.tsx
+msgid "any"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/career/knowledge/preferences.tsx
@@ -2548,11 +2549,6 @@ msgstr "ସହକାରୀ ବାର୍ତ୍ତାଳାପ |"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "ସହକାରୀ"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "At least"
-msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -7009,6 +7005,14 @@ msgstr ""
 msgid "In Knowledge"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "in the last"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "In the last"
+msgstr ""
+
 #: src/features/career/workspace/knowledge.tsx
 msgid "Include"
 msgstr ""
@@ -8141,6 +8145,10 @@ msgid "Lowest first"
 msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest fit from reviewer {slot}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Lowest search fit"
 msgstr ""
 
@@ -9183,10 +9191,6 @@ msgstr "କ No ଣସି ରେଜୁମ୍ ନାହିଁ |"
 msgid "No resumes yet."
 msgstr "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ରେଜ୍ୟୁମେ ନାହିଁ।"
 
-#: src/features/applications/filter.ts
-msgid "No search fit"
-msgstr ""
-
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
 msgstr "କୌଣସି ଦକ୍ଷତା ବିଭାଗ ମିଳିଲା ନାହିଁ।"
@@ -9221,10 +9225,6 @@ msgstr "ଏପର୍ଯ୍ୟନ୍ତ କୌଣସି ଟ୍ୟାଗ୍ ନା
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "No tags yet."
-msgstr ""
-
-#: src/features/applications/filter.ts
-msgid "No targeting fit"
 msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
@@ -9262,11 +9262,6 @@ msgstr "ନା। {number} · {name} |"
 #: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "କିଛି ନୁହେଁ |"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "None yet"
-msgstr ""
 
 #: src/features/applications/components/views/save-view-dialog.tsx
 msgid "None, all open applications"
@@ -12146,7 +12141,7 @@ msgstr ""
 
 #. placeholder {0}: filters.fit
 #: src/features/applications/filter.ts
-msgid "Search {0}+"
+msgid "Search ≥ {0}"
 msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
@@ -13576,7 +13571,7 @@ msgstr ""
 
 #. placeholder {0}: filters.tfit
 #: src/features/applications/filter.ts
-msgid "Targeting {0}+"
+msgid "Targeting ≥ {0}"
 msgstr ""
 
 #: src/features/applications/components/detail/assessments.tsx
@@ -14029,10 +14024,6 @@ msgstr "ସମୀକ୍ଷା ସମାପ୍ତ ହୋଇପାରିଲା ନ
 msgid "The review didn't finish."
 msgstr ""
 
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the reviewers' median"
-msgstr ""
-
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14057,10 +14048,6 @@ msgstr "ଏକ ଅବରୋଧକ ସମସ୍ୟା ହେତୁ ସ୍କୋ�
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "ସ୍କୋର ପ୍ରତିଫଳିତ କରେ ଯେ କେତେ ବିଶ୍ reli ାସଯୋଗ୍ୟ ପାଠ୍ୟ ବାହାର କରାଯାଇଛି, ଆପଣଙ୍କ ସମ୍ଭାବନା ନୁହେଁ |"
-
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the search's read"
-msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"
@@ -14939,6 +14926,8 @@ msgstr "ଏହି ଆବେଦନର ବିବରଣୀ ଅପଡେଟ୍ କ�
 msgid "Update your password"
 msgstr "ଆପଣଙ୍କ ପାସୱାର୍ଡ ଅଦ୍ୟତନ କରନ୍ତୁ"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Updated"
@@ -14961,11 +14950,6 @@ msgstr ""
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
 msgstr "{total}ଟିରୁ {done}ଟି ଅପଡେଟ୍ ହେଲା। ତାଲା ପଡିଥିବା ଡକ୍ୟୁମେଣ୍ଟ୍ ଏବଂ ସାର୍ବଜନିକ ଲିଙ୍କ୍ ପାଇଁ ଚିଠିଗୁଡ଼ିକ ଛାଡି ଦିଆଗଲା।"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Updated in the last"
-msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Updates"

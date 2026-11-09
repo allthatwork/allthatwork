@@ -1,5 +1,6 @@
 import type { NumberFilterKind } from "../../filter";
 import type { KeyboardEvent } from "react";
+import { t } from "@lingui/core/macro";
 import { useRef, useState } from "react";
 import { Input } from "@reactive-resume/ui/components/input";
 import { cn } from "@reactive-resume/utils/style";
@@ -9,7 +10,7 @@ import { numberFieldText, steppedNumberValue, typedNumberValue } from "../../fil
 export const INITIAL_FOCUS_ATTRIBUTE = "data-initial-focus";
 
 type NumberFilterFieldProps = {
-	/** The filter value: "any", "none" or a number as text. */
+	/** The filter value: "any" or a number as text. */
 	value: string;
 	kind: NumberFilterKind;
 	label: string;
@@ -22,8 +23,8 @@ type NumberFilterFieldProps = {
 };
 
 /**
- * A narrow number field for Fit and Dates: digits only, filtering as you type. Up and Down step by 1, Shift with them
- * by 5; from empty they start at 80 for a fit and 7 for days.
+ * A narrow number field for Fit and Dates: digits only, filtering as you type, "any" while empty. Up and Down step by
+ * 1, Shift with them by 5; from empty they start at 80 for a fit and 7 for days.
  */
 export function NumberFilterField({
 	value,
@@ -36,7 +37,7 @@ export function NumberFilterField({
 }: NumberFilterFieldProps) {
 	const shown = numberFieldText(value);
 	// What's typed shows at once, before the address catches up. While the field has focus, the address echoing back an
-	// earlier keystroke ("7" on the way to "75") is ignored; any other change (Clear, None yet, Back) shows.
+	// earlier keystroke ("7" on the way to "75") is ignored; any other change (Clear, Back) shows.
 	const [text, setText] = useState(shown);
 	const [prevShown, setPrevShown] = useState(shown);
 	const [sent, setSent] = useState<readonly string[]>([]);
@@ -75,6 +76,7 @@ export function NumberFilterField({
 			maxLength={3}
 			autoComplete="off"
 			aria-label={label}
+			placeholder={t`any`}
 			value={text}
 			onFocus={() => {
 				changed.current = false;

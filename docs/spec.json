@@ -37036,12 +37036,20 @@
 													"fit": {
 														"type": "string",
 														"default": "any",
-														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+														"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 													},
 													"tfit": {
 														"type": "string",
 														"default": "any",
-														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+														"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													},
+													"rfit": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": [],
+														"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 													},
 													"source": {
 														"type": "array",
@@ -37350,7 +37358,7 @@
 													}
 												],
 												"default": "any",
-												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+												"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 											},
 											"tfit": {
 												"anyOf": [
@@ -37362,7 +37370,22 @@
 													}
 												],
 												"default": "any",
-												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+												"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+											},
+											"rfit": {
+												"type": "array",
+												"items": {
+													"anyOf": [
+														{
+															"type": "string"
+														},
+														{
+															"type": "number"
+														}
+													]
+												},
+												"default": [],
+												"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 											},
 											"source": {
 												"type": "array",
@@ -37602,12 +37625,20 @@
 												"fit": {
 													"type": "string",
 													"default": "any",
-													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"tfit": {
 													"type": "string",
 													"default": "any",
-													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+												},
+												"rfit": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": [],
+													"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 												},
 												"source": {
 													"type": "array",
@@ -37930,7 +37961,7 @@
 													}
 												],
 												"default": "any",
-												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+												"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 											},
 											"tfit": {
 												"anyOf": [
@@ -37942,7 +37973,22 @@
 													}
 												],
 												"default": "any",
-												"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+												"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+											},
+											"rfit": {
+												"type": "array",
+												"items": {
+													"anyOf": [
+														{
+															"type": "string"
+														},
+														{
+															"type": "number"
+														}
+													]
+												},
+												"default": [],
+												"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 											},
 											"source": {
 												"type": "array",
@@ -38176,12 +38222,20 @@
 												"fit": {
 													"type": "string",
 													"default": "any",
-													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"tfit": {
 													"type": "string",
 													"default": "any",
-													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+												},
+												"rfit": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": [],
+													"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 												},
 												"source": {
 													"type": "array",
@@ -38497,12 +38551,20 @@
 												"fit": {
 													"type": "string",
 													"default": "any",
-													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 												},
 												"tfit": {
 													"type": "string",
 													"default": "any",
-													"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+												},
+												"rfit": {
+													"type": "array",
+													"items": {
+														"type": "string"
+													},
+													"default": [],
+													"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 												},
 												"source": {
 													"type": "array",
@@ -38834,12 +38896,20 @@
 													"fit": {
 														"type": "string",
 														"default": "any",
-														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+														"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 													},
 													"tfit": {
 														"type": "string",
 														"default": "any",
-														"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+														"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+													},
+													"rfit": {
+														"type": "array",
+														"items": {
+															"type": "string"
+														},
+														"default": [],
+														"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 													},
 													"source": {
 														"type": "array",
@@ -45771,12 +45841,20 @@
 															"fit": {
 																"type": "string",
 																"default": "any",
-																"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+																"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
 															},
 															"tfit": {
 																"type": "string",
 																"default": "any",
-																"description": "\"any\", \"none\" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+																"description": "\"any\" or a whole number 0 to 100: that fit and up. More than 100 reads as 100."
+															},
+															"rfit": {
+																"type": "array",
+																"items": {
+																	"type": "string"
+																},
+																"default": [],
+																"description": "Each reviewer's fit in the latest review round, as \"slot:fit\" (\"B:80\": reviewer B, 80 and up)."
 															},
 															"source": {
 																"type": "array",

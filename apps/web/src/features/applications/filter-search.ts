@@ -28,6 +28,8 @@ export const filterSearchShape = {
 	laneMode: scalarParam,
 	fit: scalarParam,
 	tfit: scalarParam,
+	/** Reviewer fits, "B:80" each. */
+	rfit: listParam,
 	source: listParam,
 	resume: scalarParam,
 	letter: scalarParam,
@@ -52,7 +54,7 @@ export const FILTER_SEARCH_KEYS = Object.keys(filterSearchShape) as (keyof Filte
 /** The params a tab remembers: the filters without the sort, which the account keeps instead. */
 export const REMEMBERED_SEARCH_KEYS = FILTER_SEARCH_KEYS.filter((key) => key !== "sort" && key !== "dir");
 
-const ARRAY_KEYS = new Set(["stage", "build", "foundBy", "lane", "source", "attention", "tag", "notTag"]);
+const ARRAY_KEYS = new Set(["stage", "build", "foundBy", "lane", "rfit", "source", "attention", "tag", "notTag"]);
 const NUMBER_KEYS = new Set(["fit", "tfit", "added", "updated"]);
 
 /** Whether the address holds any filter param (the sort, view, create and applicationId don't count). */
