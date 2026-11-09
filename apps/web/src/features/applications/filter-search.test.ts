@@ -81,13 +81,22 @@ describe("searchFromFilters", () => {
 		expect([search.sort, search.dir]).toEqual(["role", "asc"]);
 	});
 
-	it("round-trips typed numbers: fit=75&tfit=none&added=10", () => {
-		const filters = { ...DEFAULT_APPLICATION_FILTERS, fit: "75", tfit: "none", added: "10", updated: "3" };
+	it("round-trips typed numbers: fit=75&added=10, and reads an old tfit=none as any", () => {
+		const filters = { ...DEFAULT_APPLICATION_FILTERS, fit: "75", added: "10", updated: "3" };
 		const search = searchFromFilters(filters, DEFAULT_APPLICATION_SORT);
-		expect([search.fit, search.tfit, search.added, search.updated]).toEqual([75, "none", 10, 3]);
+		expect([search.fit, search.tfit, search.added, search.updated]).toEqual([75, undefined, 10, 3]);
 		expect(filtersFromSearch(search).filters).toEqual(filters);
 		// The router may hand the numbers back as text; they read the same.
 		expect(filtersFromSearch({ fit: "75", tfit: "none", added: "10", updated: "3" }).filters).toEqual(filters);
+	});
+
+	it("round-trips reviewer fits: rfit=B:80, several as a list", () => {
+		const one = { ...DEFAULT_APPLICATION_FILTERS, rfit: ["B:80"] };
+		expect(searchFromFilters(one, DEFAULT_APPLICATION_SORT).rfit).toBe("B:80");
+		expect(filtersFromSearch(searchFromFilters(one, DEFAULT_APPLICATION_SORT)).filters).toEqual(one);
+		const two = { ...DEFAULT_APPLICATION_FILTERS, rfit: ["A:75", "B:80"] };
+		expect(searchFromFilters(two, DEFAULT_APPLICATION_SORT).rfit).toEqual(["A:75", "B:80"]);
+		expect(filtersFromSearch({ rfit: ["B:80", "A:75", "C:abc"] }).filters).toEqual(two);
 	});
 
 	it("round-trips", () => {
@@ -97,7 +106,8 @@ describe("searchFromFilters", () => {
 			stage: [...OPEN_STAGES, "closed" as const],
 			lane: ["Platform / reliability"],
 			laneMode: "primary" as const,
-			tfit: "none" as const,
+			tfit: "70",
+			rfit: ["B:80"],
 			notTag: ["agency"],
 			resume: "linked" as const,
 		};

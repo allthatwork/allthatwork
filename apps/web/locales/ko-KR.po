@@ -1802,6 +1802,8 @@ msgstr ""
 msgid "Add your name"
 msgstr "이름을 추가하세요"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Added"
@@ -1822,11 +1824,6 @@ msgstr ""
 #: src/features/career/shared.tsx
 msgid "Added by you"
 msgstr "직접 추가함"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Added in the last"
-msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private, and schedules come in switched off."
@@ -2171,6 +2168,10 @@ msgstr "답변이 복사되었습니다"
 #: src/features/settings/ai/providers.tsx
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
 msgstr "Anthropic, Gemini, Ollama, OpenAI 호환"
+
+#: src/features/applications/components/filters/number-filter-field.tsx
+msgid "any"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/career/knowledge/preferences.tsx
@@ -2547,11 +2548,6 @@ msgstr "어시스턴트 대화"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "어시스턴트."
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "At least"
-msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -7006,6 +7002,14 @@ msgstr ""
 msgid "In Knowledge"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "in the last"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "In the last"
+msgstr ""
+
 #: src/features/career/workspace/knowledge.tsx
 msgid "Include"
 msgstr ""
@@ -8138,6 +8142,10 @@ msgid "Lowest first"
 msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest fit from reviewer {slot}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Lowest search fit"
 msgstr ""
 
@@ -9180,10 +9188,6 @@ msgstr "이력서 없음"
 msgid "No resumes yet."
 msgstr "아직 이력서가 없습니다."
 
-#: src/features/applications/filter.ts
-msgid "No search fit"
-msgstr ""
-
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
 msgstr "기술 섹션을 찾을 수 없습니다."
@@ -9218,10 +9222,6 @@ msgstr "아직 태그 없음"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "No tags yet."
-msgstr ""
-
-#: src/features/applications/filter.ts
-msgid "No targeting fit"
 msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
@@ -9259,11 +9259,6 @@ msgstr "번호 {number} · {name}"
 #: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "없음"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "None yet"
-msgstr ""
 
 #: src/features/applications/components/views/save-view-dialog.tsx
 msgid "None, all open applications"
@@ -12142,7 +12137,7 @@ msgstr ""
 
 #. placeholder {0}: filters.fit
 #: src/features/applications/filter.ts
-msgid "Search {0}+"
+msgid "Search ≥ {0}"
 msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
@@ -13572,7 +13567,7 @@ msgstr ""
 
 #. placeholder {0}: filters.tfit
 #: src/features/applications/filter.ts
-msgid "Targeting {0}+"
+msgid "Targeting ≥ {0}"
 msgstr ""
 
 #: src/features/applications/components/detail/assessments.tsx
@@ -14025,10 +14020,6 @@ msgstr "검토가 완료되지 못했습니다. 다시 시도해 보세요."
 msgid "The review didn't finish."
 msgstr ""
 
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the reviewers' median"
-msgstr ""
-
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14053,10 +14044,6 @@ msgstr "차단 문제로 인해 점수가 제한됩니다: {0}"
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "점수는 기회가 아니라 텍스트가 얼마나 안정적으로 추출되는지를 반영합니다."
-
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the search's read"
-msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"
@@ -14934,6 +14921,8 @@ msgstr "이 지원의 세부 정보를 업데이트하세요."
 msgid "Update your password"
 msgstr "비밀번호 업데이트"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Updated"
@@ -14956,11 +14945,6 @@ msgstr ""
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
 msgstr "{total}개 중 {done}개를 업데이트했습니다. 잠긴 서류와 공개 링크를 설정할 수 없는 커버레터는 건너뛰었습니다."
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Updated in the last"
-msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Updates"

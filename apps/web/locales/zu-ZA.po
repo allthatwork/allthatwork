@@ -1797,6 +1797,8 @@ msgstr ""
 msgid "Add your name"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Added"
@@ -1816,11 +1818,6 @@ msgstr ""
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/shared.tsx
 msgid "Added by you"
-msgstr ""
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Added in the last"
 msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
@@ -2165,6 +2162,10 @@ msgstr ""
 
 #: src/features/settings/ai/providers.tsx
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
+msgstr ""
+
+#: src/features/applications/components/filters/number-filter-field.tsx
+msgid "any"
 msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
@@ -2541,11 +2542,6 @@ msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
-msgstr ""
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "At least"
 msgstr ""
 
 #: src/features/homepage/prepare.tsx
@@ -7001,6 +6997,14 @@ msgstr ""
 msgid "In Knowledge"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "in the last"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "In the last"
+msgstr ""
+
 #: src/features/career/workspace/knowledge.tsx
 msgid "Include"
 msgstr ""
@@ -8133,6 +8137,10 @@ msgid "Lowest first"
 msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest fit from reviewer {slot}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Lowest search fit"
 msgstr ""
 
@@ -9175,10 +9183,6 @@ msgstr ""
 msgid "No resumes yet."
 msgstr ""
 
-#: src/features/applications/filter.ts
-msgid "No search fit"
-msgstr ""
-
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
 msgstr ""
@@ -9215,10 +9219,6 @@ msgstr ""
 msgid "No tags yet."
 msgstr ""
 
-#: src/features/applications/filter.ts
-msgid "No targeting fit"
-msgstr ""
-
 #: src/features/resume/editor/check/job-match.tsx
 msgid "No terms stood out in this posting."
 msgstr ""
@@ -9253,11 +9253,6 @@ msgstr ""
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/applications/components/list-columns.tsx
 msgid "None"
-msgstr ""
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "None yet"
 msgstr ""
 
 #: src/features/applications/components/views/save-view-dialog.tsx
@@ -12137,7 +12132,7 @@ msgstr ""
 
 #. placeholder {0}: filters.fit
 #: src/features/applications/filter.ts
-msgid "Search {0}+"
+msgid "Search ≥ {0}"
 msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
@@ -13567,7 +13562,7 @@ msgstr ""
 
 #. placeholder {0}: filters.tfit
 #: src/features/applications/filter.ts
-msgid "Targeting {0}+"
+msgid "Targeting ≥ {0}"
 msgstr ""
 
 #: src/features/applications/components/detail/assessments.tsx
@@ -14020,10 +14015,6 @@ msgstr ""
 msgid "The review didn't finish."
 msgstr ""
 
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the reviewers' median"
-msgstr ""
-
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14047,10 +14038,6 @@ msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
-msgstr ""
-
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the search's read"
 msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
@@ -14929,6 +14916,8 @@ msgstr ""
 msgid "Update your password"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Updated"
@@ -14950,11 +14939,6 @@ msgstr ""
 
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
-msgstr ""
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Updated in the last"
 msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx

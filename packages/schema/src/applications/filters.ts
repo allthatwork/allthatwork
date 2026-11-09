@@ -31,13 +31,34 @@ const wholeNumber = (value: string | number): number | null => {
 };
 
 /**
- * A fit filter's value: "any", "none" (no fit yet) or a whole number 0 to 100 as text, meaning that fit and up. Never
- * fails: more than 100 reads as 100, and anything else that isn't a whole number reads as "any".
+ * A fit filter's value: "any" or a whole number 0 to 100 as text, meaning that fit and up. Never fails: more than 100
+ * reads as 100, and anything else that isn't a whole number reads as "any" (so does "none", which older links and saved
+ * views can hold from when the filter could ask for no fit yet).
  */
 export function normalizeFitFilter(value: string | number): string {
-	if (value === "none") return "none";
 	const number = wholeNumber(value);
 	return number === null ? "any" : String(Math.min(number, FIT_FILTER_MAX));
+}
+
+/** The longest reviewer slot a review can have (`targetingReviewSchema`). */
+const REVIEWER_SLOT_MAX = 40;
+
+/**
+ * The reviewer fit filters, each "slot:fit" ("B:80": reviewer B's fit in the latest review round, 80 and up). Never
+ * fails: entries without a slot or a fit are dropped, fits are read like the other fit filters, a reviewer set twice
+ * keeps the last, and the result is sorted by slot.
+ */
+export function normalizeReviewerFits(values: readonly string[]): string[] {
+	const bySlot = new Map<string, string>();
+	for (const value of values) {
+		const at = value.lastIndexOf(":");
+		if (at <= 0) continue;
+		const slot = value.slice(0, at).trim();
+		const fit = normalizeFitFilter(value.slice(at + 1));
+		if (!slot || slot.length > REVIEWER_SLOT_MAX || fit === "any") continue;
+		bySlot.set(slot.toLocaleLowerCase(), `${slot}:${fit}`);
+	}
+	return [...bySlot.values()].sort((a, b) => a.localeCompare(b));
 }
 
 /**
@@ -56,7 +77,13 @@ const fitFilterSchema = z
 	.transform(normalizeFitFilter)
 	.pipe(z.string())
 	.default("any")
-	.describe('"any", "none" (no fit yet) or a whole number 0 to 100: that fit and up. More than 100 reads as 100.');
+	.describe('"any" or a whole number 0 to 100: that fit and up. More than 100 reads as 100.');
+const reviewerFitsSchema = z
+	.array(z.union([z.string(), z.number()]).transform(String))
+	.transform(normalizeReviewerFits)
+	.pipe(z.array(z.string()))
+	.default(() => [])
+	.describe('Each reviewer\'s fit in the latest review round, as "slot:fit" ("B:80": reviewer B, 80 and up).');
 const daysFilterSchema = z
 	.union([z.string(), z.number()])
 	.transform(normalizeDaysFilter)
@@ -76,10 +103,12 @@ export const applicationFiltersSchema = z.object({
 	lane: z.array(z.string()).default(() => []),
 	/** Match either lane, or the primary lane only. */
 	laneMode: z.enum(["either", "primary"]).default("either"),
-	/** Search fit at least this (0 to 100), or `none` for no search fit yet. */
+	/** Search fit at least this (0 to 100). */
 	fit: fitFilterSchema,
-	/** Targeting fit at least this (0 to 100), or `none` for no targeting fit yet. */
+	/** Targeting fit (the reviewers' median) at least this (0 to 100). */
 	tfit: fitFilterSchema,
+	/** Single reviewers' fits in the latest review round, "slot:fit" each. */
+	rfit: reviewerFitsSchema,
 	/** Found on. */
 	source: z.array(z.string()).default(() => []),
 	resume: z.enum(DOCUMENT_FILTER_VALUES).default("any"),

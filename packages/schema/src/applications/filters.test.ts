@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applicationFiltersSchema, normalizeDaysFilter, normalizeFitFilter } from "./filters";
+import { applicationFiltersSchema, normalizeDaysFilter, normalizeFitFilter, normalizeReviewerFits } from "./filters";
 
 describe("fit filters", () => {
 	it("takes any whole number from 0 to 100, as text", () => {
@@ -15,10 +15,25 @@ describe("fit filters", () => {
 		expect(normalizeFitFilter(999)).toBe("100");
 	});
 
-	it("keeps any and none, and reads anything else as any", () => {
+	it("keeps any, and reads none (old links and views) and anything else as any", () => {
 		expect(normalizeFitFilter("any")).toBe("any");
-		expect(normalizeFitFilter("none")).toBe("none");
+		expect(normalizeFitFilter("none")).toBe("any");
 		for (const value of ["", "abc", "7.5", "-3", "85+", 7.5, -3]) expect(normalizeFitFilter(value)).toBe("any");
+	});
+});
+
+describe("reviewer fit filters", () => {
+	it("keeps slot:fit entries, reads fits like the other fit filters, keeps the last per reviewer, sorts by slot", () => {
+		expect(normalizeReviewerFits(["B:80", "A:75", "C:150", "D:any", "E:none", "noslot", ":80", "B:85"])).toEqual([
+			"A:75",
+			"B:85",
+			"C:100",
+		]);
+	});
+
+	it("defaults to none set", () => {
+		expect(applicationFiltersSchema.parse({}).rfit).toEqual([]);
+		expect(applicationFiltersSchema.parse({ rfit: ["B:80"] }).rfit).toEqual(["B:80"]);
 	});
 });
 
@@ -40,9 +55,9 @@ describe("date filters", () => {
 });
 
 describe("applicationFiltersSchema", () => {
-	it("parses typed numbers and old presets alike", () => {
+	it("parses typed numbers and old presets alike, and an old none as any", () => {
 		const filters = applicationFiltersSchema.parse({ fit: "75", tfit: "none", added: "10", updated: 14 });
-		expect(filters).toMatchObject({ fit: "75", tfit: "none", added: "10", updated: "14" });
+		expect(filters).toMatchObject({ fit: "75", tfit: "any", added: "10", updated: "14" });
 		expect(applicationFiltersSchema.parse({ fit: "85", added: "14" })).toMatchObject({ fit: "85", added: "14" });
 	});
 

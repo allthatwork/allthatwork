@@ -15,7 +15,7 @@ import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { APPLICATION_STATUSES } from "@reactive-resume/schema/applications/data";
-import { DOCUMENT_FILTER_VALUES, NOT_SET, OPEN_STAGES } from "@reactive-resume/schema/applications/filters";
+import { DOCUMENT_FILTER_VALUES, OPEN_STAGES } from "@reactive-resume/schema/applications/filters";
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
@@ -27,9 +27,12 @@ import {
 	markTag,
 	matchesFilters,
 	numberFieldText,
+	reviewerFitValue,
+	reviewerSlots,
 	tagMark,
 	toggleStage,
 	toggleValue,
+	withReviewerFit,
 } from "../../filter";
 import { getStageColor } from "../../stages";
 import { NumberFilterField } from "./number-filter-field";
@@ -49,7 +52,7 @@ export type FilterPanelProps = {
 export const documentLabel = (value: (typeof DOCUMENT_FILTER_VALUES)[number]) =>
 	({ any: t`Any`, linked: t`Linked`, none: t`None` })[value];
 
-/** The Fit and Dates fields' labels for screen readers; the rows show "At least" and "Added in the last … days". */
+/** The Fit and Dates fields' labels for screen readers; the rows show "≥" and "In the last … days". */
 export const numberFieldLabel = (key: "fit" | "tfit" | "added" | "updated") =>
 	({
 		fit: t`Lowest search fit`,
@@ -57,6 +60,56 @@ export const numberFieldLabel = (key: "fit" | "tfit" | "added" | "updated") =>
 		added: t`Days since added`,
 		updated: t`Days since updated`,
 	})[key];
+
+/** A reviewer's fit field label for screen readers. */
+export const reviewerFieldLabel = (slot: string) => t`Lowest fit from reviewer ${slot}`;
+
+type ReviewerLabelProps = { slot: string; model: string };
+
+/** A reviewer row's label: the slot ("B"), then the model it used last ("GPT"). */
+export function ReviewerLabel({ slot, model }: ReviewerLabelProps) {
+	return (
+		<span className="flex min-w-0 items-baseline gap-2">
+			<span className="font-semibold">{slot}</span>
+			{model && <span className="truncate text-xs text-ink-3">{model}</span>}
+		</span>
+	);
+}
+
+type NumberRowProps = {
+	label: ReactNode;
+	/** A line under the label. */
+	hint?: ReactNode;
+	/** Set in under the row above (the reviewers under Targeting fit). */
+	indent?: boolean;
+	/** Shows ≥ before the field (the fits). */
+	sign?: boolean;
+	field: ReactNode;
+	/** After the field ("days"). */
+	unit?: ReactNode;
+	/** How many show; null leaves the place empty. */
+	count: number | null;
+};
+
+/** One Fit or Dates row: the label, ≥ for a fit, the field, its unit, then how many show once the field holds a number. */
+function NumberRow({ label, hint, indent, sign, field, unit, count }: NumberRowProps) {
+	return (
+		<div className={cn("flex min-h-9 items-center gap-2 py-0.5 pe-2", indent ? "ps-5" : "ps-2")}>
+			<span className="grid min-w-0 flex-1">
+				<span className="truncate">{label}</span>
+				{hint && <span className="text-xs text-ink-3">{hint}</span>}
+			</span>
+			{sign && (
+				<span aria-hidden="true" className="text-base text-ink-3">
+					≥
+				</span>
+			)}
+			{field}
+			{unit && <span className="whitespace-nowrap text-ink-2">{unit}</span>}
+			<span className="w-8 text-end font-mono text-xs text-ink-3">{count ?? ""}</span>
+		</div>
+	);
+}
 
 /** Build statuses with the cards' icons and colors; no second checkbox for Not queued and Queued, a ring instead. */
 export function BuildMark({ value, label }: { value: BuildFilterValue; label: string }) {
@@ -186,51 +239,35 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 	const setNumber = (key: "fit" | "tfit" | "added" | "updated", value: string, replace: boolean) =>
 		onChange({ ...filters, [key]: value }, { replace });
 
-	const fitSection = (key: "fit" | "tfit", title: ReactNode, hint: string) => (
-		<>
-			<Heading hint={hint}>{title}</Heading>
-			<div className="flex min-h-9 items-center gap-2 px-2 py-[3px]">
-				<span className="whitespace-nowrap text-ink-2">
-					<Trans>At least</Trans>
-				</span>
-				<NumberFilterField
-					value={filters[key]}
-					kind="fit"
-					label={numberFieldLabel(key)}
-					onChange={(value, replace) => setNumber(key, value, replace)}
-					initialFocus={key === "fit"}
-					{...(onDone ? { onDone } : {})}
-				/>
-				{numberFieldText(filters[key]) && <span className="ms-auto font-mono text-xs text-ink-3">{countWith({})}</span>}
-			</div>
-			<OptionRow
-				checked={filters[key] === NOT_SET}
-				count={countWith({ [key]: NOT_SET })}
-				onToggle={() => onChange({ ...filters, [key]: filters[key] === NOT_SET ? "any" : NOT_SET })}
-			>
-				<Trans>None yet</Trans>
-			</OptionRow>
-		</>
+	const fitField = (key: "fit" | "tfit") => (
+		<NumberFilterField
+			value={filters[key]}
+			kind="fit"
+			label={numberFieldLabel(key)}
+			onChange={(value, replace) => setNumber(key, value, replace)}
+			initialFocus={key === "fit"}
+			{...(onDone ? { onDone } : {})}
+		/>
 	);
+	/** How many show, once the row's field holds a number. */
+	const filledCount = (value: string) => (numberFieldText(value) ? countWith({}) : null);
 
 	const dayRow = (key: "added" | "updated", label: ReactNode) => (
-		<>
-			<span className="whitespace-nowrap text-ink-2">{label}</span>
-			<NumberFilterField
-				value={filters[key]}
-				kind="days"
-				label={numberFieldLabel(key)}
-				onChange={(value, replace) => setNumber(key, value, replace)}
-				initialFocus={key === "added"}
-				{...(onDone ? { onDone } : {})}
-			/>
-			<span className="whitespace-nowrap text-ink-2">
-				<Trans>days</Trans>
-			</span>
-			<span className="text-end font-mono text-xs text-ink-3">
-				{numberFieldText(filters[key]) ? countWith({}) : ""}
-			</span>
-		</>
+		<NumberRow
+			label={label}
+			field={
+				<NumberFilterField
+					value={filters[key]}
+					kind="days"
+					label={numberFieldLabel(key)}
+					onChange={(value, replace) => setNumber(key, value, replace)}
+					initialFocus={key === "added"}
+					{...(onDone ? { onDone } : {})}
+				/>
+			}
+			unit={<Trans>days</Trans>}
+			count={filledCount(filters[key])}
+		/>
 	);
 
 	switch (facet) {
@@ -327,8 +364,42 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 		case "fit":
 			return (
 				<>
-					{fitSection("fit", <Trans>Search fit</Trans>, t`the search's read of the posting`)}
-					{fitSection("tfit", <Trans>Targeting fit</Trans>, t`the reviewers' median, after a build`)}
+					<NumberRow
+						label={<Trans>Search fit</Trans>}
+						hint={t`the search's read of the posting`}
+						sign
+						field={fitField("fit")}
+						count={filledCount(filters.fit)}
+					/>
+					<div className="mx-0.5 my-1 h-px bg-line" />
+					<NumberRow
+						label={<Trans>Targeting fit</Trans>}
+						hint={t`the reviewers' median, after a build`}
+						sign
+						field={fitField("tfit")}
+						count={filledCount(filters.tfit)}
+					/>
+					{reviewerSlots(applications).map(({ slot, model }) => {
+						const value = reviewerFitValue(filters, slot);
+						return (
+							<NumberRow
+								key={slot}
+								indent
+								label={<ReviewerLabel slot={slot} model={model} />}
+								sign
+								field={
+									<NumberFilterField
+										value={value}
+										kind="fit"
+										label={reviewerFieldLabel(slot)}
+										onChange={(next, replace) => onChange(withReviewerFit(filters, slot, next), { replace })}
+										{...(onDone ? { onDone } : {})}
+									/>
+								}
+								count={filledCount(value)}
+							/>
+						);
+					})}
 					<Footer onClear={clear} />
 				</>
 			);
@@ -363,10 +434,11 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 		case "dates":
 			return (
 				<>
-					<div className="grid grid-cols-[max-content_52px_max-content_1fr] items-center gap-x-2 gap-y-1.5 px-2 pt-1.5 pb-1">
-						{dayRow("added", <Trans>Added in the last</Trans>)}
-						{dayRow("updated", <Trans>Updated in the last</Trans>)}
-					</div>
+					<Heading>
+						<Trans>In the last</Trans>
+					</Heading>
+					{dayRow("added", <Trans>Added</Trans>)}
+					{dayRow("updated", <Trans>Updated</Trans>)}
 					<Footer onClear={clear} />
 				</>
 			);

@@ -1802,6 +1802,8 @@ msgstr ""
 msgid "Add your name"
 msgstr "Afegeix el teu nom"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Added"
@@ -1822,11 +1824,6 @@ msgstr ""
 #: src/features/career/shared.tsx
 msgid "Added by you"
 msgstr "Afegit per vós"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Added in the last"
-msgstr ""
 
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private, and schedules come in switched off."
@@ -2171,6 +2168,10 @@ msgstr "S'han copiat les respostes"
 #: src/features/settings/ai/providers.tsx
 msgid "Anthropic, Gemini, Ollama, OpenAI-compatible"
 msgstr "Compatible amb Anthropic, Gemini, Ollama, OpenAI"
+
+#: src/features/applications/components/filters/number-filter-field.tsx
+msgid "any"
+msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 #: src/features/career/knowledge/preferences.tsx
@@ -2547,11 +2548,6 @@ msgstr "Converses d'assistent"
 #: src/features/settings/ai/web-access.tsx
 msgid "Assistant."
 msgstr "Assistent."
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "At least"
-msgstr ""
 
 #: src/features/homepage/prepare.tsx
 msgid "At Northwind Labs I led research for our onboarding redesign. I interviewed 14 customers, found three drop-off points, and we shipped a shorter setup. Activation rose from 31% to 44%."
@@ -7006,6 +7002,14 @@ msgstr ""
 msgid "In Knowledge"
 msgstr ""
 
+#: src/features/applications/components/filters/filter-sheet.tsx
+msgid "in the last"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
+msgid "In the last"
+msgstr ""
+
 #: src/features/career/workspace/knowledge.tsx
 msgid "Include"
 msgstr ""
@@ -8138,6 +8142,10 @@ msgid "Lowest first"
 msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
+msgid "Lowest fit from reviewer {slot}"
+msgstr ""
+
+#: src/features/applications/components/filters/filter-panel.tsx
 msgid "Lowest search fit"
 msgstr ""
 
@@ -9180,10 +9188,6 @@ msgstr "Sense currículum"
 msgid "No resumes yet."
 msgstr "Encara no hi ha currículums."
 
-#: src/features/applications/filter.ts
-msgid "No search fit"
-msgstr ""
-
 #: src/features/ats-checker/messages.ts
 msgid "No skills section was found."
 msgstr "No s'ha trobat cap secció d'habilitats."
@@ -9218,10 +9222,6 @@ msgstr "Encara no hi ha etiquetes"
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "No tags yet."
-msgstr ""
-
-#: src/features/applications/filter.ts
-msgid "No targeting fit"
 msgstr ""
 
 #: src/features/resume/editor/check/job-match.tsx
@@ -9259,11 +9259,6 @@ msgstr "Núm. {number} · {name}"
 #: src/features/applications/components/list-columns.tsx
 msgid "None"
 msgstr "Cap"
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "None yet"
-msgstr ""
 
 #: src/features/applications/components/views/save-view-dialog.tsx
 msgid "None, all open applications"
@@ -12142,7 +12137,7 @@ msgstr ""
 
 #. placeholder {0}: filters.fit
 #: src/features/applications/filter.ts
-msgid "Search {0}+"
+msgid "Search ≥ {0}"
 msgstr ""
 
 #: src/features/settings/ai/web-access.tsx
@@ -13572,7 +13567,7 @@ msgstr ""
 
 #. placeholder {0}: filters.tfit
 #: src/features/applications/filter.ts
-msgid "Targeting {0}+"
+msgid "Targeting ≥ {0}"
 msgstr ""
 
 #: src/features/applications/components/detail/assessments.tsx
@@ -14025,10 +14020,6 @@ msgstr "La revisió no ha pogut acabar. Torna-ho a provar."
 msgid "The review didn't finish."
 msgstr ""
 
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the reviewers' median"
-msgstr ""
-
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the reviewers' median, after a build"
 msgstr ""
@@ -14053,10 +14044,6 @@ msgstr "La puntuació està limitada a causa d'un problema bloquejant: {0}"
 #: src/features/ats-checker/checker.tsx
 msgid "The score reflects how reliably text is extracted, not your chances."
 msgstr "La puntuació reflecteix la fiabilitat amb què s'extreu el text, no les vostres possibilitats."
-
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "the search's read"
-msgstr ""
 
 #: src/features/applications/components/filters/filter-panel.tsx
 msgid "the search's read of the posting"
@@ -14934,6 +14921,8 @@ msgstr "Actualitza els detalls d'aquesta candidatura."
 msgid "Update your password"
 msgstr "Actualitza la contrasenya"
 
+#: src/features/applications/components/filters/filter-panel.tsx
+#: src/features/applications/components/filters/filter-sheet.tsx
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/sort.ts
 msgid "Updated"
@@ -14956,11 +14945,6 @@ msgstr ""
 #: src/features/documents/document-actions.tsx
 msgid "Updated {done} of {total}. Locked documents, and letters for public links, were skipped."
 msgstr "S'han actualitzat {done} de {total}. S'han omès els documents bloquejats i, per als enllaços públics, les cartes."
-
-#: src/features/applications/components/filters/filter-panel.tsx
-#: src/features/applications/components/filters/filter-sheet.tsx
-msgid "Updated in the last"
-msgstr ""
 
 #: src/features/career/knowledge/import-contacts.tsx
 msgid "Updates"

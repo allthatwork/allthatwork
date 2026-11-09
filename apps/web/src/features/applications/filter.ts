@@ -92,9 +92,88 @@ function valuesOf(application: Application, facet: ListFacet, filters: Applicati
 	}
 }
 
-/** `wanted` is "any", "none" or a number: that fit and up (75 keeps 75). */
-const fitOk = (fit: number | null, wanted: string) =>
-	wanted === "any" ? true : wanted === NOT_SET ? fit === null : fit !== null && fit >= Number(wanted);
+/** `wanted` is "any" or a number: that fit and up (75 keeps 75); with a number, no fit doesn't match. */
+const fitOk = (fit: number | null, wanted: string) => wanted === "any" || (fit !== null && fit >= Number(wanted));
+
+/** A reviewer's fit in the application's latest review round, or null when it didn't run there or gave none. */
+export function reviewerFitOf(application: Pick<Application, "targetingReviews">, slot: string): number | null {
+	const reviews = application.targetingReviews;
+	if (reviews.length === 0) return null;
+	const latest = Math.max(...reviews.map((review) => review.round));
+	const key = keyOf(slot);
+	const review = reviews.find((entry) => entry.round === latest && keyOf(entry.reviewer) === key);
+	return review?.status === "ran" ? review.fit : null;
+}
+
+/** The reviewer fit filters as slot and value ("B:80" is B and "80"). */
+export const reviewerFits = (filters: ApplicationFilters) =>
+	filters.rfit.map((entry) => {
+		const at = entry.lastIndexOf(":");
+		return { slot: entry.slice(0, at), fit: entry.slice(at + 1) };
+	});
+
+/** A reviewer's fit filter value: a number, or "any" when that reviewer isn't filtered. */
+export const reviewerFitValue = (filters: ApplicationFilters, slot: string) =>
+	reviewerFits(filters).find((entry) => keyOf(entry.slot) === keyOf(slot))?.fit ?? "any";
+
+/** The filters with one reviewer's fit set to `value` ("any" removes it), kept in slot order. */
+export function withReviewerFit(filters: ApplicationFilters, slot: string, value: string): ApplicationFilters {
+	const others = filters.rfit.filter((entry) => keyOf(entry.slice(0, entry.lastIndexOf(":"))) !== keyOf(slot));
+	const rfit = value === "any" ? others : [...others, `${slot}:${value}`];
+	return { ...filters, rfit: rfit.sort((a, b) => a.localeCompare(b)) };
+}
+
+/** The model families a reviewer's free-text model name is shortened to, first match wins. */
+const MODEL_FAMILIES: readonly [RegExp, string][] = [
+	[/opus/i, "Opus"],
+	[/sonnet/i, "Sonnet"],
+	[/haiku/i, "Haiku"],
+	[/gpt|openai/i, "GPT"],
+	[/deepseek/i, "DeepSeek"],
+	[/glm/i, "GLM"],
+	[/gemini/i, "Gemini"],
+	[/grok/i, "Grok"],
+	[/qwen/i, "Qwen"],
+	[/kimi/i, "Kimi"],
+	[/llama/i, "Llama"],
+	[/mistral/i, "Mistral"],
+];
+
+/** A short name for a reviewer's model: its family ("Opus", "GPT"), or the name without provider and notes. */
+export function modelLabel(model: string): string {
+	const family = MODEL_FAMILIES.find(([pattern]) => pattern.test(model));
+	if (family) return family[1];
+	return model
+		.replace(/\s*\(.*\)\s*$/, "")
+		.replace(/^.*\//, "")
+		.trim();
+}
+
+export type ReviewerSlot = { slot: string; model: string };
+
+/**
+ * The reviewer slots in the applications' latest review rounds, A to Z, each with the model it used most recently (by
+ * when the application was targeted). A new slot shows up as soon as one application has it.
+ */
+export function reviewerSlots(applications: readonly Application[]): ReviewerSlot[] {
+	const newest = new Map<string, { slot: string; model: string; at: number }>();
+	for (const application of applications) {
+		const reviews = application.targetingReviews;
+		if (reviews.length === 0) continue;
+		const latest = Math.max(...reviews.map((review) => review.round));
+		const at = new Date(application.targetingAt ?? application.updatedAt).getTime();
+		for (const review of reviews) {
+			if (review.round !== latest) continue;
+			const slot = review.reviewer.trim();
+			const key = keyOf(slot);
+			const seen = newest.get(key);
+			if (!seen || at >= seen.at) newest.set(key, { slot, model: review.model || seen?.model || "", at });
+		}
+	}
+	return [...newest.values()]
+		.sort((a, b) => a.slot.localeCompare(b.slot))
+		.map(({ slot, model }) => ({ slot, model: modelLabel(model) }));
+}
 
 const documentOk = (linked: boolean, wanted: ApplicationFilters["resume"]) =>
 	wanted === "any" ? true : wanted === "linked" ? linked : !linked;
@@ -149,7 +228,11 @@ export function matchesFacet(
 			return valuesOf(application, facet, filters, context).some((value) => keys.has(keyOf(value)));
 		}
 		case "fit":
-			return fitOk(application.searchFit, filters.fit) && fitOk(application.targetingFit, filters.tfit);
+			return (
+				fitOk(application.searchFit, filters.fit) &&
+				fitOk(application.targetingFit, filters.tfit) &&
+				reviewerFits(filters).every(({ slot, fit }) => fitOk(reviewerFitOf(application, slot), fit))
+			);
 		case "documents":
 			return (
 				documentOk(resumeLinked(application), filters.resume) && documentOk(letterLinked(application), filters.letter)
@@ -233,7 +316,7 @@ export function isFacetSet(filters: ApplicationFilters, facet: FilterFacet): boo
 		case "lane":
 			return filters.lane.length > 0;
 		case "fit":
-			return filters.fit !== "any" || filters.tfit !== "any";
+			return filters.fit !== "any" || filters.tfit !== "any" || filters.rfit.length > 0;
 		case "documents":
 			return filters.resume !== "any" || filters.letter !== "any";
 		case "dates":
@@ -270,7 +353,7 @@ export function clearFacet(filters: ApplicationFilters, facet: FilterFacet): App
 		case "lane":
 			return { ...filters, lane: [], laneMode: d.laneMode };
 		case "fit":
-			return { ...filters, fit: d.fit, tfit: d.tfit };
+			return { ...filters, fit: d.fit, tfit: d.tfit, rfit: [] };
 		case "documents":
 			return { ...filters, resume: d.resume, letter: d.letter };
 		case "dates":
@@ -361,7 +444,7 @@ const IN_FLIGHT: readonly ApplicationStatus[] = ["applied", "screening", "interv
 type SummaryOptions = { noReplyDays?: number };
 
 /**
- * What a filter button says after its label ("Build: Built", "Found by: Dorel, Muse", "Fit: Search 85+"), or null when
+ * What a filter button says after its label ("Build: Built", "Found by: Dorel, Muse", "Fit: Search ≥ 85"), or null when
  * the filter isn't set. Stage always has one ("Open" by default).
  */
 export function summary(
@@ -390,9 +473,9 @@ export function summary(
 			return listValue(filters.attention.map((kind) => getAttentionLabel(kind, noReplyDays)));
 		case "fit": {
 			const parts: string[] = [];
-			if (filters.fit !== "any") parts.push(filters.fit === NOT_SET ? t`No search fit` : t`Search ${filters.fit}+`);
-			if (filters.tfit !== "any")
-				parts.push(filters.tfit === NOT_SET ? t`No targeting fit` : t`Targeting ${filters.tfit}+`);
+			if (filters.fit !== "any") parts.push(t`Search ≥ ${filters.fit}`);
+			if (filters.tfit !== "any") parts.push(t`Targeting ≥ ${filters.tfit}`);
+			for (const { slot, fit } of reviewerFits(filters)) parts.push(`${slot} ≥ ${fit}`);
 			return parts.join(", ");
 		}
 		case "documents": {
@@ -421,7 +504,7 @@ export type NumberFilterKind = "fit" | "days";
 
 const isNumberValue = (value: string) => /^\d+$/.test(value);
 
-/** What a number field shows for a filter value: the number, or nothing for any and none. */
+/** What a number field shows for a filter value: the number, or nothing for any. */
 export const numberFieldText = (value: string) => (isNumberValue(value) ? value : "");
 
 /** The filter value for what's typed in a number field: its digits, clamped; nothing (or 0 days) is any. */
