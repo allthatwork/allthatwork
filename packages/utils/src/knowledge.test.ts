@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-	ACTION_CONTEXT_CHARS,
+	actionContextChars,
 	factPromptChars,
 	findDuplicates,
 	normalizeFactText,
@@ -37,7 +37,18 @@ const story = (id: string, factIds: string[], updatedAt = "2026-10-10T00:00:00.0
 		tags: ["reliability"],
 	},
 });
-const limits = { coachFacts: 30, coachStories: 8, actionFactChars: 100, actionStoryChars: 400 };
+const context = {
+	actionPostingChars: 12_000,
+	actionRequirementChars: 6000,
+	actionNotesChars: 3000,
+	actionSearchNotesChars: 3000,
+	actionTargetingNotesChars: 6000,
+	actionContactChars: 3000,
+	actionResumeChars: 10_000,
+	actionLetterChars: 6000,
+};
+const limits = { coachFacts: 30, coachStories: 8, actionFactChars: 100, actionStoryChars: 400, ...context };
+const ACTION_CONTEXT_CHARS = 49_000;
 
 describe("prompt shapes", () => {
 	it("measures a fact and a story as an action writes them, without story fact ids", () => {
@@ -69,6 +80,18 @@ describe("storyHolds", () => {
 });
 
 describe("knowledgeBudget", () => {
+	it("counts the rest of an action's context from the limits: 49,000 characters at the defaults", () => {
+		expect(actionContextChars(context)).toBe(49_000);
+		expect(actionContextChars({ ...context, actionTargetingNotesChars: 120_000 })).toBe(163_000);
+		const raised = knowledgeBudget({
+			facts: [],
+			stories: [],
+			limits: { ...limits, actionTargetingNotesChars: 120_000 },
+			contextTokens: null,
+		});
+		expect(raised.tokens.budget).toBe(Math.ceil((100 + 400 + 163_000) / 4));
+	});
+
 	it("reports what fits, and what an action sends at most", () => {
 		const budget = knowledgeBudget({
 			facts: [fact("f1", "I lead incident reviews.")],

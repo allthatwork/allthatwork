@@ -31,6 +31,7 @@ export function AiLimitsSection() {
 	const id = useId();
 	const characters = t`characters`;
 	const seconds = t`seconds`;
+	const requirements = t`requirements`;
 
 	return (
 		<section aria-labelledby={`${id}-title`} className="overflow-hidden rounded-xl border border-line bg-surface">
@@ -78,6 +79,33 @@ export function AiLimitsSection() {
 						limits: [
 							{ name: "actionFactChars", label: <Trans>Facts in each action</Trans>, unit: characters },
 							{ name: "actionStoryChars", label: <Trans>Stories in each action</Trans>, unit: characters },
+							{ name: "actionPostingChars", label: <Trans>Posting in each action</Trans>, unit: characters },
+							{
+								name: "actionRequirementChars",
+								label: <Trans>Requirements in each action</Trans>,
+								unit: characters,
+							},
+							{ name: "actionNotesChars", label: <Trans>Your notes in each action</Trans>, unit: characters },
+							{
+								name: "actionSearchNotesChars",
+								label: <Trans>Job search notes in each action</Trans>,
+								unit: characters,
+							},
+							{
+								name: "actionTargetingNotesChars",
+								label: <Trans>Targeting note in each action</Trans>,
+								unit: characters,
+							},
+							{ name: "actionContactChars", label: <Trans>Contacts in each action</Trans>, unit: characters },
+							{ name: "actionResumeChars", label: <Trans>Resume in each action</Trans>, unit: characters },
+							{ name: "actionLetterChars", label: <Trans>Cover letter in each action</Trans>, unit: characters },
+							{ name: "practiceStoryChars", label: <Trans>Story chosen in Practise</Trans>, unit: characters },
+							{ name: "fitRequirements", label: <Trans>Requirements Fit scores</Trans>, unit: requirements },
+							{
+								name: "postingRequirements",
+								label: <Trans>Requirements read from a posting</Trans>,
+								unit: requirements,
+							},
 							{
 								name: "actionTimeoutSeconds",
 								label: <Trans>Time limit for Fit, Apply and other actions</Trans>,

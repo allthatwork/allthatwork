@@ -46626,6 +46626,72 @@
 																	"maximum": 1000000,
 																	"default": 10000
 																},
+																"actionPostingChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 12000
+																},
+																"actionRequirementChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 6000
+																},
+																"actionNotesChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 3000
+																},
+																"actionSearchNotesChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 3000
+																},
+																"actionTargetingNotesChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 6000
+																},
+																"actionContactChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 3000
+																},
+																"actionResumeChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 10000
+																},
+																"actionLetterChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 6000
+																},
+																"practiceStoryChars": {
+																	"type": "integer",
+																	"minimum": 500,
+																	"maximum": 1000000,
+																	"default": 8500
+																},
+																"fitRequirements": {
+																	"type": "integer",
+																	"minimum": 5,
+																	"maximum": 100,
+																	"default": 20
+																},
+																"postingRequirements": {
+																	"type": "integer",
+																	"minimum": 5,
+																	"maximum": 100,
+																	"default": 30
+																},
 																"actionTimeoutSeconds": {
 																	"type": "integer",
 																	"minimum": 30,
@@ -46972,7 +47038,7 @@
 																			},
 																			"requirements": {
 																				"type": "array",
-																				"maxItems": 20,
+																				"maxItems": 100,
 																				"items": {
 																					"type": "object",
 																					"properties": {
@@ -54306,6 +54372,72 @@
 											"maximum": 1000000,
 											"default": 10000
 										},
+										"actionPostingChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 12000
+										},
+										"actionRequirementChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 6000
+										},
+										"actionNotesChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 3000
+										},
+										"actionSearchNotesChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 3000
+										},
+										"actionTargetingNotesChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 6000
+										},
+										"actionContactChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 3000
+										},
+										"actionResumeChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 10000
+										},
+										"actionLetterChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 6000
+										},
+										"practiceStoryChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 8500
+										},
+										"fitRequirements": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 100,
+											"default": 20
+										},
+										"postingRequirements": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 100,
+											"default": 30
+										},
 										"actionTimeoutSeconds": {
 											"type": "integer",
 											"minimum": 30,
@@ -54454,6 +54586,72 @@
 										"maximum": 1000000,
 										"default": 10000
 									},
+									"actionPostingChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 12000
+									},
+									"actionRequirementChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 6000
+									},
+									"actionNotesChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 3000
+									},
+									"actionSearchNotesChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 3000
+									},
+									"actionTargetingNotesChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 6000
+									},
+									"actionContactChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 3000
+									},
+									"actionResumeChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 10000
+									},
+									"actionLetterChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 6000
+									},
+									"practiceStoryChars": {
+										"type": "integer",
+										"minimum": 500,
+										"maximum": 1000000,
+										"default": 8500
+									},
+									"fitRequirements": {
+										"type": "integer",
+										"minimum": 5,
+										"maximum": 100,
+										"default": 20
+									},
+									"postingRequirements": {
+										"type": "integer",
+										"minimum": 5,
+										"maximum": 100,
+										"default": 30
+									},
 									"actionTimeoutSeconds": {
 										"type": "integer",
 										"minimum": 30,
@@ -54544,6 +54742,72 @@
 											"minimum": 2000,
 											"maximum": 1000000,
 											"default": 10000
+										},
+										"actionPostingChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 12000
+										},
+										"actionRequirementChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 6000
+										},
+										"actionNotesChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 3000
+										},
+										"actionSearchNotesChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 3000
+										},
+										"actionTargetingNotesChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 6000
+										},
+										"actionContactChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 3000
+										},
+										"actionResumeChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 10000
+										},
+										"actionLetterChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 6000
+										},
+										"practiceStoryChars": {
+											"type": "integer",
+											"minimum": 500,
+											"maximum": 1000000,
+											"default": 8500
+										},
+										"fitRequirements": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 100,
+											"default": 20
+										},
+										"postingRequirements": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 100,
+											"default": 30
 										},
 										"actionTimeoutSeconds": {
 											"type": "integer",
@@ -58009,7 +58273,7 @@
 															},
 															"requirements": {
 																"type": "array",
-																"maxItems": 20,
+																"maxItems": 100,
 																"items": {
 																	"type": "object",
 																	"properties": {
@@ -59347,7 +59611,7 @@
 																		},
 																		"requirements": {
 																			"type": "array",
-																			"maxItems": 20,
+																			"maxItems": 100,
 																			"items": {
 																				"type": "object",
 																				"properties": {

@@ -81,6 +81,28 @@ export const aiLimitsSchema = z.object({
 	actionFactChars: z.number().int().min(2000).max(1_000_000).default(10_000),
 	/** Fit, Apply, Prepare and the other application actions: stories in one request. */
 	actionStoryChars: z.number().int().min(2000).max(1_000_000).default(10_000),
+	/** Application actions: the posting's text in one request. */
+	actionPostingChars: z.number().int().min(500).max(1_000_000).default(12_000),
+	/** Application actions: the requirements read from the posting, in one request. */
+	actionRequirementChars: z.number().int().min(500).max(1_000_000).default(6000),
+	/** Application actions: the user's own notes on the application. */
+	actionNotesChars: z.number().int().min(500).max(1_000_000).default(3000),
+	/** Application actions: the job search's notes on the posting. */
+	actionSearchNotesChars: z.number().int().min(500).max(1_000_000).default(3000),
+	/** Application actions: the resume targeting note (its opening carries the summary). */
+	actionTargetingNotesChars: z.number().int().min(500).max(1_000_000).default(6000),
+	/** Application actions: the application's contacts. */
+	actionContactChars: z.number().int().min(500).max(1_000_000).default(3000),
+	/** Application actions: the resume sent or linked, as text. */
+	actionResumeChars: z.number().int().min(500).max(1_000_000).default(10_000),
+	/** Application actions: the cover letter sent or linked, as text. */
+	actionLetterChars: z.number().int().min(500).max(1_000_000).default(6000),
+	/** Practise: the story chosen for an answer, within "Stories in each action". Its title keeps 300; its parts share the rest. */
+	practiceStoryChars: z.number().int().min(500).max(1_000_000).default(8500),
+	/** Fit: requirements scored in one check. Extra rows from the model are dropped, not an error. */
+	fitRequirements: z.number().int().min(5).max(100).default(20),
+	/** Requirements kept when a posting is read into an application. */
+	postingRequirements: z.number().int().min(5).max(100).default(30),
 	/** Fit, Apply, Prepare and the other application actions, including scheduled preparation. */
 	actionTimeoutSeconds: z.number().int().min(30).max(900).default(120),
 	/** Coach and Assistant: one model call within a reply. Never more than the whole reply's limit. */
@@ -219,6 +241,15 @@ export type OfferTerms = z.infer<typeof offerTermsSchema>;
 
 const text = (max = 2000) => z.string().trim().max(max);
 
+/** One requirement in a Fit check, with how well the user's Knowledge supports it. */
+export const fitRequirementSchema = z.object({
+	text: text(300),
+	origin: z.enum(["posting", "inferred"]),
+	status: z.enum(["supported", "partial", "missing"]),
+	evidence: text(600),
+	factIds: z.array(z.string()).max(10).default([]),
+});
+
 /**
  * What the coach wrote for an application, by kind. Each one is produced by `career.generate` from a fixed shape,
  * so tabs render it without parsing prose, and it still opens when the provider is down.
@@ -229,16 +260,9 @@ export const savedItemDataSchema = z.discriminatedUnion("kind", [
 		headline: text(200),
 		summary: text(600),
 		requirements: z
-			.array(
-				z.object({
-					text: text(300),
-					origin: z.enum(["posting", "inferred"]),
-					status: z.enum(["supported", "partial", "missing"]),
-					evidence: text(600),
-					factIds: z.array(z.string()).max(10).default([]),
-				}),
-			)
-			.max(20),
+			.array(fitRequirementSchema)
+			// The most "Requirements Fit scores" allows, so a saved Fit still loads after that limit is lowered.
+			.max(100),
 		/** Checks against Preferences: salary, office days, location. `met: null` is "needs confirming". */
 		checks: z.array(z.object({ label: text(60), met: z.boolean().nullable(), text: text(300) })).max(5),
 		ask: z.object({ person: text(100), text: text(400) }).nullable(),
