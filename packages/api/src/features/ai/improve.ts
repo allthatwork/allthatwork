@@ -9,16 +9,20 @@ const REQUESTS = {
 	shorter: "Make it shorter",
 } as const;
 
+/** The most of a line Improve rewrites, and the most of the field around it the model reads. */
+export const IMPROVE_LINE_CHARS = 10_000;
+export const IMPROVE_CONTEXT_CHARS = 10_000;
+
 export const improveInputSchema = z.object({
 	aiProviderId: z.string().optional(),
-	line: z.string().trim().min(1).max(2_000),
+	line: z.string().trim().min(1).max(IMPROVE_LINE_CHARS),
 	action: z.enum(["verb", "result", "shorter", "custom"]),
 	/** The user's own words, for "Ask for something else…". */
 	request: z.string().trim().max(500).optional(),
 	/** Where the line sits, e.g. "Description · Fieldnote". */
 	where: z.string().trim().max(200).default(""),
-	/** The rest of the field, so a result can come from the lines around it. */
-	context: z.string().max(10_000).default(""),
+	/** The whole field, so a result can come from the lines around it. Cut around the line before the model reads it. */
+	context: z.string().max(200_000).default(""),
 });
 
 type ImproveInput = z.infer<typeof improveInputSchema>;
@@ -42,6 +46,29 @@ type ImproveServiceInput = ImproveInput & {
 	reasoning?: Parameters<typeof getModel>[0]["reasoning"];
 };
 
+/**
+ * At most `max` characters of the field around the line: the line in the middle, whole lines around it where the cut
+ * allows. A line the field doesn't contain (edited meanwhile) gets the start of the field.
+ */
+export function contextAround(context: string, line: string, max = IMPROVE_CONTEXT_CHARS): string {
+	if (context.length <= max) return context;
+	const at = Math.max(0, context.indexOf(line));
+	const length = Math.min(line.length, max);
+	const start = Math.min(Math.max(0, at - Math.floor((max - length) / 2)), context.length - max);
+	let from = start;
+	let to = start + max;
+	// Drop the part lines at the edges, but never into the line itself.
+	if (from > 0) {
+		const newline = context.indexOf("\n", from);
+		if (newline !== -1 && newline < at) from = newline + 1;
+	}
+	if (to < context.length) {
+		const newline = context.lastIndexOf("\n", to - 1);
+		if (newline >= at + length) to = newline;
+	}
+	return context.slice(from, to);
+}
+
 function buildUserPrompt(input: ImproveInput): string {
 	const request =
 		input.action === "custom" ? `Something else: ${input.request || "Improve it."}` : REQUESTS[input.action];
@@ -49,7 +76,7 @@ function buildUserPrompt(input: ImproveInput): string {
 		REQUEST: request,
 		WHERE: input.where || "Not given",
 		LINE: input.line,
-		CONTEXT: input.context || "None",
+		CONTEXT: contextAround(input.context, input.line) || "None",
 	};
 
 	// One pass, so text in the line that looks like a placeholder stays as it is.

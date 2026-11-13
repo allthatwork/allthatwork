@@ -6,6 +6,7 @@ import { promptFact, promptStory } from "@reactive-resume/utils/knowledge";
 import { rankByRelevance, storyText } from "@reactive-resume/utils/relevance";
 import { aiProvidersService } from "../ai-providers/service";
 import { getModel } from "../ai/service";
+import { tolerant } from "../ai/tolerant";
 import { generateJson } from "../applications/ai";
 import { careerService } from "./service";
 
@@ -14,9 +15,13 @@ const shape = (kind: SavedItemData["kind"]) =>
 		z.ZodRawShape,
 		z.core.$strip
 	>;
+/** The facts an action cites: the first 20 when the model names more. */
 const factIds = z.array(z.string()).max(20).catch([]);
 
-/** What the model returns per task: the saved shape minus what the user supplied, plus the facts it used. */
+/**
+ * What the model returns per task: the saved shape minus what the user supplied, plus the facts it used. The model's
+ * reply is parsed with `tolerant`, so one item or one word too many is trimmed instead of failing the action.
+ */
 const outputs = {
 	fit: shape("fit").omit({ kind: true }).extend({ factIds }),
 	briefing: shape("briefing")
@@ -37,19 +42,35 @@ const outputs = {
 
 /**
  * Fit's output for a number of requirements ("Requirements Fit scores"): the model is asked for at most that many,
- * and rows past it are dropped rather than failing the action.
+ * and rows past it are dropped rather than failing the action, like anything else over its size.
  */
 export const fitOutput = (rows: number) => {
 	const schema = outputs.fit.extend({ requirements: z.array(fitRequirementSchema).max(rows) });
-	const parser = z.preprocess(
-		(value) =>
-			value && typeof value === "object" && "requirements" in value && Array.isArray(value.requirements)
-				? { ...value, requirements: value.requirements.slice(0, rows) }
-				: value,
-		schema,
-	);
-	return { schema, parser };
+	return { schema, parser: tolerant(schema) };
 };
+
+/**
+ * The longest start of `text` whose JSON form fits in `budget` characters. JSON size is what's measured, so escaped
+ * and control characters can't push a selected item past its budget; a character pair is never split.
+ */
+export function excerpt(text: string, budget: number) {
+	// A cut inside a character pair moves back before it, which also keeps the JSON size growing with the cut.
+	const at = (end: number) => {
+		const code = text.charCodeAt(end - 1);
+		return code >= 0xd800 && code <= 0xdbff ? end - 1 : end;
+	};
+	const size = (end: number) => JSON.stringify(text.slice(0, at(end))).length;
+	if (size(text.length) <= budget) return text;
+	// The longest cut that fits, found by halving.
+	let low = 0;
+	let high = text.length;
+	while (low < high) {
+		const middle = Math.ceil((low + high) / 2);
+		if (size(middle) <= budget) low = middle;
+		else high = middle - 1;
+	}
+	return text.slice(0, at(low));
+}
 
 /** The Practise story: its title keeps 300 characters, and its parts share the rest in these proportions. */
 const STORY_TITLE_CHARS = 300;
@@ -198,12 +219,6 @@ export async function generateCareer(input: GenerateInput) {
 		return chosen;
 	};
 	// An explicitly chosen story and every active supporting fact get space before optional context.
-	// Measure JSON size so escaped/control characters cannot make a selected item exceed its budget.
-	const excerpt = (text: string, budget: number) => {
-		let end = text.length;
-		while (JSON.stringify(text.slice(0, end)).length > budget && end > 0) end = Math.floor(end * 0.8);
-		return text.slice(0, end);
-	};
 	const { limits } = context;
 	const { actionFactChars, actionStoryChars } = limits;
 	// Knowledge goes in by relevance to the posting and this task, not by age; what doesn't match still fills the rest.
@@ -264,7 +279,7 @@ export async function generateCareer(input: GenerateInput) {
 	const { schema, parser } =
 		task.task === "fit"
 			? fitOutput(limits.fitRequirements)
-			: { schema: outputs[task.task], parser: outputs[task.task] };
+			: { schema: outputs[task.task], parser: tolerant(outputs[task.task]) };
 	const prompt = JSON.stringify({
 		locale: input.locale,
 		now: new Date().toISOString(),

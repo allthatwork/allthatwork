@@ -1863,10 +1863,11 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		});
 		if (!result.answer) throw new Error("Expected an answer.");
 		expect(result.answer.factIds).toHaveLength(10);
-		const outputSchema = fixture.generate.mock.calls[0]?.[2] as { safeParse: (value: unknown) => { success: boolean } };
-		expect(
-			outputSchema.safeParse({ text: "I mentor colleagues.", factIds: facts.map((item) => item.id) }).success,
-		).toBe(false);
+		// The model's reply keeps the first 10 cited facts instead of failing the draft.
+		const outputSchema = fixture.generate.mock.calls[0]?.[2] as { parse: (value: unknown) => { factIds: string[] } };
+		expect(outputSchema.parse({ text: "I mentor colleagues.", factIds: facts.map((item) => item.id) }).factIds).toEqual(
+			facts.slice(0, 10).map((item) => item.id),
+		);
 		await service.saveWorkspace(
 			"alice",
 			"alice-app",

@@ -11,6 +11,18 @@ type ReviewSuggestion = {
 	impact: WritingNote["impact"];
 };
 
+/** The endpoint's caps on passages: how many, and the longest one it may rewrite. */
+const MAX_PASSAGES = 120;
+const MAX_PASSAGE_CHARS = 4_000;
+
+/**
+ * The passages a writing review may rewrite. An accepted rewrite replaces the whole passage, so each one goes whole:
+ * one longer than the cap is left out (the review still reads it in the resume's text, but can't rewrite it).
+ */
+export function reviewPassages(passages: readonly Passage[]) {
+	return passages.filter((passage) => passage.text.length <= MAX_PASSAGE_CHARS).slice(0, MAX_PASSAGES);
+}
+
 const toPageTarget = (target: Proposal["target"]): PageMapTarget =>
 	target.itemId
 		? { kind: "item", sectionId: target.sectionId, itemId: target.itemId }

@@ -10,6 +10,11 @@ const MAX_JOB_DESCRIPTION_CHARS = 20_000;
 const MAX_FINDINGS = 120;
 /** A long resume's bullets and paragraphs. */
 const MAX_PASSAGES = 120;
+/**
+ * The longest passage the review may rewrite. A rewrite replaces the whole passage, so a passage is sent whole or not
+ * at all: the client leaves longer ones out, and the review only reads them in the resume's text.
+ */
+const MAX_PASSAGE_CHARS = 4_000;
 
 export const atsReviewInputSchema = z.object({
 	aiProviderId: z.string().optional(),
@@ -30,7 +35,7 @@ export const atsReviewInputSchema = z.object({
 			z.object({
 				id: z.string().trim().min(1).max(16).describe("The client's id for the passage, echoed back as `passageId`."),
 				where: z.string().max(200).describe("Where the passage sits, e.g. “Experience · Lumen · bullet 2”."),
-				text: z.string().max(1_000),
+				text: z.string().max(MAX_PASSAGE_CHARS),
 			}),
 		)
 		.max(MAX_PASSAGES)

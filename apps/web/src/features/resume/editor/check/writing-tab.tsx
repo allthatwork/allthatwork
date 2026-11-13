@@ -17,7 +17,7 @@ import { ProposalList } from "../proposals/proposal-list";
 import { useEditorStore } from "../store";
 import { describeEntry } from "../write/model";
 import { getSectionName } from "./issues";
-import { mapWritingReview } from "./review";
+import { mapWritingReview, reviewPassages } from "./review";
 import { AiProviderLoadState } from "@/features/settings/integrations/ai-provider-load-state";
 import { AiProviderPicker } from "@/features/settings/integrations/components/ai-provider-picker";
 import { useHasUsableAiProvider } from "@/features/settings/integrations/hooks/use-has-usable-ai-provider";
@@ -27,8 +27,6 @@ import { orpc } from "@/libs/orpc/client";
 /** The endpoint's caps; the text and lists are trimmed here so a long resume is never refused. */
 const MAX_TEXT_CHARS = 50_000;
 const MAX_FINDINGS = 120;
-const MAX_PASSAGES = 120;
-const MAX_PASSAGE_CHARS = 1_000;
 
 type WritingTabProps = { data: ResumeData; issues: readonly CheckIssue[] };
 
@@ -47,13 +45,15 @@ export function WritingTab({ data, issues }: WritingTabProps) {
 	const setProposals = useEditorStore((state) => state.setProposals);
 
 	const provider = usableProviders.find((entry) => entry.id === providerOverride) ?? usableProviders[0];
-	const passages = collectPassages(data, {
-		summary: getSectionName(data, "summary"),
-		sectionTitle: (sectionId) => getSectionName(data, sectionId),
-		entryTitle: (type, entry) => describeEntry(type as never, entry as never).title,
-		bullet: (n) => t`bullet ${n}`,
-		paragraph: (n) => t`paragraph ${n}`,
-	}).slice(0, MAX_PASSAGES);
+	const passages = reviewPassages(
+		collectPassages(data, {
+			summary: getSectionName(data, "summary"),
+			sectionTitle: (sectionId) => getSectionName(data, sectionId),
+			entryTitle: (type, entry) => describeEntry(type as never, entry as never).title,
+			bullet: (n) => t`bullet ${n}`,
+			paragraph: (n) => t`paragraph ${n}`,
+		}),
+	);
 
 	const { mutate, isPending, error, reset } = useMutation({
 		...orpc.ai.atsReview.mutationOptions(),
@@ -77,7 +77,7 @@ export function WritingTab({ data, issues }: WritingTabProps) {
 			passages: passages.map((passage) => ({
 				id: passage.id,
 				where: passage.location.slice(0, 200),
-				text: passage.text.slice(0, MAX_PASSAGE_CHARS),
+				text: passage.text,
 			})),
 		});
 	};
