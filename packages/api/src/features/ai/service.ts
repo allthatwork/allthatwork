@@ -73,6 +73,8 @@ type GetModelInput = {
 	baseURL?: string;
 	/** The connection's reasoning setting; null or absent sends nothing (Model default). */
 	reasoning?: AiReasoning | null | undefined;
+	/** The connection's context window in tokens, when it has one. Ollama loads the model with it. */
+	contextTokens?: number | null | undefined;
 };
 
 const MAX_AI_FILE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -120,8 +122,35 @@ function withReasoning<T extends Exclude<LanguageModel, string>>(input: GetModel
 	});
 }
 
+/**
+ * Ollama runs every request in the model's own default context (often 4,096 tokens or less) and silently drops the start
+ * of a longer prompt, unless the request says how big a window to load. Sends the connection's context window as
+ * `num_ctx` when it has one, keeping any other Ollama options the request carries.
+ */
+function withOllamaContext<T extends Exclude<LanguageModel, string>>(input: GetModelInput, model: T) {
+	const { provider, contextTokens } = input;
+	if (provider !== "ollama" || !contextTokens) return model;
+	return wrapLanguageModel({
+		model,
+		middleware: {
+			transformParams: ({ params }) => {
+				const ollama = params.providerOptions?.ollama ?? {};
+				const options =
+					ollama.options && typeof ollama.options === "object" && !Array.isArray(ollama.options) ? ollama.options : {};
+				return Promise.resolve({
+					...params,
+					providerOptions: {
+						...params.providerOptions,
+						ollama: { ...ollama, options: { ...options, num_ctx: contextTokens } },
+					},
+				});
+			},
+		},
+	});
+}
+
 export function getModel(input: GetModelInput) {
-	return withReasoning(input, createModel(input));
+	return withReasoning(input, withOllamaContext(input, createModel(input)));
 }
 
 function createModel(input: GetModelInput) {
@@ -174,6 +203,7 @@ const aiCredentialsSchema = z.object({
 	apiKey: z.string().trim().min(1),
 	baseURL: z.string().optional().default(""),
 	reasoning: aiReasoningSchema.nullable().optional(),
+	contextTokens: z.number().int().positive().nullable().optional(),
 });
 
 export const fileInputSchema = z.object({

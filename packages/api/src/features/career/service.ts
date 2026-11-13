@@ -1630,7 +1630,7 @@ export const careerService = {
 					role: opportunity.role,
 					location: opportunity.location || null,
 					sourceUrl: opportunity.url,
-					jobDescription: opportunity.description || opportunity.snippet,
+					jobDescription: opportunity.description || null,
 					status: "saved",
 					activity: [{ id: generateId(), type: "stage", stage: "saved", at: new Date() }],
 					foundBy: FOUND_BY_IN_APP_SEARCH,

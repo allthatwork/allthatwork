@@ -1,6 +1,7 @@
 import type { AccountArchive, ImportListArea, ImportSetting } from "./archive";
 import type { ImportChoices, ImportMode, ImportStep, ImportSummary } from "./run";
 import { plural, t } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
@@ -547,7 +548,35 @@ const KIND_LABELS = (): Record<string, string> => ({
 
 type ImportReportProps = { summary: ImportSummary };
 
+/** One line for text the import cut to fit, such as postings longer than the API keeps. */
+function shortenedLine({ field, max, count }: ImportSummary["shortened"][number], locale: string) {
+	const limit = new Intl.NumberFormat(locale).format(max);
+	switch (field) {
+		case "jobDescription":
+			return plural(count, {
+				one: `# job posting was longer than ${limit} characters and was cut to fit.`,
+				other: `# job postings were longer than ${limit} characters and were cut to fit.`,
+			});
+		case "searchNotes":
+			return plural(count, {
+				one: `# search note was longer than ${limit} characters and was cut to fit.`,
+				other: `# search notes were longer than ${limit} characters and were cut to fit.`,
+			});
+		case "targetingNotes":
+			return plural(count, {
+				one: `# targeting note was longer than ${limit} characters and was cut to fit.`,
+				other: `# targeting notes were longer than ${limit} characters and were cut to fit.`,
+			});
+		default:
+			return plural(count, {
+				one: `# field was longer than ${limit} characters and was cut to fit.`,
+				other: `# fields were longer than ${limit} characters and were cut to fit.`,
+			});
+	}
+}
+
 function ImportReport({ summary }: ImportReportProps) {
+	const { i18n } = useLingui();
 	const labels = KIND_LABELS();
 	const reasons = {
 		unreadable: t`couldn't be read`,
@@ -578,6 +607,11 @@ function ImportReport({ summary }: ImportReportProps) {
 				{summary.skipped.map((skip) => (
 					<li key={`${skip.kind}-${skip.reason}`}>
 						{labels[skip.kind] ?? skip.kind}: {skip.count} {reasons[skip.reason]}
+					</li>
+				))}
+				{summary.shortened.map((cut) => (
+					<li key={`${cut.kind}-${cut.field}`}>
+						{labels[cut.kind] ?? cut.kind}: {shortenedLine(cut, i18n.locale)}
 					</li>
 				))}
 				{summary.attachments > 0 && (

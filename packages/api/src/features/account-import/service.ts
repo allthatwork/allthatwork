@@ -16,6 +16,11 @@ import { contactNames } from "@reactive-resume/schema/directory-names";
 import { noReplyDaysSchema } from "@reactive-resume/utils/reminders";
 import { resumePagesSchema } from "@reactive-resume/utils/resume-pages";
 import { generateId } from "@reactive-resume/utils/string";
+import {
+	MAX_APPLICATION_JOB_DESCRIPTION_CHARS,
+	MAX_APPLICATION_SEARCH_NOTES_CHARS,
+	MAX_APPLICATION_TARGETING_NOTES_CHARS,
+} from "../../dto/application";
 import { careerService } from "../career/service";
 import { sanitizeCoverLetterHtml } from "../cover-letters/html";
 import { writeLetterVersion } from "../cover-letters/versions";
@@ -44,6 +49,7 @@ class Report {
 	added: Record<string, number> = {};
 	skipped = new Map<string, number>();
 	madePrivate = 0;
+	shortened = new Map<string, number>();
 
 	add(kind: string, amount = 1) {
 		if (amount > 0) this.added[kind] = (this.added[kind] ?? 0) + amount;
@@ -51,6 +57,11 @@ class Report {
 
 	skip(kind: string, reason: Reason, amount = 1) {
 		if (amount > 0) this.skipped.set(`${kind}:${reason}`, (this.skipped.get(`${kind}:${reason}`) ?? 0) + amount);
+	}
+
+	shorten(kind: string, field: string, max: number) {
+		const key = `${kind}:${field}:${max}`;
+		this.shortened.set(key, (this.shortened.get(key) ?? 0) + 1);
 	}
 
 	map(kind: IdKind, from: string, to: string) {
@@ -66,8 +77,37 @@ class Report {
 				return { kind, reason: reason as Reason, count: amount };
 			}),
 			madePrivate: this.madePrivate,
+			shortened: [...this.shortened].map(([key, count]) => {
+				const [kind = "", field = "", max = "0"] = key.split(":");
+				return { kind, field, max: Number(max), count };
+			}),
 		};
 	}
+}
+
+// Text fields the API returns no longer than this. Anything longer fails the API's output check (a posting breaks the
+// whole applications list), so the import cuts them to fit and says so.
+const CAPPED_APPLICATION_FIELDS = {
+	jobDescription: MAX_APPLICATION_JOB_DESCRIPTION_CHARS,
+	searchNotes: MAX_APPLICATION_SEARCH_NOTES_CHARS,
+	targetingNotes: MAX_APPLICATION_TARGETING_NOTES_CHARS,
+} as const;
+
+/** The record with each capped text field cut to the API's limit, counting what was cut. */
+function capApplicationText<T extends Record<keyof typeof CAPPED_APPLICATION_FIELDS, string | null>>(
+	report: Report,
+	application: T,
+): T {
+	const capped = { ...application };
+	for (const [field, max] of Object.entries(CAPPED_APPLICATION_FIELDS) as Array<
+		[keyof typeof CAPPED_APPLICATION_FIELDS, number]
+	>) {
+		const text = capped[field];
+		if (text === null || text.length <= max) continue;
+		capped[field] = text.slice(0, max) as T[typeof field];
+		report.shorten("applications", field, max);
+	}
+	return capped;
 }
 
 /** Parses each record, counting the ones that can't be read. */
@@ -437,7 +477,8 @@ async function importApplications(userId: string, input: AreaInput<"applications
 		await importApplicationViews(tx, userId, views, report);
 
 		const known = flattenIds(await verifiedIds(tx, userId, input.ids, ["resume", "letter", "company", "contact"]));
-		const rows = applications.map(({ id: oldId, resumeId, coverLetterId, companyId, ...application }) => {
+		const rows = applications.map((record) => {
+			const { id: oldId, resumeId, coverLetterId, companyId, ...application } = capApplicationText(report, record);
 			const id = generateId();
 			report.map("application", oldId, id);
 			return defined({

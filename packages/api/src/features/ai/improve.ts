@@ -45,6 +45,7 @@ type ImproveServiceInput = ImproveInput & {
 	apiKey: string;
 	baseURL: string;
 	reasoning?: Parameters<typeof getModel>[0]["reasoning"];
+	contextTokens?: Parameters<typeof getModel>[0]["contextTokens"];
 };
 
 /**

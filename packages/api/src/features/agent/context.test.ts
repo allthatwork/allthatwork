@@ -117,15 +117,50 @@ describe("pruneAgentModelContext — tier 3 (turn dropping)", () => {
 });
 
 describe("estimateTokens", () => {
-	it("treats binary attachment data as opaque bytes instead of serializing it", () => {
-		const bytes = new Uint8Array(1024 * 1024);
-		const message = { role: "user", content: [{ type: "image", image: bytes, mediaType: "image/png" }] };
+	it("counts an image at a flat 1,500 tokens, whatever its size", () => {
+		const bytes = new Uint8Array(3 * 1024 * 1024);
+		const image = { role: "user", content: [{ type: "image", image: bytes, mediaType: "image/png" }] };
+		const asFile = { type: "file", data: bytes, mediaType: "image/jpeg" };
 
-		const estimate = estimateTokens(message);
+		// The message adds a few tokens of structure around the part.
+		expect(estimateTokens(image)).toBeGreaterThanOrEqual(1500);
+		expect(estimateTokens(image)).toBeLessThan(1520);
+		expect(estimateTokens(asFile)).toBe(1500);
+	});
 
-		// ~bytes/4 tokens, computed without expanding each byte into JSON.
-		expect(estimate).toBeGreaterThan(200_000);
-		expect(estimate).toBeLessThan(300_000);
+	it("counts a PDF or audio file at bytes / 4, never more than 30,000", () => {
+		const small = { type: "file", data: new Uint8Array(40_000), mediaType: "application/pdf" };
+		const big = { type: "file", data: new Uint8Array(1024 * 1024), mediaType: "application/pdf" };
+		const audio = { type: "file", data: new Uint8Array(5 * 1024 * 1024), mediaType: "audio/mpeg" };
+		// Base64 text counts its decoded bytes, without expanding it through the text tokenizer.
+		const base64 = { type: "file", data: "A".repeat(40_000), mediaType: "application/pdf" };
+
+		expect(estimateTokens(small)).toBe(10_000);
+		expect(estimateTokens(big)).toBe(30_000);
+		expect(estimateTokens(audio)).toBe(30_000);
+		expect(estimateTokens(base64)).toBe(7500);
+	});
+
+	it("counts an object that only looks like a part by its fields, not as an attachment", () => {
+		const record = { type: "file", filename: "notes.pdf", summary: "x".repeat(4000) };
+
+		expect(estimateTokens(record)).toBeGreaterThan(100);
+	});
+
+	it("keeps earlier tool results when a screenshot is attached", () => {
+		const screenshot: ModelMessage = {
+			role: "user",
+			content: [
+				{ type: "text", text: "Here is the posting." },
+				{ type: "image", image: new Uint8Array(3 * 1024 * 1024), mediaType: "image/png" },
+			],
+		};
+		const messages = [user("first question"), ...readResumeExchange("call-1"), screenshot];
+
+		const pruned = pruneAgentModelContext(messages, 40_000);
+
+		expect(JSON.stringify(snapshotValue(pruned[2]))).toContain("Alice");
+		expect(JSON.stringify(pruned)).not.toContain("pruned to fit");
 	});
 });
 

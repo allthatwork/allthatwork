@@ -139,6 +139,17 @@ export const accountImportDto = {
 				)
 				.default([]),
 			madePrivate: z.number().int().default(0).describe("Resumes that were public and came in private."),
+			shortened: z
+				.array(
+					z.object({
+						kind: z.string(),
+						field: z.string(),
+						max: z.number().int().describe("The most characters the API keeps for this field."),
+						count: z.number().int(),
+					}),
+				)
+				.default([])
+				.describe("Text longer than the API returns for its field, cut to fit, by kind and field."),
 		}),
 	},
 };

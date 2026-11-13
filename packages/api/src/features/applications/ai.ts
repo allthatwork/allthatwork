@@ -42,6 +42,7 @@ async function resolveModel(userId: string) {
 		apiKey: provider.apiKey,
 		...(provider.baseURL ? { baseURL: provider.baseURL } : {}),
 		reasoning: provider.reasoning,
+		contextTokens: provider.contextTokens,
 	});
 }
 
@@ -276,6 +277,7 @@ export const aiRouter = {
 					apiKey: provider.apiKey,
 					...(provider.baseURL ? { baseURL: provider.baseURL } : {}),
 					reasoning: provider.reasoning,
+					contextTokens: provider.contextTokens,
 				});
 				const limits = await careerService.aiLimits(context.user.id);
 				// Past "Time limit for other AI requests" this falls back like any AI failure: the posting still loads.

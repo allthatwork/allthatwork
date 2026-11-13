@@ -22,9 +22,14 @@ it("mounts the MCP bridge with streamable-http and the api key header", async ()
 		serverName: "resume",
 		url: "https://rxresu.me/mcp",
 		headers: { "x-api-key": "test-key" },
-		toolCallTimeoutMs: 60_000,
+		toolCallTimeoutMs: 130_000,
 		failOnStartupError: true,
 	});
+});
+
+it("waits longer for a tool call than the server's 120-second action limit", () => {
+	expect(Config({ apiKey: "test-key" }).toolCallTimeoutMs).toBe(130_000);
+	expect(Config({ apiKey: "test-key", toolCallTimeoutMs: 5_000 }).toolCallTimeoutMs).toBe(5_000);
 });
 
 it("strips a trailing slash from the configured url", async () => {

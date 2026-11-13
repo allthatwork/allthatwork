@@ -30,5 +30,7 @@ export const Config = z.object({
 		.pattern(SERVER_NAME_PATTERN)
 		.default("resume")
 		.description("Tool namespace. Must match [A-Za-z0-9_-]{1,32} and be unique across live MCP instances."),
-	toolCallTimeoutMs: z.natural().default(60_000).description("Per-tool-call timeout in milliseconds."),
+	// Longer than the server's default limit on an action (120 seconds), so a slow AI action ends with the server's answer
+	// instead of the plugin giving up first.
+	toolCallTimeoutMs: z.natural().default(130_000).description("Per-tool-call timeout in milliseconds."),
 });
