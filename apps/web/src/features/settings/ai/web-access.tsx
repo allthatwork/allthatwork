@@ -375,6 +375,18 @@ export function WebAccessSection() {
 									label: <Trans>One scheduled discovery run</Trans>,
 									unit: t`seconds`,
 								},
+								{
+									name: "boardFetchTimeoutSeconds",
+									label: <Trans>Reading one job board</Trans>,
+									unit: t`seconds`,
+								},
+							],
+						},
+						{
+							legend: <Trans>Sizes</Trans>,
+							limits: [
+								{ name: "webPageChars", label: <Trans>Text kept from one page</Trans>, unit: t`characters` },
+								{ name: "webSearchResults", label: <Trans>Results from one search</Trans>, unit: t`results` },
 							],
 						},
 					]}

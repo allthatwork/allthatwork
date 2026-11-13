@@ -4,8 +4,10 @@ import { streamText } from "ai";
 import { letterDraftSystemPrompt } from "@reactive-resume/ai/prompts";
 import { buildMarkdown } from "@reactive-resume/resume/markdown";
 import { aiProvidersService } from "../ai-providers/service";
+import { requestTimeoutError, sdkCallSettings } from "../ai/request-limits";
 import { getModel } from "../ai/service";
 import { applicationService } from "../applications/service";
+import { careerService } from "../career/service";
 import { resumeService } from "../resume/service";
 import { coverLetterService } from "./service";
 
@@ -41,7 +43,8 @@ function buildLetterDraftPrompt(input: PromptInput): string {
 
 /**
  * Streams a draft of the letter's body from its resume and its application's posting. Nothing is saved: the client
- * shows the draft until it's kept or discarded, so a failure leaves the letter as it was.
+ * shows the draft until it's kept or discarded, so a failure leaves the letter as it was. The whole draft runs within
+ * "Time limit for other AI requests".
  */
 export async function* draftLetterBody(
 	input: CoverLetterDraftInput & { userId: string; signal?: AbortSignal | undefined },
@@ -58,7 +61,10 @@ export async function* draftLetterBody(
 		throw new ORPCError("BAD_REQUEST", { message: "Link the letter to a resume or an application first." });
 	}
 
-	const provider = await aiProvidersService.getDefaultRunnable({ userId });
+	const [provider, limits] = await Promise.all([
+		aiProvidersService.getDefaultRunnable({ userId }),
+		careerService.aiLimits(userId),
+	]);
 	if (!provider) {
 		throw new ORPCError("BAD_REQUEST", { message: "No AI provider is set up. Add one in Settings to draft letters." });
 	}
@@ -66,6 +72,9 @@ export async function* draftLetterBody(
 	const posting =
 		application?.jobDescription?.trim() ||
 		(application?.requirements.length ? application.requirements.map((item) => `- ${item}`).join("\n") : undefined);
+	const timeout = AbortSignal.timeout(limits.requestTimeoutSeconds * 1000);
+	const signal = input.signal ? AbortSignal.any([timeout, input.signal]) : timeout;
+	const timedOut = () => timeout.aborted && !input.signal?.aborted;
 	const result = streamText({
 		model: getModel({
 			provider: provider.provider,
@@ -82,7 +91,7 @@ export async function* draftLetterBody(
 			resume: resume ? buildMarkdown(resume.data) : undefined,
 			previous: input.previous,
 		}),
-		...(input.signal ? { abortSignal: input.signal } : {}),
+		...sdkCallSettings({ signal, maxRetries: limits.modelRetries }),
 	});
 
 	// The client names the provider in "Drafting stopped: … didn't respond".
@@ -96,10 +105,14 @@ export async function* draftLetterBody(
 	try {
 		for await (const part of result.stream) {
 			if (part.type === "text-delta") yield part.text;
-			else if (part.type === "error") throw unreachable(part.error);
+			else if (part.type === "error")
+				throw timedOut() ? requestTimeoutError(limits.requestTimeoutSeconds) : unreachable(part.error);
 		}
 	} catch (error) {
 		if (input.signal?.aborted) return;
+		if (timedOut()) throw requestTimeoutError(limits.requestTimeoutSeconds);
 		throw error instanceof ORPCError ? error : unreachable(error);
 	}
+	// A stream cut by the time limit can end without an error part; the draft so far isn't the whole letter.
+	if (timedOut()) throw requestTimeoutError(limits.requestTimeoutSeconds);
 }

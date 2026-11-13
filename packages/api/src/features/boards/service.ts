@@ -13,7 +13,7 @@ import {
 	boardsInHtml,
 	boardSlugGuesses,
 } from "@reactive-resume/schema/boards";
-import { careerProfileDataSchema } from "@reactive-resume/schema/career";
+import { aiLimitsSchema, careerProfileDataSchema } from "@reactive-resume/schema/career";
 import { canonicalOpportunityUrl, plainSnippet } from "../career/scheduling";
 import { lockDirectoryOwner, ownedCompany } from "../directory/links";
 import { readBuiltinPage } from "../web-access/builtin";
@@ -25,7 +25,6 @@ type StoredPosting = typeof tables.jobBoardPosting.$inferSelect;
 
 /** A board fetched (or tried) within this long is reused, so accounts and runs close together cost one request. */
 export const BOARD_REUSE_MS = 3_600_000;
-const BOARD_TIMEOUT_MS = 30_000;
 /** Greenhouse job pages read per board and run; the rest wait for the next run. Confirming reads more, once. */
 const DETAILS_PER_RUN = 40;
 const DETAILS_ON_CONFIRM = 200;
@@ -56,6 +55,18 @@ async function preferencesOf(userId: string): Promise<ScreenPreferences> {
 	return careerProfileDataSchema.parse(row?.data ?? {});
 }
 
+/**
+ * "Reading one job board" (Settings → AI & developer → Web access) for the account the work is for: one board's list
+ * of roles, or one of its job pages. A scheduled check uses the limits of the account it runs for.
+ */
+export async function boardTimeoutMs(userId: string) {
+	const [row] = await db
+		.select({ aiLimits: tables.careerProfile.aiLimits })
+		.from(tables.careerProfile)
+		.where(eq(tables.careerProfile.userId, userId));
+	return aiLimitsSchema.parse(row?.aiLimits ?? {}).boardFetchTimeoutSeconds * 1000;
+}
+
 /** The shared row for a board, created on first use. */
 async function boardRow(ref: BoardRef) {
 	const host = boardApiHost(ref);
@@ -71,9 +82,10 @@ async function boardRow(ref: BoardRef) {
 /**
  * Brings one shared board up to date, unless it was checked within the hour (then what's stored is reused). New
  * postings are first seen now, ones still listed are seen again, and open ones no longer listed are closed, with
- * every account's found role for them. A failed fetch only records its error: the board keeps its postings.
+ * every account's found role for them. A failed fetch only records its error: the board keeps its postings. The fetch
+ * gets `timeoutMs`, the time limit of the account asking.
  */
-export async function refreshBoard(board: Board): Promise<Board> {
+export async function refreshBoard(board: Board, timeoutMs: number): Promise<Board> {
 	const now = new Date();
 	const [claimed] = await db
 		.update(tables.jobBoard)
@@ -91,7 +103,7 @@ export async function refreshBoard(board: Board): Promise<Board> {
 	}
 	let listing: Awaited<ReturnType<typeof fetchBoard>>;
 	try {
-		listing = await fetchBoard(refOf(board), AbortSignal.timeout(BOARD_TIMEOUT_MS), !board.name);
+		listing = await fetchBoard(refOf(board), AbortSignal.timeout(timeoutMs), !board.name);
 	} catch (error) {
 		const reason = error instanceof BoardError ? error.reason : "unreachable";
 		const [failed] = await db
@@ -176,12 +188,12 @@ export async function refreshBoard(board: Board): Promise<Board> {
 }
 
 /** Reads the Greenhouse job pages these postings still lack (once per job), for pay and full text. */
-async function fillGreenhouseDetails(board: Board, postings: StoredPosting[], limit: number) {
+async function fillGreenhouseDetails(board: Board, postings: StoredPosting[], limit: number, timeoutMs: number) {
 	const missing = postings.filter((posting) => !posting.detailFetchedAt).slice(0, limit);
 	const ref = refOf(board);
 	const filled = await pool(missing, 4, async (posting) => {
 		try {
-			const detail = await fetchGreenhouseDetail(ref, posting.externalId, AbortSignal.timeout(BOARD_TIMEOUT_MS));
+			const detail = await fetchGreenhouseDetail(ref, posting.externalId, AbortSignal.timeout(timeoutMs));
 			const [row] = await db
 				.update(tables.jobBoardPosting)
 				.set({ ...detail, detailFetchedAt: new Date() })
@@ -210,7 +222,7 @@ export type FoundRole = { company: Watched["company"]; posting: StoredPosting };
  * those first seen after the board was confirmed. Greenhouse postings get their job page read before the pay and
  * office checks; one that couldn't be read waits for the next run.
  */
-async function collectRoles(watched: Watched[], preferences: ScreenPreferences, all: boolean) {
+async function collectRoles(watched: Watched[], preferences: ScreenPreferences, all: boolean, timeoutMs: number) {
 	const found: FoundRole[] = [];
 	for (const { watch, board, company } of watched) {
 		const open = await db
@@ -225,9 +237,9 @@ async function collectRoles(watched: Watched[], preferences: ScreenPreferences, 
 			);
 		let candidates = open.filter((posting) => passesTitleAndPlace(posting, preferences));
 		if (board.ats === "greenhouse")
-			candidates = (await fillGreenhouseDetails(board, candidates, all ? DETAILS_ON_CONFIRM : DETAILS_PER_RUN)).filter(
-				(posting) => posting.detailFetchedAt,
-			);
+			candidates = (
+				await fillGreenhouseDetails(board, candidates, all ? DETAILS_ON_CONFIRM : DETAILS_PER_RUN, timeoutMs)
+			).filter((posting) => posting.detailFetchedAt);
 		for (const posting of candidates) if (passesPayAndOffice(posting, preferences)) found.push({ company, posting });
 	}
 	return found;
@@ -324,13 +336,15 @@ function watchedBy(userId: string, companyId?: string): Promise<Watched[]> {
  * collect the roles first seen since each was confirmed that pass the screen. Boards that failed are named.
  */
 export async function checkBoards(userId: string) {
-	const watched = await watchedBy(userId);
+	const [watched, timeoutMs] = await Promise.all([watchedBy(userId), boardTimeoutMs(userId)]);
 	const boards = [...new Map(watched.map((row) => [row.board.id, row.board])).values()];
-	const fresh = new Map((await pool(boards, 3, refreshBoard)).map((board) => [board.id, board]));
+	const fresh = new Map(
+		(await pool(boards, 3, (board) => refreshBoard(board, timeoutMs))).map((board) => [board.id, board]),
+	);
 	const current = watched.map((row) => ({ ...row, board: fresh.get(row.board.id) ?? row.board }));
 	await fillWebsites(current);
 	const failed = [...new Set(current.filter((row) => row.board.error).map((row) => row.company.name))];
-	const found = await collectRoles(current, await preferencesOf(userId), false);
+	const found = await collectRoles(current, await preferencesOf(userId), false, timeoutMs);
 	return { found, failed };
 }
 
@@ -490,7 +504,7 @@ export const boardsService = {
 	 */
 	fromLink: async (userId: string, companyId: string, link: string) => {
 		await ownedCompany(db, userId, companyId);
-		const signal = AbortSignal.timeout(BOARD_TIMEOUT_MS);
+		const signal = AbortSignal.timeout(await boardTimeoutMs(userId));
 		let refs: BoardRef[] = [];
 		const direct = boardFromUrl(link);
 		if (direct) refs = [direct];
@@ -527,7 +541,7 @@ export const boardsService = {
 	 */
 	guess: async (userId: string, companyId: string) => {
 		const company = await ownedCompany(db, userId, companyId);
-		const signal = AbortSignal.timeout(BOARD_TIMEOUT_MS);
+		const signal = AbortSignal.timeout(await boardTimeoutMs(userId));
 		const refs = boardSlugGuesses(company.name).flatMap((slug): BoardRef[] => [
 			{ ats: "greenhouse", region: "us", slug },
 			{ ats: "greenhouse", region: "eu", slug },
@@ -545,7 +559,8 @@ export const boardsService = {
 	 */
 	watch: async (userId: string, input: BoardRef & { companyId: string; source: BoardSource }) => {
 		await ownedCompany(db, userId, input.companyId);
-		const board = await refreshBoard(await boardRow(input));
+		const timeoutMs = await boardTimeoutMs(userId);
+		const board = await refreshBoard(await boardRow(input), timeoutMs);
 		if (!board.fetchedAt)
 			throw new ORPCError("BAD_REQUEST", {
 				message: "Couldn't read this company's jobs page. Check the link and try again.",
@@ -577,7 +592,7 @@ export const boardsService = {
 		const rows = await watchedBy(userId, input.companyId);
 		const current = rows.filter((row) => row.watch.id === watched.id);
 		await fillWebsites(current);
-		const found = await collectRoles(current, await preferencesOf(userId), true);
+		const found = await collectRoles(current, await preferencesOf(userId), true, timeoutMs);
 		const added = await db.transaction((tx) => saveFoundRoles(tx, userId, found));
 		return { id: watched.id, added };
 	},
@@ -621,11 +636,11 @@ export const boardsService = {
 			userId,
 			ranked.map((row) => row.id),
 		);
-		const preferences = await preferencesOf(userId);
+		const [preferences, timeoutMs] = await Promise.all([preferencesOf(userId), boardTimeoutMs(userId)]);
 		return pool(ranked, 3, async (row) => {
 			const ref = detected.get(row.id)?.[0] ?? null;
 			if (!ref) return { ...row, board: null, openRoles: null };
-			const board = await refreshBoard(await boardRow(ref));
+			const board = await refreshBoard(await boardRow(ref), timeoutMs);
 			if (!board.fetchedAt) return { ...row, board: { ...ref, url: boardPageUrl(ref) }, openRoles: null };
 			const open = await db
 				.select()

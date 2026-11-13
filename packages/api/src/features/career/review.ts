@@ -1,4 +1,4 @@
-import type { KnowledgeFinding, KnowledgeReview } from "@reactive-resume/schema/career";
+import type { AiLimits, KnowledgeFinding, KnowledgeReview } from "@reactive-resume/schema/career";
 import { ORPCError } from "@orpc/client";
 import { eq } from "drizzle-orm";
 import z from "zod";
@@ -7,13 +7,11 @@ import * as tables from "@reactive-resume/db/schema";
 import { knowledgeReviewSchema } from "@reactive-resume/schema/career";
 import { generateId } from "@reactive-resume/utils/string";
 import { aiProvidersService } from "../ai-providers/service";
+import { modelCallOptions } from "../ai/request-limits";
 import { getModel } from "../ai/service";
 import { tolerant } from "../ai/tolerant";
 import { generateJson } from "../applications/ai";
 import { careerService } from "./service";
-
-/** At most this many requests in one review; facts past them wait for the next one, or larger limits. */
-export const MAX_REVIEW_BATCHES = 8;
 
 const output = z.object({
 	findings: z
@@ -52,10 +50,11 @@ const reviewFact = (fact: ReviewFact) => ({
 });
 
 /**
- * Facts in requests of at most `budget` JSON characters, kept by group and then by age so related facts are read
- * together. A fact larger than the budget goes alone. Returns the batches and how many facts didn't fit.
+ * Facts in at most `maxBatches` requests of at most `budget` JSON characters, kept by group and then by age so related
+ * facts are read together. A fact larger than the budget goes alone. Returns the batches and how many facts didn't
+ * fit; those wait for the next review, or larger limits.
  */
-export function reviewBatches(facts: readonly ReviewFact[], budget: number, maxBatches = MAX_REVIEW_BATCHES) {
+export function reviewBatches(facts: readonly ReviewFact[], budget: number, maxBatches: number) {
 	const ordered = [...facts].sort(
 		(a, b) => (a.group ?? "￿").localeCompare(b.group ?? "￿") || a.createdAt.getTime() - b.createdAt.getTime(),
 	);
@@ -79,6 +78,10 @@ export function reviewBatches(facts: readonly ReviewFact[], budget: number, maxB
 	return { batches, skipped: facts.length - reviewed };
 }
 
+/** "Size of one batch": the number set, or when it's blank, the action fact and story budgets together. */
+export const reviewBatchChars = (limits: Pick<AiLimits, "reviewBatchChars" | "actionFactChars" | "actionStoryChars">) =>
+	limits.reviewBatchChars ?? limits.actionFactChars + limits.actionStoryChars;
+
 const stored = async (userId: string) => {
 	const [row] = await db.select().from(tables.careerReview).where(eq(tables.careerReview.userId, userId));
 	return row ? knowledgeReviewSchema.parse(row.data) : null;
@@ -90,8 +93,8 @@ export const knowledgeReview = {
 	/**
 	 * Cleans up what needs no judgment (application copies of shared facts), then asks the default AI connection to
 	 * flag contradictions, superseded figures and unsupported claims among the shared facts that reach the AI. Private
-	 * groups, switched-off and archived facts are never sent. Each request stays within the action fact and story
-	 * budgets and the action time limit.
+	 * groups, switched-off and archived facts are never sent. "Batches in one review" and "Size of one batch" bound the
+	 * requests (a blank size uses the action fact and story budgets), and each stays within the action time limit.
 	 */
 	run: async (input: { userId: string; signal?: AbortSignal }) => {
 		const provider = await aiProvidersService.getDefaultRunnable({ userId: input.userId });
@@ -106,7 +109,7 @@ export const knowledgeReview = {
 		]);
 		// The shared facts the AI already reads; private groups, switched-off and archived facts never go.
 		const shared = facts.filter((fact) => fact.applicationId === null);
-		const { batches } = reviewBatches(shared, limits.actionFactChars + limits.actionStoryChars);
+		const { batches } = reviewBatches(shared, reviewBatchChars(limits), limits.reviewBatches);
 		const model = getModel({
 			provider: provider.provider,
 			model: provider.model,
@@ -129,7 +132,7 @@ export const knowledgeReview = {
 				},
 				// Findings, ids or a note past their size are trimmed rather than losing the whole batch.
 				tolerant(output),
-				signal,
+				{ ...modelCallOptions(limits), signal },
 			).catch((error: unknown) => {
 				if (!(error instanceof DOMException) || error.name !== "TimeoutError") throw error;
 				throw new ORPCError("GATEWAY_TIMEOUT", {

@@ -1,6 +1,6 @@
 import type { WorkspaceTab } from "@reactive-resume/schema/career";
 import { tool, type ToolSet } from "ai";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
 import z from "zod";
 import { careerSystemPromptTemplate } from "@reactive-resume/ai/prompts";
 import { db } from "@reactive-resume/db/client";
@@ -108,17 +108,22 @@ export function buildCareerTools(input: CareerToolsInput): ToolSet {
 			description: "Read the user's own debriefs of real interviews for this application. Practice is excluded.",
 			inputSchema: z.object({}),
 			execute: async () => {
-				const rows = await db
+				// Saved debriefs obey the same privacy cutoff as replayed chat messages. Only debriefs count toward
+				// "Interview debriefs the Coach can read", so other saved work never crowds them out.
+				const cutoff = await careerService.memoryCutoff(input.userId);
+				return db
 					.select({ at: careerArtifact.createdAt, data: careerArtifact.data })
 					.from(careerArtifact)
 					.where(
-						and(eq(careerArtifact.userId, input.userId), eq(careerArtifact.applicationId, scope.applicationId ?? "")),
+						and(
+							eq(careerArtifact.userId, input.userId),
+							eq(careerArtifact.applicationId, scope.applicationId ?? ""),
+							sql`${careerArtifact.data}->>'kind' = 'debrief'`,
+							cutoff ? gt(careerArtifact.createdAt, cutoff) : undefined,
+						),
 					)
 					.orderBy(desc(careerArtifact.createdAt))
-					.limit(30);
-				// Saved debriefs obey the same privacy cutoff as replayed chat messages.
-				const cutoff = await careerService.memoryCutoff(input.userId);
-				return rows.filter((row) => row.data.kind === "debrief" && (!cutoff || row.at > cutoff));
+					.limit(input.context.limits.coachInterviews);
 			},
 		});
 	if (input.shareMemory) {
@@ -184,7 +189,8 @@ export function buildCareerTools(input: CareerToolsInput): ToolSet {
 	}
 	if (!scope.applicationId && input.shareApplication)
 		tools.list_opportunities = tool({
-			description: "Read summaries of the user's applications for comparisons across their search.",
+			description:
+				"Read summaries of the user's applications, most recently changed first, for comparisons across their search.",
 			inputSchema: z.object({}),
 			execute: () =>
 				db
@@ -200,7 +206,7 @@ export function buildCareerTools(input: CareerToolsInput): ToolSet {
 					.from(application)
 					.where(eq(application.userId, input.userId))
 					.orderBy(desc(application.updatedAt))
-					.limit(50),
+					.limit(input.context.limits.coachApplications),
 		});
 	return tools;
 }

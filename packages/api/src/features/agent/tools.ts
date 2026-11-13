@@ -16,14 +16,14 @@ import {
 	searchWebOutputSchema,
 } from "@reactive-resume/ai/tools/agent-tool-contracts";
 
-export const MAX_AGENT_WEB_CALLS = 6;
-
 type DocumentKind = "resume" | "letter";
 
 type BuildAgentToolsInput = {
 	/** The open document's kind, or null when the user left it out of this message. */
 	document: DocumentKind | null;
 	externalSearch: boolean;
+	/** "Web searches and page reads in one reply" (Settings → AI limits). */
+	maxWebCalls: number;
 	signal: AbortSignal;
 	handlers: {
 		readDocument: () => Promise<unknown>;
@@ -63,7 +63,7 @@ export function buildAgentTools(input: BuildAgentToolsInput): ToolSet {
 	const webSignal = (signal?: AbortSignal) => {
 		const combined = signal ? AbortSignal.any([input.signal, signal]) : input.signal;
 		combined.throwIfAborted();
-		if (webCalls >= MAX_AGENT_WEB_CALLS)
+		if (webCalls >= input.maxWebCalls)
 			throw new Error(
 				"Web access limit reached for this reply. Continue with the information already retrieved, or ask me to continue.",
 			);

@@ -111,18 +111,18 @@ Self-hosters: see [Career scheduling operations](/contributing/career-platform#o
 
 Text feedback uses your selected text AI connection. Reading questions and transcribing answers are separate tasks chosen in **Voice settings**.
 
-| Item              | Limit or behavior                                                                                                                                                                                |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Recording         | Up to two minutes per answer.                                                                                                                                                                    |
-| Audio upload      | Nonempty WebM, MP4/M4A, MP3, WAV or Ogg, at most 2 MiB; the interface says 2 MB.                                                                                                                 |
-| Read aloud        | A supported speech connection, otherwise the browser's voice where available. Sends the question text.                                                                                           |
-| Transcription     | A supported transcription connection, otherwise browser dictation where available.                                                                                                               |
-| Time limits       | Transcribing an answer stops after 60 seconds and reading a question aloud after 30 by default. Change them in **Settings → AI & developer → AI limits**.                                        |
-| Browser dictation | Available in supported Chrome, Edge and Safari environments; not Firefox. Permission and platform support still matter.                                                                          |
-| Fallback          | **Type** remains available when recording or dictation does not work.                                                                                                                            |
-| Transcript        | Check and edit before requesting feedback. Provider transcripts keep original and edited text distinguishable.                                                                                   |
-| Raw recording     | Not stored by the Reactive Resume server. Provider processing follows that provider's policies.                                                                                                  |
-| Local audio       | Cleared after successful provider transcription unless you choose to keep it locally for download. A failed transcription keeps it for retry; local audio clears when the answer panel unmounts. |
+| Item              | Limit or behavior                                                                                                                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Recording         | Up to two minutes per answer by default, recording or dictating; **Longest recording** in **Settings → AI & developer → AI limits** allows up to 10 minutes.                                                 |
+| Audio upload      | Nonempty WebM, MP4/M4A, MP3, WAV or Ogg, at most 2 MiB; the interface says 2 MB.                                                                                                                             |
+| Read aloud        | A supported speech connection, otherwise the browser's voice where available. Sends the question text.                                                                                                       |
+| Transcription     | A supported transcription connection, otherwise browser dictation where available.                                                                                                                           |
+| Time limits       | Recording stops at **Longest recording** (120 seconds), transcribing an answer after 60 seconds and reading a question aloud after 30, by default. Change them in **Settings → AI & developer → AI limits**. |
+| Browser dictation | Available in supported Chrome, Edge and Safari environments; not Firefox. Permission and platform support still matter.                                                                                      |
+| Fallback          | **Type** remains available when recording or dictation does not work.                                                                                                                                        |
+| Transcript        | Check and edit before requesting feedback. Provider transcripts keep original and edited text distinguishable.                                                                                               |
+| Raw recording     | Not stored by the Reactive Resume server. Provider processing follows that provider's policies.                                                                                                              |
+| Local audio       | Cleared after successful provider transcription unless you choose to keep it locally for download. A failed transcription keeps it for retry; local audio clears when the answer panel unmounts.             |
 
 Speech connections may charge separately from text AI. Browser speech does not use your AI-provider account; the browser maker may process audio for dictation. The page names who handles each action. See [Practise one answer](/guides/preparing-for-interview-day#practise-one-answer).
 

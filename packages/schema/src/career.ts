@@ -117,6 +117,46 @@ export const aiLimitsSchema = z.object({
 	transcriptionTimeoutSeconds: z.number().int().min(10).max(600).default(60),
 	/** Reading one text aloud. */
 	speechTimeoutSeconds: z.number().int().min(10).max(300).default(30),
+	/** Coach: applications `list_opportunities` returns, most recently changed first. */
+	coachApplications: z.number().int().min(10).max(500).default(50),
+	/** Coach: interview debriefs `read_real_interview_history` returns, newest first, counted after filtering. */
+	coachInterviews: z.number().int().min(5).max(200).default(30),
+	/** Coach and Assistant: model calls in one reply, tool rounds included. */
+	replySteps: z.number().int().min(5).max(100).default(30),
+	/** Coach and Assistant: the longest answer one model call in a reply may give. */
+	replyOutputTokens: z.number().int().min(1024).max(64_000).default(8192),
+	/**
+	 * Coach and Assistant: the conversation kept in view, in estimated tokens; older tool results and turns are pruned
+	 * past it. Null fits it to the connection's context window (see `replyContextBudget`).
+	 */
+	replyContextTokens: z.number().int().min(10_000).max(2_000_000).nullable().default(null),
+	/** Coach and Assistant: text read from one text, Markdown or JSON attachment. */
+	attachmentTextChars: z.number().int().min(2000).max(1_000_000).default(40_000),
+	/** Coach and Assistant: web searches and page reads in one reply. */
+	replyWebCalls: z.number().int().min(0).max(30).default(6),
+	/** Knowledge review: requests in one review; facts past them wait for the next one. */
+	reviewBatches: z.number().int().min(1).max(50).default(8),
+	/** Knowledge review: JSON characters in one request. Null uses `actionFactChars + actionStoryChars`. */
+	reviewBatchChars: z.number().int().min(4000).max(2_000_000).nullable().default(null),
+	/** Writing review: rewrite suggestions kept from one review. */
+	reviewSuggestions: z.number().int().min(1).max(30).default(12),
+	/** Voice: the longest recording or dictation in Practise. Read in the browser. */
+	recordingSeconds: z.number().int().min(30).max(600).default(120),
+	/**
+	 * Every AI request without a time limit of its own: Writing review, Improve, reading PDF and Word files, the
+	 * application AI and drafting letters.
+	 */
+	requestTimeoutSeconds: z.number().int().min(30).max(900).default(120),
+	/** Retries after a failed model call, for every model call except voice and the connection test. */
+	modelRetries: z.number().int().min(0).max(5).default(2),
+	/** The longest structured (JSON) answer. Null sends no limit, so the provider's default applies. */
+	jsonOutputTokens: z.number().int().min(1024).max(64_000).nullable().default(null),
+	/** Reading one job board's list of roles or one of its job pages. */
+	boardFetchTimeoutSeconds: z.number().int().min(10).max(120).default(30),
+	/** Text kept from one page read: `read_page`, posting links and discovery. Saved postings keep their own cap. */
+	webPageChars: z.number().int().min(2000).max(200_000).default(20_000),
+	/** Results kept from one web search. */
+	webSearchResults: z.number().int().min(1).max(20).default(5),
 });
 export type AiLimits = z.infer<typeof aiLimitsSchema>;
 

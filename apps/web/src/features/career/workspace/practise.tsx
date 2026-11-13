@@ -2,14 +2,16 @@ import type { SavedData, SavedItem } from "../hooks";
 import type { WorkspaceTabProps } from "./shell";
 import type { IconName } from "@reactive-resume/ui/components/icon";
 import type { ReactNode } from "react";
-import { t } from "@lingui/core/macro";
+import { plural, t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, m } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { z } from "zod";
 import { AI_VOICE_MODELS } from "@reactive-resume/ai/types";
+import { aiLimitsSchema } from "@reactive-resume/schema/career";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
 import { Icon } from "@reactive-resume/ui/components/icon";
@@ -32,7 +34,6 @@ import {
 	canSpeakAloud,
 	clock,
 	dictate,
-	MAX_SECONDS,
 	record,
 	speakAloud,
 	writeNumbersAsDigits,
@@ -41,7 +42,7 @@ import { AiProviderLoadState } from "@/features/settings/integrations/ai-provide
 import { useHasUsableAiProvider } from "@/features/settings/integrations/hooks/use-has-usable-ai-provider";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { D2, EASE, ENTER_CLASS } from "@/libs/motion";
-import { client } from "@/libs/orpc/client";
+import { client, orpc } from "@/libs/orpc/client";
 
 type Practice = SavedData<"practice">;
 type Attempt = SavedItem & { data: Practice };
@@ -215,6 +216,16 @@ type SessionProps = {
 	initialMode: Mode;
 };
 
+const DEFAULT_LIMITS = aiLimitsSchema.parse({});
+
+/** "2 minutes", or "90 seconds" for a limit that isn't whole minutes. */
+const durationText = (seconds: number) => {
+	const minutes = seconds / 60;
+	return Number.isInteger(minutes)
+		? plural(minutes, { one: "# minute", other: "# minutes" })
+		: plural(seconds, { one: "# second", other: "# seconds" });
+};
+
 function Session({ applicationId, interviewId, questions, voice, initialMode, storyId, storyTitle }: SessionProps) {
 	const id = useId();
 	const generate = useGenerate(applicationId, `${interviewId ?? "none"}:${storyId ?? "general"}`);
@@ -251,6 +262,9 @@ function Session({ applicationId, interviewId, questions, voice, initialMode, st
 	const { i18n } = useLingui();
 	const fileInput = useRef<HTMLInputElement>(null);
 	const alive = useRef(true);
+	// "Longest recording" (Settings → AI limits → Voice), which also stops dictation.
+	const maxSeconds = (useQuery(orpc.career.aiLimits.queryOptions()).data ?? DEFAULT_LIMITS).recordingSeconds;
+	const limit = durationText(maxSeconds);
 
 	const browserDictation = voice.settings.transcribe.providerId === BROWSER;
 	const canHear = !connection.isUnavailable && (voice.settings.speak.providerId !== BROWSER || canSpeakAloud());
@@ -301,12 +315,13 @@ function Session({ applicationId, interviewId, questions, voice, initialMode, st
 		try {
 			recording.current = dictate({
 				lang: i18n.locale,
+				maxSeconds,
 				onTick: (seconds) => setStep({ name: "recording", seconds }),
 				onText: setHeard,
 				onStop: (text, seconds, atLimit) => {
 					recording.current = null;
 					setAnnouncement(t`Stopped at ${clock(seconds)}`);
-					if (atLimit) toast.add({ description: t`Dictation stopped at the 2-minute limit.` });
+					if (atLimit) toast.add({ description: t`Dictation stopped at the limit of ${limit}.` });
 					if (!text) return setStep({ name: "failed", message: t`Nothing was heard. Try again, or type your answer.` });
 					setAnswer(text);
 					setSpoken({ id: null, text, seconds });
@@ -340,12 +355,13 @@ function Session({ applicationId, interviewId, questions, voice, initialMode, st
 		setStep({ name: "starting" });
 		try {
 			const started = await record({
+				maxSeconds,
 				onTick: (seconds) => setStep({ name: "recording", seconds }),
 				onStop: (file, seconds, atLimit) => {
 					recording.current = null;
 					setAnnouncement(t`Stopped at ${clock(seconds)}`);
 					if (atLimit)
-						toast.add({ description: t`Recording stopped at the 2-minute limit. Transcribing what you said.` });
+						toast.add({ description: t`Recording stopped at the limit of ${limit}. Transcribing what you said.` });
 					if (file) takeAudio(file, seconds);
 					else setStep({ name: "failed", message: t`That recording was empty or over 2 MB. Try a shorter answer.` });
 				},
@@ -555,10 +571,10 @@ function Session({ applicationId, interviewId, questions, voice, initialMode, st
 										</p>
 										<p className="text-[13px] leading-[19px] text-ink-2">
 											{browserDictation ? (
-												<Trans>Up to 2 minutes. Your words appear as you speak.</Trans>
+												<Trans>Up to {limit}. Your words appear as you speak.</Trans>
 											) : (
 												<Trans>
-													Up to 2 minutes. Or{" "}
+													Up to {limit}. Or{" "}
 													<button
 														type="button"
 														className="underline underline-offset-3 hover:text-ink"
@@ -578,14 +594,14 @@ function Session({ applicationId, interviewId, questions, voice, initialMode, st
 									role="progressbar"
 									aria-label={t`Recording time`}
 									aria-valuemin={0}
-									aria-valuemax={MAX_SECONDS}
+									aria-valuemax={maxSeconds}
 									aria-valuenow={step.seconds}
 									aria-valuetext={clock(step.seconds)}
 									className="h-1.5 w-[180px] max-w-full overflow-hidden rounded-full bg-bg"
 								>
 									<div
 										className="h-full rounded-full bg-danger-text transition-[width] duration-1000 ease-linear"
-										style={{ width: `${(step.seconds / MAX_SECONDS) * 100}%` }}
+										style={{ width: `${(step.seconds / maxSeconds) * 100}%` }}
 									/>
 								</div>
 							)}

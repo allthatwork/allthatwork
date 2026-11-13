@@ -1,6 +1,6 @@
 import type { ReadPageOutput } from "@reactive-resume/ai/tools/agent-tool-contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildAgentInstructions, buildAgentTools, MAX_AGENT_WEB_CALLS } from "./tools";
+import { buildAgentInstructions, buildAgentTools } from "./tools";
 
 const page: ReadPageOutput = {
 	requestedUrl: "https://example.com/job",
@@ -13,7 +13,7 @@ const page: ReadPageOutput = {
 };
 type ToolConfig = Parameters<typeof buildAgentTools>[0];
 
-function build(externalSearch = false, signal = new AbortController().signal) {
+function build(externalSearch = false, signal = new AbortController().signal, maxWebCalls = 6) {
 	const handlers = {
 		readDocument: vi.fn(async () => ({ text: "Resume" })),
 		readAttachment: vi.fn(async () => ({})),
@@ -28,6 +28,7 @@ function build(externalSearch = false, signal = new AbortController().signal) {
 		tools: buildAgentTools({
 			document: "resume",
 			externalSearch,
+			maxWebCalls,
 			signal,
 			handlers,
 		}),
@@ -60,7 +61,7 @@ describe("assistant web tools", () => {
 	});
 
 	it("shares one allowance across reading and search", async () => {
-		const calls = MAX_AGENT_WEB_CALLS;
+		const calls = 6;
 		const { tools, handlers } = build(true);
 		for (let i = 0; i < calls - 1; i++) await execute(tools, "read_page", { url: page.requestedUrl });
 		await execute(tools, "search_web", { query: "Company" });
@@ -72,6 +73,21 @@ describe("assistant web tools", () => {
 		);
 		expect(handlers.readPage).toHaveBeenCalledTimes(calls - 1);
 		expect(handlers.searchWeb).toHaveBeenCalledTimes(1);
+	});
+
+	it("allows as many web calls as the user's limit, and none at 0", async () => {
+		const raised = build(true, undefined, 9);
+		for (let i = 0; i < 9; i++) await execute(raised.tools, "read_page", { url: page.requestedUrl });
+		await expect(async () => execute(raised.tools, "read_page", { url: page.requestedUrl })).rejects.toThrow(
+			"Web access limit",
+		);
+		expect(raised.handlers.readPage).toHaveBeenCalledTimes(9);
+
+		const none = build(true, undefined, 0);
+		await expect(async () => execute(none.tools, "search_web", { query: "Company" })).rejects.toThrow(
+			"Web access limit",
+		);
+		expect(none.handlers.searchWeb).not.toHaveBeenCalled();
 	});
 
 	it("never starts an aborted request", async () => {

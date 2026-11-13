@@ -1,14 +1,14 @@
 import type { WebAccessContext } from "../web-access/contracts";
 import { z } from "zod";
 import { htmlToText } from "../web-access/builtin";
-import { MAX_CONTENT_CHARS, WebAccessError } from "../web-access/contracts";
+import { WebAccessError } from "../web-access/contracts";
 import { readPage, searchWeb } from "../web-access/service";
 
 export { htmlToText } from "../web-access/builtin";
 export { WebAccessError as PostingFetchError } from "../web-access/contracts";
 
-/** Matches the applications feature's cap on a saved posting. */
-export const MAX_POSTING_CHARS = MAX_CONTENT_CHARS;
+/** The applications feature's cap on a saved posting. Fixed, apart from "Text kept from one page": it's storage. */
+export const MAX_POSTING_CHARS = 20_000;
 
 /** A lone http(s) link, as opposed to pasted posting text. */
 export const isPostingLink = (input: string) => /^https?:\/\/\S+$/i.test(input.trim());

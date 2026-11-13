@@ -838,6 +838,10 @@ msgstr "អប្បបរមា {minimum} ជារូបិយប័ណ្ណ 
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr "{minutes, plural, other {សរុប # នាទី}}"
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr "{minutes, plural, other {ចាប់ផ្តើមក្នុងរយៈពេល # នាទីទៀត}}"
@@ -926,6 +930,10 @@ msgstr "{pendingOnPage, plural, one {# បានស្នើការកែស�
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
 msgstr "{proposed, plural, one {# បានស្នើឡើង} other {# បានស្នើឡើង}}"
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
+msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
 msgid "{sections, plural, one {# section} other {# sections}}"
@@ -1984,6 +1992,10 @@ msgstr "តម្រឹមស្តាំ"
 msgid "All"
 msgstr "ទាំងអស់។"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2338,6 +2350,10 @@ msgstr "បានធ្វើបច្ចុប្បន្នភាពពាក
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2358,6 +2374,10 @@ msgstr "ពាក្យសុំតាមពេលវេលា"
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
 msgstr "ពាក្យសុំបានផ្ញើក្នុងមួយសប្តាហ៍ (៨ សប្តាហ៍ចុងក្រោយ)"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
+msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
 msgid "Applications to export"
@@ -2401,6 +2421,10 @@ msgstr "បានអនុវត្ត។ បានកំណត់ការត�
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
 msgstr "បានអនុវត្ត។ ពាក្យសុំត្រូវបានធ្វើបច្ចុប្បន្នភាព។"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
+msgstr ""
 
 #: src/features/career/shared.tsx
 #: src/features/homepage/prepare.tsx
@@ -2603,6 +2627,10 @@ msgstr "ឯកសារភ្ជាប់"
 msgid "Auto-fill failed."
 msgstr "ការបំពេញស្វ័យប្រវត្តិបានបរាជ័យ។"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr "ដោយស្វ័យប្រវត្តិ"
@@ -2717,6 +2745,14 @@ msgstr "URL មូលដ្ឋាន"
 msgid "Basics"
 msgstr "មូលដ្ឋាន"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr "មុនពេលស្តារឡើងវិញ"
@@ -2740,6 +2776,18 @@ msgstr "Bengali"
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
 msgstr "ល្អបំផុតសម្រាប់ការដាក់ពាក្យ"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Blocker"
@@ -2902,6 +2950,10 @@ msgstr ""
 msgid "Calendar"
 msgstr "ប្រតិទិន"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr "តើខ្ញុំអាចធ្វើជាម្ចាស់ផ្ទះដោយខ្លួនឯងបានទេ?"
@@ -3045,6 +3097,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr "ការផ្លាស់ប្តូរវាផ្ញើការបញ្ជាក់ទៅកាន់អាសយដ្ឋានថ្មី។ ឈ្មោះអ្នកប្រើរបស់អ្នកគឺជាផ្នែកមួយនៃគ្រប់តំណសាធារណៈ។"
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3701,6 +3754,10 @@ msgstr "បានចម្លងការសន្ទនា"
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
 msgstr "បានលុបការសន្ទនា"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Conversation name"
@@ -4655,7 +4712,7 @@ msgstr "ដកដង្ហើមវែងៗ។"
 msgid "Default"
 msgstr "លំនាំដើម"
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4907,8 +4964,8 @@ msgid "Dictation started"
 msgstr "បានចាប់ផ្តើមការបញ្ចូលសំឡេង"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
-msgstr "ការបញ្ចូលសំឡេងបានឈប់ នៅដែនកំណត់ 2 នាទី។"
+msgid "Dictation stopped at the limit of {limit}."
+msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
 msgid "Didn't land"
@@ -6300,6 +6357,12 @@ msgstr "ពី"
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7095,6 +7158,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr "សង្ខេបក្រោយការសម្ភាសន៍"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr "បានលុបការសម្ភាសន៍"
@@ -7153,6 +7220,10 @@ msgstr "បានសម្ភាសអតិថិជន 14 នាក់ គូ�
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
 msgstr "អ្នកសម្ភាសន៍"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Is {APP_NAME} really free?"
@@ -7544,6 +7615,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7750,6 +7822,14 @@ msgstr "រយៈពេលគិតជានាទី"
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
 msgstr "ប្រវែងមិនមែនជាកំហុសទេ ហើយគ្មានច្បាប់ទំព័រតែមួយជាសកលនោះទេ។ រក្សាទុកតែទំព័រណាដែលសមនឹងកន្លែងរបស់វា។"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
+msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
 msgid "Let AI clients like Claude or Cursor read and edit your resumes, using an API key above."
@@ -8114,6 +8194,10 @@ msgstr "ចាក់សោ។ ដោះសោដើម្បីកែសម្�
 msgid "Long stretches are set in capitals."
 msgstr "ចម្រៀកវែងៗត្រូវបានកំណត់ជាអក្សរធំ។"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr "ស្វែងរក"
@@ -8434,6 +8518,10 @@ msgstr "ទម្រង់ចម្រុះ"
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
 msgstr "ម៉ូដែល"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
+msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Model default"
@@ -9481,6 +9569,10 @@ msgstr "គ្មានអ្វីដែលត្រូវនឹង \"{0}\""
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
 msgstr "គ្មានអ្វីដែលត្រូវនឹងតម្រងទាំងនេះទេ។"
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
+msgstr ""
 
 #: src/features/career/workspace/saved.tsx
 msgid "Nothing saved yet"
@@ -10683,6 +10775,10 @@ msgstr "ផ្តល់ដោយម៉ាស៊ីនមេរបស់អ្ន
 msgid "Provider"
 msgstr "អ្នកផ្តល់សេវា"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10927,6 +11023,10 @@ msgstr "ពិន្ទុដែលអាចអានបាន៖ {0} ក្ន�
 msgid "Readability score: {score} out of 100"
 msgstr "ពិន្ទុដែលអាចអានបាន៖ {score} ក្នុងចំណោម 100"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr "កំពុងអានទំព័រ…"
@@ -11064,8 +11164,8 @@ msgid "Recording started"
 msgstr "បានចាប់ផ្តើមថត"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
-msgstr "ការថតបានឈប់នៅដែនកំណត់ 2 នាទី។ កំពុងបំលែងអ្វីដែលអ្នកបាននិយាយជាអក្សរ។"
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recording time"
@@ -11509,6 +11609,14 @@ msgstr "លទ្ធផល"
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr "លទ្ធផលត្រូវបានដកចេញ៖ គ្មានការពិតណាគាំទ្រវាទេ។ បើកការពិតមួយ ឬបន្ថែមមួយ ហើយវានឹងត្រឡប់មកវិញ។"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr "ប្រវត្តិរូបសង្ខេប"
@@ -11610,6 +11718,14 @@ msgstr "ប្រវត្តិរូបសង្ខេបតែងតែបង
 msgid "Resumes created"
 msgstr "ប្រវត្តិរូបសង្ខេបត្រូវបានបង្កើតឡើង"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11682,6 +11798,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr "ពិនិត្យចម្លើយទម្រង់ដែលតម្រូវ ហើយដកការអះអាងដែលគ្មានភស្តុតាងគាំទ្រចេញ។"
@@ -11722,6 +11842,10 @@ msgstr "ដកហូតសិទ្ធិចូលប្រើកម្មវិ
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
 msgstr "បានដកហូត \"{name}\" ។ កម្មវិធីដែលប្រើវាឈប់ដំណើរការឥឡូវនេះ។"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
+msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
 msgid "Right"
@@ -12905,6 +13029,14 @@ msgstr "ក្រុមផលិតផលចំនួនប្រាំមួយ
 msgid "Size"
 msgstr "ទំហំ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13405,6 +13537,10 @@ msgstr "ការឆ្លើយតបដែលបានណែនាំ · ក�
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "ការណែនាំពី <0>models.dev</0> ។ អ្នកក៏អាចបញ្ចូលលេខសម្គាល់ម៉ូដែលណាមួយ។"
@@ -13739,6 +13875,10 @@ msgstr "អត្ថបទអាចជ្រើសរើសបាន។"
 msgid "Text is written one character at a time."
 msgstr "អត្ថបទត្រូវបានសរសេរម្តងមួយតួអក្សរ។"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr "ស្រទាប់អត្ថបទ ✓ · 1 ជួរឈរ"
@@ -13750,6 +13890,10 @@ msgstr "ស្រទាប់អត្ថបទ ✓ · 2 ជួរ"
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
 msgstr "បានរកឃើញស្រទាប់អត្ថបទ"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Text sits in the header or footer area."
@@ -14514,6 +14658,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14573,6 +14721,7 @@ msgid "Today, {hour}"
 msgstr "ថ្ងៃនេះ {hour}"
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14920,12 +15069,12 @@ msgid "Untitled resume"
 msgstr "ប្រវត្តិរូបសង្ខេបគ្មានចំណងជើង"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
-msgstr "រហូតដល់ 2 នាទី។ ឬ <0>ជ្រើសរើសឯកសារសំឡេង</0> ទំហំរហូតដល់ 2 MB។"
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
-msgstr "រហូតដល់ 2 នាទី។ ពាក្យរបស់អ្នកបង្ហាញនៅពេលអ្នកនិយាយ។"
+msgid "Up to {limit}. Your words appear as you speak."
+msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "Up to 25 MB · checked in your browser, never uploaded"
@@ -15480,6 +15629,10 @@ msgstr "ការស្វែងរកគេហទំព័រមិនបាន
 msgid "Web search failed: {0}"
 msgstr "ការស្វែងរកគេហទំព័របានបរាជ័យ៖ {0}"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15877,6 +16030,10 @@ msgstr "កំពុងសរសេរចម្លើយ…"
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
 msgstr "ជំនួយការសរសេរ ការណែនាំដែលកែសម្រួលឱ្យសម និងជំនួយការ។ អ្នកផ្តល់សេវាលំនាំដើមត្រូវបានប្រើនៅកន្លែងណាដែលអ្នកមិនជ្រើសរើស។ កូនសោរបស់អ្នកនៅតែត្រូវបានអ៊ិនគ្រីប។"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
+msgstr ""
 
 #: src/features/homepage/sections.tsx
 msgid "writing, tailoring and sending"

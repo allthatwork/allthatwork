@@ -5,9 +5,11 @@ import { resumeDataSchema } from "@reactive-resume/schema/resume/data";
 import { protectedProcedure } from "../../context";
 import { aiRequestRateLimit } from "../../middleware/rate-limit";
 import { aiProvidersService } from "../ai-providers/service";
+import { careerService } from "../career/service";
 import { atsReviewInputSchema, atsReviewOutputSchema, reviewResumeText } from "./ats-review";
 import { improveInputSchema, improveLine, improveOutputSchema } from "./improve";
 import { reportAiContent } from "./reports";
+import { withRequestLimits } from "./request-limits";
 import { aiService, fileInputSchema } from "./service";
 
 /**
@@ -60,17 +62,28 @@ export const aiRouter = {
 		.use(aiRequestRateLimit)
 		.errors(aiErrors)
 		.output(resumeDataSchema)
-		.handler(async ({ context, input }) => {
+		.handler(async ({ context, input, signal }) => {
 			try {
-				const provider = await getRunnableProvider(context.user.id, input.aiProviderId);
-				return await aiService.parsePdf({
-					provider: provider.provider,
-					model: provider.model,
-					apiKey: provider.apiKey,
-					baseURL: provider.baseURL ?? "",
-					reasoning: provider.reasoning,
-					file: input.file,
-				});
+				const [provider, limits] = await Promise.all([
+					getRunnableProvider(context.user.id, input.aiProviderId),
+					careerService.aiLimits(context.user.id),
+				]);
+				return await withRequestLimits(
+					limits,
+					(options) =>
+						aiService.parsePdf(
+							{
+								provider: provider.provider,
+								model: provider.model,
+								apiKey: provider.apiKey,
+								baseURL: provider.baseURL ?? "",
+								reasoning: provider.reasoning,
+								file: input.file,
+							},
+							options,
+						),
+					signal,
+				);
 			} catch (error) {
 				rethrowAiError(error, "Invalid resume data structure");
 			}
@@ -100,18 +113,29 @@ export const aiRouter = {
 		.use(aiRequestRateLimit)
 		.errors(aiErrors)
 		.output(resumeDataSchema)
-		.handler(async ({ context, input }) => {
+		.handler(async ({ context, input, signal }) => {
 			try {
-				const provider = await getRunnableProvider(context.user.id, input.aiProviderId);
-				return await aiService.parseDocx({
-					provider: provider.provider,
-					model: provider.model,
-					apiKey: provider.apiKey,
-					baseURL: provider.baseURL ?? "",
-					reasoning: provider.reasoning,
-					mediaType: input.mediaType,
-					file: input.file,
-				});
+				const [provider, limits] = await Promise.all([
+					getRunnableProvider(context.user.id, input.aiProviderId),
+					careerService.aiLimits(context.user.id),
+				]);
+				return await withRequestLimits(
+					limits,
+					(options) =>
+						aiService.parseDocx(
+							{
+								provider: provider.provider,
+								model: provider.model,
+								apiKey: provider.apiKey,
+								baseURL: provider.baseURL ?? "",
+								reasoning: provider.reasoning,
+								mediaType: input.mediaType,
+								file: input.file,
+							},
+							options,
+						),
+					signal,
+				);
 			} catch (error) {
 				rethrowAiError(error, "Invalid resume data structure");
 			}
@@ -132,18 +156,30 @@ export const aiRouter = {
 		.use(aiRequestRateLimit)
 		.output(atsReviewOutputSchema)
 		.errors(aiErrors)
-		.handler(async ({ context, input }) => {
+		.handler(async ({ context, input, signal }) => {
 			try {
-				const provider = await getRunnableProvider(context.user.id, input.aiProviderId);
+				const [provider, limits] = await Promise.all([
+					getRunnableProvider(context.user.id, input.aiProviderId),
+					careerService.aiLimits(context.user.id),
+				]);
 
-				return await reviewResumeText({
-					...input,
-					provider: provider.provider,
-					model: provider.model,
-					apiKey: provider.apiKey,
-					baseURL: provider.baseURL ?? "",
-					reasoning: provider.reasoning,
-				});
+				return await withRequestLimits(
+					limits,
+					(options) =>
+						reviewResumeText(
+							{
+								...input,
+								maxSuggestions: limits.reviewSuggestions,
+								provider: provider.provider,
+								model: provider.model,
+								apiKey: provider.apiKey,
+								baseURL: provider.baseURL ?? "",
+								reasoning: provider.reasoning,
+							},
+							options,
+						),
+					signal,
+				);
 			} catch (error) {
 				rethrowAiError(error, "Invalid ATS review structure");
 			}
@@ -164,18 +200,29 @@ export const aiRouter = {
 		.use(aiRequestRateLimit)
 		.output(improveOutputSchema)
 		.errors(aiErrors)
-		.handler(async ({ context, input }) => {
+		.handler(async ({ context, input, signal }) => {
 			try {
-				const provider = await getRunnableProvider(context.user.id, input.aiProviderId);
+				const [provider, limits] = await Promise.all([
+					getRunnableProvider(context.user.id, input.aiProviderId),
+					careerService.aiLimits(context.user.id),
+				]);
 
-				return await improveLine({
-					...input,
-					provider: provider.provider,
-					model: provider.model,
-					apiKey: provider.apiKey,
-					baseURL: provider.baseURL ?? "",
-					reasoning: provider.reasoning,
-				});
+				return await withRequestLimits(
+					limits,
+					(options) =>
+						improveLine(
+							{
+								...input,
+								provider: provider.provider,
+								model: provider.model,
+								apiKey: provider.apiKey,
+								baseURL: provider.baseURL ?? "",
+								reasoning: provider.reasoning,
+							},
+							options,
+						),
+					signal,
+				);
 			} catch (error) {
 				rethrowAiError(error, "Invalid suggestion structure");
 			}

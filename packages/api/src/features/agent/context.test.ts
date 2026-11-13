@@ -1,6 +1,6 @@
 import type { ModelMessage } from "ai";
 import { describe, expect, it } from "vitest";
-import { estimateTokens, pruneAgentModelContext } from "./context";
+import { estimateTokens, pruneAgentModelContext, replyContextBudget } from "./context";
 
 const BIG_RESUME = { basics: { name: "Alice" }, sections: { summary: { content: "x".repeat(2_000) } } };
 
@@ -126,5 +126,22 @@ describe("estimateTokens", () => {
 		// ~bytes/4 tokens, computed without expanding each byte into JSON.
 		expect(estimate).toBeGreaterThan(200_000);
 		expect(estimate).toBeLessThan(300_000);
+	});
+});
+
+describe("replyContextBudget", () => {
+	it("uses the number set, whatever the window", () => {
+		expect(replyContextBudget(150_000, 200_000)).toBe(150_000);
+		expect(replyContextBudget(10_000, null)).toBe(10_000);
+	});
+
+	it("fits a blank setting to half the window, never under 40,000", () => {
+		expect(replyContextBudget(null, 200_000)).toBe(100_000);
+		expect(replyContextBudget(null, 32_000)).toBe(40_000);
+	});
+
+	it("keeps 40,000 when the window isn't known", () => {
+		expect(replyContextBudget(null, null)).toBe(40_000);
+		expect(replyContextBudget(null, undefined)).toBe(40_000);
 	});
 });

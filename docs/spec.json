@@ -46733,6 +46733,129 @@
 																	"minimum": 10,
 																	"maximum": 300,
 																	"default": 30
+																},
+																"coachApplications": {
+																	"type": "integer",
+																	"minimum": 10,
+																	"maximum": 500,
+																	"default": 50
+																},
+																"coachInterviews": {
+																	"type": "integer",
+																	"minimum": 5,
+																	"maximum": 200,
+																	"default": 30
+																},
+																"replySteps": {
+																	"type": "integer",
+																	"minimum": 5,
+																	"maximum": 100,
+																	"default": 30
+																},
+																"replyOutputTokens": {
+																	"type": "integer",
+																	"minimum": 1024,
+																	"maximum": 64000,
+																	"default": 8192
+																},
+																"replyContextTokens": {
+																	"anyOf": [
+																		{
+																			"type": "integer",
+																			"minimum": 10000,
+																			"maximum": 2000000
+																		},
+																		{
+																			"type": "null"
+																		}
+																	],
+																	"default": null
+																},
+																"attachmentTextChars": {
+																	"type": "integer",
+																	"minimum": 2000,
+																	"maximum": 1000000,
+																	"default": 40000
+																},
+																"replyWebCalls": {
+																	"type": "integer",
+																	"minimum": 0,
+																	"maximum": 30,
+																	"default": 6
+																},
+																"reviewBatches": {
+																	"type": "integer",
+																	"minimum": 1,
+																	"maximum": 50,
+																	"default": 8
+																},
+																"reviewBatchChars": {
+																	"anyOf": [
+																		{
+																			"type": "integer",
+																			"minimum": 4000,
+																			"maximum": 2000000
+																		},
+																		{
+																			"type": "null"
+																		}
+																	],
+																	"default": null
+																},
+																"reviewSuggestions": {
+																	"type": "integer",
+																	"minimum": 1,
+																	"maximum": 30,
+																	"default": 12
+																},
+																"recordingSeconds": {
+																	"type": "integer",
+																	"minimum": 30,
+																	"maximum": 600,
+																	"default": 120
+																},
+																"requestTimeoutSeconds": {
+																	"type": "integer",
+																	"minimum": 30,
+																	"maximum": 900,
+																	"default": 120
+																},
+																"modelRetries": {
+																	"type": "integer",
+																	"minimum": 0,
+																	"maximum": 5,
+																	"default": 2
+																},
+																"jsonOutputTokens": {
+																	"anyOf": [
+																		{
+																			"type": "integer",
+																			"minimum": 1024,
+																			"maximum": 64000
+																		},
+																		{
+																			"type": "null"
+																		}
+																	],
+																	"default": null
+																},
+																"boardFetchTimeoutSeconds": {
+																	"type": "integer",
+																	"minimum": 10,
+																	"maximum": 120,
+																	"default": 30
+																},
+																"webPageChars": {
+																	"type": "integer",
+																	"minimum": 2000,
+																	"maximum": 200000,
+																	"default": 20000
+																},
+																"webSearchResults": {
+																	"type": "integer",
+																	"minimum": 1,
+																	"maximum": 20,
+																	"default": 5
 																}
 															}
 														},
@@ -54479,6 +54602,129 @@
 											"minimum": 10,
 											"maximum": 300,
 											"default": 30
+										},
+										"coachApplications": {
+											"type": "integer",
+											"minimum": 10,
+											"maximum": 500,
+											"default": 50
+										},
+										"coachInterviews": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 200,
+											"default": 30
+										},
+										"replySteps": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 100,
+											"default": 30
+										},
+										"replyOutputTokens": {
+											"type": "integer",
+											"minimum": 1024,
+											"maximum": 64000,
+											"default": 8192
+										},
+										"replyContextTokens": {
+											"anyOf": [
+												{
+													"type": "integer",
+													"minimum": 10000,
+													"maximum": 2000000
+												},
+												{
+													"type": "null"
+												}
+											],
+											"default": null
+										},
+										"attachmentTextChars": {
+											"type": "integer",
+											"minimum": 2000,
+											"maximum": 1000000,
+											"default": 40000
+										},
+										"replyWebCalls": {
+											"type": "integer",
+											"minimum": 0,
+											"maximum": 30,
+											"default": 6
+										},
+										"reviewBatches": {
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 50,
+											"default": 8
+										},
+										"reviewBatchChars": {
+											"anyOf": [
+												{
+													"type": "integer",
+													"minimum": 4000,
+													"maximum": 2000000
+												},
+												{
+													"type": "null"
+												}
+											],
+											"default": null
+										},
+										"reviewSuggestions": {
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 30,
+											"default": 12
+										},
+										"recordingSeconds": {
+											"type": "integer",
+											"minimum": 30,
+											"maximum": 600,
+											"default": 120
+										},
+										"requestTimeoutSeconds": {
+											"type": "integer",
+											"minimum": 30,
+											"maximum": 900,
+											"default": 120
+										},
+										"modelRetries": {
+											"type": "integer",
+											"minimum": 0,
+											"maximum": 5,
+											"default": 2
+										},
+										"jsonOutputTokens": {
+											"anyOf": [
+												{
+													"type": "integer",
+													"minimum": 1024,
+													"maximum": 64000
+												},
+												{
+													"type": "null"
+												}
+											],
+											"default": null
+										},
+										"boardFetchTimeoutSeconds": {
+											"type": "integer",
+											"minimum": 10,
+											"maximum": 120,
+											"default": 30
+										},
+										"webPageChars": {
+											"type": "integer",
+											"minimum": 2000,
+											"maximum": 200000,
+											"default": 20000
+										},
+										"webSearchResults": {
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 20,
+											"default": 5
 										}
 									}
 								}
@@ -54693,6 +54939,129 @@
 										"minimum": 10,
 										"maximum": 300,
 										"default": 30
+									},
+									"coachApplications": {
+										"type": "integer",
+										"minimum": 10,
+										"maximum": 500,
+										"default": 50
+									},
+									"coachInterviews": {
+										"type": "integer",
+										"minimum": 5,
+										"maximum": 200,
+										"default": 30
+									},
+									"replySteps": {
+										"type": "integer",
+										"minimum": 5,
+										"maximum": 100,
+										"default": 30
+									},
+									"replyOutputTokens": {
+										"type": "integer",
+										"minimum": 1024,
+										"maximum": 64000,
+										"default": 8192
+									},
+									"replyContextTokens": {
+										"anyOf": [
+											{
+												"type": "integer",
+												"minimum": 10000,
+												"maximum": 2000000
+											},
+											{
+												"type": "null"
+											}
+										],
+										"default": null
+									},
+									"attachmentTextChars": {
+										"type": "integer",
+										"minimum": 2000,
+										"maximum": 1000000,
+										"default": 40000
+									},
+									"replyWebCalls": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 30,
+										"default": 6
+									},
+									"reviewBatches": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 50,
+										"default": 8
+									},
+									"reviewBatchChars": {
+										"anyOf": [
+											{
+												"type": "integer",
+												"minimum": 4000,
+												"maximum": 2000000
+											},
+											{
+												"type": "null"
+											}
+										],
+										"default": null
+									},
+									"reviewSuggestions": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 30,
+										"default": 12
+									},
+									"recordingSeconds": {
+										"type": "integer",
+										"minimum": 30,
+										"maximum": 600,
+										"default": 120
+									},
+									"requestTimeoutSeconds": {
+										"type": "integer",
+										"minimum": 30,
+										"maximum": 900,
+										"default": 120
+									},
+									"modelRetries": {
+										"type": "integer",
+										"minimum": 0,
+										"maximum": 5,
+										"default": 2
+									},
+									"jsonOutputTokens": {
+										"anyOf": [
+											{
+												"type": "integer",
+												"minimum": 1024,
+												"maximum": 64000
+											},
+											{
+												"type": "null"
+											}
+										],
+										"default": null
+									},
+									"boardFetchTimeoutSeconds": {
+										"type": "integer",
+										"minimum": 10,
+										"maximum": 120,
+										"default": 30
+									},
+									"webPageChars": {
+										"type": "integer",
+										"minimum": 2000,
+										"maximum": 200000,
+										"default": 20000
+									},
+									"webSearchResults": {
+										"type": "integer",
+										"minimum": 1,
+										"maximum": 20,
+										"default": 5
 									}
 								}
 							}
@@ -54850,6 +55219,129 @@
 											"minimum": 10,
 											"maximum": 300,
 											"default": 30
+										},
+										"coachApplications": {
+											"type": "integer",
+											"minimum": 10,
+											"maximum": 500,
+											"default": 50
+										},
+										"coachInterviews": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 200,
+											"default": 30
+										},
+										"replySteps": {
+											"type": "integer",
+											"minimum": 5,
+											"maximum": 100,
+											"default": 30
+										},
+										"replyOutputTokens": {
+											"type": "integer",
+											"minimum": 1024,
+											"maximum": 64000,
+											"default": 8192
+										},
+										"replyContextTokens": {
+											"anyOf": [
+												{
+													"type": "integer",
+													"minimum": 10000,
+													"maximum": 2000000
+												},
+												{
+													"type": "null"
+												}
+											],
+											"default": null
+										},
+										"attachmentTextChars": {
+											"type": "integer",
+											"minimum": 2000,
+											"maximum": 1000000,
+											"default": 40000
+										},
+										"replyWebCalls": {
+											"type": "integer",
+											"minimum": 0,
+											"maximum": 30,
+											"default": 6
+										},
+										"reviewBatches": {
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 50,
+											"default": 8
+										},
+										"reviewBatchChars": {
+											"anyOf": [
+												{
+													"type": "integer",
+													"minimum": 4000,
+													"maximum": 2000000
+												},
+												{
+													"type": "null"
+												}
+											],
+											"default": null
+										},
+										"reviewSuggestions": {
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 30,
+											"default": 12
+										},
+										"recordingSeconds": {
+											"type": "integer",
+											"minimum": 30,
+											"maximum": 600,
+											"default": 120
+										},
+										"requestTimeoutSeconds": {
+											"type": "integer",
+											"minimum": 30,
+											"maximum": 900,
+											"default": 120
+										},
+										"modelRetries": {
+											"type": "integer",
+											"minimum": 0,
+											"maximum": 5,
+											"default": 2
+										},
+										"jsonOutputTokens": {
+											"anyOf": [
+												{
+													"type": "integer",
+													"minimum": 1024,
+													"maximum": 64000
+												},
+												{
+													"type": "null"
+												}
+											],
+											"default": null
+										},
+										"boardFetchTimeoutSeconds": {
+											"type": "integer",
+											"minimum": 10,
+											"maximum": 120,
+											"default": 30
+										},
+										"webPageChars": {
+											"type": "integer",
+											"minimum": 2000,
+											"maximum": 200000,
+											"default": 20000
+										},
+										"webSearchResults": {
+											"type": "integer",
+											"minimum": 1,
+											"maximum": 20,
+											"default": 5
 										}
 									}
 								}

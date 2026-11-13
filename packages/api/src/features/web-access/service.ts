@@ -12,7 +12,7 @@ import { abortable, assertPublicTarget, htmlToText, readBuiltinPage } from "./bu
 import { WebAccessError } from "./contracts";
 import { readExa, searchExa } from "./exa";
 import { readFirecrawl, searchFirecrawl } from "./firecrawl";
-import { webCallTimeoutMs } from "./limits";
+import { webLimits } from "./limits";
 import { readTavily, searchTavily } from "./tavily";
 import { pageContent, safeFailure } from "./transport";
 
@@ -71,7 +71,7 @@ function log(operation: "search" | "read", provider: string, started: number, ou
 }
 
 export async function searchWeb(query: string, context: WebAccessContext) {
-	const timeoutMs = await webCallTimeoutMs(context.userId);
+	const { timeoutMs, pageChars, searchResults } = await webLimits(context.userId);
 	const signal = deadline(timeoutMs, context.signal);
 	const started = Date.now();
 	const provider = context.connection?.provider ?? "builtin";
@@ -84,6 +84,8 @@ export async function searchWeb(query: string, context: WebAccessContext) {
 			connection: context.connection,
 			signal,
 			serviceTimeoutMs: serviceTimeout(timeoutMs),
+			maxResults: searchResults,
+			maxChars: pageChars,
 		});
 		signal.throwIfAborted();
 		log("search", provider, started, "success");
@@ -101,7 +103,7 @@ export async function searchWeb(query: string, context: WebAccessContext) {
 
 /** One deadline covers DNS, the selected provider, and the direct fallback. Cancellation never falls back. */
 export async function readPage(input: string, context: WebAccessContext): Promise<ReadPageResult> {
-	const timeoutMs = await webCallTimeoutMs(context.userId);
+	const { timeoutMs, pageChars, searchResults } = await webLimits(context.userId);
 	const signal = deadline(timeoutMs, context.signal);
 	const started = Date.now();
 	const provider = context.connection?.provider ?? "builtin";
@@ -119,9 +121,11 @@ export async function readPage(input: string, context: WebAccessContext): Promis
 					connection: context.connection,
 					signal: externalSignal,
 					serviceTimeoutMs: serviceTimeout(timeoutMs),
+					maxResults: searchResults,
+					maxChars: pageChars,
 				});
 				if (page.resolvedUrl) await assertPublicTarget(page.resolvedUrl, externalSignal);
-				const content = pageContent(page.content);
+				const content = pageContent(page.content, pageChars);
 				externalSignal.throwIfAborted();
 				log("read", provider, started, "success");
 				return {
@@ -139,7 +143,7 @@ export async function readPage(input: string, context: WebAccessContext): Promis
 			}
 		}
 		const page = await readBuiltinPage(url.toString(), signal);
-		const content = pageContent(htmlToText(page.html));
+		const content = pageContent(htmlToText(page.html), pageChars);
 		signal.throwIfAborted();
 		log("read", provider, started, "success", fallback ? `${fallback}:builtin` : undefined);
 		return {
@@ -168,18 +172,24 @@ export async function probeWebAccess(
 	connection: WebAccessConnection,
 	context: { userId: string; signal?: AbortSignal | undefined },
 ) {
-	const timeoutMs = await webCallTimeoutMs(context.userId);
+	const { timeoutMs, pageChars, searchResults } = await webLimits(context.userId);
 	const signal = deadline(timeoutMs, context.signal);
-	const serviceTimeoutMs = serviceTimeout(timeoutMs);
+	const request = {
+		connection,
+		signal,
+		serviceTimeoutMs: serviceTimeout(timeoutMs),
+		maxResults: searchResults,
+		maxChars: pageChars,
+	};
 	await consume(context.userId, signal);
 	const probe = async (operation: "search" | "read") => {
 		const started = Date.now();
 		try {
-			if (operation === "search") await externalSearch("example domain", { connection, signal, serviceTimeoutMs });
+			if (operation === "search") await externalSearch("example domain", request);
 			else {
 				const url = await assertPublicTarget("https://example.com/", signal);
-				const page = await externalRead(url.toString(), { connection, signal, serviceTimeoutMs });
-				pageContent(page.content);
+				const page = await externalRead(url.toString(), request);
+				pageContent(page.content, pageChars);
 				if (page.resolvedUrl) await assertPublicTarget(page.resolvedUrl, signal);
 			}
 			signal.throwIfAborted();

@@ -1,3 +1,4 @@
+import type { ModelCallOptions } from "./request-limits";
 import { z } from "zod";
 import { improveSystemPrompt, improveUserPromptTemplate } from "@reactive-resume/ai/prompts";
 import { generateJson } from "./generate-json";
@@ -87,10 +88,11 @@ function buildUserPrompt(input: ImproveInput): string {
 }
 
 /** One suggested rewrite of one line. Nothing is written: the user replaces the line or keeps theirs. */
-export function improveLine(input: ImproveServiceInput): Promise<ImproveOutput> {
+export function improveLine(input: ImproveServiceInput, options?: ModelCallOptions): Promise<ImproveOutput> {
 	return generateJson(
 		getModel(input),
 		{ system: improveSystemPrompt, prompt: buildUserPrompt(input) },
 		improveOutputSchema,
+		options,
 	);
 }

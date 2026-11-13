@@ -1,8 +1,8 @@
 // Speaking an answer: recording in the browser (nothing leaves it here), the browser's own dictation and voice for
 // when no connection offers speech models, and tidying the transcript.
 
-export const MAX_SECONDS = 120;
 const MAX_AUDIO_BYTES = 2 * 1024 * 1024;
+const BITS_PER_SECOND = 64_000;
 const AUDIO_TYPES = ["audio/webm", "audio/mp4", "audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg"];
 const RECORDING_TYPES = ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;codecs=opus", "audio/webm"];
 
@@ -15,9 +15,18 @@ export function acceptAudioFile(file: File) {
 	return type === file.type ? file : new File([file], file.name, { type });
 }
 
+/**
+ * The bitrate a recording asks for: 64 kbps, lowered for a long "Longest recording" so the whole recording still fits
+ * the 2 MB upload (64 kbps fills it in about four minutes). A tenth is kept spare for the container and the browser.
+ */
+export const recordingBitrate = (maxSeconds: number) =>
+	Math.min(BITS_PER_SECOND, Math.floor((MAX_AUDIO_BYTES * 8 * 0.9) / maxSeconds));
+
 type RecordOptions = {
+	/** "Longest recording" (Settings → AI limits → Voice). */
+	maxSeconds: number;
 	onTick: (seconds: number) => void;
-	/** The audio (null when empty or over 2 MB), its length, and whether the 2-minute limit stopped it. */
+	/** The audio (null when empty or over 2 MB), its length, and whether the time limit stopped it. */
 	onStop: (file: File | null, seconds: number, atLimit: boolean) => void;
 };
 
@@ -25,7 +34,7 @@ type RecordOptions = {
  * Starts recording from the microphone; rejects with a DOMException named NotAllowedError when it's blocked.
  * `stop` ends it and hands over the audio, `cancel` throws it away.
  */
-export async function record({ onTick, onStop }: RecordOptions) {
+export async function record({ maxSeconds, onTick, onStop }: RecordOptions) {
 	const media = await navigator.mediaDevices.getUserMedia({ audio: true });
 	const mimeType = RECORDING_TYPES.find((type) => MediaRecorder.isTypeSupported(type));
 	if (!mimeType) {
@@ -34,7 +43,7 @@ export async function record({ onTick, onStop }: RecordOptions) {
 	}
 	let recorder: MediaRecorder;
 	try {
-		recorder = new MediaRecorder(media, { mimeType, audioBitsPerSecond: 64_000 });
+		recorder = new MediaRecorder(media, { mimeType, audioBitsPerSecond: recordingBitrate(maxSeconds) });
 	} catch {
 		recorder = new MediaRecorder(media, { mimeType });
 	}
@@ -43,7 +52,7 @@ export async function record({ onTick, onStop }: RecordOptions) {
 	let bytes = 0;
 	let atLimit = false;
 	let cancelled = false;
-	const elapsed = () => Math.min(MAX_SECONDS, Math.floor((Date.now() - started) / 1000));
+	const elapsed = () => Math.min(maxSeconds, Math.floor((Date.now() - started) / 1000));
 	const finish = () => {
 		window.clearInterval(timer);
 		for (const track of media.getTracks()) track.stop();
@@ -52,7 +61,7 @@ export async function record({ onTick, onStop }: RecordOptions) {
 	const timer = window.setInterval(() => {
 		const seconds = elapsed();
 		onTick(seconds);
-		if (seconds < MAX_SECONDS) return;
+		if (seconds < maxSeconds) return;
 		atLimit = true;
 		finish();
 	}, 250);
@@ -111,10 +120,12 @@ export const canSpeakAloud = () => typeof speechSynthesis !== "undefined";
 
 type DictateOptions = {
 	lang: string;
+	/** "Longest recording" (Settings → AI limits → Voice), which also stops dictation. */
+	maxSeconds: number;
 	onTick: (seconds: number) => void;
 	/** Everything heard so far. */
 	onText: (text: string) => void;
-	/** What was heard, how long it took, and whether the 2-minute limit stopped it. */
+	/** What was heard, how long it took, and whether the time limit stopped it. */
 	onStop: (text: string, seconds: number, atLimit: boolean) => void;
 	/** The browser's reason: "not-allowed", "no-speech", "network", "audio-capture"… */
 	onError: (error: string) => void;
@@ -125,7 +136,7 @@ type DictateOptions = {
  * this app records and uploads nothing, though the browser's maker may process the audio. `stop` ends it and hands
  * over the text, `cancel` throws it away.
  */
-export function dictate({ lang, onTick, onText, onStop, onError }: DictateOptions) {
+export function dictate({ lang, maxSeconds, onTick, onText, onStop, onError }: DictateOptions) {
 	const Recognition = recognition();
 	if (!Recognition) throw new Error("Dictation is unavailable.");
 	const session = new Recognition();
@@ -136,11 +147,11 @@ export function dictate({ lang, onTick, onText, onStop, onError }: DictateOption
 	let text = "";
 	let atLimit = false;
 	let ended = false;
-	const elapsed = () => Math.min(MAX_SECONDS, Math.floor((Date.now() - started) / 1000));
+	const elapsed = () => Math.min(maxSeconds, Math.floor((Date.now() - started) / 1000));
 	const timer = window.setInterval(() => {
 		const seconds = elapsed();
 		onTick(seconds);
-		if (seconds < MAX_SECONDS) return;
+		if (seconds < maxSeconds) return;
 		atLimit = true;
 		session.stop();
 	}, 250);

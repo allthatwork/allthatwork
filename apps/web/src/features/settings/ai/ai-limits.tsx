@@ -18,12 +18,19 @@ const DEFAULTS = aiLimitsSchema.parse({});
 type Field = keyof AiLimits;
 
 const bounds = (field: Field) => {
-	const shape = aiLimitsSchema.shape[field].unwrap();
+	const inner = aiLimitsSchema.shape[field].unwrap();
+	const shape = "minValue" in inner ? inner : inner.unwrap();
 	return { min: shape.minValue ?? 0, max: shape.maxValue ?? Number.MAX_SAFE_INTEGER };
 };
 
-/** One limit in a group: its field, its label and the unit after the input. */
-type LimitSpec = { name: Field; label: ReactNode; unit: string };
+/** A field that may be left blank: what the empty input shows, and what blank means in place of "Default …". */
+type Blank = { placeholder: string; hint: string };
+
+/**
+ * One limit in a group: its field, its label and the unit after the input. Only a field whose default is blank (null
+ * in the schema) has `blank`; every other field refuses an empty value.
+ */
+type LimitSpec = { name: Field; label: ReactNode; unit: string; blank?: Blank };
 type LimitGroup = { legend: ReactNode; description?: ReactNode; limits: LimitSpec[] };
 
 /** How much Knowledge goes with each AI request and how long it may run. Larger limits suit larger, slower models. */
@@ -32,6 +39,9 @@ export function AiLimitsSection() {
 	const characters = t`characters`;
 	const seconds = t`seconds`;
 	const requirements = t`requirements`;
+	const calls = t`calls`;
+	const tokens = t`tokens`;
+	const automatic = t`Automatic`;
 
 	return (
 		<section aria-labelledby={`${id}-title`} className="overflow-hidden rounded-xl border border-line bg-surface">
@@ -66,6 +76,16 @@ export function AiLimitsSection() {
 								name: "searchStoryChars",
 								label: <Trans>Stories returned by one knowledge search</Trans>,
 								unit: characters,
+							},
+							{
+								name: "coachApplications",
+								label: <Trans>Applications the Coach can list</Trans>,
+								unit: t`applications`,
+							},
+							{
+								name: "coachInterviews",
+								label: <Trans>Interview debriefs the Coach can read</Trans>,
+								unit: t`interviews`,
 							},
 						],
 					},
@@ -132,6 +152,43 @@ export function AiLimitsSection() {
 								label: <Trans>Time limit for each model call in a reply</Trans>,
 								unit: seconds,
 							},
+							{ name: "replySteps", label: <Trans>Model calls in one reply</Trans>, unit: calls },
+							{ name: "replyOutputTokens", label: <Trans>Length of each model call's answer</Trans>, unit: tokens },
+							{
+								name: "replyContextTokens",
+								label: <Trans>Conversation kept in view</Trans>,
+								unit: tokens,
+								blank: { placeholder: automatic, hint: t`Blank fits it to your model's context window.` },
+							},
+							{ name: "attachmentTextChars", label: <Trans>Text read from one attachment</Trans>, unit: characters },
+							{
+								name: "replyWebCalls",
+								label: <Trans>Web searches and page reads in one reply</Trans>,
+								unit: calls,
+							},
+						],
+					},
+					{
+						legend: <Trans>Knowledge review</Trans>,
+						description: <Trans>Review reads your switched-on facts in batches and looks for contradictions.</Trans>,
+						limits: [
+							{ name: "reviewBatches", label: <Trans>Batches in one review</Trans>, unit: t`batches` },
+							{
+								name: "reviewBatchChars",
+								label: <Trans>Size of one batch</Trans>,
+								unit: characters,
+								blank: { placeholder: automatic, hint: t`Blank uses the facts and stories limits of the actions.` },
+							},
+						],
+					},
+					{
+						legend: <Trans>Writing review</Trans>,
+						limits: [
+							{
+								name: "reviewSuggestions",
+								label: <Trans>Rewrite suggestions in one review</Trans>,
+								unit: t`suggestions`,
+							},
 						],
 					},
 					{
@@ -143,6 +200,30 @@ export function AiLimitsSection() {
 								unit: seconds,
 							},
 							{ name: "speechTimeoutSeconds", label: <Trans>Time limit for reading text aloud</Trans>, unit: seconds },
+							{ name: "recordingSeconds", label: <Trans>Longest recording</Trans>, unit: seconds },
+						],
+					},
+					{
+						legend: <Trans>All AI requests</Trans>,
+						description: (
+							<Trans>
+								Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and
+								Word files, and drafting letters.
+							</Trans>
+						),
+						limits: [
+							{
+								name: "requestTimeoutSeconds",
+								label: <Trans>Time limit for other AI requests</Trans>,
+								unit: seconds,
+							},
+							{ name: "modelRetries", label: <Trans>Retries when the model fails</Trans>, unit: t`retries` },
+							{
+								name: "jsonOutputTokens",
+								label: <Trans>Length of structured answers</Trans>,
+								unit: tokens,
+								blank: { placeholder: t`Provider default`, hint: t`Blank uses your provider's default.` },
+							},
 						],
 					},
 				]}
@@ -182,10 +263,12 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 	const { i18n } = useLingui();
 	const queryClient = useQueryClient();
 	const queryKey = orpc.career.aiLimits.queryKey();
-	const fields = groups.flatMap((group) => group.limits.map((limit) => limit.name));
-	/** What the user is typing, per field; an empty or partial number stays editable until it's valid. */
+	const specs = groups.flatMap((group) => group.limits);
+	const fields = specs.map((limit) => limit.name);
+	const blankable = new Set(specs.filter((limit) => limit.blank).map((limit) => limit.name));
+	/** What the user is typing, per field; an empty or partial number stays editable until it's valid. Blank is "". */
 	const toDraft = (limits: AiLimits) =>
-		Object.fromEntries(fields.map((field) => [field, String(limits[field])])) as Partial<Record<Field, string>>;
+		Object.fromEntries(fields.map((field) => [field, String(limits[field] ?? "")])) as Partial<Record<Field, string>>;
 	const [draft, setDraft] = useState(() => toDraft(initial));
 	const [saved, setSaved] = useState(initial);
 	const save = useMutation(
@@ -205,14 +288,17 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 	);
 
 	const value = (field: Field) => draft[field] ?? "";
+	/** What a field saves as: its number, or null when a field that may be blank is left empty. */
+	const parsed = (field: Field) => (value(field).trim() === "" && blankable.has(field) ? null : Number(value(field)));
 	const invalid = (field: Field) => {
-		const number = Number(value(field));
+		const number = parsed(field);
+		if (number === null) return false;
 		const { min, max } = bounds(field);
 		return value(field).trim() === "" || !Number.isInteger(number) || number < min || number > max;
 	};
 	const valid = fields.every((field) => !invalid(field));
-	const dirty = fields.some((field) => Number(value(field)) !== saved[field]);
-	const atDefaults = fields.every((field) => Number(value(field)) === DEFAULTS[field]);
+	const dirty = fields.some((field) => parsed(field) !== saved[field]);
+	const atDefaults = fields.every((field) => parsed(field) === DEFAULTS[field]);
 	const number = new Intl.NumberFormat(i18n.locale);
 
 	return (
@@ -222,7 +308,7 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 				event.preventDefault();
 				if (!valid) return;
 				const latest = queryClient.getQueryData<AiLimits>(queryKey) ?? saved;
-				save.mutate({ ...latest, ...Object.fromEntries(fields.map((field) => [field, Number(value(field))])) });
+				save.mutate({ ...latest, ...Object.fromEntries(fields.map((field) => [field, parsed(field)])) });
 			}}
 		>
 			{groups.map((group, index) => (
@@ -230,18 +316,26 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 					<legend className="mb-1 text-sm font-medium">{group.legend}</legend>
 					{group.description && <p className="-mt-1 text-[13px] text-ink-3">{group.description}</p>}
 					<div className="grid gap-3 sm:grid-cols-2">
-						{group.limits.map(({ name, label, unit }) => (
-							<LimitField
-								key={name}
-								name={name}
-								label={label}
-								unit={unit}
-								value={value(name)}
-								invalid={invalid(name)}
-								hint={t`Default ${number.format(DEFAULTS[name])}. From ${number.format(bounds(name).min)} to ${number.format(bounds(name).max)}.`}
-								onChange={(next) => setDraft((current) => ({ ...current, [name]: next }))}
-							/>
-						))}
+						{group.limits.map(({ name, label, unit, blank }) => {
+							const fallback = DEFAULTS[name];
+							return (
+								<LimitField
+									key={name}
+									name={name}
+									label={label}
+									unit={unit}
+									value={value(name)}
+									invalid={invalid(name)}
+									placeholder={blank?.placeholder}
+									hint={
+										blank || fallback === null
+											? `${blank?.hint ?? ""} ${t`From ${number.format(bounds(name).min)} to ${number.format(bounds(name).max)}.`}`.trim()
+											: t`Default ${number.format(fallback)}. From ${number.format(bounds(name).min)} to ${number.format(bounds(name).max)}.`
+									}
+									onChange={(next) => setDraft((current) => ({ ...current, [name]: next }))}
+								/>
+							);
+						})}
 					</div>
 				</fieldset>
 			))}
@@ -269,11 +363,13 @@ type LimitFieldProps = {
 	unit: string;
 	value: string;
 	invalid: boolean;
+	/** Shown in an empty field that may be left blank. */
+	placeholder?: string | undefined;
 	hint: string;
 	onChange: (value: string) => void;
 };
 
-function LimitField({ name, label, unit, value, invalid, hint, onChange }: LimitFieldProps) {
+function LimitField({ name, label, unit, value, invalid, placeholder, hint, onChange }: LimitFieldProps) {
 	const id = useId();
 	const { min, max } = bounds(name);
 
@@ -291,6 +387,7 @@ function LimitField({ name, label, unit, value, invalid, hint, onChange }: Limit
 					max={max}
 					step={1}
 					value={value}
+					placeholder={placeholder}
 					aria-invalid={invalid || undefined}
 					aria-describedby={`${id}-hint`}
 					onChange={(event) => onChange(event.target.value)}
