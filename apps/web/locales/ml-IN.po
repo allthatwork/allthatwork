@@ -838,6 +838,10 @@ msgstr "കുറഞ്ഞത് {minimum}, മറ്റ് വ്യവസ്�
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr "{minutes, plural, one {ആകെ # മിനിറ്റ്} other {ആകെ # മിനിറ്റ്}}"
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr "{minutes, plural, one {# മിനിറ്റിൽ തുടങ്ങും} other {# മിനിറ്റിൽ തുടങ്ങും}}"
@@ -926,6 +930,10 @@ msgstr "{pendingOnPage, plural, one {# ഈ പേജിൽ എഡിറ്റ്
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
 msgstr "{proposed, plural, one {# നിർദ്ദേശിച്ചു} other {# നിർദ്ദേശിച്ചു}}"
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
+msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
 msgid "{sections, plural, one {# section} other {# sections}}"
@@ -1984,6 +1992,10 @@ msgstr "വലത്തേക്ക് വിന്യസിക്കുക"
 msgid "All"
 msgstr "എല്ലാം"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2338,6 +2350,10 @@ msgstr "അപേക്ഷ അപ്ഡേറ്റ് ചെയ്തു."
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2358,6 +2374,10 @@ msgstr "കാലക്രമേണ അപേക്ഷകൾ"
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
 msgstr "ആഴ്ചയിൽ അയച്ച അപേക്ഷകൾ (കഴിഞ്ഞ 8 ആഴ്ച)"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
+msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
 msgid "Applications to export"
@@ -2401,6 +2421,10 @@ msgstr "പ്രയോഗിച്ചു. ഫോളോ-അപ്പ് {0}-ന�
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
 msgstr "പ്രയോഗിച്ചു. അപേക്ഷ അപ്ഡേറ്റ് ചെയ്തു."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
+msgstr ""
 
 #: src/features/career/shared.tsx
 #: src/features/homepage/prepare.tsx
@@ -2603,6 +2627,10 @@ msgstr "അറ്റാച്ച്മെന്റ്"
 msgid "Auto-fill failed."
 msgstr "ഓട്ടോ-ഫിൽ പരാജയപ്പെട്ടു."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr "സ്വയമേവ"
@@ -2717,6 +2745,14 @@ msgstr "അടിസ്ഥാന URL"
 msgid "Basics"
 msgstr "അടിസ്ഥാന വിവരങ്ങൾ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr "പുനഃസ്ഥാപിക്കുന്നതിന് മുമ്പ്"
@@ -2740,6 +2776,18 @@ msgstr "ബെംഗാളി"
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
 msgstr "അപേക്ഷിക്കുന്നതിന് ഏറ്റവും മികച്ചത്"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Blocker"
@@ -2902,6 +2950,10 @@ msgstr ""
 msgid "Calendar"
 msgstr "കലണ്ടർ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr "എനിക്ക് അത് സ്വയം ഹോസ്റ്റ് ചെയ്യാൻ കഴിയുമോ?"
@@ -3045,6 +3097,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr "ഇത് മാറ്റുന്നത് പുതിയ വിലാസത്തിലേക്ക് ഒരു സ്ഥിരീകരണം അയയ്ക്കുന്നു. നിങ്ങളുടെ ഉപയോക്തൃനാമം എല്ലാ പൊതു ലിങ്കുകളുടെയും ഭാഗമാണ്."
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3701,6 +3754,10 @@ msgstr "സംഭാഷണം പകർത്തി"
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
 msgstr "സംഭാഷണം ഡിലീറ്റ് ചെയ്തു"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Conversation name"
@@ -4655,7 +4712,7 @@ msgstr "ദീർഘമായി ശ്വസിക്കുക."
 msgid "Default"
 msgstr "ഡിഫോൾട്ട്"
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4907,8 +4964,8 @@ msgid "Dictation started"
 msgstr "ഡിക്റ്റേഷൻ തുടങ്ങി"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
-msgstr "2 മിനിറ്റ് പരിധിയിൽ ഡിക്റ്റേഷൻ നിർത്തി."
+msgid "Dictation stopped at the limit of {limit}."
+msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
 msgid "Didn't land"
@@ -6300,6 +6357,12 @@ msgstr "നിന്ന്"
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7095,6 +7158,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr "അഭിമുഖ അവലോകനം"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr "അഭിമുഖം ഡിലീറ്റ് ചെയ്തു"
@@ -7153,6 +7220,10 @@ msgstr "14 ഉപഭോക്താക്കളെ അഭിമുഖം ചെ�
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
 msgstr "അഭിമുഖം നടത്തുന്നയാൾ"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Is {APP_NAME} really free?"
@@ -7544,6 +7615,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7750,6 +7822,14 @@ msgstr "ദൈർഘ്യം മിനിറ്റിൽ"
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
 msgstr "നീളം ഒരു കുറവല്ല, ഒരു സാർവത്രിക ഒറ്റ-പേജ് നിയമവുമില്ല. അർഹമായ പേജുകൾ നിലനിർത്തുക."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
+msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
 msgid "Let AI clients like Claude or Cursor read and edit your resumes, using an API key above."
@@ -8114,6 +8194,10 @@ msgstr "പൂട്ടി. എഡിറ്റ് ചെയ്യാൻ അൺ�
 msgid "Long stretches are set in capitals."
 msgstr "നീണ്ട ഭാഗങ്ങൾ ക്യാപിറ്റൽസിലാണ്."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr "തിരയേണ്ടത്"
@@ -8434,6 +8518,10 @@ msgstr "മിക്സഡ് ഫോർമാറ്റ്"
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
 msgstr "മോഡൽ"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
+msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Model default"
@@ -9481,6 +9569,10 @@ msgstr "ഒന്നും പൊരുത്തപ്പെടുന്നി�
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
 msgstr "ഈ ഫിൽട്ടറുകളുമായി ഒന്നും പൊരുത്തപ്പെടുന്നില്ല"
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
+msgstr ""
 
 #: src/features/career/workspace/saved.tsx
 msgid "Nothing saved yet"
@@ -10683,6 +10775,10 @@ msgstr "നിങ്ങളുടെ സെർവർ നൽകിയത്: {conn
 msgid "Provider"
 msgstr "പ്രൊവൈഡർ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10927,6 +11023,10 @@ msgstr "വായനാക്ഷമത സ്കോർ: 100-ൽ {0}"
 msgid "Readability score: {score} out of 100"
 msgstr "വായനാക്ഷമത സ്കോർ: 100-ൽ {score}"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr "വായന പേജ്..."
@@ -11064,8 +11164,8 @@ msgid "Recording started"
 msgstr "റെക്കോർഡിംഗ് തുടങ്ങി"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
-msgstr "2 മിനിറ്റ് പരിധിയിൽ റെക്കോർഡിംഗ് നിർത്തി. നിങ്ങൾ പറഞ്ഞത് ട്രാൻസ്ക്രൈബ് ചെയ്യുന്നു."
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recording time"
@@ -11509,6 +11609,14 @@ msgstr "ഫലം"
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr "ഫലം ഒഴിവാക്കി: ഒരു വസ്തുതയും അതിനെ പിന്തുണയ്ക്കുന്നില്ല. ഒന്ന് ഓണാക്കുകയോ ചേർക്കുകയോ ചെയ്താൽ അത് തിരികെ വരും."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr "പുനരാരംഭിക്കുക"
@@ -11610,6 +11718,14 @@ msgstr "തീം എന്തുതന്നെയായാലും റെസ�
 msgid "Resumes created"
 msgstr "റെസ്യൂമെകൾ സൃഷ്ടിച്ചു"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11682,6 +11798,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr "ആവശ്യമായ ഫോം ഉത്തരങ്ങൾ പരിശോധിച്ച് പിന്തുണയില്ലാത്ത അവകാശവാദങ്ങൾ നീക്കം ചെയ്യുക."
@@ -11722,6 +11842,10 @@ msgstr "നിങ്ങളുടെ അക്കൗണ്ടിലേക്ക�
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
 msgstr "\"{name}\" റദ്ദാക്കി. ഇത് ഉപയോഗിക്കുന്ന ആപ്പുകൾ ഇപ്പോൾ പ്രവർത്തിക്കുന്നത് നിർത്തുന്നു."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
+msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
 msgid "Right"
@@ -12905,6 +13029,14 @@ msgstr "ആറ് ഉൽപ്പന്ന ടീമുകൾ"
 msgid "Size"
 msgstr "സൈസ്"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13405,6 +13537,10 @@ msgstr "നിർദ്ദേശിച്ച മറുപടി · അയയ്�
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "<0>models.dev</0>-ൽ നിന്നുള്ള നിർദ്ദേശങ്ങൾ. നിങ്ങൾക്ക് ഏത് മോഡൽ ഐഡിയും നൽകാം."
@@ -13739,6 +13875,10 @@ msgstr "ടെക്സ്റ്റ് തിരഞ്ഞെടുക്കാ�
 msgid "Text is written one character at a time."
 msgstr "ടെക്സ്റ്റ് ഒരു സമയം ഒരു അക്ഷരം വീതം എഴുതിയിരിക്കുന്നു."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr "ടെക്സ്റ്റ് ലെയർ ✓ · 1 കോളം"
@@ -13750,6 +13890,10 @@ msgstr "ടെക്സ്റ്റ് ലെയർ ✓ · 2 കോളങ്ങ�
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
 msgstr "ടെക്സ്റ്റ് ലെയർ കണ്ടെത്തി"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Text sits in the header or footer area."
@@ -14514,6 +14658,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14573,6 +14721,7 @@ msgid "Today, {hour}"
 msgstr "ഇന്ന്, {hour}"
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14920,12 +15069,12 @@ msgid "Untitled resume"
 msgstr "പേരില്ലാത്ത റെസ്യൂമെ"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
-msgstr "പരമാവധി 2 മിനിറ്റ്. അല്ലെങ്കിൽ 2 MB വരെയുള്ള <0>ഒരു ഓഡിയോ ഫയൽ തിരഞ്ഞെടുക്കുക</0>."
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
-msgstr "പരമാവധി 2 മിനിറ്റ്. നിങ്ങൾ സംസാരിക്കുമ്പോൾ വാക്കുകൾ കാണാം."
+msgid "Up to {limit}. Your words appear as you speak."
+msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "Up to 25 MB · checked in your browser, never uploaded"
@@ -15480,6 +15629,10 @@ msgstr "വെബ് തിരയൽ പൂർത്തിയായില്ല.
 msgid "Web search failed: {0}"
 msgstr "വെബ് തിരയൽ പരാജയപ്പെട്ടു: {0}"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15877,6 +16030,10 @@ msgstr "ഒരു ഉത്തരം എഴുതുന്നു…"
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
 msgstr "എഴുത്ത് സഹായം, ക്രമീകരിച്ച നിർദ്ദേശങ്ങൾ, അസിസ്റ്റന്റ്. നിങ്ങൾ ഒന്ന് തിരഞ്ഞെടുക്കാത്തിടത്തെല്ലാം ഡിഫോൾട്ട് ദാതാവിനെ ഉപയോഗിക്കും. നിങ്ങളുടെ കീകൾ എൻക്രിപ്റ്റ് ചെയ്ത നിലയിൽ തുടരും."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
+msgstr ""
 
 #: src/features/homepage/sections.tsx
 msgid "writing, tailoring and sending"

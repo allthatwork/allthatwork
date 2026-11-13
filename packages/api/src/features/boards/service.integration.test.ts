@@ -319,6 +319,17 @@ describe.skipIf(!databaseUrl)("job board checks", () => {
 		expect(application?.jobDescription).toMatch(/^GitLab is the intelligent orchestration platform/);
 	});
 
+	it("gives a board the account's own time limit for reading it", async () => {
+		const { boardTimeoutMs } = await import("./service");
+		expect(await boardTimeoutMs("alice")).toBe(30_000);
+		await getDb()
+			.update(tables.careerProfile)
+			.set({ aiLimits: { boardFetchTimeoutSeconds: 90 } })
+			.where(eq(tables.careerProfile.userId, "alice"));
+		expect(await boardTimeoutMs("alice")).toBe(90_000);
+		expect(await boardTimeoutMs("bob")).toBe(30_000);
+	});
+
 	it("allows one board checks schedule per account", async () => {
 		const saved = await schedule();
 		await expect(schedule()).rejects.toMatchObject({ code: "CONFLICT" });

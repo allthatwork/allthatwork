@@ -1,3 +1,4 @@
+import type { ModelCallOptions } from "./request-limits";
 import type { AiReasoning } from "@reactive-resume/ai/reasoning";
 import type { AIProvider } from "@reactive-resume/ai/types";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
@@ -31,6 +32,7 @@ import { buildAiExtractionTemplate } from "@reactive-resume/ai/resume/extraction
 import { sanitizeAndParseResumeJson } from "@reactive-resume/ai/resume/sanitize";
 import { AI_PROVIDER_DEFAULT_BASE_URLS, AI_PROVIDER_DISPLAY_NAMES, aiProviderSchema } from "@reactive-resume/ai/types";
 import { isDirectOpenAIProvider } from "./capabilities";
+import { sdkCallSettings } from "./request-limits";
 import { resolveAiBaseUrl } from "./url-policy";
 
 const aiExtractionTemplate = buildAiExtractionTemplate();
@@ -355,11 +357,13 @@ function buildResumeParsingTextMessages({ userPrompt, text }: { userPrompt: stri
 	];
 }
 
-async function parsePdf(input: ParsePdfInput): Promise<ResumeData> {
+/** `options` carries the signal and retries; a resume isn't cut at the structured-answer length. */
+async function parsePdf(input: ParsePdfInput, options?: ModelCallOptions): Promise<ResumeData> {
 	const model = getModel(input);
 
 	const result = await generateText({
 		model,
+		...sdkCallSettings({ ...options, maxOutputTokens: null }),
 		system: buildResumeParsingSystemPrompt(pdfParserSystemPrompt),
 		messages: buildResumeParsingMessages({
 			userPrompt: pdfParserUserPrompt,
@@ -420,7 +424,7 @@ function extractDocxText(file: z.infer<typeof fileInputSchema>): string {
 	return text;
 }
 
-async function parseDocx(input: ParseDocxInput): Promise<ResumeData> {
+async function parseDocx(input: ParseDocxInput, options?: ModelCallOptions): Promise<ResumeData> {
 	const model = getModel(input);
 	const messages =
 		input.mediaType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -433,6 +437,7 @@ async function parseDocx(input: ParseDocxInput): Promise<ResumeData> {
 
 	const result = await generateText({
 		model,
+		...sdkCallSettings({ ...options, maxOutputTokens: null }),
 		system: buildResumeParsingSystemPrompt(docxParserSystemPrompt),
 		messages,
 	}).catch((error: unknown) => logAndRethrow("Failed to generate the text with the model", error));

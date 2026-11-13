@@ -9,7 +9,7 @@ const itemSchema = z.object({
 	title: z.string(),
 	content: z.string().optional(),
 });
-export async function searchTavily(query: string, { connection, signal }: ProviderRequest) {
+export async function searchTavily(query: string, { connection, signal, maxResults }: ProviderRequest) {
 	const response = parseResponse(
 		searchSchema,
 		await postJson(
@@ -19,7 +19,7 @@ export async function searchTavily(query: string, { connection, signal }: Provid
 			},
 			{
 				query,
-				max_results: 5,
+				max_results: maxResults,
 				search_depth: "basic",
 				include_answer: false,
 				include_raw_content: false,
@@ -40,6 +40,7 @@ export async function searchTavily(query: string, { connection, signal }: Provid
 					]
 				: [];
 		}),
+		maxResults,
 	);
 }
 

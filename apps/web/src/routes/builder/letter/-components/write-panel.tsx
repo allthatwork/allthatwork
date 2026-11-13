@@ -525,11 +525,17 @@ function DraftBox({ draft, letter, application, onKeep }: DraftBoxProps) {
 
 	if (draft.phase === "failed") {
 		const gateway = draft.error instanceof ORPCError && draft.error.code === "BAD_GATEWAY";
+		// Past "Time limit for other AI requests" the server's message names the setting to raise.
+		const timedOut = draft.error instanceof ORPCError && draft.error.code === "GATEWAY_TIMEOUT";
 		return (
 			<div role="alert" className="grid gap-2.5 rounded-xl bg-danger-soft p-3 text-[13px] text-danger-text">
 				<span className="flex gap-2">
 					<Icon name="warning-circle" size={18} className="shrink-0" />
-					{gateway && draft.provider ? (
+					{timedOut && draft.error instanceof ORPCError ? (
+						<span>
+							{draft.error.message} <Trans>Nothing on the page changed.</Trans>
+						</span>
+					) : gateway && draft.provider ? (
 						<Trans>Drafting stopped: {draft.provider} didn't respond. Nothing on the page changed.</Trans>
 					) : (
 						<Trans>Drafting stopped. Nothing on the page changed.</Trans>

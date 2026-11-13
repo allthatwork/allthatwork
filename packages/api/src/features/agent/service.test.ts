@@ -166,9 +166,13 @@ vi.mock("../cover-letters/service", () => ({
 	coverLetterService: { getById: vi.fn() },
 }));
 // These document lifecycle tests do not exercise career context or its persistence graph.
+const limitsMock = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 vi.mock("../career/service", () => ({
 	careerService: {
-		aiLimits: async () => (await import("@reactive-resume/schema/career")).aiLimitsSchema.parse({}),
+		aiLimits: async () => ({
+			...(await import("@reactive-resume/schema/career")).aiLimitsSchema.parse({}),
+			...limitsMock.value,
+		}),
 	},
 	requireCareerApplication: vi.fn(),
 }));
@@ -327,6 +331,83 @@ function selectOrderByResult(rows: unknown[]) {
 describe("agentService.messages.send", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		limitsMock.value = {};
+	});
+
+	it("runs a reply within the user's AI limits, fitting the conversation to the connection's window", async () => {
+		const persistedMessage = {
+			id: "message-1",
+			userId: "user-1",
+			threadId: "thread-1",
+			role: "user",
+			status: "completed",
+			sequence: 0,
+			uiMessage: { id: "ui-message-1", role: "user", parts: [{ type: "text", text: "Hi" }] },
+		};
+		dbMock.insert.mockReturnValue({
+			values: vi.fn(() => ({ returning: vi.fn(async () => [persistedMessage]) })),
+		});
+		dbMock.update.mockReturnValue({ set: vi.fn(() => ({ where: vi.fn(async () => undefined) })) });
+		claimActiveAgentRunMock.mockResolvedValue(true);
+		aiProvidersServiceMock.getRunnableById.mockResolvedValue({
+			id: "provider-1",
+			provider: "openai-compatible",
+			model: "stub",
+			apiKey: "secret",
+			baseURL: "http://127.0.0.1:1/v1",
+			contextTokens: 200_000,
+		});
+		limitsMock.value = { replySteps: 60, replyOutputTokens: 16_000, modelRetries: 4, replyWebCalls: 12 };
+
+		const [{ convertToModelMessages, ToolLoopAgent }, { agentStreamLifecycle }] = await Promise.all([
+			import("ai"),
+			import("./streams"),
+		]);
+		vi.mocked(convertToModelMessages).mockResolvedValue([{ role: "user", content: [{ type: "text", text: "Hi" }] }]);
+		const settings: Record<string, unknown>[] = [];
+		class MockToolLoopAgent {
+			constructor(options: Record<string, unknown>) {
+				settings.push(options);
+			}
+			stream = vi.fn(async () => ({ toUIMessageStream: vi.fn(() => new ReadableStream()) }));
+		}
+		vi.mocked(ToolLoopAgent).mockImplementation(MockToolLoopAgent as never);
+		vi.mocked(agentStreamLifecycle.create).mockResolvedValue(new ReadableStream());
+		vi.mocked(streamToEventIterator).mockReturnValue("iterator" as never);
+
+		const { agentService } = await import("./service");
+		const { buildAgentTools } = await import("./tools");
+		dbMock.select
+			.mockImplementationOnce(() => selectLimitResult([buildActiveThread()]))
+			.mockImplementationOnce(() => selectWhereResult([{ total: 1 }]))
+			.mockImplementationOnce(() => selectOrderByResult([persistedMessage]));
+		await agentService.messages.send({
+			threadId: "thread-1",
+			userId: "user-1",
+			// oxlint-disable-next-line typescript/no-explicit-any -- minimal fixture for unit test
+			message: { id: "ui-message-1", role: "user", parts: [{ type: "text", text: "Hi" }] } as any,
+		});
+
+		const agent = settings[0] as {
+			maxOutputTokens: number;
+			maxRetries: number;
+			stopWhen: (state: { steps: unknown[] }) => boolean;
+			prepareStep: (state: { messages: unknown[] }) => { messages?: unknown[] };
+		};
+		expect(agent).toMatchObject({ maxOutputTokens: 16_000, maxRetries: 4 });
+		expect(agent.stopWhen({ steps: Array.from({ length: 30 }) })).toBe(false);
+		expect(agent.stopWhen({ steps: Array.from({ length: 60 }) })).toBe(true);
+		expect(vi.mocked(buildAgentTools).mock.calls[0]?.[0]).toMatchObject({ maxWebCalls: 12 });
+
+		// Four turns of about 15,000 tokens each: past the old fixed 40,000, inside half of a 200,000 window.
+		const { estimateTokens } = await import("./context");
+		const turns = Array.from({ length: 4 }, (_, index) => [
+			{ role: "user", content: [{ type: "text", text: `Question ${index} ${"word ".repeat(15_000)}` }] },
+			{ role: "assistant", content: [{ type: "text", text: "Answer" }] },
+		]).flat();
+		expect(estimateTokens(turns)).toBeGreaterThan(50_000);
+		expect(estimateTokens(turns)).toBeLessThan(100_000);
+		expect(agent.prepareStep({ messages: turns })).toEqual({});
 	});
 
 	it("leaves the document and the posting out when their context chips are removed", async () => {
@@ -1370,5 +1451,18 @@ describe("agentService.threads.delete", () => {
 		expect(storageServiceMock.delete).toHaveBeenCalledWith("uploads/user-own/agent/thread-own");
 		expect(dbMock.delete).toHaveBeenCalled();
 		expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({ status: "deleted" }));
+	});
+});
+
+describe("attachment text", () => {
+	it("reads as much of a text attachment as the user's limit allows", async () => {
+		const { buildAttachmentModelParts } = await import("./service");
+		const attachment = { id: "a1", filename: "notes.txt", mediaType: "text/plain", size: 100_000 };
+		const data = new TextEncoder().encode("x".repeat(100_000));
+		const read = (limit: number) =>
+			// oxlint-disable-next-line typescript/no-explicit-any -- minimal attachment row for unit test
+			buildAttachmentModelParts([{ attachment: attachment as any, data }], limit)[0] as { text: string };
+		expect(read(40_000).text.match(/x+$/)?.[0]).toHaveLength(40_000);
+		expect(read(90_000).text.match(/x+$/)?.[0]).toHaveLength(90_000);
 	});
 });

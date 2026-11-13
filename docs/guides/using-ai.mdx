@@ -129,7 +129,9 @@ You can save several providers, for example one per account or one per model.
 - The **assistant** lets you switch models from the model menu in its header at any time. See [Using the assistant](/guides/using-the-assistant).
 - **Check → Writing** lets you pick the provider for each review.
 
-The **Knowledge budget** meter in **AI limits** compares your limits with the context window of the provider in use, looked up on [models.dev](https://models.dev). For a model that list doesn't know, such as a gateway alias, set the window there by hand; it's saved with that provider and needs no new test. See [See how much of the budget you use](/guides/building-career-knowledge#see-how-much-of-the-budget-you-use).
+The **Knowledge budget** meter in **AI limits** compares your limits with the context window of the provider in use, looked up on [models.dev](https://models.dev). For a model that list doesn't know, such as a gateway alias, set the window there by hand; it's saved with that provider and needs no new test. A Coach or Assistant conversation also uses that saved window: with **Conversation kept in view** left blank, it keeps half the window in view. See [See how much of the budget you use](/guides/building-career-knowledge#see-how-much-of-the-budget-you-use).
+
+**AI limits** also sets what every request may spend. Under **All AI requests**, **Time limit for other AI requests** (120 seconds) covers the requests without a limit of their own: Writing review, Improve, reading PDF and Word files, the application's AI actions and drafting letters. A request that reaches it stops with a message naming the setting. **Retries when the model fails** (2) applies to every model call except voice and the connection test, and **Length of structured answers** caps answers in a fixed shape, such as a review or a Fit check; left blank, your provider's default applies. **Rewrite suggestions in one review** sets how many suggestions **Check → Writing** keeps. See [Choose how much Knowledge goes with each request](/guides/building-career-knowledge#choose-how-much-knowledge-goes-with-each-request) for every limit.
 
 ## Connect from the assistant instead
 

@@ -132,6 +132,97 @@ describe("AI limits", () => {
 		);
 	});
 
+	it("shows the groups in order, with the Coach, reply, review, voice and request limits", async () => {
+		renderSection();
+		await screen.findByLabelText("Conversation kept in view");
+		const legends = Array.from(document.querySelectorAll("legend"), (legend) => legend.textContent);
+		expect(legends).toEqual([
+			"Coach",
+			"Application actions",
+			"Coach and Assistant replies",
+			"Knowledge review",
+			"Writing review",
+			"Voice",
+			"All AI requests",
+		]);
+		const labelsOf = (name: string) =>
+			Array.from(
+				screen.getByLabelText(name).closest("fieldset")?.querySelectorAll("label") ?? [],
+				(label) => label.textContent,
+			);
+		expect(labelsOf("Applications the Coach can list").slice(-2)).toEqual([
+			"Applications the Coach can list",
+			"Interview debriefs the Coach can read",
+		]);
+		expect(labelsOf("Model calls in one reply")).toEqual([
+			"Time limit for a whole Coach or Assistant reply",
+			"Time limit for each model call in a reply",
+			"Model calls in one reply",
+			"Length of each model call's answer",
+			"Conversation kept in view",
+			"Text read from one attachment",
+			"Web searches and page reads in one reply",
+		]);
+		expect(labelsOf("Batches in one review")).toEqual(["Batches in one review", "Size of one batch"]);
+		expect(labelsOf("Rewrite suggestions in one review")).toEqual(["Rewrite suggestions in one review"]);
+		expect(labelsOf("Longest recording").at(-1)).toBe("Longest recording");
+		expect(labelsOf("Retries when the model fails")).toEqual([
+			"Time limit for other AI requests",
+			"Retries when the model fails",
+			"Length of structured answers",
+		]);
+		const context = screen.getByLabelText("Conversation kept in view") as HTMLInputElement;
+		expect(context.value).toBe("");
+		expect(context.placeholder).toBe("Automatic");
+		expect(context.closest("div.grid")?.textContent).toContain(
+			"Blank fits it to your model's context window. From 10,000 to 2,000,000.",
+		);
+		expect((screen.getByLabelText("Length of structured answers") as HTMLInputElement).placeholder).toBe(
+			"Provider default",
+		);
+		expect(screen.getByLabelText("Applications the Coach can list").closest("div.grid")?.textContent).toContain(
+			"Default 50. From 10 to 500.",
+		);
+	});
+
+	it("saves a blank field as null and a number in it as that number, and Reset empties it", async () => {
+		api.get.mockResolvedValue({ ...defaults, replyContextTokens: 150_000, coachApplications: 200 });
+		renderSection();
+		const context = (await screen.findByLabelText("Conversation kept in view")) as HTMLInputElement;
+		expect(context.value).toBe("150000");
+
+		fireEvent.change(context, { target: { value: "" } });
+		expect(context.getAttribute("aria-invalid")).toBeNull();
+		fireEvent.change(screen.getByLabelText("Size of one batch"), { target: { value: "30000" } });
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(api.save.mock.calls[0]?.[0]).toEqual({
+				...defaults,
+				coachApplications: 200,
+				replyContextTokens: null,
+				reviewBatchChars: 30_000,
+			}),
+		);
+		await waitFor(() => expect(toasts.add).toHaveBeenCalledWith(expect.objectContaining({ type: "success" })));
+
+		fireEvent.click(screen.getByRole("button", { name: "Reset to defaults" }));
+		expect((screen.getByLabelText("Size of one batch") as HTMLInputElement).value).toBe("");
+		expect((screen.getByLabelText("Applications the Coach can list") as HTMLInputElement).value).toBe("50");
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		await waitFor(() => expect(api.save.mock.calls[1]?.[0]).toEqual(defaults));
+	});
+
+	it("still refuses a blank value in a field that needs a number", async () => {
+		renderSection();
+		const steps = await screen.findByLabelText("Model calls in one reply");
+		fireEvent.change(steps, { target: { value: "" } });
+		expect(steps.getAttribute("aria-invalid")).toBe("true");
+		expect(screen.getByRole("button", { name: "Save" }).hasAttribute("disabled")).toBe(true);
+		fireEvent.change(steps, { target: { value: "60" } });
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		await waitFor(() => expect(api.save.mock.calls[0]?.[0]).toEqual({ ...defaults, replySteps: 60 }));
+	});
+
 	it("saves only its own limits from another section, keeping the rest as last saved", async () => {
 		api.get.mockResolvedValue({ ...defaults, coachFacts: 99 });
 		render(

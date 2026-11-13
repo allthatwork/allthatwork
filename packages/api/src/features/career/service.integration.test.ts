@@ -609,6 +609,65 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		expect(buildCareerTools({ ...input, shareMemory: false })).not.toHaveProperty("read_real_interview_history");
 	});
 
+	it("reads up to the user's limit of debriefs, counted after other saved work is left out", async () => {
+		const debrief = (round: string) => ({
+			kind: "debrief",
+			round,
+			question: "Describe an incident.",
+			answer: "I coordinated the response.",
+			landed: "well",
+			title: round,
+			verdicts: [],
+			nextRound: "",
+			priority: "",
+			plan: [],
+		});
+		for (let index = 0; index < 7; index++) await savedItem("alice-app", debrief(`Round ${index}`));
+		// Newer than every debrief: capping before filtering would have returned none of them.
+		for (let index = 0; index < 6; index++) await savedItem("alice-app", { ...fit, headline: `Fit ${index}` });
+		const { buildCareerTools } = await import("./tools");
+		const context = await service.context({ userId: "alice", applicationId: "alice-app" });
+		const read = (coachInterviews: number) =>
+			buildCareerTools({
+				userId: "alice",
+				context: { ...context, limits: { ...context.limits, coachInterviews } },
+				shareApplication: true,
+				shareMemory: true,
+				tab: undefined,
+				sourceMessageId: undefined,
+			}).read_real_interview_history?.execute?.({}, { toolCallId: "history", messages: [], context: {} });
+		const capped = (await read(5)) as { data: { kind: string; round: string } }[];
+		expect(capped.map((row) => row.data.round)).toEqual(["Round 6", "Round 5", "Round 4", "Round 3", "Round 2"]);
+		expect(await read(30)).toHaveLength(7);
+	});
+
+	it("lists as many applications to the Coach as the user's limit allows", async () => {
+		await getDb()
+			.insert(tables.application)
+			.values(
+				Array.from({ length: 70 }, (_, index) => ({
+					id: `alice-many-${index}`,
+					userId: "alice",
+					company: `Company ${index}`,
+					role: "Engineer",
+				})),
+			);
+		const { buildCareerTools } = await import("./tools");
+		const context = await service.context({ userId: "alice", applicationId: null });
+		const list = (coachApplications: number) =>
+			buildCareerTools({
+				userId: "alice",
+				context: { ...context, limits: { ...context.limits, coachApplications } },
+				shareApplication: true,
+				shareMemory: true,
+				tab: undefined,
+				sourceMessageId: undefined,
+			}).list_opportunities?.execute?.({}, { toolCallId: "list", messages: [], context: {} });
+		expect(context.limits.coachApplications).toBe(50);
+		expect(await list(50)).toHaveLength(50);
+		expect(await list(200)).toHaveLength(72);
+	});
+
 	it.each(["corrected", "excluded", "forgotten"] as const)(
 		"keeps debriefs containing %s facts out of subsequent coaching without deleting saved work",
 		async (change) => {

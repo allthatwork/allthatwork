@@ -838,6 +838,10 @@ msgstr "Mažiausiai {minimum}, kitomis sąlygomis"
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr "{minutes, plural, one {Iš viso # minutė} few {Iš viso # minutės} many {Iš viso # minutės} other {Iš viso # minučių}}"
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr "{minutes, plural, one {Prasideda po # minutės} few {Prasideda po # minučių} many {Prasideda po # minutės} other {Prasideda po # minučių}}"
@@ -926,6 +930,10 @@ msgstr "{pendingOnPage, plural, one {# siūlomas redagavimas šiame puslapyje ·
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
 msgstr "{proposed, plural, one {Pasiūlytas #} other {Pasiūlytas #}}"
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
+msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
 msgid "{sections, plural, one {# section} other {# sections}}"
@@ -1984,6 +1992,10 @@ msgstr "Lygiuoti dešinėje"
 msgid "All"
 msgstr "Visi"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2338,6 +2350,10 @@ msgstr "Paraiška atnaujinta."
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2358,6 +2374,10 @@ msgstr "Paraiškos laikui bėgant"
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
 msgstr "Per savaitę išsiųstos paraiškos (paskutinės 8 savaitės)"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
+msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
 msgid "Applications to export"
@@ -2401,6 +2421,10 @@ msgstr "Pritaikyta. Priminimas nustatytas {0}."
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
 msgstr "Pritaikyta. Paraiška atnaujinta."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
+msgstr ""
 
 #: src/features/career/shared.tsx
 #: src/features/homepage/prepare.tsx
@@ -2603,6 +2627,10 @@ msgstr "Priedas"
 msgid "Auto-fill failed."
 msgstr "Nepavyko automatiškai užpildyti."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr "Automatiškai"
@@ -2717,6 +2745,14 @@ msgstr "Bazinis URL"
 msgid "Basics"
 msgstr "Pagrindai"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr "Prieš atkūrimą"
@@ -2740,6 +2776,18 @@ msgstr "Bengalų"
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
 msgstr "Geriausia teikiant paraiškas"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Blocker"
@@ -2902,6 +2950,10 @@ msgstr ""
 msgid "Calendar"
 msgstr "Kalendorius"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr "Ar galiu jį rengti pats?"
@@ -3045,6 +3097,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr "Pakeitus jį nauju adresu siunčiamas patvirtinimas. Jūsų vartotojo vardas yra kiekvienos viešos nuorodos dalis."
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3701,6 +3754,10 @@ msgstr "Pokalbis nukopijuotas"
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
 msgstr "Pokalbis ištrintas"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Conversation name"
@@ -4655,7 +4712,7 @@ msgstr "Giliai įkvėpkite."
 msgid "Default"
 msgstr "Numatytasis"
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4907,8 +4964,8 @@ msgid "Dictation started"
 msgstr "Diktavimas pradėtas"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
-msgstr "Diktavimas sustabdytas pasiekus 2 minučių ribą."
+msgid "Dictation stopped at the limit of {limit}."
+msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
 msgid "Didn't land"
@@ -6300,6 +6357,12 @@ msgstr "Iš"
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7095,6 +7158,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr "Pokalbio aptarimas"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr "Pokalbis ištrintas"
@@ -7153,6 +7220,10 @@ msgstr "Apklausiau 14 klientų, nustačiau tris nubyrėjimo vietas ir su inžini
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
 msgstr "Pašnekovas"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Is {APP_NAME} really free?"
@@ -7544,6 +7615,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7750,6 +7822,14 @@ msgstr "Trukmė minutėmis"
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
 msgstr "Ilgis nėra trūkumas, ir universalios vieno puslapio taisyklės nėra. Palikite tuos puslapius, kurie to verti."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
+msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
 msgid "Let AI clients like Claude or Cursor read and edit your resumes, using an API key above."
@@ -8114,6 +8194,10 @@ msgstr "Užrakinta. Atrakinkite, kad galėtumėte redaguoti."
 msgid "Long stretches are set in capitals."
 msgstr "Ilgi teksto fragmentai surinkti didžiosiomis raidėmis."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr "Ieškoti"
@@ -8434,6 +8518,10 @@ msgstr "mišrus formatas"
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
 msgstr "Modelis"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
+msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Model default"
@@ -9481,6 +9569,10 @@ msgstr "Niekas neatitinka „{0}“"
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
 msgstr "Niekas neatitinka šių filtrų"
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
+msgstr ""
 
 #: src/features/career/workspace/saved.tsx
 msgid "Nothing saved yet"
@@ -10683,6 +10775,10 @@ msgstr "Pateikta jūsų serverio: {connectedProvider}."
 msgid "Provider"
 msgstr "Tiekėjas"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10927,6 +11023,10 @@ msgstr "Skaitomumo balas: {0} iš 100"
 msgid "Readability score: {score} out of 100"
 msgstr "Skaitomumo balas: {score} iš 100"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr "Skaitomas puslapis…"
@@ -11064,8 +11164,8 @@ msgid "Recording started"
 msgstr "Įrašymas pradėtas"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
-msgstr "Įrašymas sustabdytas pasiekus 2 minučių ribą. Transkribuojama, ką pasakėte."
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recording time"
@@ -11509,6 +11609,14 @@ msgstr "Rezultatas"
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr "Rezultatas praleistas: jo nepagrindžia joks faktas. Įjunkite arba pridėkite faktą, ir jis vėl atsiras."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr "gyvenimo aprašymas"
@@ -11610,6 +11718,14 @@ msgstr "gyvenimo aprašymai visada pateikiami ant balto popieriaus, nesvarbu, ko
 msgid "Resumes created"
 msgstr "sukurti gyvenimo aprašymai"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11682,6 +11798,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr "Peržiūrėkite privalomus formos atsakymus ir pašalinkite nepagrįstus teiginius."
@@ -11722,6 +11842,10 @@ msgstr "Atšaukti programos prieigą prie paskyros."
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
 msgstr "Panaikintas „{name}“. Ją naudojančios programos dabar nustoja veikti."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
+msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
 msgid "Right"
@@ -12905,6 +13029,14 @@ msgstr "Šešios produktų komandos"
 msgid "Size"
 msgstr "Dydis"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13405,6 +13537,10 @@ msgstr "Siūlomas atsakymas · prieš siųsdami redaguokite"
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "Suggestions from <0>models.dev</0>. Taip pat galite įvesti bet kokį modelio ID."
@@ -13739,6 +13875,10 @@ msgstr "Tekstą galima pasirinkti"
 msgid "Text is written one character at a time."
 msgstr "Tekstas rašomas po vieną simbolį."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr "teksto sluoksnis ✓ · 1 stulpelis"
@@ -13750,6 +13890,10 @@ msgstr "teksto sluoksnis ✓ · 2 stulpeliai"
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
 msgstr "rastas teksto sluoksnis"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Text sits in the header or footer area."
@@ -14514,6 +14658,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14573,6 +14721,7 @@ msgid "Today, {hour}"
 msgstr "Šiandien, {hour}"
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14920,12 +15069,12 @@ msgid "Untitled resume"
 msgstr "CV be pavadinimo"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
-msgstr "Iki 2 minučių. Arba <0>pasirinkite garso failą</0> iki 2 MB."
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
-msgstr "Iki 2 minučių. Jūsų žodžiai rodomi jums kalbant."
+msgid "Up to {limit}. Your words appear as you speak."
+msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "Up to 25 MB · checked in your browser, never uploaded"
@@ -15480,6 +15629,10 @@ msgstr "Paieška žiniatinklyje nesibaigė."
 msgid "Web search failed: {0}"
 msgstr "Žiniatinklio paieška nepavyko: {0}"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15877,6 +16030,10 @@ msgstr "Rašomas atsakymas…"
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
 msgstr "Pagalba rašant, pritaikyti pasiūlymai ir padėjėjas. Kur nepasirenkate teikėjo, naudojamas numatytasis. Jūsų raktai lieka užšifruoti."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
+msgstr ""
 
 #: src/features/homepage/sections.tsx
 msgid "writing, tailoring and sending"

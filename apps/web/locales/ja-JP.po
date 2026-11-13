@@ -838,6 +838,10 @@ msgstr "最低{minimum}（通貨または期間が異なる）"
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr "{minutes, plural, other {合計#分}}"
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr "{minutes, plural, other {あと#分で開始}}"
@@ -926,6 +930,10 @@ msgstr "{pendingOnPage, plural, one {# がこのページで提案した編集 �
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
 msgstr "{proposed, plural, one {# が提案されました} other {# が提案されました}}"
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
+msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
 msgid "{sections, plural, one {# section} other {# sections}}"
@@ -1984,6 +1992,10 @@ msgstr "右揃え"
 msgid "All"
 msgstr "全て"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2338,6 +2350,10 @@ msgstr "応募を更新しました。"
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2358,6 +2374,10 @@ msgstr "応募数の推移"
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
 msgstr "週ごとの応募送信数（直近8週間）"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
+msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
 msgid "Applications to export"
@@ -2401,6 +2421,10 @@ msgstr "適用しました。フォローアップを{0}に設定しました。
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
 msgstr "適用しました。応募を更新しました。"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
+msgstr ""
 
 #: src/features/career/shared.tsx
 #: src/features/homepage/prepare.tsx
@@ -2603,6 +2627,10 @@ msgstr "添付ファイル"
 msgid "Auto-fill failed."
 msgstr "自動入力に失敗しました。"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr "自動"
@@ -2717,6 +2745,14 @@ msgstr "ベースURL"
 msgid "Basics"
 msgstr "基本情報"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr "復元前"
@@ -2740,6 +2776,18 @@ msgstr "ベンガル語"
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
 msgstr "応募に最適"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Blocker"
@@ -2902,6 +2950,10 @@ msgstr ""
 msgid "Calendar"
 msgstr "カレンダー"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr "自分で主催することはできますか?"
@@ -3045,6 +3097,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr "変更すると、新しいアドレスに確認メールが送信されます。あなたのユーザー名はすべての公開リンクの一部です。"
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3701,6 +3754,10 @@ msgstr "会話をコピーしました"
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
 msgstr "会話を削除しました"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Conversation name"
@@ -4655,7 +4712,7 @@ msgstr "深呼吸。"
 msgid "Default"
 msgstr "デフォルト"
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4907,8 +4964,8 @@ msgid "Dictation started"
 msgstr "音声入力を開始しました"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
-msgstr "2分の上限に達したため、音声入力を停止しました。"
+msgid "Dictation stopped at the limit of {limit}."
+msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
 msgid "Didn't land"
@@ -6300,6 +6357,12 @@ msgstr "から"
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7095,6 +7158,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr "面接の振り返り"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr "面接を削除しました"
@@ -7153,6 +7220,10 @@ msgstr "14人の顧客にインタビューし、3つの離脱ポイントを洗
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
 msgstr "インタビュアー"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Is {APP_NAME} really free?"
@@ -7544,6 +7615,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7750,6 +7822,14 @@ msgstr "時間（分）"
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
 msgstr "長さそのものは欠点ではなく、1ページに収めるべきという普遍的なルールもありません。価値のあるページだけを残してください。"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
+msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
 msgid "Let AI clients like Claude or Cursor read and edit your resumes, using an API key above."
@@ -8114,6 +8194,10 @@ msgstr "ロックされています。編集するにはロックを解除して
 msgid "Long stretches are set in capitals."
 msgstr "長い箇所がすべて大文字で書かれています。"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr "探す対象"
@@ -8434,6 +8518,10 @@ msgstr "混合フォーマット"
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
 msgstr "モデル"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
+msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Model default"
@@ -9481,6 +9569,10 @@ msgstr "「{0}」に一致するものはありません"
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
 msgstr "これらのフィルターに一致するものはありません"
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
+msgstr ""
 
 #: src/features/career/workspace/saved.tsx
 msgid "Nothing saved yet"
@@ -10683,6 +10775,10 @@ msgstr "サーバーによって提供される: {connectedProvider}。"
 msgid "Provider"
 msgstr "プロバイダー"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10927,6 +11023,10 @@ msgstr "可読性スコア: {0} (100 点中)"
 msgid "Readability score: {score} out of 100"
 msgstr "可読性スコア: {score} (100 点中)"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr "ページを読んでいます…"
@@ -11064,8 +11164,8 @@ msgid "Recording started"
 msgstr "録音を開始しました"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
-msgstr "2分の上限に達したため録音を停止しました。話した内容を文字起こししています。"
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recording time"
@@ -11509,6 +11609,14 @@ msgstr "結果"
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr "結果は除外：裏付けとなる事実がありません。事実をオンにするか追加すると、再び表示されます。"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr "再開する"
@@ -11610,6 +11718,14 @@ msgstr "履歴書は、テーマが何であれ、常に白い紙にレンダリ
 msgid "Resumes created"
 msgstr "作成された履歴書"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11682,6 +11798,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr "必須のフォーム回答を見直し、裏付けのない主張を削除してください。"
@@ -11722,6 +11842,10 @@ msgstr "アプリケーションのアカウントへのアクセスを取り消
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
 msgstr "「{name}」を取り消しました。これを使用しているアプリは動作を停止します。"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
+msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
 msgid "Right"
@@ -12905,6 +13029,14 @@ msgstr "6 つの製品チーム"
 msgid "Size"
 msgstr "サイズ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13405,6 +13537,10 @@ msgstr "返信の提案 · 送信前に編集してください"
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "<0>models.dev</0> からの提案。任意のモデル ID を入力することもできます。"
@@ -13739,6 +13875,10 @@ msgstr "テキストは選択可能です"
 msgid "Text is written one character at a time."
 msgstr "テキストが1文字ずつ個別に書き込まれています。"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr "テキストレイヤー ✓ · 1列"
@@ -13750,6 +13890,10 @@ msgstr "テキストレイヤー ✓ · 2列"
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
 msgstr "テキストレイヤーが見つかりました"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Text sits in the header or footer area."
@@ -14514,6 +14658,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14573,6 +14721,7 @@ msgid "Today, {hour}"
 msgstr "今日 {hour}"
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14920,12 +15069,12 @@ msgid "Untitled resume"
 msgstr "無題の履歴書"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
-msgstr "最大2分。または、2 MBまでの<0>音声ファイルを選択</0>してください。"
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
-msgstr "最大2分。話すと文字が表示されます。"
+msgid "Up to {limit}. Your words appear as you speak."
+msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "Up to 25 MB · checked in your browser, never uploaded"
@@ -15480,6 +15629,10 @@ msgstr "Web 検索が終了しませんでした。"
 msgid "Web search failed: {0}"
 msgstr "Web 検索が失敗しました: {0}"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15877,6 +16030,10 @@ msgstr "回答を作成中…"
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
 msgstr "文章作成の支援、カスタマイズされた提案、アシスタント。プロバイダーを選ばない場合はデフォルトのプロバイダーが使われます。キーは暗号化されたまま保存されます。"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
+msgstr ""
 
 #: src/features/homepage/sections.tsx
 msgid "writing, tailoring and sending"

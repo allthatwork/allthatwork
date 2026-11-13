@@ -60,7 +60,11 @@ const itemSchema = z.object({
 export async function searchFirecrawl(query: string, options: ProviderRequest) {
 	const { data: result } = parseResponse(
 		z.object({ success: z.literal(true), data: searchSchema }),
-		await request("search", { query, sources: ["web"], limit: 5, timeout: options.serviceTimeoutMs }, options),
+		await request(
+			"search",
+			{ query, sources: ["web"], limit: options.maxResults, timeout: options.serviceTimeoutMs },
+			options,
+		),
 	);
 	return normalizeSearch(
 		result.web.flatMap((value) => {
@@ -75,5 +79,6 @@ export async function searchFirecrawl(query: string, options: ProviderRequest) {
 					]
 				: [];
 		}),
+		options.maxResults,
 	);
 }

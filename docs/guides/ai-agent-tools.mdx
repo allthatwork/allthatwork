@@ -53,14 +53,17 @@ The source list combines successful search/read results, deduplicates links, and
 | Limit                                       | Value                                                                                   |
 | ------------------------------------------- | --------------------------------------------------------------------------------------- |
 | Edits per proposal set                      | 12                                                                                      |
-| Tool steps per reply                        | 30                                                                                      |
-| Combined custom search/read calls per reply | 6                                                                                       |
-| Page text returned to the model             | 20,000 characters; clipping is reported                                                 |
+| Tool steps per reply                        | 30 by default (**Model calls in one reply**)                                            |
+| Combined custom search/read calls per reply | 6 by default (**Web searches and page reads in one reply**)                             |
+| Page text returned to the model             | 20,000 characters by default (**Text kept from one page**); clipping is reported        |
+| Results from one search                     | 5 by default (**Results from one search**)                                              |
 | Length of one reply                         | About 4 minutes, then "Time limit reached. Your progress is saved. Ask me to continue." |
 | Attachments per message                     | 10                                                                                      |
 | Size per attachment                         | 25 MB                                                                                   |
 | Attachments per conversation                | 100 MB in total                                                                         |
-| Text read from one attachment               | 40,000 characters                                                                       |
+| Text read from one attachment               | 40,000 characters by default (**Text read from one attachment**)                        |
+
+The limits marked by default are in **Settings → AI & developer**: the reply limits under **AI limits**, page text and search results under **Web access → Sizes**.
 
 Stopping a reply cancels outstanding search and reading as well as the model request.
 

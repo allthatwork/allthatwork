@@ -54,8 +54,15 @@ export class WebAccessError extends Error {
 }
 
 export const MAX_PAGE_BYTES = 2_000_000;
-export const MAX_CONTENT_CHARS = 20_000;
-export const MAX_SEARCH_RESULTS = 5;
 
-/** `serviceTimeoutMs` is what the search service itself may spend, inside the caller's own deadline. */
-export type ProviderRequest = { connection: WebAccessConnection; signal: AbortSignal; serviceTimeoutMs: number };
+/**
+ * `serviceTimeoutMs` is what the search service itself may spend, inside the caller's own deadline. `maxResults` and
+ * `maxChars` are "Results from one search" and "Text kept from one page" (Settings → AI & developer → Web access).
+ */
+export type ProviderRequest = {
+	connection: WebAccessConnection;
+	signal: AbortSignal;
+	serviceTimeoutMs: number;
+	maxResults: number;
+	maxChars: number;
+};

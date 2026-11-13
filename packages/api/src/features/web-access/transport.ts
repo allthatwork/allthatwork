@@ -1,6 +1,6 @@
 import z from "zod";
 import { assertPublicPageUrl } from "./builtin";
-import { MAX_CONTENT_CHARS, MAX_PAGE_BYTES, MAX_SEARCH_RESULTS, WebAccessError } from "./contracts";
+import { MAX_PAGE_BYTES, WebAccessError } from "./contracts";
 
 export function parseResponse<T>(schema: z.ZodType<T>, input: unknown): T {
 	const parsed = schema.safeParse(input);
@@ -57,7 +57,8 @@ export async function postJson(url: string, headers: Record<string, string>, bod
 }
 
 const searchItemSchema = z.object({ url: z.string(), title: z.string(), snippet: z.string().optional() });
-export function normalizeSearch(items: unknown[]) {
+/** Public results with a title, the first `maxResults` of them. */
+export function normalizeSearch(items: unknown[], maxResults: number) {
 	return items
 		.flatMap((item) => {
 			const result = searchItemSchema.safeParse(item);
@@ -74,10 +75,11 @@ export function normalizeSearch(items: unknown[]) {
 				return [];
 			}
 		})
-		.slice(0, MAX_SEARCH_RESULTS);
+		.slice(0, maxResults);
 }
 
-export function pageContent(content: string) {
+/** A page's text, cut at `maxChars` ("Text kept from one page") and marked incomplete when it was. */
+export function pageContent(content: string, maxChars: number) {
 	const text = content.trim();
 	if (!text) throw new WebAccessError("empty");
 	const opening = text.split("\n", 1)[0]?.replace(/^#{1,6}\s*/, "") ?? "";
@@ -89,9 +91,9 @@ export function pageContent(content: string) {
 	) {
 		throw new WebAccessError("challenge");
 	}
-	const truncated = text.length > MAX_CONTENT_CHARS;
+	const truncated = text.length > maxChars;
 	return {
-		content: text.slice(0, MAX_CONTENT_CHARS),
+		content: text.slice(0, maxChars),
 		truncated,
 		completeness:
 			truncated || /\[(?:content )?(?:truncated|\.\.\.)\]\s*$/i.test(text)

@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { aiLimitsSchema } from "@reactive-resume/schema/career";
 
 const mocks = vi.hoisted(() => ({
 	generate: vi.fn(),
 	stored: [] as unknown[],
 	facts: [] as unknown[],
 	clean: vi.fn(),
+	limits: {} as Record<string, unknown>,
 }));
 vi.mock("@reactive-resume/db/client", () => {
 	const chain = {
@@ -32,12 +34,12 @@ vi.mock("../ai-providers/service", () => ({
 vi.mock("./service", () => ({
 	careerService: {
 		cleanDuplicates: mocks.clean,
-		aiLimits: async () => ({ actionFactChars: 2000, actionStoryChars: 2000, actionTimeoutSeconds: 120 }),
+		aiLimits: async () => mocks.limits,
 		aiFacts: async () => mocks.facts,
 	},
 }));
 
-const { knowledgeReview, reviewBatches } = await import("./review");
+const { knowledgeReview, reviewBatchChars, reviewBatches } = await import("./review");
 
 const fact = (id: string, text: string, group: string | null = null, applicationId: string | null = null) => ({
 	id,
@@ -56,7 +58,7 @@ describe("review batches", () => {
 			fact("loose", "x".repeat(50)),
 			fact("a2", "x".repeat(50), "a"),
 		];
-		const { batches, skipped } = reviewBatches(facts, 220);
+		const { batches, skipped } = reviewBatches(facts, 220, 8);
 		// Groups in order, ungrouped facts last, packed into as few requests as fit.
 		expect(batches.map((batch) => batch.map((item) => item.id))).toEqual([
 			["a1", "a2"],
@@ -67,6 +69,13 @@ describe("review batches", () => {
 		expect(capped.batches.map((batch) => batch.map((item) => item.id))).toEqual([["a1", "a2"]]);
 		expect(capped.skipped).toBe(2);
 	});
+
+	it("sizes a batch from the setting, or from the action budgets when it's blank", () => {
+		const defaults = aiLimitsSchema.parse({});
+		expect(reviewBatchChars(defaults)).toBe(20_000);
+		expect(reviewBatchChars({ ...defaults, actionFactChars: 30_000 })).toBe(40_000);
+		expect(reviewBatchChars({ ...defaults, reviewBatchChars: 5000 })).toBe(5000);
+	});
 });
 
 describe("Knowledge review", () => {
@@ -74,6 +83,7 @@ describe("Knowledge review", () => {
 		mocks.generate.mockReset();
 		mocks.clean.mockReset().mockResolvedValue({ updated: 3 });
 		mocks.stored.length = 0;
+		mocks.limits = aiLimitsSchema.parse({ actionFactChars: 2000, actionStoryChars: 2000 });
 		mocks.facts = [
 			fact("old", "Team of 8 in 2023.", "work"),
 			fact("new", "Team of 12 in 2025.", "work"),
@@ -121,6 +131,22 @@ describe("Knowledge review", () => {
 		expect(review.findings[0]?.factIds).toEqual(["old", "new", "claim"]);
 		expect(review.findings[0]?.note.length).toBeLessThanOrEqual(400);
 		expect(review.findings[0]?.note.endsWith("grew")).toBe(true);
+	});
+
+	it("sends as many batches of the set size as the user's limits allow, with their retries", async () => {
+		mocks.generate.mockResolvedValue({ findings: [] });
+		// Each fact is about 80 JSON characters: a 4,000-character batch holds them all, 100 characters holds one.
+		mocks.limits = aiLimitsSchema.parse({ reviewBatchChars: 4000, reviewBatches: 1, modelRetries: 4 });
+		expect(await knowledgeReview.run({ userId: "alice" })).toMatchObject({ reviewed: 3, total: 3 });
+		expect(mocks.generate).toHaveBeenCalledTimes(1);
+		expect(mocks.generate.mock.calls[0]?.[3]).toMatchObject({ maxRetries: 4 });
+
+		mocks.generate.mockClear();
+		mocks.limits = aiLimitsSchema.parse({ reviewBatchChars: null, reviewBatches: 2, jsonOutputTokens: 2048 });
+		mocks.limits = { ...mocks.limits, actionFactChars: 50, actionStoryChars: 50 };
+		expect(await knowledgeReview.run({ userId: "alice" })).toMatchObject({ reviewed: 2, total: 3 });
+		expect(mocks.generate).toHaveBeenCalledTimes(2);
+		expect(mocks.generate.mock.calls[0]?.[3]).toMatchObject({ maxOutputTokens: 2048 });
 	});
 
 	it("explains a review that reaches the time limit", async () => {

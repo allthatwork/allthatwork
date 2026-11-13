@@ -11,6 +11,8 @@ import { probeWebAccess, readPage, searchWeb } from "./service";
 const fixtures = vi.hoisted(() => ({
 	limit: vi.fn(async () => ({ success: true })),
 	webCallTimeoutMs: 20_000,
+	pageChars: 20_000,
+	searchResults: 5,
 	direct: vi.fn(),
 	directHtml: "<h1>Direct posting</h1><p>Work on accessible products.</p>",
 	directLocation: "",
@@ -23,7 +25,13 @@ vi.mock("../../redis", () => ({
 vi.mock("@reactive-resume/env/server", () => ({
 	env: { FLAG_DISABLE_API_RATE_LIMIT: false },
 }));
-vi.mock("./limits", () => ({ webCallTimeoutMs: async () => fixtures.webCallTimeoutMs }));
+vi.mock("./limits", () => ({
+	webLimits: async () => ({
+		timeoutMs: fixtures.webCallTimeoutMs,
+		pageChars: fixtures.pageChars,
+		searchResults: fixtures.searchResults,
+	}),
+}));
 vi.mock("node:dns/promises", () => ({ lookup: vi.fn() }));
 vi.mock("node:dns", () => ({ lookup: vi.fn() }));
 vi.mock("node:https", () => ({
@@ -168,6 +176,8 @@ afterAll(async () => {
 });
 beforeEach(() => {
 	fixtures.webCallTimeoutMs = 20_000;
+	fixtures.pageChars = 20_000;
+	fixtures.searchResults = 5;
 	vi.stubEnv("NODE_ENV", "test");
 	vi.stubGlobal("fetch", (input: string | URL | Request, options?: RequestInit) => {
 		const url = new globalThis.URL(input instanceof Request ? input.url : input.toString());
@@ -239,6 +249,22 @@ describe.each(PROVIDERS)("%s adapter at shared boundary", (provider) => {
 		await readPage(URL, context(provider));
 		const timeout = { firecrawl: "timeout", tavily: "timeout", exa: "livecrawlTimeout" }[provider];
 		expect(requests[0]?.body[timeout]).toBe(provider === "tavily" ? 39 : 39_000);
+	});
+
+	it("keeps as much page text and asks for as many results as the account's limits allow", async () => {
+		fixtures.pageChars = 50_000;
+		fixtures.searchResults = 12;
+		responseOverride = readResponse(provider, "x".repeat(50_001));
+		const page = await readPage(URL, context(provider));
+		expect(page.content).toHaveLength(50_000);
+		expect(page.truncated).toBe(true);
+		if (provider === "exa") expect(requests[0]?.body).toMatchObject({ text: { maxCharacters: 50_001 } });
+
+		responseOverride = undefined;
+		requests.length = 0;
+		await searchWeb("Lumen Health company", context(provider));
+		const count = { firecrawl: "limit", tavily: "max_results", exa: "numResults" }[provider];
+		expect(requests[0]?.body[count]).toBe(12);
 	});
 
 	it("reads page content with truthful source metadata and explicit truncation", async () => {

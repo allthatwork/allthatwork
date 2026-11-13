@@ -1,5 +1,7 @@
+import type { ModelCallOptions } from "./request-limits";
 import { z } from "zod";
 import { atsReviewSystemPrompt, atsReviewUserPromptTemplate } from "@reactive-resume/ai/prompts";
+import { aiLimitsSchema } from "@reactive-resume/schema/career";
 import { generateJson } from "./generate-json";
 import { getModel } from "./service";
 
@@ -54,45 +56,52 @@ const impactSchema = z.enum(["high", "medium", "low"]).catch("medium");
  * suggestion, not the whole review. Lists are capped by slicing rather than rejecting.
  *
  * There is deliberately no score anywhere in this shape. The deterministic report owns the only
- * number in this feature, and an AI-adjusted score would make it mean less.
+ * number in this feature, and an AI-adjusted score would make it mean less. A review keeps at most `maxSuggestions`
+ * rewrite suggestions ("Rewrite suggestions in one review" in Settings → AI limits → Writing review).
  */
-export const atsReviewOutputSchema = z.object({
-	summary: z.string().catch(""),
-	suggestions: z
-		.array(
-			z.object({
-				section: z.string().nullable().catch(null),
-				passageId: z.string().nullable().catch(null),
-				issue: z.string().catch(""),
-				rewrite: z.string().nullable().catch(null),
-				impact: impactSchema,
-			}),
-		)
-		.catch([])
-		.transform((entries) => entries.filter((entry) => entry.issue.trim().length > 0).slice(0, 12)),
-	strengths: z
-		.array(z.string())
-		.catch([])
-		.transform((entries) => entries.filter(Boolean).slice(0, 8)),
-	jdAlignment: z
-		.object({
-			verdict: z.string().catch(""),
-			missingConcepts: z
-				.array(z.string())
-				.catch([])
-				.transform((entries) => entries.filter(Boolean).slice(0, 15)),
-			strengths: z
-				.array(z.string())
-				.catch([])
-				.transform((entries) => entries.filter(Boolean).slice(0, 10)),
-		})
-		.nullable()
-		.catch(null),
-});
+const atsReviewOutput = (maxSuggestions: number) =>
+	z.object({
+		summary: z.string().catch(""),
+		suggestions: z
+			.array(
+				z.object({
+					section: z.string().nullable().catch(null),
+					passageId: z.string().nullable().catch(null),
+					issue: z.string().catch(""),
+					rewrite: z.string().nullable().catch(null),
+					impact: impactSchema,
+				}),
+			)
+			.catch([])
+			.transform((entries) => entries.filter((entry) => entry.issue.trim().length > 0).slice(0, maxSuggestions)),
+		strengths: z
+			.array(z.string())
+			.catch([])
+			.transform((entries) => entries.filter(Boolean).slice(0, 8)),
+		jdAlignment: z
+			.object({
+				verdict: z.string().catch(""),
+				missingConcepts: z
+					.array(z.string())
+					.catch([])
+					.transform((entries) => entries.filter(Boolean).slice(0, 15)),
+				strengths: z
+					.array(z.string())
+					.catch([])
+					.transform((entries) => entries.filter(Boolean).slice(0, 10)),
+			})
+			.nullable()
+			.catch(null),
+	});
+
+/** What the API returns: up to the most suggestions the setting allows; a review keeps the user's own limit. */
+export const atsReviewOutputSchema = atsReviewOutput(aiLimitsSchema.shape.reviewSuggestions.unwrap().maxValue ?? 30);
 
 export type AtsReviewOutput = z.infer<typeof atsReviewOutputSchema>;
 
 type AtsReviewServiceInput = AtsReviewInput & {
+	/** "Rewrite suggestions in one review". */
+	maxSuggestions: number;
 	provider: Parameters<typeof getModel>[0]["provider"];
 	model: string;
 	apiKey: string;
@@ -142,15 +151,21 @@ function buildUserPrompt(input: AtsReviewServiceInput): string {
 		PASSAGES_SECTION: renderPassagesSection(input.passages ?? []),
 	};
 
-	return atsReviewUserPromptTemplate.replace(
+	const prompt = atsReviewUserPromptTemplate.replace(
 		/\{\{([A-Z_]+)\}\}/g,
 		(placeholder, name: string) => sections[name] ?? placeholder,
 	);
+	return `${prompt.trimEnd()}\n\nGive at most ${input.maxSuggestions} suggestions, the most important first.`;
 }
 
 /** Qualitative review of the writing. Never returns a score — see {@link atsReviewOutputSchema}. */
-export function reviewResumeText(input: AtsReviewServiceInput): Promise<AtsReviewOutput> {
+export function reviewResumeText(input: AtsReviewServiceInput, options?: ModelCallOptions): Promise<AtsReviewOutput> {
 	const model = getModel(input);
 
-	return generateJson(model, { system: atsReviewSystemPrompt, prompt: buildUserPrompt(input) }, atsReviewOutputSchema);
+	return generateJson(
+		model,
+		{ system: atsReviewSystemPrompt, prompt: buildUserPrompt(input) },
+		atsReviewOutput(input.maxSuggestions),
+		options,
+	);
 }

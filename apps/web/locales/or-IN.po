@@ -838,6 +838,10 @@ msgstr "ସର୍ବନିମ୍ନ {minimum}, ଭିନ୍ନ ମୁଦ୍ର�
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr "{minutes, plural, one {ମୋଟ # ମିନିଟ୍} other {ମୋଟ # ମିନିଟ୍}}"
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr "{minutes, plural, one {# ମିନିଟରେ ଆରମ୍ଭ} other {# ମିନିଟରେ ଆରମ୍ଭ}}"
@@ -926,6 +930,10 @@ msgstr "{pendingOnPage, plural, one {# ଏହି ପୃଷ୍ଠାରେ ସମ
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
 msgstr "{proposed, plural, one {# ପ୍ରସ୍ତାବିତ |} other {# ପ୍ରସ୍ତାବିତ |}}"
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
+msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
 msgid "{sections, plural, one {# section} other {# sections}}"
@@ -1984,6 +1992,10 @@ msgstr "ଡାହାଣକୁ ସଜାନ୍ତୁ"
 msgid "All"
 msgstr "ସମସ୍ତ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2339,6 +2351,10 @@ msgstr "ଆବେଦନ ଅଦ୍ୟତନ ହୋଇଛି |"
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2359,6 +2375,10 @@ msgstr "ସମୟ ସହିତ ଆବେଦନଗୁଡ଼ିକ"
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
 msgstr "ପ୍ରତି ସପ୍ତାହରେ ପଠାଯାଇଥିବା ଆବେଦନ (ଗତ 8 ସପ୍ତାହ)"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
+msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
 msgid "Applications to export"
@@ -2402,6 +2422,10 @@ msgstr "ପ୍ରୟୋଗ ହେଲା। {0} ପାଇଁ ଅନୁସରଣ �
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
 msgstr "ପ୍ରୟୋଗ ହେଲା। ଆବେଦନ ଅପଡେଟ୍ ହୋଇଛି।"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
+msgstr ""
 
 #: src/features/career/shared.tsx
 #: src/features/homepage/prepare.tsx
@@ -2604,6 +2628,10 @@ msgstr "ଆଟାଚମେଣ୍ଟ୍"
 msgid "Auto-fill failed."
 msgstr "ସ୍ୱୟଂଚାଳିତ ପୂରଣ ବିଫଳ ହେଲା।"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr "ସ୍ୱୟଂଚାଳିତ ଭାବେ"
@@ -2718,6 +2746,14 @@ msgstr "ମୂଳ URL"
 msgid "Basics"
 msgstr "ମୌଳିକ ବିବରଣୀ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr "ପୁନ restore ସ୍ଥାପନ ପୂର୍ବରୁ"
@@ -2741,6 +2777,18 @@ msgstr "ବଙ୍ଗାଳୀ"
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
 msgstr "ଆବେଦନ ପାଇଁ ସର୍ବୋତ୍ତମ |"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Blocker"
@@ -2903,6 +2951,10 @@ msgstr ""
 msgid "Calendar"
 msgstr "କ୍ୟାଲେଣ୍ଡର"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr "ମୁଁ ଏହାକୁ ନିଜେ ହୋଷ୍ଟ କରିପାରିବି କି?"
@@ -3046,6 +3098,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr "ଏହାକୁ ପରିବର୍ତ୍ତନ କରିବା ନୂତନ ଠିକଣାକୁ ଏକ ନିଶ୍ଚିତକରଣ ପଠାଏ | ଆପଣଙ୍କର ଉପଯୋଗକର୍ତ୍ତା ନାମ ପ୍ରତ୍ୟେକ ସାର୍ବଜନୀନ ଲିଙ୍କର ଏକ ଅଂଶ |"
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3702,6 +3755,10 @@ msgstr "କଥୋପକଥନ କପି ହେଲା"
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
 msgstr "କଥୋପକଥନ ବିଲୋପ ହେଲା"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Conversation name"
@@ -4656,7 +4713,7 @@ msgstr "ଗଭୀର ନିଶ୍ୱାସ ନିଅନ୍ତୁ।"
 msgid "Default"
 msgstr "ଡିଫଲ୍ଟ"
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4908,8 +4965,8 @@ msgid "Dictation started"
 msgstr "ଡିକ୍ଟେସନ୍ ଆରମ୍ଭ ହେଲା"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
-msgstr "2 ମିନିଟ୍ ସୀମାରେ ଡିକ୍ଟେସନ୍ ବନ୍ଦ ହେଲା।"
+msgid "Dictation stopped at the limit of {limit}."
+msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
 msgid "Didn't land"
@@ -6301,6 +6358,12 @@ msgstr "ଠାରୁ"
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7098,6 +7161,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr "ସାକ୍ଷାତକାର ସମୀକ୍ଷା"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr "ସାକ୍ଷାତକାର ବିଲୋପ ହେଲା"
@@ -7156,6 +7223,10 @@ msgstr "14 ଜଣ ଗ୍ରାହକଙ୍କ ସାକ୍ଷାତକାର ନ
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
 msgstr "ସାକ୍ଷାତକାର"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Is {APP_NAME} really free?"
@@ -7547,6 +7618,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7753,6 +7825,14 @@ msgstr "ମିନିଟରେ ଅବଧି"
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
 msgstr "ଲମ୍ବ ଏକ ତ୍ରୁଟି ନୁହେଁ, ଏବଂ କୌଣସି ସାର୍ବଜନୀନ ଏକ-ପୃଷ୍ଠା ନିୟମ ନାହିଁ। ଯେଉଁ ପୃଷ୍ଠାଗୁଡ଼ିକ ନିଜର ସ୍ଥାନ ଅର୍ଜନ କରନ୍ତି ସେଗୁଡ଼ିକୁ ରଖନ୍ତୁ।"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
+msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
 msgid "Let AI clients like Claude or Cursor read and edit your resumes, using an API key above."
@@ -8117,6 +8197,10 @@ msgstr "ତାଲା ପଡିଛି | ସଂପାଦନ କରିବାକୁ 
 msgid "Long stretches are set in capitals."
 msgstr "ଲମ୍ବା ଅଂଶ ବଡ଼ ଅକ୍ଷରରେ ଲେଖାଯାଇଛି।"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr "ଖୋଜନ୍ତୁ"
@@ -8437,6 +8521,10 @@ msgstr "ମିଶ୍ରିତ ଫର୍ମାଟ୍ |"
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
 msgstr "ମଡେଲ୍"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
+msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Model default"
@@ -9484,6 +9572,10 @@ msgstr "“{0}” କିଛି ମେଳ ଖାଉ ନାହିଁ |"
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
 msgstr "ଏହି ଫିଲ୍ଟରଗୁଡିକ ସହିତ କିଛି ନାହିଁ |"
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
+msgstr ""
 
 #: src/features/career/workspace/saved.tsx
 msgid "Nothing saved yet"
@@ -10687,6 +10779,10 @@ msgstr "ଆପଣଙ୍କର ସର୍ଭର ଦ୍ୱାରା ପ୍ରଦା
 msgid "Provider"
 msgstr "ପ୍ରଦାନକାରୀ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10931,6 +11027,10 @@ msgstr "ପଠନ ଯୋଗ୍ୟତା ସ୍କୋର: 100 ରୁ {0} |"
 msgid "Readability score: {score} out of 100"
 msgstr "ପଠନ ଯୋଗ୍ୟତା ସ୍କୋର: 100 ରୁ {score} |"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr "ପୃଷ୍ଠା ପ Reading ଼ିବା…"
@@ -11068,8 +11168,8 @@ msgid "Recording started"
 msgstr "ରେକର୍ଡିଂ ଆରମ୍ଭ ହେଲା"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
-msgstr "2 ମିନିଟ୍ ସୀମାରେ ରେକର୍ଡିଂ ବନ୍ଦ ହେଲା। ଆପଣ ଯାହା କହିଲେ ତାହା ଟ୍ରାନ୍ସକ୍ରାଇବ୍ କରୁଛି।"
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recording time"
@@ -11513,6 +11613,14 @@ msgstr "ଫଳାଫଳ"
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr "ଫଳାଫଳ ବାଦ୍ ଦିଆଗଲା: କୌଣସି ତଥ୍ୟ ଏହାକୁ ସମର୍ଥନ କରୁନାହିଁ। ଗୋଟିଏ ଚାଲୁ କରନ୍ତୁ, କିମ୍ବା ଯୋଡ଼ନ୍ତୁ, ଏବଂ ଏହା ଫେରି ଆସିବ।"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr "ରେଜୁମ୍"
@@ -11614,6 +11722,14 @@ msgstr "ଥିମ୍ ଯାହା ବି ହେଉ, ରେଜୁମ୍ ସବୁ
 msgid "Resumes created"
 msgstr "ରେଜୁମେସ୍ ସୃଷ୍ଟି |"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11686,6 +11802,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr "ଆବଶ୍ୟକ ଫର୍ମ ଉତ୍ତର ସମୀକ୍ଷା କରନ୍ତୁ ଏବଂ ସମର୍ଥନହୀନ ଦାବି ହଟାନ୍ତୁ।"
@@ -11726,6 +11846,10 @@ msgstr "ଆପଣଙ୍କ ଖାତାକୁ ଏକ ଆପ୍ଲିକେସନ
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
 msgstr "“{name}” ପ୍ରତ୍ୟାହାର | ଏହାକୁ ବ୍ୟବହାର କରୁଥିବା ଆପଗୁଡ଼ିକ ବର୍ତ୍ତମାନ କାମ ବନ୍ଦ କରିଦିଏ |"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
+msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
 msgid "Right"
@@ -12909,6 +13033,14 @@ msgstr "Six ଟି ଉତ୍ପାଦ ଦଳ |"
 msgid "Size"
 msgstr "ଆକାର"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13409,6 +13541,10 @@ msgstr "ପ୍ରସ୍ତାବିତ ଉତ୍ତର · ପଠାଇବା ପ
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "<0>models.dev</0> ରୁ ପରାମର୍ଶ | ଆପଣ ଯେକ any ଣସି ମଡେଲ୍ ID ମଧ୍ୟ ପ୍ରବେଶ କରିପାରିବେ |"
@@ -13743,6 +13879,10 @@ msgstr "ପାଠ ଚୟନ ଯୋଗ୍ୟ ଅଟେ |"
 msgid "Text is written one character at a time."
 msgstr "ଟେକ୍ସଟ୍ ଏକ ସମୟରେ ଗୋଟିଏ ଅକ୍ଷର କରି ଲେଖାଯାଇଛି।"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr "ପାଠ୍ୟ ସ୍ତର ✓ · 1 ସ୍ତମ୍ଭ |"
@@ -13754,6 +13894,10 @@ msgstr "ପାଠ୍ୟ ସ୍ତର ✓ · 2 ସ୍ତମ୍ଭ |"
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
 msgstr "ପାଠ୍ୟ ସ୍ତର ମିଳିଲା |"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Text sits in the header or footer area."
@@ -14518,6 +14662,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14577,6 +14725,7 @@ msgid "Today, {hour}"
 msgstr "ଆଜି, {hour}"
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14925,12 +15074,12 @@ msgid "Untitled resume"
 msgstr "ଆଖ୍ୟାବିହୀନ ରେଜୁମ୍ |"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
-msgstr "2 ମିନିଟ୍ ପର୍ଯ୍ୟନ୍ତ। କିମ୍ବା 2 MB ପର୍ଯ୍ୟନ୍ତ <0>ଏକ ଅଡିଓ ଫାଇଲ୍ ବାଛନ୍ତୁ</0>।"
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
-msgstr "2 ମିନିଟ୍ ପର୍ଯ୍ୟନ୍ତ। ଆପଣ କହିବା ସହ ଆପଣଙ୍କ ଶବ୍ଦ ଦେଖାଯାଏ।"
+msgid "Up to {limit}. Your words appear as you speak."
+msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "Up to 25 MB · checked in your browser, never uploaded"
@@ -15485,6 +15634,10 @@ msgstr "ୱେବ୍ ସନ୍ଧାନ ସମାପ୍ତ ହେଲା ନା�
 msgid "Web search failed: {0}"
 msgstr "ୱେବ୍ ସନ୍ଧାନ ବିଫଳ ହେଲା: {0} |"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15882,6 +16035,10 @@ msgstr "ଏକ ଉତ୍ତର ଲେଖୁଛି…"
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
 msgstr "ଲେଖା ସାହାଯ୍ୟ, ଅନୁକୂଳିତ ପରାମର୍ଶ ଓ ସହକାରୀ। ଆପଣ ଯେଉଁଠି ପ୍ରଦାନକାରୀ ବାଛନ୍ତି ନାହିଁ, ସେଠାରେ ଡିଫଲ୍ଟ ପ୍ରଦାନକାରୀ ବ୍ୟବହୃତ ହୁଏ। ଆପଣଙ୍କ କି ଏନକ୍ରିପ୍ଟେଡ୍ ରହେ।"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
+msgstr ""
 
 #: src/features/homepage/sections.tsx
 msgid "writing, tailoring and sending"

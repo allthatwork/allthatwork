@@ -6,7 +6,19 @@ import { estimateTokenCount as estimateTextTokenCount } from "tokenx";
 // step. Tier 0 always runs (a stale resume snapshot is actively harmful — shifted array indexes);
 // the remaining tiers only fire once the estimated token count exceeds the budget.
 
-const AGENT_CONTEXT_TOKEN_BUDGET = 40_000;
+/** The conversation kept in view when the window is unknown, and the least a blank setting ever keeps. */
+export const AGENT_CONTEXT_TOKEN_BUDGET = 40_000;
+
+/**
+ * "Conversation kept in view" (Settings → AI limits): the number set, or when it's blank, half the connection's
+ * context window (the one saved with the AI connection), never less than 40,000 tokens, and 40,000 when the window
+ * isn't known. Half leaves room for the instructions, the Knowledge shared up front and the answer.
+ */
+export function replyContextBudget(setting: number | null, contextWindow: number | null | undefined) {
+	if (setting !== null) return setting;
+	if (!contextWindow) return AGENT_CONTEXT_TOKEN_BUDGET;
+	return Math.max(AGENT_CONTEXT_TOKEN_BUDGET, Math.floor(contextWindow / 2));
+}
 
 const SNAPSHOT_TOOL_NAMES = new Set(["read_resume", "read_letter", "apply_resume_patch"]);
 const SUPERSEDED_SNAPSHOT_NOTE =

@@ -838,6 +838,10 @@ msgstr "حداقل {minimum}، با شرایط دیگر"
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr "{minutes, plural, one {در مجموع # دقیقه} other {در مجموع # دقیقه}}"
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr "{minutes, plural, one {# دقیقه تا شروع} other {# دقیقه تا شروع}}"
@@ -926,6 +930,10 @@ msgstr "{pendingOnPage, plural, one {# ویرایش پیشنهادی در این
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
 msgstr "{proposed, plural, one {# پیشنهاد شده است} other {# پیشنهاد شده است}}"
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
+msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
 msgid "{sections, plural, one {# section} other {# sections}}"
@@ -1984,6 +1992,10 @@ msgstr "تراز راست"
 msgid "All"
 msgstr "همه"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2338,6 +2350,10 @@ msgstr "درخواست به‌روزرسانی شد."
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2358,6 +2374,10 @@ msgstr "درخواست‌ها در طول زمان"
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
 msgstr "درخواست‌های ارسال‌شده در هفته (۸ هفته گذشته)"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
+msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
 msgid "Applications to export"
@@ -2401,6 +2421,10 @@ msgstr "اعمال شد. پیگیری برای {0} تنظیم شد."
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
 msgstr "اعمال شد. درخواست به‌روز شد."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
+msgstr ""
 
 #: src/features/career/shared.tsx
 #: src/features/homepage/prepare.tsx
@@ -2603,6 +2627,10 @@ msgstr "پیوست"
 msgid "Auto-fill failed."
 msgstr "تکمیل خودکار ناموفق بود."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr "خودکار"
@@ -2717,6 +2745,14 @@ msgstr "آدرس اینترنتی پایه"
 msgid "Basics"
 msgstr "اطلاعات پایه"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr "قبل از بازیابی"
@@ -2740,6 +2776,18 @@ msgstr "بنگالی"
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
 msgstr "بهترین برای درخواست"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Blocker"
@@ -2902,6 +2950,10 @@ msgstr ""
 msgid "Calendar"
 msgstr "تقویم"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr "آیا می توانم خودم میزبان آن باشم؟"
@@ -3045,6 +3097,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr "با تغییر آن یک تایید به آدرس جدید ارسال می شود. نام کاربری شما بخشی از هر پیوند عمومی است."
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3701,6 +3754,10 @@ msgstr "گفتگو کپی شد"
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
 msgstr "گفتگو حذف شد"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Conversation name"
@@ -4655,7 +4712,7 @@ msgstr "نفس عمیق."
 msgid "Default"
 msgstr "پیش‌فرض"
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4907,8 +4964,8 @@ msgid "Dictation started"
 msgstr "تایپ صوتی آغاز شد"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
-msgstr "تایپ صوتی در سقف ۲ دقیقه متوقف شد."
+msgid "Dictation stopped at the limit of {limit}."
+msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
 msgid "Didn't land"
@@ -6300,6 +6357,12 @@ msgstr "از"
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7095,6 +7158,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr "مرور مصاحبه"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr "مصاحبه حذف شد"
@@ -7153,6 +7220,10 @@ msgstr "با ۱۴ مشتری مصاحبه کردم، سه نقطهٔ ریزش ر
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
 msgstr "مصاحبه کننده"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Is {APP_NAME} really free?"
@@ -7544,6 +7615,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7750,6 +7822,14 @@ msgstr "مدت به دقیقه"
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
 msgstr "طول رزومه نقص نیست و هیچ قانون همگانی تک‌صفحه‌ای وجود ندارد. صفحاتی را نگه دارید که ارزش جای خود را دارند."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
+msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
 msgid "Let AI clients like Claude or Cursor read and edit your resumes, using an API key above."
@@ -8114,6 +8194,10 @@ msgstr "قفل شده است. برای ویرایش قفل را باز کنید.
 msgid "Long stretches are set in capitals."
 msgstr "بخش‌های طولانی با حروف بزرگ نوشته شده‌اند."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr "موارد جستجو"
@@ -8434,6 +8518,10 @@ msgstr "فرمت ترکیبی"
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
 msgstr "مدل"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
+msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Model default"
@@ -9481,6 +9569,10 @@ msgstr "هیچ چیزی مطابق با \"{0}\" نیست"
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
 msgstr "هیچ چیز با این فیلترها مطابقت ندارد"
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
+msgstr ""
 
 #: src/features/career/workspace/saved.tsx
 msgid "Nothing saved yet"
@@ -10683,6 +10775,10 @@ msgstr "ارائه شده توسط سرور شما: {connectedProvider}."
 msgid "Provider"
 msgstr "ارائه‌دهنده"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10927,6 +11023,10 @@ msgstr "امتیاز خوانایی: {0} از 100"
 msgid "Readability score: {score} out of 100"
 msgstr "امتیاز خوانایی: {score} از 100"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr "خواندن صفحه…"
@@ -11064,8 +11164,8 @@ msgid "Recording started"
 msgstr "ضبط آغاز شد"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
-msgstr "ضبط در سقف ۲ دقیقه متوقف شد. در حال رونویسی گفته‌های شما."
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recording time"
@@ -11509,6 +11609,14 @@ msgstr "نتیجه"
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr "نتیجه کنار گذاشته شد: هیچ واقعیتی پشتوانهٔ آن نیست. آن را روشن کنید یا یکی اضافه کنید تا برگردد."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr "رزومه"
@@ -11610,6 +11718,14 @@ msgstr "رزومه ها همیشه روی کاغذ سفید ارائه می شو
 msgid "Resumes created"
 msgstr "رزومه ایجاد شد"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11682,6 +11798,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr "پاسخ‌های الزامی فرم را بازبینی کنید و ادعاهای بی‌پشتوانه را حذف کنید."
@@ -11722,6 +11842,10 @@ msgstr "دسترسی یک برنامه کاربردی به حساب خود را 
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
 msgstr "«{name}» لغو شد. برنامه هایی که از آن استفاده می کنند اکنون کار نمی کنند."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
+msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
 msgid "Right"
@@ -12905,6 +13029,14 @@ msgstr "شش تیم محصول"
 msgid "Size"
 msgstr "اندازه"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13405,6 +13537,10 @@ msgstr "پاسخ پیشنهادی · پیش از ارسال ویرایش کنی�
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "پیشنهادات از <0>models.dev</0>. شما همچنین می توانید هر شناسه مدل را وارد کنید."
@@ -13739,6 +13875,10 @@ msgstr "متن قابل انتخاب است"
 msgid "Text is written one character at a time."
 msgstr "متن یک نویسه در هر بار نوشته شده است."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr "لایه متن ✓ · 1 ستون"
@@ -13750,6 +13890,10 @@ msgstr "لایه متن ✓ · 2 ستون"
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
 msgstr "لایه متن پیدا شد"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Text sits in the header or footer area."
@@ -14514,6 +14658,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14573,6 +14721,7 @@ msgid "Today, {hour}"
 msgstr "امروز، {hour}"
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14920,12 +15069,12 @@ msgid "Untitled resume"
 msgstr "رزومه بدون عنوان"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
-msgstr "تا ۲ دقیقه. یا <0>یک فایل صوتی انتخاب کنید</0> (تا ۲ مگابایت)."
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
-msgstr "تا ۲ دقیقه. کلمات شما هم‌زمان با صحبت نمایش داده می‌شوند."
+msgid "Up to {limit}. Your words appear as you speak."
+msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "Up to 25 MB · checked in your browser, never uploaded"
@@ -15480,6 +15629,10 @@ msgstr "جستجوی وب تمام نشد."
 msgid "Web search failed: {0}"
 msgstr "جستجوی وب ناموفق بود: {0}"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15877,6 +16030,10 @@ msgstr "در حال نوشتن پاسخ…"
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
 msgstr "کمک در نوشتن، پیشنهادهای متناسب و دستیار. هر جا ارائه‌دهنده‌ای انتخاب نکنید، ارائه‌دهندهٔ پیش‌فرض استفاده می‌شود. کلیدهای شما رمزگذاری‌شده می‌مانند."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
+msgstr ""
 
 #: src/features/homepage/sections.tsx
 msgid "writing, tailoring and sending"

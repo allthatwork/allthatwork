@@ -155,6 +155,29 @@ describe("posting import", () => {
 			enrichmentWarning: "ai-unavailable",
 		});
 	});
+	it("stops a request at the user's time limit with a message naming the setting, and sends their retries", async () => {
+		vi.mocked(aiProvidersService.getDefaultRunnable).mockResolvedValue({
+			provider: "openai",
+			model: "gpt-5",
+			apiKey: "test",
+		} as never);
+		// Under the setting's minimum so the test is quick; the code takes any number.
+		vi.mocked(careerService.aiLimits).mockResolvedValue({
+			...aiLimitsSchema.parse({ modelRetries: 0, jsonOutputTokens: 2048 }),
+			requestTimeoutSeconds: 0.05,
+		});
+		vi.mocked(generateText).mockImplementation(
+			({ abortSignal }) =>
+				new Promise((_, reject) =>
+					abortSignal?.addEventListener("abort", () => reject(abortSignal.reason), { once: true }),
+				) as never,
+		);
+		await expect(call(aiRouter.autofill, { jobDescription: "Engineer at Acme" }, { context })).rejects.toMatchObject({
+			code: "GATEWAY_TIMEOUT",
+			message: expect.stringContaining('"Time limit for other AI requests"'),
+		});
+		expect(vi.mocked(generateText).mock.calls[0]?.[0]).toMatchObject({ maxRetries: 0, maxOutputTokens: 2048 });
+	});
 	it("bounds pasted text and declares truncation without needing any provider", async () => {
 		vi.mocked(aiProvidersService.getDefaultRunnable).mockResolvedValue(null);
 		const text = "description ".repeat(2000);

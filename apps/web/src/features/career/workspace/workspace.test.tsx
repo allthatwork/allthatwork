@@ -9,7 +9,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { EMPTY_WORKSPACE } from "@reactive-resume/schema/career";
+import { aiLimitsSchema, EMPTY_WORKSPACE } from "@reactive-resume/schema/career";
 import { useDebouncedSave } from "../hooks";
 import { ApplyTab } from "./apply";
 import { DebriefTab } from "./debrief";
@@ -43,6 +43,7 @@ vi.mock("@/libs/orpc/client", () => {
 				workspace: endpoint("workspace"),
 				savedItems: endpoint("savedItems"),
 				facts: endpoint("facts"),
+				aiLimits: endpoint("aiLimits"),
 				saveWorkspace: endpoint("saveWorkspace", api.save),
 				submitApplication: endpoint("submit", api.submit),
 				generate: endpoint("generate", api.generate),
@@ -200,7 +201,12 @@ function mount(children: ReactNode) {
 }
 beforeEach(() => {
 	vi.clearAllMocks();
-	api.data = { workspace: structuredClone(EMPTY_WORKSPACE), savedItems: [], facts: [] };
+	api.data = {
+		workspace: structuredClone(EMPTY_WORKSPACE),
+		savedItems: [],
+		facts: [],
+		aiLimits: aiLimitsSchema.parse({}),
+	};
 	api.userId = "workspace-user";
 	api.stories = [];
 	api.knowledgeError = false;
@@ -522,6 +528,19 @@ it("falls back to All when deleting the final item in a selected Saved category"
 	fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 	expect(await screen.findByRole("button", { name: "Sent answers" })).toBeTruthy();
 	expect(screen.getByRole("button", { name: "All" })).toHaveAttribute("aria-pressed", "true");
+});
+
+it("offers a spoken answer as long as the user's longest recording", async () => {
+	mount(<PractiseTab {...props} speak />);
+	expect(await screen.findByText(/Up to 2 minutes\. Or/)).toBeTruthy();
+	cleanup();
+	api.data.aiLimits = aiLimitsSchema.parse({ recordingSeconds: 300 });
+	mount(<PractiseTab {...props} speak />);
+	expect(await screen.findByText(/Up to 5 minutes\. Or/)).toBeTruthy();
+	cleanup();
+	api.data.aiLimits = aiLimitsSchema.parse({ recordingSeconds: 90 });
+	mount(<PractiseTab {...props} speak />);
+	expect(await screen.findByText(/Up to 90 seconds\. Or/)).toBeTruthy();
 });
 
 it("does not play a delayed spoken question after leaving Practise", async () => {

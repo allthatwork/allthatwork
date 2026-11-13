@@ -1,10 +1,10 @@
 import type { ProviderRequest } from "./contracts";
 import z from "zod";
-import { MAX_CONTENT_CHARS, MAX_PAGE_BYTES, WebAccessError } from "./contracts";
+import { MAX_PAGE_BYTES, WebAccessError } from "./contracts";
 import { normalizeSearch, parseResponse, postJson } from "./transport";
 
 const searchSchema = z.object({ results: z.array(z.unknown()).max(100) });
-export async function searchExa(query: string, { connection, signal }: ProviderRequest) {
+export async function searchExa(query: string, { connection, signal, maxResults }: ProviderRequest) {
 	const response = parseResponse(
 		searchSchema,
 		await postJson(
@@ -12,12 +12,12 @@ export async function searchExa(query: string, { connection, signal }: ProviderR
 			{
 				"x-api-key": connection.apiKey ?? "",
 			},
-			{ query, numResults: 5, type: "auto" },
+			{ query, numResults: maxResults, type: "auto" },
 			signal,
 		),
 	);
 	// Search has no text/highlights/summary request; fetch only the result the user selects.
-	return normalizeSearch(response.results);
+	return normalizeSearch(response.results, maxResults);
 }
 
 const contentsSchema = z.object({
@@ -32,7 +32,7 @@ const contentsSchema = z.object({
 		.max(100),
 	statuses: z.array(z.object({ id: z.string(), status: z.string() })).optional(),
 });
-export async function readExa(url: string, { connection, signal, serviceTimeoutMs }: ProviderRequest) {
+export async function readExa(url: string, { connection, signal, serviceTimeoutMs, maxChars }: ProviderRequest) {
 	const response = parseResponse(
 		contentsSchema,
 		await postJson(
@@ -42,7 +42,7 @@ export async function readExa(url: string, { connection, signal, serviceTimeoutM
 			},
 			{
 				urls: [url],
-				text: { maxCharacters: MAX_CONTENT_CHARS + 1 },
+				text: { maxCharacters: maxChars + 1 },
 				maxAgeHours: 0,
 				livecrawlTimeout: serviceTimeoutMs,
 			},

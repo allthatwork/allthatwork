@@ -838,6 +838,10 @@ msgstr "కనీసం {minimum}, ఇతర నిబంధనలలో"
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr "{minutes, plural, one {మొత్తం # నిమిషం} other {మొత్తం # నిమిషాలు}}"
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr "{minutes, plural, one {# నిమిషంలో ప్రారంభమవుతుంది} other {# నిమిషాల్లో ప్రారంభమవుతుంది}}"
@@ -926,6 +930,10 @@ msgstr "{pendingOnPage, plural, one {# ఈ పేజీలో ప్రతిప
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
 msgstr "{proposed, plural, one {# ప్రతిపాదించబడింది} other {# ప్రతిపాదించబడింది}}"
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
+msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
 msgid "{sections, plural, one {# section} other {# sections}}"
@@ -1984,6 +1992,10 @@ msgstr "కుడికి సమలేఖనం"
 msgid "All"
 msgstr "అన్నీ"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2338,6 +2350,10 @@ msgstr "దరఖాస్తు నవీకరించబడింది."
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2358,6 +2374,10 @@ msgstr "కాలక్రమంలో దరఖాస్తులు"
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
 msgstr "వారానికి పంపిన దరఖాస్తులు (చివరి 8 వారాలు)"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
+msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
 msgid "Applications to export"
@@ -2401,6 +2421,10 @@ msgstr "వర్తింపజేయబడింది. ఫాలో-అప్
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
 msgstr "వర్తింపజేయబడింది. దరఖాస్తు నవీకరించబడింది."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
+msgstr ""
 
 #: src/features/career/shared.tsx
 #: src/features/homepage/prepare.tsx
@@ -2603,6 +2627,10 @@ msgstr "జతచేయడం"
 msgid "Auto-fill failed."
 msgstr "ఆటో-ఫిల్ విఫలమైంది."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr "ఆటోమేటిక్‌గా"
@@ -2717,6 +2745,14 @@ msgstr "బేస్ URL"
 msgid "Basics"
 msgstr "ప్రాథమికాలు"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr "పునరుద్ధరించడానికి ముందు"
@@ -2740,6 +2776,18 @@ msgstr "బెంగాలీ"
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
 msgstr "దరఖాస్తు చేయడానికి ఉత్తమమైనది"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Blocker"
@@ -2902,6 +2950,10 @@ msgstr ""
 msgid "Calendar"
 msgstr "క్యాలెండర్"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr "నేనే హోస్ట్ చేయవచ్చా?"
@@ -3045,6 +3097,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr "దీన్ని మార్చడం ద్వారా కొత్త చిరునామాకు నిర్ధారణ పంపబడుతుంది. మీ వినియోగదారు పేరు ప్రతి పబ్లిక్ లింక్‌లో భాగం."
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3701,6 +3754,10 @@ msgstr "సంభాషణ కాపీ చేయబడింది"
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
 msgstr "సంభాషణ తొలగించబడింది"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
+msgstr ""
 
 #: src/features/career/coach.tsx
 msgid "Conversation name"
@@ -4655,7 +4712,7 @@ msgstr "దీర్ఘ శ్వాస తీసుకోండి."
 msgid "Default"
 msgstr "డిఫాల్ట్"
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4907,8 +4964,8 @@ msgid "Dictation started"
 msgstr "వాయిస్ టైపింగ్ ప్రారంభమైంది"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
-msgstr "2 నిమిషాల పరిమితి వద్ద వాయిస్ టైపింగ్ ఆగిపోయింది."
+msgid "Dictation stopped at the limit of {limit}."
+msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
 msgid "Didn't land"
@@ -6300,6 +6357,12 @@ msgstr "నుండి"
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7095,6 +7158,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr "ఇంటర్వ్యూ సమీక్ష"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr "ఇంటర్వ్యూ తొలగించబడింది"
@@ -7153,6 +7220,10 @@ msgstr "14 మంది కస్టమర్లను ఇంటర్వ్య�
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
 msgstr "ఇంటర్వ్యూయర్"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
+msgstr ""
 
 #: src/features/homepage/faq.tsx
 msgid "Is {APP_NAME} really free?"
@@ -7544,6 +7615,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7750,6 +7822,14 @@ msgstr "నిమిషాల్లో వ్యవధి"
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
 msgstr "పొడవు లోపం కాదు, మరియు సార్వత్రిక ఒక-పేజీ నియమం లేదు. తమ స్థానాన్ని సంపాదించే పేజీలను ఉంచండి."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
+msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
 msgid "Let AI clients like Claude or Cursor read and edit your resumes, using an API key above."
@@ -8114,6 +8194,10 @@ msgstr "లాక్ చేయబడింది. సవరించడాని
 msgid "Long stretches are set in capitals."
 msgstr "పొడవైన భాగాలు పెద్ద అక్షరాల్లో ఉన్నాయి."
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr "వెతకాల్సినవి"
@@ -8434,6 +8518,10 @@ msgstr "మిశ్రమ ఆకృతి"
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
 msgstr "మోడల్"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
+msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
 msgid "Model default"
@@ -9481,6 +9569,10 @@ msgstr "“{0}”కి ఏదీ సరిపోలలేదు"
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
 msgstr "ఈ ఫిల్టర్‌లకు ఏదీ సరిపోలలేదు"
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
+msgstr ""
 
 #: src/features/career/workspace/saved.tsx
 msgid "Nothing saved yet"
@@ -10683,6 +10775,10 @@ msgstr "మీ సర్వర్ అందించినది: {connectedProv
 msgid "Provider"
 msgstr "ప్రొవైడర్"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10927,6 +11023,10 @@ msgstr "రీడబిలిటీ స్కోర్: 100లో {0}"
 msgid "Readability score: {score} out of 100"
 msgstr "రీడబిలిటీ స్కోర్: 100లో {score}"
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr "చదువుతున్న పేజీ..."
@@ -11064,8 +11164,8 @@ msgid "Recording started"
 msgstr "రికార్డింగ్ ప్రారంభమైంది"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
-msgstr "2 నిమిషాల పరిమితి వద్ద రికార్డింగ్ ఆగిపోయింది. మీరు చెప్పినదాన్ని టెక్స్ట్‌గా మారుస్తోంది."
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
 msgid "Recording time"
@@ -11509,6 +11609,14 @@ msgstr "ఫలితం"
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr "ఫలితం వదిలివేయబడింది: దానికి ఏ వాస్తవమూ ఆధారం కాదు. దాన్ని ఆన్ చేయండి, లేదా ఒకటి జోడించండి, అది తిరిగి వస్తుంది."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr "పునఃప్రారంభం"
@@ -11610,6 +11718,14 @@ msgstr "రెజ్యూమెలు ఎల్లప్పుడూ తెల�
 msgid "Resumes created"
 msgstr "రెజ్యూమెలు సృష్టించబడ్డాయి"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11682,6 +11798,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr "తప్పనిసరి ఫారమ్ సమాధానాలను సమీక్షించి, ఆధారం లేని వాదనలను తీసివేయండి."
@@ -11722,6 +11842,10 @@ msgstr "మీ ఖాతాకు అప్లికేషన్ యాక్స
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
 msgstr "\"{name}\" రద్దు చేయబడింది. దీన్ని ఉపయోగించే యాప్‌లు ఇప్పుడు పని చేయడం ఆగిపోయాయి."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
+msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
 msgid "Right"
@@ -12905,6 +13029,14 @@ msgstr "ఆరు ఉత్పత్తి బృందాలు"
 msgid "Size"
 msgstr "సైజు"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13405,6 +13537,10 @@ msgstr "సూచించిన ప్రత్యుత్తరం · పం�
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr "<0>models.dev</0> నుండి సూచనలు. మీరు ఏదైనా మోడల్ IDని కూడా నమోదు చేయవచ్చు."
@@ -13739,6 +13875,10 @@ msgstr "టెక్స్ట్ ఎంచుకోదగినది"
 msgid "Text is written one character at a time."
 msgstr "టెక్స్ట్ ఒక్కో అక్షరం చొప్పున రాయబడింది."
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr "టెక్స్ట్ లేయర్ ✓ · 1 నిలువు వరుస"
@@ -13750,6 +13890,10 @@ msgstr "టెక్స్ట్ లేయర్ ✓ · 2 నిలువు వ
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
 msgstr "టెక్స్ట్ లేయర్ కనుగొనబడింది"
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
+msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Text sits in the header or footer area."
@@ -14514,6 +14658,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14573,6 +14721,7 @@ msgid "Today, {hour}"
 msgstr "ఈరోజు, {hour}"
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14920,12 +15069,12 @@ msgid "Untitled resume"
 msgstr "పేరులేని రెజ్యూమే"
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
-msgstr "2 నిమిషాల వరకు. లేదా 2 MB వరకు ఉన్న <0>ఆడియో ఫైల్‌ను ఎంచుకోండి</0>."
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
+msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
-msgstr "2 నిమిషాల వరకు. మీరు మాట్లాడుతుండగానే మీ మాటలు కనిపిస్తాయి."
+msgid "Up to {limit}. Your words appear as you speak."
+msgstr ""
 
 #: src/features/ats-checker/checker.tsx
 msgid "Up to 25 MB · checked in your browser, never uploaded"
@@ -15480,6 +15629,10 @@ msgstr "వెబ్ శోధన పూర్తి కాలేదు."
 msgid "Web search failed: {0}"
 msgstr "వెబ్ శోధన విఫలమైంది: {0}"
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15877,6 +16030,10 @@ msgstr "సమాధానం రాస్తోంది…"
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
 msgstr "రాయడంలో సహాయం, అనుగుణమైన సూచనలు, సహాయకుడు. మీరు ఎంచుకోని చోట డిఫాల్ట్ ప్రొవైడర్ ఉపయోగించబడుతుంది. మీ కీలు ఎన్‌క్రిప్ట్ చేయబడే ఉంటాయి."
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
+msgstr ""
 
 #: src/features/homepage/sections.tsx
 msgid "writing, tailoring and sending"

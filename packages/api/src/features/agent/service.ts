@@ -2,6 +2,7 @@ import type { getModel } from "../ai/service";
 import type { WebAccessConnection } from "../web-access/contracts";
 import type { AssistantDocument } from "./document";
 import type { ProposeEditsInput, ProposeEditsOutput } from "@reactive-resume/ai/tools/agent-tool-contracts";
+import type { AiLimits } from "@reactive-resume/schema/career";
 import type { WorkspaceTab } from "@reactive-resume/schema/career";
 import type { FilePart, ImagePart, ModelMessage, TextPart, UIMessage, UIMessageChunk } from "ai";
 import { ORPCError } from "@orpc/client";
@@ -31,7 +32,7 @@ import { getStorageService, inferContentType } from "../storage/service";
 import { webAccessService } from "../web-access/credentials";
 import { readPage, searchWeb } from "../web-access/service";
 import { isRunAlive, monitorRunCancellation, requestRunCancellation } from "./cancellation";
-import { pruneAgentModelContext } from "./context";
+import { pruneAgentModelContext, replyContextBudget } from "./context";
 import { documentOf, documentView, findPosting, loadDocument, resolveEdits } from "./document";
 import { mergeClientToolResponses } from "./messages-merge";
 import {
@@ -51,9 +52,6 @@ import { claimActiveAgentRun, clearActiveAgentRunIfCurrent, isStaleAgentRun, rea
 import { agentStreamLifecycle } from "./streams";
 import { buildAgentInstructions, buildAgentTools } from "./tools";
 
-const MAX_AGENT_STEPS = 30;
-const MAX_AGENT_OUTPUT_TOKENS = 8_192;
-const MAX_AGENT_MODEL_RETRIES = 2;
 const AGENT_TIMEOUT_MESSAGE = "Time limit reached. Your progress is saved. Ask me to continue.";
 const MAX_ATTACHMENTS_PER_MESSAGE = 10;
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
@@ -68,7 +66,6 @@ const DIRECT_MODEL_FILE_ATTACHMENT_TYPES = new Set([
 	"audio/x-wav",
 ]);
 const AGENT_ATTACHMENT_URL_PREFIX = "agent-attachment:";
-const MAX_ATTACHMENT_TEXT_CHARS = 40_000;
 
 const activeRunCleanup = new Map<string, () => void>();
 const activeRunTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
@@ -314,10 +311,14 @@ function attachmentLabel(attachment: AgentAttachmentRecord) {
 	return `${attachment.filename} (${attachment.mediaType}, ${attachment.size} bytes, attachmentId: ${attachment.id})`;
 }
 
-function buildAttachmentModelParts(input: AttachmentModelInput[]): Array<TextPart | ImagePart | FilePart> {
+/** `maxTextChars` is "Text read from one attachment" (Settings → AI limits). Exported for tests. */
+export function buildAttachmentModelParts(
+	input: AttachmentModelInput[],
+	maxTextChars: number,
+): Array<TextPart | ImagePart | FilePart> {
 	return input.map(({ attachment, data }) => {
 		if (READABLE_ATTACHMENT_TYPES.has(attachment.mediaType)) {
-			const text = new TextDecoder().decode(data).slice(0, MAX_ATTACHMENT_TEXT_CHARS);
+			const text = new TextDecoder().decode(data).slice(0, maxTextChars);
 			return {
 				type: "text",
 				text: `Attachment ${attachmentLabel(attachment)}:\n\n${text}`,
@@ -675,7 +676,7 @@ function listThreadMessages(input: { threadId: string; userId: string }) {
 		.orderBy(asc(schema.agentMessage.sequence));
 }
 
-async function readAttachment(input: { id: string; threadId: string; userId: string }) {
+async function readAttachment(input: { id: string; threadId: string; userId: string; maxTextChars: number }) {
 	const [attachment] = await db
 		.select()
 		.from(schema.agentAttachment)
@@ -709,7 +710,7 @@ async function readAttachment(input: { id: string; threadId: string; userId: str
 		filename: attachment.filename,
 		mediaType: attachment.mediaType,
 		size: attachment.size,
-		content: new TextDecoder().decode(stored.data).slice(0, MAX_ATTACHMENT_TEXT_CHARS),
+		content: new TextDecoder().decode(stored.data).slice(0, input.maxTextChars),
 	};
 }
 
@@ -765,6 +766,10 @@ function createAgent(input: {
 	connection: WebAccessConnection | null;
 	signal: AbortSignal;
 	stepTimeoutMs: number;
+	/** Settings → AI limits: steps, answer length, retries, attachment text and web calls in one reply. */
+	limits: AiLimits;
+	/** "Conversation kept in view", in estimated tokens (see replyContextBudget). */
+	contextBudget: number;
 }) {
 	// One greppable JSON line per tool execution.
 	const timedToolHandler =
@@ -804,6 +809,7 @@ function createAgent(input: {
 		document: document?.kind ?? null,
 		// The career coach searches only when the user switched Web research on for this message.
 		externalSearch: input.connection !== null && (!input.career || input.career.web),
+		maxWebCalls: input.limits.replyWebCalls,
 		signal: input.signal,
 		handlers: {
 			searchWeb: timedToolHandler("search_web", async (query: string, signal: AbortSignal) => {
@@ -835,6 +841,7 @@ function createAgent(input: {
 					id: attachmentId,
 					threadId: input.threadId,
 					userId: input.userId,
+					maxTextChars: input.limits.attachmentTextChars,
 				}),
 			),
 			proposeEdits: timedToolHandler("propose_edits", (edits: ProposeEditsInput) => {
@@ -877,13 +884,13 @@ function createAgent(input: {
 					}
 				: instructionsText,
 		repairToolCall: repairAgentToolCall,
-		stopWhen: isStepCount(MAX_AGENT_STEPS),
-		maxOutputTokens: MAX_AGENT_OUTPUT_TOKENS,
-		maxRetries: MAX_AGENT_MODEL_RETRIES,
+		stopWhen: isStepCount(input.limits.replySteps),
+		maxOutputTokens: input.limits.replyOutputTokens,
+		maxRetries: input.limits.modelRetries,
 		timeout: { stepMs: input.stepTimeoutMs },
 		// Runs before every loop step, so an older document snapshot never outlives a newer read.
 		prepareStep: ({ messages }) => {
-			const pruned = pruneAgentModelContext(messages);
+			const pruned = pruneAgentModelContext(messages, input.contextBudget);
 			return pruned === messages ? {} : { messages: pruned };
 		},
 		tools,
@@ -1337,7 +1344,10 @@ export const agentService = {
 				const modelMessages = await convertToModelMessages(
 					replay.map((message) => toModelInputMessage(message, runnableProvider, connection !== null)),
 				);
-				const attachmentModelParts = buildAttachmentModelParts(await readAttachmentModelInputs(attachmentsForModel));
+				const attachmentModelParts = buildAttachmentModelParts(
+					await readAttachmentModelInputs(attachmentsForModel),
+					limits.attachmentTextChars,
+				);
 
 				// Draft row inserted after the replay snapshot (so it is not replayed) and before the
 				// stream starts, so a crash mid-run leaves a resumable record instead of nothing.
@@ -1384,6 +1394,8 @@ export const agentService = {
 					connection,
 					signal: controller.signal,
 					stepTimeoutMs,
+					limits,
+					contextBudget: replyContextBudget(limits.replyContextTokens, runnableProvider.contextTokens),
 					provider: {
 						provider: runnableProvider.provider,
 						model: runnableProvider.model,

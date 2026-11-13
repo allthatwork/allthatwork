@@ -127,6 +127,7 @@ describe("AI chat service", () => {
 		const tools = buildAgentTools({
 			document: "resume",
 			externalSearch: false,
+			maxWebCalls: 6,
 			signal: new AbortController().signal,
 			handlers: {
 				readDocument: async () => ({}),

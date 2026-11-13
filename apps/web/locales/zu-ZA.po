@@ -833,6 +833,10 @@ msgstr ""
 msgid "{minutes, plural, one {# minute in total} other {# minutes in total}}"
 msgstr ""
 
+#: src/features/career/workspace/practise.tsx
+msgid "{minutes, plural, one {# minute} other {# minutes}}"
+msgstr ""
+
 #: src/features/career/workspace/prepare.tsx
 msgid "{minutes, plural, one {Starts in # minute} other {Starts in # minutes}}"
 msgstr ""
@@ -920,6 +924,10 @@ msgstr ""
 
 #: src/features/resume/editor/write/section-row.tsx
 msgid "{proposed, plural, one {# proposed} other {# proposed}}"
+msgstr ""
+
+#: src/features/career/workspace/practise.tsx
+msgid "{seconds, plural, one {# second} other {# seconds}}"
 msgstr ""
 
 #: src/features/resume/editor/write/write-panel.tsx
@@ -1979,6 +1987,10 @@ msgstr ""
 msgid "All"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "All AI requests"
+msgstr ""
+
 #: src/features/applications/components/views/views-button.tsx
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/upkeep.tsx
@@ -2333,6 +2345,10 @@ msgstr ""
 msgid "Application workspaces"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "applications"
+msgstr ""
+
 #: src/features/career/coach-thread.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/workspace/shell.tsx
@@ -2352,6 +2368,10 @@ msgstr ""
 
 #: src/features/applications/components/insights-view.tsx
 msgid "Applications sent per week (last 8 weeks)"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applications the Coach can list"
 msgstr ""
 
 #: src/features/applications/components/export-applications-sheet.tsx
@@ -2395,6 +2415,10 @@ msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "Applied. The application is updated."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Applies to every request that has no limit of its own above: Writing review, Improve, reading PDF and Word files, and drafting letters."
 msgstr ""
 
 #: src/features/career/shared.tsx
@@ -2598,6 +2622,10 @@ msgstr ""
 msgid "Auto-fill failed."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Automatic"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 msgid "Automatically"
 msgstr ""
@@ -2712,6 +2740,14 @@ msgstr ""
 msgid "Basics"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "batches"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Batches in one review"
+msgstr ""
+
 #: src/features/resume/share/format.ts
 msgid "Before restore"
 msgstr ""
@@ -2734,6 +2770,18 @@ msgstr ""
 
 #: src/features/resume/share/download-tab.tsx
 msgid "Best for applying"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank fits it to your model's context window."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses the facts and stories limits of the actions."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Blank uses your provider's default."
 msgstr ""
 
 #: src/features/ats-checker/messages.ts
@@ -2897,6 +2945,10 @@ msgstr ""
 msgid "Calendar"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "calls"
+msgstr ""
+
 #: src/features/homepage/faq.tsx
 msgid "Can I host it myself?"
 msgstr ""
@@ -3040,6 +3092,7 @@ msgid "Changing it sends a confirmation to the new address. Your username is par
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+#: src/features/settings/ai/web-access.tsx
 msgid "characters"
 msgstr ""
 
@@ -3695,6 +3748,10 @@ msgstr ""
 
 #: src/features/career/coach-thread.tsx
 msgid "Conversation deleted"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Conversation kept in view"
 msgstr ""
 
 #: src/features/career/coach.tsx
@@ -4650,7 +4707,7 @@ msgstr ""
 msgid "Default"
 msgstr ""
 
-#. placeholder {0}: number.format(DEFAULTS[name])
+#. placeholder {0}: number.format(fallback)
 #. placeholder {1}: number.format(bounds(name).min)
 #. placeholder {2}: number.format(bounds(name).max)
 #: src/features/settings/ai/ai-limits.tsx
@@ -4902,7 +4959,7 @@ msgid "Dictation started"
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Dictation stopped at the 2-minute limit."
+msgid "Dictation stopped at the limit of {limit}."
 msgstr ""
 
 #: src/features/career/workspace/debrief.tsx
@@ -6295,6 +6352,12 @@ msgstr ""
 msgid "From {0}"
 msgstr ""
 
+#. placeholder {0}: number.format(bounds(name).min)
+#. placeholder {1}: number.format(bounds(name).max)
+#: src/features/settings/ai/ai-limits.tsx
+msgid "From {0} to {1}."
+msgstr ""
+
 #: src/features/settings/account/import/import-account-dialog.tsx
 msgid "From {from}, exported {exported}."
 msgstr ""
@@ -7090,6 +7153,10 @@ msgstr ""
 msgid "Interview debrief"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Interview debriefs the Coach can read"
+msgstr ""
+
 #: src/features/applications/components/interview-dialog.tsx
 msgid "Interview deleted"
 msgstr ""
@@ -7147,6 +7214,10 @@ msgstr ""
 
 #: src/features/applications/components/detail/contacts.tsx
 msgid "Interviewer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "interviews"
 msgstr ""
 
 #: src/features/homepage/faq.tsx
@@ -7539,6 +7610,7 @@ msgid "Knowledge import complete"
 msgstr ""
 
 #: src/features/career/knowledge/review.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Knowledge review"
 msgstr ""
 
@@ -7744,6 +7816,14 @@ msgstr ""
 
 #: src/features/ats-checker/messages.ts
 msgid "Length is not a defect, and there is no universal one-page rule. Keep the pages that earn their place."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of each model call's answer"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Length of structured answers"
 msgstr ""
 
 #: src/features/settings/ai/mcp.tsx
@@ -8109,6 +8189,10 @@ msgstr ""
 msgid "Long stretches are set in capitals."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Longest recording"
+msgstr ""
+
 #: src/features/career/schedule-sheet.tsx
 msgid "Look for"
 msgstr ""
@@ -8428,6 +8512,10 @@ msgstr ""
 #: src/features/assistant/provider-setup.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Model"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Model calls in one reply"
 msgstr ""
 
 #: src/features/settings/ai/reasoning.tsx
@@ -9475,6 +9563,10 @@ msgstr ""
 
 #: src/features/documents/documents-page.tsx
 msgid "Nothing matches these filters"
+msgstr ""
+
+#: src/routes/builder/letter/-components/write-panel.tsx
+msgid "Nothing on the page changed."
 msgstr ""
 
 #: src/features/career/workspace/saved.tsx
@@ -10678,6 +10770,10 @@ msgstr ""
 msgid "Provider"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Provider default"
+msgstr ""
+
 #: src/features/documents/document-card.tsx
 #: src/features/documents/documents-page.tsx
 #: src/features/homepage/share.tsx
@@ -10922,6 +11018,10 @@ msgstr ""
 msgid "Readability score: {score} out of 100"
 msgstr ""
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Reading one job board"
+msgstr ""
+
 #: src/features/assistant/conversation.tsx
 msgid "Reading page…"
 msgstr ""
@@ -11059,7 +11159,7 @@ msgid "Recording started"
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Recording stopped at the 2-minute limit. Transcribing what you said."
+msgid "Recording stopped at the limit of {limit}. Transcribing what you said."
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
@@ -11504,6 +11604,14 @@ msgstr ""
 msgid "Result left out: no fact backs it. Switch it on, or add one, and it comes back."
 msgstr ""
 
+#: src/features/settings/ai/web-access.tsx
+msgid "results"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Results from one search"
+msgstr ""
+
 #: src/features/assistant/assistant-panel.tsx
 msgid "resume"
 msgstr ""
@@ -11605,6 +11713,14 @@ msgstr ""
 msgid "Resumes created"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "retries"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Retries when the model fails"
+msgstr ""
+
 #. placeholder {0}: application.postingSource.retrievedAt
 #. placeholder {1}: application.postingSource.method
 #: src/features/applications/components/posting-dialog.tsx
@@ -11677,6 +11793,10 @@ msgstr ""
 msgid "Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden resume entries start unchecked."
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Review reads your switched-on facts in batches and looks for contradictions."
+msgstr ""
+
 #: src/features/career/workspace/apply.tsx
 msgid "Review required form answers and remove unsupported claims."
 msgstr ""
@@ -11716,6 +11836,10 @@ msgstr ""
 
 #: src/features/settings/ai/api-keys.tsx
 msgid "Revoked “{name}”. Apps using it stop working now."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Rewrite suggestions in one review"
 msgstr ""
 
 #: src/features/resume/editor/design/template-group.tsx
@@ -12900,6 +13024,14 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Size of one batch"
+msgstr ""
+
+#: src/features/settings/ai/web-access.tsx
+msgid "Sizes"
+msgstr ""
+
 #: src/features/career/knowledge/facts.tsx
 #: src/features/career/knowledge/import-fact-row.tsx
 msgid "Skill"
@@ -13400,6 +13532,10 @@ msgstr ""
 msgid "Suggested wording:"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "suggestions"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 msgid "Suggestions from <0>models.dev</0>. You can also enter any model ID."
 msgstr ""
@@ -13734,6 +13870,10 @@ msgstr ""
 msgid "Text is written one character at a time."
 msgstr ""
 
+#: src/features/settings/ai/web-access.tsx
+msgid "Text kept from one page"
+msgstr ""
+
 #: src/features/resume/editor/check/parser-view.tsx
 msgid "text layer ✓ · 1 column"
 msgstr ""
@@ -13744,6 +13884,10 @@ msgstr ""
 
 #: src/features/resume/import/read-file.ts
 msgid "text layer found"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Text read from one attachment"
 msgstr ""
 
 #: src/features/ats-checker/messages.ts
@@ -14509,6 +14653,10 @@ msgid "Time limit for Fit, Apply and other actions"
 msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
+msgid "Time limit for other AI requests"
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
 msgid "Time limit for reading text aloud"
 msgstr ""
 
@@ -14568,6 +14716,7 @@ msgid "Today, {hour}"
 msgstr ""
 
 #: src/features/career/knowledge/budget.tsx
+#: src/features/settings/ai/ai-limits.tsx
 msgid "tokens"
 msgstr ""
 
@@ -14915,11 +15064,11 @@ msgid "Untitled resume"
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Or <0>choose an audio file</0> up to 2 MB."
+msgid "Up to {limit}. Or <0>choose an audio file</0> up to 2 MB."
 msgstr ""
 
 #: src/features/career/workspace/practise.tsx
-msgid "Up to 2 minutes. Your words appear as you speak."
+msgid "Up to {limit}. Your words appear as you speak."
 msgstr ""
 
 #: src/features/ats-checker/checker.tsx
@@ -15475,6 +15624,10 @@ msgstr ""
 msgid "Web search failed: {0}"
 msgstr ""
 
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Web searches and page reads in one reply"
+msgstr ""
+
 #: src/features/directory/page.tsx
 #: src/features/resume/editor/write/basics-card.tsx
 msgid "Website"
@@ -15871,6 +16024,10 @@ msgstr ""
 
 #: src/features/settings/ai/providers.tsx
 msgid "Writing help, tailored suggestions and the assistant. The default provider is used wherever you don't pick one. Your keys stay encrypted."
+msgstr ""
+
+#: src/features/settings/ai/ai-limits.tsx
+msgid "Writing review"
 msgstr ""
 
 #: src/features/homepage/sections.tsx
