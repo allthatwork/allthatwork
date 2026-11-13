@@ -33,6 +33,33 @@ function isBinary(value: unknown): value is ArrayBufferView | ArrayBuffer {
 	return ArrayBuffer.isView(value) || value instanceof ArrayBuffer;
 }
 
+/**
+ * What an attachment costs the model, roughly. Providers bill an image by its pixels, not its file size, and scale big
+ * ones down, so an image counts as a flat 1,500 tokens whatever its bytes: at one token per 4 bytes a phone screenshot
+ * would fill the budget alone and prune every earlier tool result. A PDF or audio file counts its bytes / 4, capped.
+ */
+export const IMAGE_ATTACHMENT_TOKENS = 1500;
+export const FILE_ATTACHMENT_TOKEN_CAP = 30_000;
+
+function byteSize(data: unknown) {
+	if (isBinary(data)) return data.byteLength;
+	// Base64 (or a data URL): about 3 bytes for every 4 characters.
+	if (typeof data === "string") return Math.ceil((data.length * 3) / 4);
+	return 0;
+}
+
+// Message parts that carry an attachment's content: images and files in a message, media in a tool result.
+const FILE_PART_TYPES = new Set(["file", "file-data", "image-data", "media"]);
+
+function attachmentTokens(part: Record<string, unknown>): number | null {
+	if (part.type === "image" && "image" in part) return IMAGE_ATTACHMENT_TOKENS;
+	if (typeof part.type !== "string" || !FILE_PART_TYPES.has(part.type) || !("data" in part)) return null;
+	const image =
+		part.type === "image-data" || (typeof part.mediaType === "string" && part.mediaType.startsWith("image/"));
+	if (image) return IMAGE_ATTACHMENT_TOKENS;
+	return Math.min(Math.ceil(byteSize(part.data) / 4), FILE_ATTACHMENT_TOKEN_CAP);
+}
+
 // Manual walk instead of JSON.stringify: a Buffer's toJSON() runs before any stringify replacer,
 // so serialization-based estimation would expand binary into per-byte entries (hundreds of MB of
 // JSON for one allowed 25MB attachment). String leaves go through tokenx; binary counts as
@@ -48,6 +75,8 @@ export function estimateTokens(value: unknown): number {
 		return sum;
 	}
 	if (typeof value === "object") {
+		const attachment = attachmentTokens(value as Record<string, unknown>);
+		if (attachment !== null) return attachment;
 		let sum = 1;
 		for (const [key, nested] of Object.entries(value)) sum += estimateTextTokenCount(key) + 1 + estimateTokens(nested);
 		return sum;

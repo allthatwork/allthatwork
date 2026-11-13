@@ -107,6 +107,7 @@ type AtsReviewServiceInput = AtsReviewInput & {
 	apiKey: string;
 	baseURL: string;
 	reasoning?: Parameters<typeof getModel>[0]["reasoning"];
+	contextTokens?: Parameters<typeof getModel>[0]["contextTokens"];
 };
 
 function renderFindings(findings: AtsReviewInput["findings"]): string {

@@ -918,6 +918,41 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		await expect(service.trackOpportunity("bob", "track-me")).rejects.toMatchObject({ code: "NOT_FOUND" });
 	});
 
+	it("saves no posting for a found role without a readable description, never its search snippet", async () => {
+		await getDb()
+			.insert(tables.careerOpportunity)
+			.values([
+				{
+					id: "snippet-only",
+					userId: "alice",
+					url: "https://example.test/jobs/snippet",
+					role: "Platform engineer",
+					company: "ACME",
+					snippet: "A short search excerpt about the role.",
+				},
+				{
+					id: "with-description",
+					userId: "alice",
+					url: "https://example.test/jobs/described",
+					role: "Platform engineer",
+					company: "ACME",
+					snippet: "A short search excerpt about the role.",
+					description: "The whole posting, read from the page.",
+				},
+			]);
+
+		const bare = await service.trackOpportunity("alice", "snippet-only");
+		const described = await service.trackOpportunity("alice", "with-description");
+
+		expect(await applications.getById({ userId: "alice", id: bare.applicationId })).toMatchObject({
+			jobDescription: null,
+			sourceUrl: "https://example.test/jobs/snippet",
+		});
+		expect(await applications.getById({ userId: "alice", id: described.applicationId })).toMatchObject({
+			jobDescription: "The whole posting, read from the page.",
+		});
+	});
+
 	it.each(["fit", "answer"] as const)("rejects an in-flight %s after a supporting fact is forgotten", async (task) => {
 		const remembered = await fact("alice", "I reduced recovery time by 40 percent.");
 		const started = Promise.withResolvers<void>();

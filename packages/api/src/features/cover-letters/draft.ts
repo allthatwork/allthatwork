@@ -82,6 +82,7 @@ export async function* draftLetterBody(
 			apiKey: provider.apiKey,
 			...(provider.baseURL ? { baseURL: provider.baseURL } : {}),
 			reasoning: provider.reasoning,
+			contextTokens: provider.contextTokens,
 		}),
 		system: letterDraftSystemPrompt,
 		prompt: buildLetterDraftPrompt({

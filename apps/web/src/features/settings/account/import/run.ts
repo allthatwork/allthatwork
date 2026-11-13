@@ -21,6 +21,8 @@ export type ImportSummary = {
 	added: Record<string, number>;
 	skipped: ImportResult["skipped"];
 	madePrivate: number;
+	/** Text cut to what the API returns for its field. */
+	shortened: ImportResult["shortened"];
 	/** Conversation attachments: only their names are in the export. */
 	attachments: number;
 };
@@ -100,7 +102,7 @@ export async function runAccountImport(
 	onStep: (step: ImportStep) => void,
 ): Promise<ImportSummary> {
 	const ids: Ids = {};
-	const summary: ImportSummary = { added: {}, skipped: [], madePrivate: 0, attachments: 0 };
+	const summary: ImportSummary = { added: {}, skipped: [], madePrivate: 0, shortened: [], attachments: 0 };
 
 	for (const step of importSteps(choices)) {
 		onStep(step);
@@ -118,6 +120,7 @@ export async function runAccountImport(
 		for (const [kind, count] of Object.entries(result.added)) summary.added[kind] = (summary.added[kind] ?? 0) + count;
 		summary.skipped.push(...result.skipped);
 		summary.madePrivate += result.madePrivate;
+		summary.shortened.push(...result.shortened);
 		if (step === "coach") summary.attachments = archive.career.attachments.length;
 	}
 	return summary;

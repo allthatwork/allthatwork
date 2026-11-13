@@ -51,6 +51,8 @@ describe("runAccountImport", () => {
 			added: { [input.area]: 1 },
 			skipped: [],
 			madePrivate: input.area === "documents" ? 1 : 0,
+			shortened:
+				input.area === "applications" ? [{ kind: "applications", field: "jobDescription", max: 20_000, count: 2 }] : [],
 		}));
 		const steps: string[] = [];
 		const summary = await runAccountImport(
@@ -70,11 +72,15 @@ describe("runAccountImport", () => {
 		});
 		expect(calls[2]).toMatchObject({ area: "coach", ids: { resume: { r1: "R1" }, application: { a1: "A1" } } });
 		expect(calls[3]).toEqual({ area: "settings", preferences: null, aiLimits: { coachFacts: 40 }, profile: null });
-		expect(summary).toMatchObject({ madePrivate: 1, attachments: 1 });
+		expect(summary).toMatchObject({
+			madePrivate: 1,
+			attachments: 1,
+			shortened: [{ kind: "applications", field: "jobDescription", max: 20_000, count: 2 }],
+		});
 	});
 
 	it("stops at the first area that fails", async () => {
-		importData.mockResolvedValueOnce({ ids: {}, added: {}, skipped: [], madePrivate: 0 });
+		importData.mockResolvedValueOnce({ ids: {}, added: {}, skipped: [], madePrivate: 0, shortened: [] });
 		importData.mockRejectedValueOnce(new Error("boom"));
 		await expect(
 			runAccountImport(

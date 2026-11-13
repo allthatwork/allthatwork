@@ -562,4 +562,38 @@ describe.skipIf(!databaseUrl)("account import", () => {
 		expect(old.added.views).toBeUndefined();
 		expect(await applicationViewService.list(userId)).toHaveLength(2);
 	});
+
+	it("cuts a posting longer than the API returns, so the applications list still opens", async () => {
+		const { applicationService } = await import("../applications/service");
+		const { applicationDto } = await import("../../dto/application");
+		const longId = "import-long-posting";
+		await getDb().insert(tables.user).values({
+			id: longId,
+			name: "Long",
+			email: "long@example.test",
+			username: "import-long",
+			displayUsername: "Long",
+		});
+		const posting = "Run the platform. ".repeat(1500);
+		expect(posting.length).toBeGreaterThan(20_000);
+		const result = await service.run(longId, {
+			area: "applications",
+			mode: "append",
+			ids: {},
+			applications: [
+				{ ...archive.application, id: "long", resumeId: null, coverLetterId: null, jobDescription: posting },
+				{ ...archive.application, id: "short", resumeId: null, coverLetterId: null, jobDescription: "Short." },
+			],
+			views: [],
+			workspaces: [],
+			letterLinks: [],
+		});
+		expect(result.added.applications).toBe(2);
+		// The list goes through the same output check the API runs.
+		const list = applicationDto.list.output.parse(await applicationService.list({ userId: longId }));
+		const postings = list.map((application) => application.jobDescription);
+		expect(postings).toContain("Short.");
+		expect(postings).toContain(posting.slice(0, 20_000));
+		expect(result.shortened).toEqual([{ kind: "applications", field: "jobDescription", max: 20_000, count: 1 }]);
+	});
 });

@@ -12,7 +12,6 @@ import {
 	convertToModelMessages,
 	isStepCount,
 	safeValidateUIMessages,
-	smoothStream,
 	ToolLoopAgent,
 	wrapLanguageModel,
 } from "ai";
@@ -47,6 +46,7 @@ import {
 	withAccumulatedUsageMetadata,
 	withEditStatuses,
 } from "./messages-persistence";
+import { replyPacing } from "./pacing";
 import { repairAgentToolCall } from "./repair";
 import { claimActiveAgentRun, clearActiveAgentRunIfCurrent, isStaleAgentRun, reapStaleAgentRun } from "./runs";
 import { agentStreamLifecycle } from "./streams";
@@ -1408,13 +1408,14 @@ export const agentService = {
 						apiKey: runnableProvider.apiKey,
 						baseURL: runnableProvider.baseURL ?? "",
 						reasoning: runnableProvider.reasoning,
+						contextTokens: runnableProvider.contextTokens,
 					}),
 				});
 
 				const result = await agent.stream({
 					messages: attachModelPartsToLatestUserMessage(modelMessages, attachmentModelParts),
 					abortSignal: controller.signal,
-					experimental_transform: smoothStream({ chunking: "word" }),
+					experimental_transform: replyPacing(),
 					// Crash-safety: fold each finished step into the draft row so a process death
 					// mid-run loses at most the current step, never the whole transcript.
 					onStepEnd: async (step) => {

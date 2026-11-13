@@ -198,6 +198,7 @@ export async function generateCareer(input: GenerateInput) {
 		apiKey: provider.apiKey,
 		...(provider.baseURL ? { baseURL: provider.baseURL } : {}),
 		reasoning: provider.reasoning,
+		contextTokens: provider.contextTokens,
 	});
 
 	const { task: _name, ...taskInput } = task;

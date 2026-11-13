@@ -17,9 +17,9 @@ import {
 } from "@reactive-resume/schema/applications/data";
 import { paginationShape } from "../pagination";
 
-const MAX_APPLICATION_JOB_DESCRIPTION_CHARS = 20_000;
-const MAX_APPLICATION_SEARCH_NOTES_CHARS = 20_000;
-const MAX_APPLICATION_TARGETING_NOTES_CHARS = 200_000;
+export const MAX_APPLICATION_JOB_DESCRIPTION_CHARS = 20_000;
+export const MAX_APPLICATION_SEARCH_NOTES_CHARS = 20_000;
+export const MAX_APPLICATION_TARGETING_NOTES_CHARS = 200_000;
 const MAX_APPLICATION_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
 const applicationDocumentKindSchema = z.enum(["resume", "cover-letter"]);

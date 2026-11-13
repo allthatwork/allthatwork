@@ -116,6 +116,7 @@ export const knowledgeReview = {
 			apiKey: provider.apiKey,
 			...(provider.baseURL ? { baseURL: provider.baseURL } : {}),
 			reasoning: provider.reasoning,
+			contextTokens: provider.contextTokens,
 		});
 
 		const findings: KnowledgeFinding[] = [];

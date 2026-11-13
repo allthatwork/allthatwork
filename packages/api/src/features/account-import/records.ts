@@ -33,6 +33,8 @@ const optionalId = id.nullable().catch(null).default(null);
 const stamp = z.coerce.date().optional().catch(undefined);
 const nullableStamp = z.preprocess((value) => value ?? null, z.coerce.date().nullable()).catch(null);
 const nullableText = (max: number) => z.string().max(max).nullable().catch(null).default(null);
+// Read at any length: the import cuts it to what the API returns (CAPPED_APPLICATION_FIELDS in the service).
+const cappedText = z.string().nullable().catch(null).default(null);
 const fileUrl = z
 	.string()
 	.refine((value) => /^(https?:\/\/|\/)/.test(value))
@@ -83,7 +85,7 @@ export const applicationRecord = z.object({
 	source: nullableText(500),
 	tags,
 	sourceUrl: fileUrl,
-	jobDescription: nullableText(200_000),
+	jobDescription: cappedText,
 	postingSource: postingSourceSchema.nullable().catch(null).default(null),
 	requirements: z.array(z.string().max(2000)).max(200).catch([]).default([]),
 	matchScore: z.number().int().min(0).max(100).nullable().catch(null).default(null),
@@ -91,10 +93,10 @@ export const applicationRecord = z.object({
 	notes: nullableText(200_000),
 	foundBy: nullableText(100),
 	searchFit: z.number().int().min(0).max(100).nullable().catch(null).default(null),
-	searchNotes: nullableText(20_000),
+	searchNotes: cappedText,
 	searchAt: nullableStamp,
 	targetingBuildStatus: targetingBuildStatusSchema.nullable().catch(null).default(null),
-	targetingNotes: nullableText(200_000),
+	targetingNotes: cappedText,
 	targetingFit: z.number().int().min(0).max(100).nullable().catch(null).default(null),
 	targetingReviews: z.array(targetingReviewSchema).max(100).catch([]).default([]),
 	targetingPrimaryLane: nullableText(100),
