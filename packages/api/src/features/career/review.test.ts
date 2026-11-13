@@ -105,6 +105,24 @@ describe("Knowledge review", () => {
 		expect(mocks.stored).toEqual([review]);
 	});
 
+	it("keeps the first 30 findings, 4 ids and 400 characters of a note instead of failing", async () => {
+		mocks.generate.mockImplementation(async (_model, _prompt, parser: { parse: (value: unknown) => unknown }) =>
+			parser.parse({
+				findings: Array.from({ length: 31 }, () => ({
+					kind: "superseded",
+					factIds: ["old", "new", "claim", "old", "new"],
+					note: `The team grew ${"and grew ".repeat(60)}`,
+					keep: "new",
+				})),
+			}),
+		);
+		const review = await knowledgeReview.run({ userId: "alice" });
+		expect(review.findings).toHaveLength(30);
+		expect(review.findings[0]?.factIds).toEqual(["old", "new", "claim"]);
+		expect(review.findings[0]?.note.length).toBeLessThanOrEqual(400);
+		expect(review.findings[0]?.note.endsWith("grew")).toBe(true);
+	});
+
 	it("explains a review that reaches the time limit", async () => {
 		mocks.generate.mockRejectedValue(new DOMException("timed out", "TimeoutError"));
 		await expect(knowledgeReview.run({ userId: "alice" })).rejects.toMatchObject({ code: "GATEWAY_TIMEOUT" });

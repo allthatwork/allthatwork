@@ -23,7 +23,7 @@ vi.mock("./service", () => ({
 	},
 }));
 
-const { fitOutput, generateCareer, practiceStoryBudget, stripQuoted } = await import("./generate");
+const { excerpt, fitOutput, generateCareer, practiceStoryBudget, stripQuoted } = await import("./generate");
 
 const story = {
 	id: "s1",
@@ -173,6 +173,145 @@ describe("Fit output", () => {
 		expect(parser.parse(fitReply(60)).requirements).toHaveLength(40);
 		expect(parser.parse(fitReply(5)).requirements).toHaveLength(5);
 		expect(() => parser.parse({ ...fitReply(1), requirements: [{ text: "x" }] })).toThrow();
+	});
+});
+
+/** Each action's task and a reply from the model with one item, or one word, past a cap. */
+const overCap = {
+	fit: {
+		task: { task: "fit" },
+		reply: { ...fitReply(2), checks: Array.from({ length: 6 }, () => ({ label: "Pay", met: null, text: "" })) },
+	},
+	briefing: {
+		task: { task: "briefing", interviewId: "i1" },
+		reply: {
+			title: "Screening prep",
+			headline: "Ready",
+			summary: "",
+			plan: [{ minutes: 90, title: "Rehearse", detail: "", action: "practise", storyId: null }],
+			questions: Array.from({ length: 9 }, (_, index) => ({ text: `Question ${index}`, origin: "Briefing" })),
+			focus: "",
+			opening: "",
+			stories: [],
+			honesty: "",
+			factIds: [],
+		},
+	},
+	practice: {
+		task: {
+			task: "practice",
+			interviewId: null,
+			question: "Tell me about a launch.",
+			origin: "simulated",
+			mode: "typed",
+			answer: "I led the launch of our new billing system.",
+		},
+		reply: {
+			title: "Good",
+			works: "",
+			strengthen: "",
+			opening: "",
+			note: "Contribution unclear in places",
+			factIds: [],
+		},
+	},
+	debrief: {
+		task: { task: "debrief", interviewId: null, question: "Why us?", answer: "Because.", landed: "mixed" },
+		reply: {
+			round: "Screening",
+			title: "Mixed",
+			verdicts: Array.from({ length: 7 }, (_, index) => ({ tag: "observation", text: `Verdict ${index}` })),
+			nextRound: "",
+			priority: "",
+			plan: [],
+			factIds: [],
+		},
+	},
+	reply: {
+		task: { task: "reply", message: "Can you do Tuesday?" },
+		reply: {
+			title: "An invitation",
+			asks: Array.from({ length: 6 }, (_, index) => `Ask ${index}`),
+			unconfirmed: [],
+			reply: "Yes.",
+			changes: [],
+		},
+	},
+	answer: { task: { task: "answer", question: "Why us?", answer: "" }, reply: { text: "Because.", factIds: [] } },
+} as const;
+
+const facts = Array.from({ length: 25 }, (_, index) => ({ id: `f${index}`, text: `Fact ${index}`, category: null }));
+
+/** Runs one action against a model that returns `reply`, and returns what was saved, or the answer. */
+async function run(task: (typeof overCap)[keyof typeof overCap]["task"], reply: unknown) {
+	mocks.context = {
+		...contextWith({}),
+		facts,
+		interview: { id: "i1", round: "Screening" },
+	};
+	mocks.generate
+		.mockReset()
+		.mockImplementation(async (_model, _prompt, parser: { parse: (value: unknown) => unknown }) => parser.parse(reply));
+	mocks.save.mockReset().mockImplementation(async (item: unknown) => item);
+	const result = await generateCareer({ userId: "u1", applicationId: "a1", locale: "en-US", task: task as never });
+	return {
+		result,
+		saved: mocks.save.mock.calls[0]?.[0] as { data: Record<string, unknown[]>; evidence: { factIds: string[] } },
+	};
+}
+
+describe("model output past a cap", () => {
+	it.each(Object.entries(overCap))("%s saves instead of failing", async (name, { task, reply }) => {
+		const { result, saved } = await run(task, reply);
+		if (name === "answer") expect(result.answer?.text).toBe("Because.");
+		else expect(saved.data).toBeDefined();
+		if (name === "fit") expect(saved.data.checks).toHaveLength(5);
+		if (name === "briefing") {
+			expect(saved.data.questions).toHaveLength(8);
+			expect((saved.data.plan as { minutes: number }[])[0]?.minutes).toBe(60);
+		}
+		if (name === "practice") expect(saved.data.note).toBe("Contribution unclear in places".slice(0, 60));
+		if (name === "debrief") expect(saved.data.verdicts).toHaveLength(6);
+		if (name === "reply") expect(saved.data.asks).toHaveLength(5);
+	});
+
+	it("keeps the first 20 of 25 cited facts", async () => {
+		const { saved } = await run(overCap.practice.task, {
+			...overCap.practice.reply,
+			factIds: facts.map((fact) => fact.id),
+		});
+		expect(saved.evidence.factIds).toEqual(facts.slice(0, 20).map((fact) => fact.id));
+	});
+
+	it("keeps the first 10 of 12 facts an Apply answer cites", async () => {
+		const { result } = await run(overCap.answer.task, {
+			text: "Because.",
+			factIds: facts.slice(0, 12).map((fact) => fact.id),
+		});
+		expect(result.answer?.factIds).toEqual(facts.slice(0, 10).map((fact) => fact.id));
+	});
+});
+
+describe("excerpt", () => {
+	it("keeps the longest start that fits the budget in one cut", () => {
+		const text = "A".repeat(10_000);
+		expect(excerpt(text, 5000)).toHaveLength(4998);
+		expect(excerpt("short", 100)).toBe("short");
+	});
+
+	it("measures escaped characters and never goes over", () => {
+		const text = 'Line "one"\nline two\t'.repeat(500);
+		for (const budget of [2, 3, 50, 999, 4321]) {
+			const cut = excerpt(text, budget);
+			expect(JSON.stringify(cut).length).toBeLessThanOrEqual(budget);
+			// One more character would be over.
+			expect(JSON.stringify(text.slice(0, cut.length + 1)).length).toBeGreaterThan(budget);
+		}
+	});
+
+	it("never splits a character pair", () => {
+		const cut = excerpt("😀".repeat(100), 11);
+		expect(cut).toBe("😀".repeat(4));
 	});
 });
 
