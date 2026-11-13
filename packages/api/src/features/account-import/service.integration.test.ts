@@ -352,6 +352,17 @@ describe.skipIf(!databaseUrl)("account import", () => {
 			profile: { targetRoles: ["Platform lead"] },
 		});
 		expect(settings.added).toEqual({ preferences: 1, aiLimits: 1, profile: 1 });
+		// An export from before the application action sizes existed: what it has is kept, the rest is the defaults.
+		const [profile] = await getDb()
+			.select({ aiLimits: tables.careerProfile.aiLimits })
+			.from(tables.careerProfile)
+			.where(eq(tables.careerProfile.userId, userId));
+		expect(profile?.aiLimits).toMatchObject({
+			coachFacts: 99,
+			actionTargetingNotesChars: 6000,
+			fitRequirements: 20,
+			postingRequirements: 30,
+		});
 		const [owner] = await getDb().select().from(tables.user).where(eq(tables.user.id, userId));
 		expect(owner).toMatchObject({ resumePages: 2, noReplyDays: 14, interviewReminders: false });
 	});

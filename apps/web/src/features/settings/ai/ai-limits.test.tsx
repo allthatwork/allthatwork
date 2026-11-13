@@ -64,6 +64,44 @@ describe("AI limits", () => {
 		await waitFor(() => expect(toasts.add).toHaveBeenCalledWith(expect.objectContaining({ type: "success" })));
 	});
 
+	it("lists the application action limits in order, and saves a raised targeting note", async () => {
+		renderSection();
+		const targeting = await screen.findByLabelText("Targeting note in each action");
+		const group = targeting.closest("fieldset");
+		const labels = Array.from(group?.querySelectorAll("label") ?? [], (label) => label.textContent);
+		expect(labels).toEqual([
+			"Facts in each action",
+			"Stories in each action",
+			"Posting in each action",
+			"Requirements in each action",
+			"Your notes in each action",
+			"Job search notes in each action",
+			"Targeting note in each action",
+			"Contacts in each action",
+			"Resume in each action",
+			"Cover letter in each action",
+			"Story chosen in Practise",
+			"Requirements Fit scores",
+			"Requirements read from a posting",
+			"Time limit for Fit, Apply and other actions",
+		]);
+		expect(group?.textContent).toContain("Default 6,000. From 500 to 1,000,000.");
+		expect(screen.getByLabelText("Requirements Fit scores").closest("div")?.textContent).toContain("requirements");
+
+		fireEvent.change(targeting, { target: { value: "120000" } });
+		fireEvent.change(screen.getByLabelText("Requirements Fit scores"), { target: { value: "101" } });
+		expect(screen.getByRole("button", { name: "Save" }).hasAttribute("disabled")).toBe(true);
+		fireEvent.change(screen.getByLabelText("Requirements Fit scores"), { target: { value: "100" } });
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		await waitFor(() =>
+			expect(api.save.mock.calls[0]?.[0]).toEqual({
+				...defaults,
+				actionTargetingNotesChars: 120_000,
+				fitRequirements: 100,
+			}),
+		);
+	});
+
 	it("won't save a limit outside its range, and Reset puts the defaults back", async () => {
 		api.get.mockResolvedValue({ ...defaults, actionFactChars: 50_000 });
 		renderSection();

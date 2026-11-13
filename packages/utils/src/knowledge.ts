@@ -51,16 +51,36 @@ export const storyHolds = (
 		return fact !== undefined && textChangedAt(fact) <= new Date(story.updatedAt);
 	});
 
+/** The limits on the rest of an action's context besides Knowledge (Settings → AI limits → Application actions). */
+type ContextLimits = {
+	actionPostingChars: number;
+	actionRequirementChars: number;
+	actionNotesChars: number;
+	actionSearchNotesChars: number;
+	actionTargetingNotesChars: number;
+	actionContactChars: number;
+	actionResumeChars: number;
+	actionLetterChars: number;
+};
+
 /**
- * The rest of an action's context besides Knowledge, at most: posting 12,000 characters, requirements 6,000, notes
- * 3,000, contacts 3,000, resume 10,000 and cover letter 6,000 (career/generate.ts).
+ * The rest of an action's context besides Knowledge, at most: the posting, requirements, notes, job search notes,
+ * targeting note, contacts, resume and cover letter, each cut at its limit (career/generate.ts). 49,000 at the defaults.
  */
-export const ACTION_CONTEXT_CHARS = 40_000;
+export const actionContextChars = (limits: ContextLimits) =>
+	limits.actionPostingChars +
+	limits.actionRequirementChars +
+	limits.actionNotesChars +
+	limits.actionSearchNotesChars +
+	limits.actionTargetingNotesChars +
+	limits.actionContactChars +
+	limits.actionResumeChars +
+	limits.actionLetterChars;
 
 /** A rough token count for budgeting: about four characters a token in English JSON. */
 export const estimateTokens = (chars: number) => Math.ceil(chars / 4);
 
-type BudgetLimits = {
+type BudgetLimits = ContextLimits & {
 	coachFacts: number;
 	coachStories: number;
 	actionFactChars: number;
@@ -80,12 +100,13 @@ export function knowledgeBudget(input: {
 	const factChars = input.facts.reduce((sum, fact) => sum + factPromptChars(fact), 0);
 	const storyChars = input.stories.reduce((sum, story) => sum + storyPromptChars(story), 0);
 	// The largest prompt an action can send: each budget filled, plus the rest of its context.
-	const actionChars = input.limits.actionFactChars + input.limits.actionStoryChars + ACTION_CONTEXT_CHARS;
+	const contextChars = actionContextChars(input.limits);
+	const actionChars = input.limits.actionFactChars + input.limits.actionStoryChars + contextChars;
 	// What an action actually sends of this Knowledge: all of it, or as much as the budgets hold.
 	const usedChars =
 		Math.min(factChars, input.limits.actionFactChars) +
 		Math.min(storyChars, input.limits.actionStoryChars) +
-		ACTION_CONTEXT_CHARS;
+		contextChars;
 	return {
 		facts: { count: input.facts.length, chars: factChars, budget: input.limits.actionFactChars },
 		stories: { count: input.stories.length, chars: storyChars, budget: input.limits.actionStoryChars },

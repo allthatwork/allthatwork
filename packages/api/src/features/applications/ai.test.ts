@@ -18,6 +18,7 @@ vi.mock("./posting", async (importOriginal) => ({
 	...(await importOriginal<typeof import("./posting")>()),
 	fetchJobPosting: vi.fn(),
 }));
+vi.mock("../career/service", () => ({ careerService: { aiLimits: vi.fn() } }));
 vi.mock("./service", () => ({
 	applicationService: { getById: vi.fn(), setAiResult: vi.fn(), update: vi.fn(), addNote: vi.fn() },
 }));
@@ -25,6 +26,8 @@ vi.mock("./service", () => ({
 const { aiRouter, generateJson, generatePlainText } = await import("./ai");
 const { aiProvidersService } = await import("../ai-providers/service");
 const { fetchJobPosting } = await import("./posting");
+const { careerService } = await import("../career/service");
+const { aiLimitsSchema } = await import("@reactive-resume/schema/career");
 
 describe("copilot provider-failure translation", () => {
 	const schema = z.object({ summary: z.string() });
@@ -99,6 +102,27 @@ describe("posting import", () => {
 	beforeEach(() => {
 		vi.mocked(generateText).mockReset();
 		vi.mocked(aiProvidersService.getDefaultRunnable).mockReset();
+		vi.mocked(careerService.aiLimits).mockResolvedValue(aiLimitsSchema.parse({}));
+	});
+	it("keeps as many requirements as the user's limit, and asks the model for that many", async () => {
+		vi.mocked(aiProvidersService.getDefaultRunnable).mockResolvedValue({
+			provider: "openai",
+			model: "gpt-5",
+			apiKey: "test",
+		} as never);
+		const requirements = Array.from({ length: 40 }, (_, index) => `Skill ${index + 1}`);
+		vi.mocked(generateText).mockResolvedValue({
+			text: JSON.stringify({ company: "Acme", role: "Engineer", location: "", salary: "", requirements }),
+		} as never);
+
+		const atDefault = await call(aiRouter.parsePosting, { input: "Engineer at Acme" }, { context });
+		expect(atDefault.requirements).toEqual(requirements.slice(0, 30));
+		expect(JSON.stringify(vi.mocked(generateText).mock.calls[0]?.[0])).toContain("at most 30");
+
+		vi.mocked(careerService.aiLimits).mockResolvedValue(aiLimitsSchema.parse({ postingRequirements: 12 }));
+		const lowered = await call(aiRouter.parsePosting, { input: "Engineer at Acme" }, { context });
+		expect(lowered.requirements).toEqual(requirements.slice(0, 12));
+		expect(JSON.stringify(vi.mocked(generateText).mock.calls[1]?.[0])).toContain("at most 12");
 	});
 	it("retains fetched evidence and page fields when optional AI enrichment fails", async () => {
 		const source = {
