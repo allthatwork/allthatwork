@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { Document, Page, Text } from "./primitives";
 import { renderHostTree } from "./reconciler";
 import { toFormeDocument } from "./to-forme";

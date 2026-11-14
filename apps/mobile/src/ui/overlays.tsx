@@ -1,12 +1,11 @@
 import type { ColorToken } from "./tokens";
-import type { BottomSheetFooterProps } from "@gorhom/bottom-sheet";
 import type { ReactNode } from "react";
-import { BottomSheetBackdrop, BottomSheetFooter, BottomSheetModal, BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { useLingui } from "@lingui/react/macro";
-import { createContext, use, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { TrueSheet } from "@lodev09/react-native-true-sheet";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
 	AccessibilityInfo,
-	KeyboardAvoidingView,
+	I18nManager,
 	Modal,
 	Platform,
 	Pressable,
@@ -15,7 +14,18 @@ import {
 	useWindowDimensions,
 	View,
 } from "react-native";
-import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutDown } from "react-native-reanimated";
+import Animated, {
+	cancelAnimation,
+	Easing,
+	FadeIn,
+	FadeInDown,
+	FadeOut,
+	FadeOutDown,
+	useAnimatedStyle,
+	useSharedValue,
+	withTiming,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { Button } from "./button";
 import { haptics, useIsWide, useReducedMotion } from "./motion";
 import { useWindowSafeAreaInsets } from "./safe-area";
@@ -23,9 +33,6 @@ import { Text } from "./text";
 import { useTheme } from "./theme";
 
 const android = Platform.OS === "android";
-
-/** True inside a bottom sheet: text fields switch to the sheet's keyboard-aware input. */
-export const InSheetContext = createContext(false);
 
 export type SheetProps = {
 	open: boolean;
@@ -47,19 +54,29 @@ export type SheetProps = {
 	headerEnd?: ReactNode;
 	/** Pads the content with `s4`. Defaults to true; full-width rows pass false. */
 	padded?: boolean | undefined;
+	/** Lists that own scrolling pass false to avoid nesting inside a ScrollView. */
+	scroll?: boolean | undefined;
 };
 
 type SheetHeaderProps = Pick<SheetProps, "title" | "headerStart" | "headerEnd">;
 
 function SheetHeader({ title, headerStart, headerEnd }: SheetHeaderProps) {
 	const { size, space } = useTheme();
-	if (!title && !headerStart && !headerEnd) return null;
+	if (!headerStart && !headerEnd) return null;
 
 	// Equal side slots keep the title centred.
 	const slot = { flex: 1, flexDirection: "row", alignItems: "center" } as const;
 
 	return (
-		<View style={{ flexDirection: "row", alignItems: "center", minHeight: size.topBar, paddingHorizontal: space.s2 }}>
+		<View
+			style={{
+				flexDirection: "row",
+				alignItems: "center",
+				minHeight: size.topBar,
+				paddingHorizontal: space.s2,
+				paddingTop: space.s6,
+			}}
+		>
 			<View style={slot}>{headerStart}</View>
 			{title ? (
 				<Text accessibilityRole="header" variant="title" align="center" style={{ flexShrink: 1, maxWidth: "60%" }}>
@@ -71,16 +88,8 @@ function SheetHeader({ title, headerStart, headerEnd }: SheetHeaderProps) {
 	);
 }
 
-/**
- * A bottom sheet on phones (@gorhom/bottom-sheet; needs `BottomSheetModalProvider`, app/_layout.tsx) with the
- * grabber and platform corners, and a centred form sheet on tablets (tokens.md `formSheet`, `r2xl`, no grabber).
- */
-export function Sheet(props: SheetProps) {
-	const wide = useIsWide();
-	return wide ? <FormSheet {...props} /> : <BottomSheet {...props} />;
-}
-
-function BottomSheet({
+/** Native sheets share one lifecycle on phones, tablets and web. Form owners remain mounted after dismissal. */
+export function Sheet({
 	open,
 	onClose,
 	title,
@@ -90,224 +99,141 @@ function BottomSheet({
 	headerStart,
 	headerEnd,
 	padded = true,
+	scroll = true,
 	dismissible = true,
 }: SheetProps) {
-	const nested = use(InSheetContext);
-	const { colors, radius, shadows, size, space } = useTheme();
+	const { t } = useLingui();
+	const { colors, radius, size, space } = useTheme();
+	const wide = useIsWide();
+	const reduced = useReducedMotion();
 	const insets = useWindowSafeAreaInsets();
 	const { height } = useWindowDimensions();
-	const ref = useRef<BottomSheetModal>(null);
-	const detentIndex = useRef(-1);
+	const ref = useRef<TrueSheet>(null);
 	const [footerHeight, setFooterHeight] = useState(0);
-	const snapPoints = detents.filter((detent) => detent !== "content").map((detent) => `${detent * 100}%`);
-	const bottom = insets.bottom + space.s2;
-	const bodyStyle = {
-		gap: space.s2,
-		paddingTop: space.s1,
-		paddingHorizontal: padded ? space.s4 : 0,
-		paddingBottom: footer ? footerHeight + space.s4 : bottom + space.s2,
-	};
-
-	// The parent controls `open`; gorhom finishes each dismissal later through `onDismiss`. `wantsOpen` is what the
-	// parent asked for, `presented` whether gorhom shows the sheet, `closing` a dismissal the parent started that has
-	// not finished. Only a dismissal the user started (swipe, backdrop, Escape) reports `onClose`. Reopening while a
-	// dismissal runs waits for it to finish, so its late callback cannot close the reopened sheet. Dismissing a modal
-	// that was never presented leaves gorhom unable to present it later, so only a presented sheet is dismissed.
+	const detentIndex = useRef(-1);
 	const wantsOpen = useRef(false);
 	const presented = useRef(false);
 	const closing = useRef(false);
+	const opening = useRef<Promise<void>>(Promise.resolve());
+
+	const present = useCallback(() => {
+		presented.current = true;
+		opening.current = (ref.current?.present(0, !reduced) ?? Promise.resolve()).catch(() => {
+			presented.current = false;
+			showToast({ message: t`Couldn't complete this action. Try again.` });
+			if (dismissible) onClose();
+		});
+	}, [reduced, t, dismissible, onClose]);
 	useEffect(() => {
 		wantsOpen.current = open;
 		if (open) {
-			if (closing.current || presented.current) return;
-			presented.current = true;
-			ref.current?.present();
+			if (!closing.current && !presented.current) present();
 		} else if (presented.current && !closing.current) {
 			closing.current = true;
-			ref.current?.dismiss();
+			// TrueSheet presents asynchronously; a fast close must wait for the native view to exist.
+			void opening.current
+				.then(() => {
+					if (wantsOpen.current || !presented.current) {
+						closing.current = false;
+						return;
+					}
+					return ref.current?.dismiss(!reduced);
+				})
+				.catch(() => {
+					closing.current = false;
+					showToast({ message: t`Couldn't complete this action. Try again.` });
+				});
 		}
-	}, [open]);
+	}, [open, reduced, present, t]);
+
 	const onDismiss = () => {
 		presented.current = false;
+		detentIndex.current = -1;
+		// Wait for a parent-initiated close before reopening; a late native callback must not close the new panel.
 		if (closing.current) {
 			closing.current = false;
-			if (!wantsOpen.current) return;
-			presented.current = true;
-			ref.current?.present();
-			return;
-		}
-		if (wantsOpen.current) {
+			if (wantsOpen.current) present();
+		} else if (wantsOpen.current) {
 			if (dismissible) onClose();
-			else {
-				presented.current = true;
-				ref.current?.present();
-			}
+			else present();
 		}
 	};
 
-	const renderFooter = footer
-		? (footerProps: BottomSheetFooterProps) => (
-				<BottomSheetFooter {...footerProps}>
-					<View
-						onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
-						style={{
-							paddingTop: space.s3,
-							paddingHorizontal: space.s4,
-							paddingBottom: bottom,
-							borderTopWidth: StyleSheet.hairlineWidth,
-							borderTopColor: colors.line,
-							backgroundColor: colors.raised,
-						}}
-					>
-						{footer}
-					</View>
-				</BottomSheetFooter>
-			)
-		: undefined;
-
 	return (
-		<BottomSheetModal
+		<TrueSheet
 			ref={ref}
-			// Nested setup/picker sheets must keep their parent mounted and presented.
-			stackBehavior={nested ? "push" : "switch"}
-			// Keep the sheet's controls individually reachable by VoiceOver instead of one adjustable group.
-			accessible={false}
-			onDismiss={onDismiss}
-			enablePanDownToClose={dismissible}
-			onChange={(index) => {
-				// A detent change after the sheet is up, not the first appearance.
-				if (index >= 0 && detentIndex.current >= 0 && index !== detentIndex.current) haptics.selection();
+			detents={detents.map((detent) => (detent === "content" ? "auto" : detent))}
+			dismissible={dismissible}
+			draggable={dismissible}
+			onDidDismiss={onDismiss}
+			onDetentChange={({ nativeEvent: { index } }) => {
+				if (detentIndex.current >= 0 && index !== detentIndex.current) haptics.selection();
 				detentIndex.current = index;
 			}}
-			enableDynamicSizing={detents.includes("content")}
-			// A content-sized sheet stops at 90% of the screen; past that its content scrolls.
-			maxDynamicContentSize={Math.round(height * 0.9)}
-			{...(snapPoints.length > 0 ? { snapPoints } : {})}
-			keyboardBehavior="interactive"
-			keyboardBlurBehavior="restore"
-			android_keyboardInputMode="adjustResize"
-			topInset={insets.top}
-			style={{ marginLeft: insets.left, marginRight: insets.right }}
-			backgroundStyle={{
-				backgroundColor: colors.raised,
-				borderTopLeftRadius: android ? radius.rSheetA : radius.r3xl,
-				borderTopRightRadius: android ? radius.rSheetA : radius.r3xl,
-				boxShadow: shadows.e3.boxShadow,
-			}}
-			handleComponent={() => (
-				<View>
-					{/* The 22 pt strip with the grabber, 36×5 on iOS and 32×4 on Android (tokens.md §3.1). */}
-					<View
-						accessible={false}
-						style={{ height: space.s5 + space.s0, alignItems: "center", justifyContent: "center" }}
-					>
-						<View
-							style={{
-								width: android ? size.grabber.width - space.s1 : size.grabber.width,
-								height: android ? size.grabber.height - 1 : size.grabber.height,
-								borderRadius: radius.rPill,
-								backgroundColor: colors.line2,
-							}}
-						/>
-					</View>
-					<SheetHeader title={title} headerStart={headerStart} headerEnd={headerEnd} />
-				</View>
-			)}
-			backdropComponent={(backdrop) => (
-				<BottomSheetBackdrop
-					{...backdrop}
-					appearsOnIndex={0}
-					disappearsOnIndex={-1}
-					opacity={1}
-					pressBehavior={dismissible ? "close" : "none"}
-					style={[backdrop.style, { backgroundColor: colors.scrimSheet }]}
-				/>
-			)}
-			{...(renderFooter ? { footerComponent: renderFooter } : {})}
+			presentation={wide ? "form" : "page"}
+			maxContentWidth={size.formSheet}
+			maxContentHeight={Math.round((height - insets.top) * 0.9)}
+			backgroundColor={colors.raised}
+			cornerRadius={radius.rLg}
+			grabber={!wide}
+			accessibilityOptions={title ? { paneTitle: title } : {}}
+			scrollable
+			insetAdjustment="never"
+			{...(headerStart || headerEnd
+				? { header: <SheetHeader title={title} headerStart={headerStart} headerEnd={headerEnd} /> }
+				: {})}
+			{...(footer
+				? {
+						footer: (
+							<View
+								onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+								style={{
+									paddingTop: space.s3,
+									paddingHorizontal: space.s4,
+									paddingBottom: insets.bottom + space.s3,
+									borderTopWidth: StyleSheet.hairlineWidth,
+									borderTopColor: colors.line,
+									backgroundColor: colors.raised,
+								}}
+							>
+								{footer}
+							</View>
+						),
+					}
+				: {})}
+			footerOptions={{ keyboardOffset: -insets.bottom }}
 		>
-			<InSheetContext.Provider value>
-				<BottomSheetScrollView
+			{scroll ? (
+				<ScrollView
+					nestedScrollEnabled
 					accessibilityViewIsModal
 					onAccessibilityEscape={dismissible ? onClose : undefined}
 					keyboardShouldPersistTaps="handled"
-					contentContainerStyle={bodyStyle}
+					keyboardDismissMode="interactive"
+					contentContainerStyle={{
+						gap: space.s3,
+						paddingTop: headerStart || headerEnd ? space.s2 : space.s6,
+						paddingHorizontal: padded ? space.s4 : 0,
+						paddingBottom: footer ? footerHeight + space.s4 : insets.bottom + space.s4,
+					}}
 				>
 					{children}
-				</BottomSheetScrollView>
-			</InSheetContext.Provider>
-		</BottomSheetModal>
-	);
-}
-
-function FormSheet({
-	open,
-	onClose,
-	title,
-	children,
-	footer,
-	headerStart,
-	headerEnd,
-	padded = true,
-	dismissible = true,
-}: SheetProps) {
-	const { colors, radius, shadows, size, space } = useTheme();
-	const { width, height } = useWindowDimensions();
-
-	return (
-		<Modal
-			visible={open}
-			transparent
-			animationType="fade"
-			onRequestClose={dismissible ? onClose : undefined}
-			statusBarTranslucent
-			navigationBarTranslucent
-			supportedOrientations={["portrait", "landscape"]}
-		>
-			<KeyboardAvoidingView
-				behavior={Platform.OS === "ios" ? "padding" : undefined}
-				style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.scrimSheet }}
-			>
-				<Pressable accessible={false} onPress={dismissible ? onClose : undefined} style={StyleSheet.absoluteFill} />
+				</ScrollView>
+			) : (
 				<View
 					accessibilityViewIsModal
 					onAccessibilityEscape={dismissible ? onClose : undefined}
 					style={{
-						width: Math.min(size.formSheet, width - space.s6 * 2),
-						maxHeight: height - space.s12 * 2,
-						paddingTop: space.s1 + space.s0,
-						borderRadius: radius.r2xl,
-						backgroundColor: colors.raised,
-						boxShadow: shadows.e3.boxShadow,
-						overflow: "hidden",
+						flex: 1,
+						paddingTop: space.s6,
+						paddingHorizontal: padded ? space.s4 : 0,
+						paddingBottom: insets.bottom + space.s4,
 					}}
 				>
-					<SheetHeader title={title} headerStart={headerStart} headerEnd={headerEnd} />
-					<ScrollView
-						keyboardShouldPersistTaps="handled"
-						contentContainerStyle={{
-							gap: space.s2,
-							paddingTop: space.s1,
-							paddingBottom: space.s4,
-							paddingHorizontal: padded ? space.s4 : 0,
-						}}
-					>
-						{children}
-					</ScrollView>
-					{footer ? (
-						<View
-							style={{
-								padding: space.s4,
-								paddingTop: space.s3,
-								borderTopWidth: StyleSheet.hairlineWidth,
-								borderTopColor: colors.line,
-							}}
-						>
-							{footer}
-						</View>
-					) : null}
+					{children}
 				</View>
-			</KeyboardAvoidingView>
-		</Modal>
+			)}
+		</TrueSheet>
 	);
 }
 
@@ -358,7 +284,7 @@ export function EditorSheet({
 				open={confirm && !pending}
 				title={t`Discard changes?`}
 				message={t`You have unsaved changes.`}
-				confirmLabel={t`Discard`}
+				confirmLabel={t`Discard changes`}
 				cancelLabel={t`Keep editing`}
 				destructive
 				onConfirm={() => {
@@ -379,6 +305,8 @@ export type ConfirmDialogProps = {
 	cancelLabel?: string | undefined;
 	/** Styles the confirm button as destructive. */
 	destructive?: boolean | undefined;
+	/** The confirm button must be held, for actions that can't be undone. */
+	hold?: boolean | undefined;
 	onConfirm: () => void;
 	onCancel: () => void;
 };
@@ -392,15 +320,41 @@ type DialogActionProps = {
 	fill?: boolean;
 	/** iOS: a hairline before the button; `stacked` puts it above instead of at the start. */
 	separator?: "start" | "top" | undefined;
+	/** Acts only after a HOLD_MS hold, while a fill rises behind the label. */
+	hold?: boolean | undefined;
 };
 
-function DialogAction({ label, onPress, color, bold, fill, separator }: DialogActionProps) {
-	const { colors, radius, size, space } = useTheme();
+const HOLD_MS = 1200;
+
+function DialogAction({ label, onPress, color, bold, fill, separator, hold }: DialogActionProps) {
+	const { t } = useLingui();
+	const { colors, motion, radius, size, space } = useTheme();
+	const progress = useSharedValue(0);
+	const fillStyle = useAnimatedStyle(() => ({ transform: [{ scaleX: progress.get() }] }));
+
+	const startHold = () => {
+		if (!hold) return;
+		haptics.light();
+		progress.set(
+			withTiming(1, { duration: HOLD_MS, easing: Easing.linear }, (finished) => {
+				if (finished) scheduleOnRN(onPress);
+			}),
+		);
+	};
+	const endHold = () => {
+		if (!hold) return;
+		cancelAnimation(progress);
+		progress.set(withTiming(0, { duration: motion.d1 }));
+	};
 
 	return (
 		<Pressable
 			accessibilityRole="button"
-			onPress={onPress}
+			accessibilityHint={hold ? t`Press and hold` : undefined}
+			// A screen reader activates with a tap, and the dialog has already asked.
+			onPress={hold ? () => screenReader && onPress() : onPress}
+			onPressIn={startHold}
+			onPressOut={endHold}
 			android_ripple={{ color: colors.press }}
 			style={({ pressed }) =>
 				android
@@ -408,7 +362,7 @@ function DialogAction({ label, onPress, color, bold, fill, separator }: DialogAc
 							minHeight: size.hit,
 							justifyContent: "center",
 							paddingHorizontal: space.s3,
-							borderRadius: radius.rPill,
+							borderRadius: radius.rMd,
 							overflow: "hidden",
 						}
 					: {
@@ -423,6 +377,24 @@ function DialogAction({ label, onPress, color, bold, fill, separator }: DialogAc
 						}
 			}
 		>
+			{hold ? (
+				<Animated.View
+					pointerEvents="none"
+					style={[
+						{
+							position: "absolute",
+							top: 0,
+							bottom: 0,
+							start: 0,
+							end: 0,
+							backgroundColor: colors[color],
+							opacity: 0.16,
+							transformOrigin: I18nManager.isRTL ? "right" : "left",
+						},
+						fillStyle,
+					]}
+				/>
+			) : null}
 			<Text variant={android ? "label" : "title"} weight={android || bold ? 600 : 400} color={color} align="center">
 				{label}
 			</Text>
@@ -441,6 +413,7 @@ export function ConfirmDialog({
 	confirmLabel,
 	cancelLabel,
 	destructive,
+	hold,
 	onConfirm,
 	onCancel,
 }: ConfirmDialogProps) {
@@ -455,7 +428,6 @@ export function ConfirmDialog({
 		if (destructive) haptics.warning();
 		onConfirm();
 	};
-
 	return (
 		<Modal
 			visible={open}
@@ -476,7 +448,7 @@ export function ConfirmDialog({
 					style={{
 						width: Math.min(alertWidth, width - space.s10 * 2),
 						maxHeight: height - space.s12 * 2,
-						borderRadius: android ? radius.rSheetA : radius.r2xl,
+						borderRadius: radius.rLg,
 						backgroundColor: colors.raised,
 						boxShadow: shadows.e3.boxShadow,
 						overflow: "hidden",
@@ -516,7 +488,7 @@ export function ConfirmDialog({
 							}}
 						>
 							<DialogAction label={cancel} onPress={onCancel} color="accentText" />
-							<DialogAction label={confirmLabel} onPress={confirm} color={confirmColor} />
+							<DialogAction label={confirmLabel} onPress={confirm} color={confirmColor} hold={hold} />
 						</View>
 					) : (
 						<View
@@ -528,7 +500,7 @@ export function ConfirmDialog({
 						>
 							{stacked ? (
 								<>
-									<DialogAction label={confirmLabel} onPress={confirm} color={confirmColor} bold />
+									<DialogAction label={confirmLabel} onPress={confirm} color={confirmColor} bold hold={hold} />
 									<DialogAction label={cancel} onPress={onCancel} color="accentText" separator="top" />
 								</>
 							) : (
@@ -541,6 +513,7 @@ export function ConfirmDialog({
 										bold
 										fill
 										separator="start"
+										hold={hold}
 									/>
 								</>
 							)}
@@ -562,7 +535,7 @@ export type ToastOptions = {
 	duration?: number | undefined;
 };
 
-type ActiveToast = ToastOptions & { id: number };
+type ActiveToast = ToastOptions & { id: number; lifetime: number };
 
 let toasts: ActiveToast[] = [];
 let nextToastId = 1;
@@ -598,9 +571,9 @@ export function showToast(options: ToastOptions): number {
 	const hasAction = !!options.action || !!options.undo;
 	// The new toast replaces the current one, and its timer with it.
 	for (const toast of toasts) clearToastTimer(toast.id);
-	emitToasts([{ ...options, id }]);
-	AccessibilityInfo.announceForAccessibility(options.message);
 	const duration = toastLifetime(options.duration ?? (hasAction ? 6000 : 4000));
+	emitToasts([{ ...options, id, lifetime: duration }]);
+	AccessibilityInfo.announceForAccessibility(options.message);
 	toastTimers.set(
 		id,
 		setTimeout(() => dismissToast(id), duration),
@@ -610,6 +583,38 @@ export function showToast(options: ToastOptions): number {
 
 /** The imperative toast API (alias of `showToast`). */
 export const toast = showToast;
+
+/** A toast with an action burns a thin fuse along its bottom edge for the time it has left. */
+function ToastFuse({ duration }: { duration: number }) {
+	const { colors, radius } = useTheme();
+	const left = useSharedValue(1);
+	const style = useAnimatedStyle(() => ({ transform: [{ scaleX: left.get() }] }));
+
+	useEffect(() => {
+		left.set(withTiming(0, { duration, easing: Easing.linear }));
+	}, [left, duration]);
+
+	// Inset by the corner radius so the fuse stays on the straight part of the edge.
+	const inset = android ? radius.rSm : radius.rLg;
+	return (
+		<Animated.View
+			pointerEvents="none"
+			style={[
+				{
+					position: "absolute",
+					bottom: 0,
+					start: inset,
+					end: inset,
+					height: 2,
+					backgroundColor: colors.bg,
+					opacity: 0.4,
+					transformOrigin: I18nManager.isRTL ? "right" : "left",
+				},
+				style,
+			]}
+		/>
+	);
+}
 
 /** Renders the active toast. Mounted once, in app/_layout.tsx. */
 export function Toaster() {
@@ -662,7 +667,7 @@ export function Toaster() {
 							maxWidth: size.formSheet,
 							paddingStart: space.s4,
 							paddingEnd: action ? space.s1 + space.s0 : space.s4,
-							borderRadius: android ? radius.rSm : radius.r2xl,
+							borderRadius: android ? radius.rSm : radius.rLg,
 							backgroundColor: colors.ink,
 							boxShadow: (wide ? shadows.e2 : shadows.e3).boxShadow,
 						}}
@@ -689,6 +694,7 @@ export function Toaster() {
 								</Text>
 							</Pressable>
 						) : null}
+						{action && !reduced ? <ToastFuse duration={item.lifetime} /> : null}
 					</Animated.View>
 				);
 			})}

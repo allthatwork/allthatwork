@@ -5,22 +5,30 @@ import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { Locale } from "@reactive-resume/utils/locale";
 import { ORPCError } from "@orpc/client";
 import { compare, hash } from "bcryptjs";
-import { and, arrayContains, asc, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, arrayContains, asc, desc, eq, gte, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { match } from "ts-pattern";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { detachEmbeddedLetters } from "@reactive-resume/resume/cover-letter";
 import { applyResumePatches, ResumePatchError } from "@reactive-resume/resume/patch";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
+import { isValidSlug } from "@reactive-resume/schema/resume/slug";
 import { generateId, isRandomSlug } from "@reactive-resume/utils/string";
+import { consumeResumePasswordLimit } from "../../middleware/rate-limit";
 import { adoptEmbeddedLetters } from "../cover-letters/embedded";
-import { lockDocumentOwner } from "../documents/ownership";
+import { lockUser } from "../documents/ownership";
 import { getStorageService } from "../storage/service";
 import { grantResumeAccess, hasResumeAccess } from "./access";
-import { assertCanView, isOwner, redactResumeForViewer, shouldCountForStatistics } from "./access-policy";
+import {
+	assertCanView,
+	isOwner,
+	redactResumeForViewer,
+	requiresPassword,
+	shouldCountForStatistics,
+} from "./access-policy";
 import { publishResumeUpdated } from "./events";
 import { parseStoredResumeData, parseWritableResumeData } from "./resume-data-validation";
-import { checkSlug, findFreeRandomSlug, matchesSlug, matchesUsername, recordSlugChange, SLUG_PATTERN } from "./slugs";
+import { checkSlug, findFreeRandomSlug, findResume, recordSlugChange } from "./slugs";
 import {
 	deleteVersion,
 	getVersion,
@@ -29,12 +37,12 @@ import {
 	saveSessionVersion,
 	writeVersion,
 } from "./version-history";
-import { clientKeyFromHeaders, shouldCountView } from "./view-dedup";
+import { countVisit } from "./view-dedup";
 
 function resumeVersionConflict(updatedAt: Date) {
 	return new ORPCError("RESUME_VERSION_CONFLICT", {
 		status: 409,
-		message: "The resume changed after this patch was generated.",
+		message: "The resume changed after this patch was generated. Read the resume again and regenerate the patch.",
 		data: { updatedAt: updatedAt.toISOString() },
 	});
 }
@@ -76,6 +84,42 @@ function assertValidPatchPointers(operation: JsonPatchOperation, index: number) 
 	}
 }
 
+const activeResumeConditions = (id: string, userId: string) => [
+	eq(schema.resume.id, id),
+	eq(schema.resume.userId, userId),
+	isNull(schema.resume.trashedAt),
+];
+
+/** Matches an active resume (not in Trash) owned by the user. */
+const activeResumeWhere = (id: string, userId: string) => and(...activeResumeConditions(id, userId));
+
+/** Matches an active, editable (unlocked and not in Trash) resume owned by the user. */
+const activeUnlockedResumeWhere = (id: string, userId: string) =>
+	and(...activeResumeConditions(id, userId), eq(schema.resume.isLocked, false));
+
+/** The fields a resume read or write returns to its owner. */
+/** The Share settings every read of a resume carries. */
+const shareColumns = {
+	showInSearchEngines: schema.resume.showInSearchEngines,
+	hideContactDetails: schema.resume.hideContactDetails,
+	isPrimary: schema.resume.isPrimary,
+};
+
+const resumeColumns = {
+	...shareColumns,
+	id: schema.resume.id,
+	name: schema.resume.name,
+	slug: schema.resume.slug,
+	tags: schema.resume.tags,
+	data: schema.resume.data,
+	isPublic: schema.resume.isPublic,
+	isLocked: schema.resume.isLocked,
+	showDownloadButtons: schema.resume.showDownloadButtons,
+	createdAt: schema.resume.createdAt,
+	updatedAt: schema.resume.updatedAt,
+	hasPassword: sql<boolean>`${schema.resume.password} IS NOT NULL`,
+};
+
 async function applyResumePatchTx(
 	client: DbOrTx,
 	input: {
@@ -93,7 +137,7 @@ async function applyResumePatchTx(
 			updatedAt: schema.resume.updatedAt,
 		})
 		.from(schema.resume)
-		.where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)))
+		.where(activeResumeWhere(input.id, input.userId))
 		.for("update");
 
 	if (!existing) throw new ORPCError("NOT_FOUND");
@@ -136,22 +180,8 @@ async function applyResumePatchTx(
 	const [resume] = await client
 		.update(schema.resume)
 		.set({ data: patchedData })
-		.where(
-			and(eq(schema.resume.id, input.id), eq(schema.resume.isLocked, false), eq(schema.resume.userId, input.userId)),
-		)
-		.returning({
-			id: schema.resume.id,
-			name: schema.resume.name,
-			slug: schema.resume.slug,
-			tags: schema.resume.tags,
-			data: schema.resume.data,
-			isPublic: schema.resume.isPublic,
-			isLocked: schema.resume.isLocked,
-			showDownloadButtons: schema.resume.showDownloadButtons,
-			createdAt: schema.resume.createdAt,
-			updatedAt: schema.resume.updatedAt,
-			hasPassword: sql<boolean>`${schema.resume.password} IS NOT NULL`,
-		});
+		.where(activeUnlockedResumeWhere(input.id, input.userId))
+		.returning(resumeColumns);
 
 	if (!resume) {
 		if (input.expectedUpdatedAt) throw resumeVersionConflict(existing.updatedAt);
@@ -175,7 +205,7 @@ const tags = {
 		const result = await db
 			.select({ tags: schema.resume.tags })
 			.from(schema.resume)
-			.where(eq(schema.resume.userId, input.userId));
+			.where(and(eq(schema.resume.userId, input.userId), isNull(schema.resume.trashedAt)));
 
 		return [...new Set(result.flatMap((tag) => tag.tags))].sort((a, b) => a.localeCompare(b));
 	},
@@ -186,42 +216,29 @@ const statistics = {
 		username: string;
 		slug: string;
 		requestHeaders: Headers;
+		trustedClient?: string;
 		currentUserId?: string;
 	}): Promise<boolean> => {
-		const [resume] = await db
-			.select({
-				id: schema.resume.id,
-				userId: schema.resume.userId,
-				isPublic: schema.resume.isPublic,
-				passwordHash: schema.resume.password,
-			})
-			.from(schema.resume)
-			.innerJoin(schema.user, eq(schema.resume.userId, schema.user.id))
-			.where(
-				and(
-					eq(schema.resume.slug, input.slug),
-					eq(schema.user.username, input.username),
-					isNull(schema.resume.trashedAt),
-				),
-			);
+		const resume = await findResume(input, {
+			id: schema.resume.id,
+			userId: schema.resume.userId,
+			isPublic: schema.resume.isPublic,
+			passwordHash: schema.resume.password,
+		});
 
 		if (!resume) throw new ORPCError("NOT_FOUND");
 		const viewer = input.currentUserId ? { id: input.currentUserId } : null;
 		assertCanView(resume, viewer);
-		if (
-			resume.passwordHash &&
-			!isOwner(resume, viewer) &&
-			!hasResumeAccess(input.requestHeaders, resume.id, resume.passwordHash)
-		) {
+		if (requiresPassword(resume, viewer) && !hasResumeAccess(input.requestHeaders, resume.id, resume.passwordHash)) {
 			throw new ORPCError("NEED_PASSWORD", {
 				status: 401,
 				data: { username: input.username, slug: input.slug },
 			});
 		}
 
-		if (shouldCountForStatistics(resume, viewer)) {
-			await statistics.increment({ id: resume.id, downloads: true });
-		}
+		// Like views, a visitor's downloads count once an hour, so repeated calls can't inflate the number.
+		if (shouldCountForStatistics(resume, viewer))
+			await countVisit({ kind: "download", resumeId: resume.id, trustedClient: input.trustedClient });
 		return true;
 	},
 
@@ -236,7 +253,7 @@ const statistics = {
 			})
 			.from(schema.resumeStatistics)
 			.rightJoin(schema.resume, eq(schema.resumeStatistics.resumeId, schema.resume.id))
-			.where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)));
+			.where(activeResumeWhere(input.id, input.userId));
 
 		if (!statistics) throw new ORPCError("NOT_FOUND");
 
@@ -296,7 +313,7 @@ const statistics = {
 		const [resume] = await db
 			.select({ id: schema.resume.id })
 			.from(schema.resume)
-			.where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)));
+			.where(activeResumeWhere(input.id, input.userId));
 
 		if (!resume) throw new ORPCError("NOT_FOUND");
 
@@ -335,10 +352,16 @@ function toSharedResumeResponse(
 		isPublic: boolean;
 		isLocked: boolean;
 		showDownloadButtons: boolean;
+		showInSearchEngines: boolean;
+		hideContactDetails: boolean;
+		isPrimary: boolean;
 	},
 	hasPassword: boolean,
 ) {
 	return {
+		showInSearchEngines: resume.showInSearchEngines,
+		hideContactDetails: resume.hideContactDetails,
+		isPrimary: resume.isPrimary,
 		id: resume.id,
 		name: resume.name,
 		slug: resume.slug,
@@ -360,12 +383,13 @@ async function notifyResumeUpdated(event: ResumeUpdatedEvent) {
 }
 
 // One conditional UPDATE skips locked rows atomically; only a miss pays for the read that says why.
+// Resumes in Trash miss both the update and the fallback read (activeResumeWhere), throwing NOT_FOUND without leaking lock state.
 async function updateResumePassword(input: { id: string; userId: string; password: string | null }) {
-	const owned = and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId));
+	const owned = activeResumeWhere(input.id, input.userId);
 	const [resume] = await db
 		.update(schema.resume)
 		.set({ password: input.password })
-		.where(and(owned, eq(schema.resume.isLocked, false)))
+		.where(activeUnlockedResumeWhere(input.id, input.userId))
 		.returning({ id: schema.resume.id, updatedAt: schema.resume.updatedAt });
 
 	if (!resume) {
@@ -381,6 +405,9 @@ async function updateResumePassword(input: { id: string; userId: string; passwor
 		mutation: "password",
 	});
 }
+
+let unusedHash: Promise<string> | undefined;
+const unusedPasswordHash = () => (unusedHash ??= hash(generateId(), 10));
 
 export const resumeService = {
 	tags,
@@ -451,6 +478,7 @@ export const resumeService = {
 				isPublic: schema.resume.isPublic,
 				isLocked: schema.resume.isLocked,
 				showDownloadButtons: schema.resume.showDownloadButtons,
+				...shareColumns,
 				createdAt: schema.resume.createdAt,
 				updatedAt: schema.resume.updatedAt,
 			})
@@ -472,21 +500,9 @@ export const resumeService = {
 
 	getById: async (input: { id: string; userId: string }) => {
 		const [resume] = await db
-			.select({
-				id: schema.resume.id,
-				name: schema.resume.name,
-				slug: schema.resume.slug,
-				tags: schema.resume.tags,
-				data: schema.resume.data,
-				isPublic: schema.resume.isPublic,
-				isLocked: schema.resume.isLocked,
-				showDownloadButtons: schema.resume.showDownloadButtons,
-				createdAt: schema.resume.createdAt,
-				updatedAt: schema.resume.updatedAt,
-				hasPassword: sql<boolean>`${schema.resume.password} IS NOT NULL`,
-				applicationId: schema.resume.applicationId,
-			})
+			.select({ ...resumeColumns, applicationId: schema.resume.applicationId })
 			.from(schema.resume)
+			// Read-only and owner-scoped, so resumes in Trash stay readable for their thumbnails; writes reject them.
 			.where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)));
 
 		if (!resume) throw new ORPCError("NOT_FOUND");
@@ -504,27 +520,22 @@ export const resumeService = {
 		requirePublic?: boolean;
 		expectedResumeId?: string;
 	}) => {
-		const [resume] = await db
-			.select({
-				id: schema.resume.id,
-				userId: schema.resume.userId,
-				name: schema.resume.name,
-				slug: schema.resume.slug,
-				tags: schema.resume.tags,
-				data: schema.resume.data,
-				isPublic: schema.resume.isPublic,
-				isLocked: schema.resume.isLocked,
-				showDownloadButtons: schema.resume.showDownloadButtons,
-				passwordHash: schema.resume.password,
-				hasPassword: sql<boolean>`${schema.resume.password} IS NOT NULL`,
-				username: schema.user.username,
-			})
-			.from(schema.resume)
-			.innerJoin(schema.user, eq(schema.resume.userId, schema.user.id))
-			.where(and(matchesSlug(input.slug), matchesUsername(input.username), isNull(schema.resume.trashedAt)))
-			// A current username or slug wins over another's redirect (changes delete clashing redirects anyway).
-			.orderBy(desc(sql`${schema.user.username} = ${input.username}`), desc(sql`${schema.resume.slug} = ${input.slug}`))
-			.limit(1);
+		const resume = await findResume(input, {
+			id: schema.resume.id,
+			userId: schema.resume.userId,
+			name: schema.resume.name,
+			slug: schema.resume.slug,
+			tags: schema.resume.tags,
+			data: schema.resume.data,
+			isPublic: schema.resume.isPublic,
+			isLocked: schema.resume.isLocked,
+			showDownloadButtons: schema.resume.showDownloadButtons,
+			...shareColumns,
+			passwordHash: schema.resume.password,
+			hasPassword: sql<boolean>`${schema.resume.password} IS NOT NULL`,
+			// The current username, so a link with an old one can move to the current address.
+			username: schema.user.username,
+		});
 
 		if (
 			!resume ||
@@ -536,23 +547,15 @@ export const resumeService = {
 		const viewer = input.currentUserId ? { id: input.currentUserId } : null;
 		assertCanView(resume, viewer);
 
-		if (
-			resume.hasPassword &&
-			!isOwner(resume, viewer) &&
-			!hasResumeAccess(input.requestHeaders, resume.id, resume.passwordHash)
-		) {
+		if (requiresPassword(resume, viewer) && !hasResumeAccess(input.requestHeaders, resume.id, resume.passwordHash)) {
 			throw new ORPCError("NEED_PASSWORD", {
 				status: 401,
 				data: { username: input.username, slug: input.slug },
 			});
 		}
 
-		if (shouldCountForStatistics(resume, viewer)) {
-			const key = `${resume.id}:${clientKeyFromHeaders(input.trustedClient)}`;
-			if (await shouldCountView(key, Date.now())) {
-				await resumeService.statistics.increment({ id: resume.id, views: true });
-			}
-		}
+		if (shouldCountForStatistics(resume, viewer))
+			await countVisit({ kind: "view", resumeId: resume.id, trustedClient: input.trustedClient });
 
 		const current = { ...resume, data: parseStoredResumeData(resume.data) };
 		// The current username, so a link with an old one can move to the current address.
@@ -579,6 +582,10 @@ export const resumeService = {
 		const id = input.id ?? generateId();
 		const data = parseWritableResumeData(structuredClone(input.data ?? defaultResumeData));
 		data.metadata.page.locale = input.locale;
+
+		if (input.slug !== undefined && !isValidSlug(input.slug)) {
+			throw new ORPCError("INVALID_SLUG", { status: 400 });
+		}
 
 		try {
 			const slug = input.slug ?? (await findFreeRandomSlug(db, input.userId));
@@ -614,14 +621,16 @@ export const resumeService = {
 
 			return id;
 		} catch (error) {
+			if (error instanceof ORPCError) throw error;
+
 			const constraint = uniqueConstraint(error);
 
 			if (constraint === "resume_slug_user_id_unique") {
 				throw new ORPCError("RESUME_SLUG_ALREADY_EXISTS", { status: 400 });
 			}
 
-			console.error("Failed to create resume:", error);
-			throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Failed to create resume" });
+			console.error("Couldn't create the resume. Try again.:", error);
+			throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Couldn't create the resume. Try again." });
 		}
 	},
 
@@ -636,6 +645,9 @@ export const resumeService = {
 		/** A fresh random address; the old one, and any it redirected from, stop working at once. */
 		randomSlug?: boolean;
 		showDownloadButtons?: boolean;
+		showInSearchEngines?: boolean;
+		hideContactDetails?: boolean;
+		isPrimary?: boolean;
 		expectedUpdatedAt?: Date;
 		skipAutoSnapshot?: boolean;
 		/** The editor visit this save belongs to; its autosaves share one version. */
@@ -655,7 +667,7 @@ export const resumeService = {
 						updatedAt: schema.resume.updatedAt,
 					})
 					.from(schema.resume)
-					.where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)))
+					.where(activeResumeWhere(input.id, input.userId))
 					.for("update");
 
 				if (!existing) throw new ORPCError("NOT_FOUND");
@@ -676,7 +688,7 @@ export const resumeService = {
 				if (reroll) await tx.delete(schema.resumeSlugRedirect).where(eq(schema.resumeSlugRedirect.resumeId, input.id));
 				// A new address must follow the pattern; existing ones that don't keep working until changed.
 				const renamed = !reroll && input.slug !== undefined && input.slug !== existing.slug;
-				if (renamed && !SLUG_PATTERN.test(input.slug as string)) {
+				if (renamed && !isValidSlug(input.slug as string)) {
 					throw new ORPCError("INVALID_SLUG", { status: 400 });
 				}
 				if (renamed) {
@@ -710,31 +722,35 @@ export const resumeService = {
 					...(normalizedData ? { data: normalizedData } : {}),
 					...(input.isPublic !== undefined ? { isPublic: input.isPublic } : {}),
 					...(input.showDownloadButtons !== undefined ? { showDownloadButtons: input.showDownloadButtons } : {}),
+					...(input.showInSearchEngines !== undefined ? { showInSearchEngines: input.showInSearchEngines } : {}),
+					...(input.hideContactDetails !== undefined ? { hideContactDetails: input.hideContactDetails } : {}),
+					...(input.isPrimary !== undefined ? { isPrimary: input.isPrimary } : {}),
 				};
+
+				// Only a published resume can become the primary one; it takes the role from the account's previous primary.
+				if (input.isPrimary === true) {
+					if (!(input.isPublic ?? existing.isPublic))
+						throw new ORPCError("RESUME_NOT_PUBLIC", {
+							status: 400,
+							message: "Publish the resume before making it primary.",
+						});
+					await tx
+						.update(schema.resume)
+						.set({ isPrimary: false })
+						.where(
+							and(
+								eq(schema.resume.userId, input.userId),
+								eq(schema.resume.isPrimary, true),
+								ne(schema.resume.id, input.id),
+							),
+						);
+				}
 
 				const [updated] = await tx
 					.update(schema.resume)
 					.set(updateData)
-					.where(
-						and(
-							eq(schema.resume.id, input.id),
-							eq(schema.resume.isLocked, false),
-							eq(schema.resume.userId, input.userId),
-						),
-					)
-					.returning({
-						id: schema.resume.id,
-						name: schema.resume.name,
-						slug: schema.resume.slug,
-						tags: schema.resume.tags,
-						data: schema.resume.data,
-						isPublic: schema.resume.isPublic,
-						isLocked: schema.resume.isLocked,
-						showDownloadButtons: schema.resume.showDownloadButtons,
-						createdAt: schema.resume.createdAt,
-						updatedAt: schema.resume.updatedAt,
-						hasPassword: sql<boolean>`${schema.resume.password} IS NOT NULL`,
-					});
+					.where(activeUnlockedResumeWhere(input.id, input.userId))
+					.returning(resumeColumns);
 
 				if (!updated) throw new ORPCError("NOT_FOUND");
 				return updated;
@@ -746,8 +762,8 @@ export const resumeService = {
 					throw new ORPCError("RESUME_SLUG_ALREADY_EXISTS", { status: 400 });
 				}
 
-				console.error("Failed to update resume:", error);
-				throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Failed to update resume" });
+				console.error("Couldn't update the resume. Try again.:", error);
+				throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Couldn't update the resume. Try again." });
 			});
 
 		// Data edits refresh this editing session's version (see saveSessionVersion).
@@ -791,7 +807,7 @@ export const resumeService = {
 		const [resume] = await db
 			.update(schema.resume)
 			.set({ isLocked: input.isLocked })
-			.where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)))
+			.where(activeResumeWhere(input.id, input.userId))
 			.returning({ id: schema.resume.id, updatedAt: schema.resume.updatedAt });
 
 		if (!resume) throw new ORPCError("NOT_FOUND");
@@ -808,26 +824,26 @@ export const resumeService = {
 	setPassword: async (input: { id: string; userId: string; password: string }) =>
 		updateResumePassword({ ...input, password: await hash(input.password, 10) }),
 
-	verifyPassword: async (input: { slug: string; username: string; password: string; responseHeaders?: Headers }) => {
-		const [resume] = await db
-			.select({ id: schema.resume.id, password: schema.resume.password })
-			.from(schema.resume)
-			.innerJoin(schema.user, eq(schema.resume.userId, schema.user.id))
-			.where(
-				and(
-					isNotNull(schema.resume.password),
-					matchesSlug(input.slug),
-					matchesUsername(input.username),
-					isNull(schema.resume.trashedAt),
-				),
-			)
-			.orderBy(desc(sql`${schema.user.username} = ${input.username}`), desc(sql`${schema.resume.slug} = ${input.slug}`))
-			.limit(1);
+	verifyPassword: async (input: {
+		slug: string;
+		username: string;
+		password: string;
+		responseHeaders?: Headers;
+		trustedClient?: string | undefined;
+	}) => {
+		const resume = await findResume(
+			input,
+			{ id: schema.resume.id, password: schema.resume.password },
+			isNotNull(schema.resume.password),
+			eq(schema.resume.isPublic, true),
+		);
 
-		if (!resume) throw new ORPCError("INVALID_PASSWORD", { status: 401 });
-
-		const passwordHash = resume.password as string;
+		if (!(await consumeResumePasswordLimit({ resumeId: resume?.id ?? "missing", trustedClient: input.trustedClient })))
+			throw new ORPCError("TOO_MANY_REQUESTS");
+		// A miss costs the same bcrypt work as a wrong password, so timing doesn't reveal which addresses exist.
+		const passwordHash = resume?.password ?? (await unusedPasswordHash());
 		const isValid = await compare(input.password, passwordHash);
+		if (!resume) throw new ORPCError("INVALID_PASSWORD", { status: 401 });
 
 		if (!isValid) throw new ORPCError("INVALID_PASSWORD", { status: 401 });
 
@@ -838,19 +854,30 @@ export const resumeService = {
 
 	removePassword: (input: { id: string; userId: string }) => updateResumePassword({ ...input, password: null }),
 
-	delete: async (input: { id: string; userId: string }) => {
-		await db.transaction(async (tx) => {
-			await lockDocumentOwner(tx, input.userId);
-			const [resume] = await tx
-				.select({ isLocked: schema.resume.isLocked })
-				.from(schema.resume)
-				.where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)));
+	/**
+	 * With `trashedBefore`, deletes only if the resume is still in Trash since before then (Trash expiry): a resume
+	 * restored meanwhile stays, and a lock doesn't keep an expired one.
+	 */
+	delete: async (input: { id: string; userId: string; trashedBefore?: Date }) => {
+		const target = and(
+			eq(schema.resume.id, input.id),
+			eq(schema.resume.userId, input.userId),
+			input.trashedBefore ? lt(schema.resume.trashedAt, input.trashedBefore) : undefined,
+		);
+		const deleted = await db.transaction(async (tx) => {
+			await lockUser(tx, input.userId);
+			const [resume] = await tx.select({ isLocked: schema.resume.isLocked }).from(schema.resume).where(target);
 
-			if (!resume) throw new ORPCError("NOT_FOUND");
-			if (resume.isLocked) throw new ORPCError("RESUME_LOCKED", { status: 403 });
+			if (!resume) {
+				if (input.trashedBefore) return false;
+				throw new ORPCError("NOT_FOUND");
+			}
+			if (resume.isLocked && !input.trashedBefore) throw new ORPCError("RESUME_LOCKED", { status: 403 });
 
-			await tx.delete(schema.resume).where(and(eq(schema.resume.id, input.id), eq(schema.resume.userId, input.userId)));
+			await tx.delete(schema.resume).where(target);
+			return true;
 		});
+		if (!deleted) return;
 
 		// Clean up storage files after the DB transaction succeeds
 		const storageService = getStorageService();

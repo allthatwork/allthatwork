@@ -1,7 +1,7 @@
-import type { ProxyOptions } from "vite";
+import type { Plugin, ProxyOptions } from "vite-plus";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { lingui } from "@lingui/vite-plugin";
 import babel from "@rolldown/plugin-babel";
@@ -9,7 +9,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig } from "vite-plus";
+import { RESERVED_SEGMENTS } from "@reactive-resume/utils/app-paths";
 
 const rootPackageJsonPath = new URL("../../package.json", import.meta.url);
 const rootPackageJson = JSON.parse(readFileSync(rootPackageJsonPath, "utf-8")) as { version: string | undefined };
@@ -44,6 +45,44 @@ async function prerenderPages() {
 		pathToFileURL(`${prerenderBundleDir}/prerender.js`).href
 	);
 	const shell = await readFile(`${webRoot}dist/index.html`, "utf8");
+	const assets = await readdir(`${webRoot}dist/assets`);
+	// These fonts paint the first screen. Discover the build's hashed URLs before CSS would request them.
+	const fontPreloads = ["figtree-latin-wght-normal-", "instrument-serif-latin-400-normal-"]
+		.map((prefix) => {
+			const asset = assets.find((name) => name.startsWith(prefix) && name.endsWith(".woff2"));
+			if (!asset) throw new Error(`Missing marketing font: ${prefix}`);
+			return `<link rel="preload" as="font" type="font/woff2" href="/assets/${asset}" crossorigin>`;
+		})
+		.join("");
+
+	// The page is readable before any script runs, so the app's JavaScript starts after the first contentful paint: the
+	// stylesheet, fonts and images get the bandwidth first, and lab tools stop counting the scripts toward that paint.
+	// The module preloads move into the same moment, so the entry's imports still download in parallel.
+	const entry = /<script type="module"[^>]*\ssrc="([^"]+)"[^>]*><\/script>\s*/.exec(shell);
+	if (!entry?.[1]) throw new Error("Missing the app's entry script in index.html");
+	const modulePreloads = [...shell.matchAll(/<link rel="modulepreload"[^>]*\shref="([^"]+)"[^>]*>\s*/g)];
+	const loadApp = `<script data-cfasync="false">(() => {
+	let started = false;
+	const start = () => {
+		if (started) return;
+		started = true;
+		for (const href of ${JSON.stringify(modulePreloads.map(([, href]) => href))})
+			document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href, crossOrigin: "" }));
+		import(${JSON.stringify(entry[1])});
+	};
+	try {
+		new PerformanceObserver((list) => {
+			if (list.getEntriesByName("first-contentful-paint").length) setTimeout(start);
+		}).observe({ type: "paint", buffered: true });
+	} catch {
+		start();
+	}
+	// A browser that reports no paint, or a tab opened in the background, starts anyway.
+	setTimeout(start, 3000);
+})();</script>`;
+	const pageShell = modulePreloads
+		.reduce((html, [tag]) => html.replace(tag, ""), shell.replace(entry[0], ""))
+		.replace("</body>", () => `${loadApp}</body>`);
 
 	await rm(prerenderOutDir, { recursive: true, force: true });
 
@@ -52,28 +91,71 @@ async function prerenderPages() {
 
 		for (const locale of locales) {
 			const page = await renderPage(name, locale);
-			const html = shell
+			const html = pageShell
+				.replace("</head>", `${fontPreloads}</head>`)
 				.replace(/<html lang="[^"]*">/, () => `<html lang="${locale}" dir="${page.dir}">`)
 				.replace(/<title>[^<]*<\/title>/, () => `<title>${escapeHtml(page.title)}</title>`)
 				.replace(
 					/<meta\s+name="description"[^>]*>/,
 					() => `<meta name="description" content="${escapeHtml(page.description)}">`,
 				)
-				.replace('<div id="app"></div>', () => `<div id="app">${page.html}</div>`)
-				// The page is readable before any script runs, so the stylesheet, fonts and images go first.
-				.replaceAll('<link rel="modulepreload" ', '<link rel="modulepreload" fetchpriority="low" ')
-				.replace('<script type="module" ', '<script type="module" fetchpriority="low" ');
+				.replace('<div id="app"></div>', () => `<div id="app">${page.html}</div>`);
 			await writeFile(`${prerenderOutDir}/${name}/${locale}.html`, html);
 		}
 	}
 }
+
+// Each Phosphor icon module carries all six weights, and every page loads the ~165 icons of the Icon registry
+// (packages/ui/src/components/icon.tsx). The app renders only regular (the default, also set by IconContext) and
+// fill, so the other four are cut from the source. A new weight must be added to `keptWeights`.
+const keptWeights = new Set(["regular", "fill"]);
+const phosphorWeightsPlugin = (): Plugin => ({
+	name: "phosphor-weights",
+	transform: {
+		filter: { id: /@phosphor-icons[\\/]react[\\/]dist[\\/]defs[\\/]/ },
+		handler(code, id) {
+			// Entries look like `\n  [\n    "bold",\n    …\n  ]`; their content is indented deeper.
+			const kept = new Set<string>();
+			const result = code.replaceAll(/\n {2}\[\n {4}"(\w+)",[\s\S]*?\n {2}\],?/g, (entry, weight: string) => {
+				if (!keptWeights.has(weight)) return "";
+				kept.add(weight);
+				return entry;
+			});
+			if (kept.size !== keptWeights.size || result.length === code.length)
+				throw new Error(`Unexpected Phosphor icon format in ${id}; update phosphorWeightsPlugin`);
+			return { code: result, map: null };
+		},
+	},
+});
 
 // TanStack Router loads `route.tsx?tsr-split=…`. The native parser infers syntax from the filename,
 // and the query hides `.tsx`, so JSX is parsed as JS.
 const linguiPlugin = () =>
 	lingui({ macroTransform: { parser: { syntax: "typescript", tsx: true, decorators: true } } });
 
-const serverPaths = ["/api", "/mcp", "/uploads", "/.well-known", "/schema.json", "/openapi.json"] as const;
+// First path segments that are never a username: the app's own, plus Vite's in development. `.well-known` needs its dot
+// escaped; the lookahead takes regex fragments.
+const ownSegments = [
+	...RESERVED_SEGMENTS.map((segment) => segment.replaceAll(".", "\\.")),
+	"assets",
+	"src",
+	"node_modules",
+	"@[a-z-]+",
+	"__[^/]*",
+].join("|");
+
+const serverPaths = [
+	"/api",
+	"/mcp",
+	"/uploads",
+	"/.well-known",
+	"/schema.json",
+	"/openapi.json",
+	"/cards",
+	// A resume's web page, `/<username>` (the primary resume) or `/<username>/<slug>`, is rendered by the server: any
+	// one- or two-segment address outside the app's own sections, without a file extension.
+	`^/(?!(?:${ownSegments})(?:/|$))[^/.]+(?:/[^/.]+)?/?(?:\\?.*)?$`,
+] as const;
 
 const serverProxy = serverPaths.reduce(
 	(acc, path) => {
@@ -98,7 +180,7 @@ export default defineConfig({
 		__APP_COMMIT__: appCommit,
 	},
 
-	// `vite build` builds the app, then the marketing pages' server entry, then prerenders the pages with it.
+	// `vp build` builds the app, then the marketing pages' server entry, then prerenders the pages with it.
 	builder: {
 		buildApp: async (builder) => {
 			const { client, ssr } = builder.environments;
@@ -123,9 +205,23 @@ export default defineConfig({
 		chunkSizeWarningLimit: 10 * 1024, // 10 MB
 		rolldownOptions: {
 			external: ["bcryptjs", "sharp", "@aws-sdk/client-s3", "ioredis", "linkedom"],
-			// Every page loads the libraries the entry imports statically; one file instead of ~100 tiny ones saves
-			// a round trip each on slow connections. App modules stay split to keep their execution order.
-			output: { codeSplitting: { groups: [{ name: "vendor", test: /node_modules/, tags: ["$initial"] }] } },
+			// Every page loads the libraries the entry imports statically, so they ship as two files instead of ~80:
+			// React, the router, Query and Lingui, which rarely change and stay cached across deploys, and the rest.
+			// Libraries only lazy routes import split by the import graph. App modules stay split to keep their
+			// execution order.
+			output: {
+				codeSplitting: {
+					groups: [
+						{
+							name: "framework",
+							test: /[\\/]node_modules[\\/](?:react|react-dom|scheduler|use-sync-external-store|@tanstack[\\/](?:history|store|react-store|router-core|react-router|query-core|react-query)|@lingui[\\/](?:core|react))[\\/]/,
+							tags: ["$initial"],
+							priority: 1,
+						},
+						{ name: "vendor", test: /[\\/]node_modules[\\/]/, tags: ["$initial"] },
+					],
+				},
+			},
 		},
 	},
 
@@ -143,6 +239,7 @@ export default defineConfig({
 	},
 
 	plugins: [
+		phosphorWeightsPlugin(),
 		{
 			name: "cloudflare-rocket-loader-bootstrap",
 			transformIndexHtml: {

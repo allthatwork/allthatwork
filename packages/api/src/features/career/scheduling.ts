@@ -35,6 +35,17 @@ export function nextCareerRun(previous: Date, days: number, timezone: string): D
 	return new Date(guess);
 }
 
+/** Coalesce overdue occurrences in constant work, retaining the schedule's local time and interval. */
+export function nextFutureCareerRun(previous: Date, days: number, timezone: string, now: Date): Date {
+	if (!Number.isInteger(days) || days < 1) throw new Error("Invalid schedule interval.");
+	const steps = Math.max(1, Math.floor((now.getTime() - previous.getTime()) / (days * 86_400_000)));
+	let next = nextCareerRun(previous, steps * days, timezone);
+	// Timezone offsets can move the estimate by a day; correct without walking the historical backlog.
+	for (let i = 0; i < 3 && next <= now; i++) next = nextCareerRun(next, days, timezone);
+	if (!Number.isFinite(next.getTime()) || next <= now) throw new Error("Cannot advance schedule into the future.");
+	return next;
+}
+
 export function canonicalOpportunityUrl(value: string): string | null {
 	try {
 		const url = new URL(value);
@@ -72,10 +83,11 @@ const JOB_BOARDS =
  */
 export function parseListingTitle(title: string): { role: string; company: string } {
 	const parts = title
-		.split(/\s+[|·–—-]\s+/)
+		// Lookbehinds start each whitespace run once, so long runs stay linear.
+		.split(/(?<!\s)\s+[|·–—-]\s+/)
 		.map((part) => part.trim())
 		.filter((part) => part && !JOB_BOARDS.test(part));
-	const at = parts[0]?.match(/^(.+?)\s+(?:at|@|bei|chez)\s+(.+)$/i);
+	const at = parts[0]?.match(/^(.+?)(?<!\s)\s+(?:at|@|bei|chez)\s+(.+)$/i);
 	if (at) return { role: at[1] ?? "", company: at[2] ?? "" };
 	const colon = parts[0]?.match(/^([^:]+):\s*(.+)$/);
 	if (parts.length === 1 && colon) return { company: colon[1] ?? "", role: colon[2] ?? "" };
@@ -115,8 +127,9 @@ export function prepareRunAt(interviewAt: Date, lead: "24h" | "2h" | "morning", 
  */
 export function plainSnippet(text: string, max = 320) {
 	const plain = text
-		.replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
-		.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+		// Neither part crosses a `[`, so a run of unclosed brackets is scanned once rather than once per bracket.
+		.replace(/!\[[^[\]]*\]\([^)[]*\)/g, " ")
+		.replace(/\[([^[\]]*)\]\([^)[]*\)/g, "$1")
 		.replace(/https?:\/\/\S+/g, " ")
 		.replace(/[\\*_`#>|]+/g, " ")
 		.replace(/\s+/g, " ")

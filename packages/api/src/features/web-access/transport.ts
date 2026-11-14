@@ -1,5 +1,5 @@
 import z from "zod";
-import { assertPublicPageUrl } from "./builtin";
+import { assertPublicPageUrl, readCapped } from "./builtin";
 import { MAX_PAGE_BYTES, WebAccessError } from "./contracts";
 
 export function parseResponse<T>(schema: z.ZodType<T>, input: unknown): T {
@@ -9,15 +9,22 @@ export function parseResponse<T>(schema: z.ZodType<T>, input: unknown): T {
 }
 
 /** Never retain provider error bodies, which can echo credentials and request content. */
-export async function postJson(url: string, headers: Record<string, string>, body: unknown, signal: AbortSignal) {
-	signal.throwIfAborted();
-	const response = await fetch(url, {
-		method: "POST",
-		headers: { "content-type": "application/json", ...headers },
-		body: JSON.stringify(body),
+export function postJson(url: string, headers: Record<string, string>, body: unknown, signal: AbortSignal) {
+	return requestJson(
+		url,
+		{ method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) },
 		signal,
-		redirect: "error",
-	});
+	);
+}
+
+/** The GET form of `postJson`, with the same response limits, redirect refusal and error mapping. */
+export function getJson(url: string, headers: Record<string, string>, signal: AbortSignal) {
+	return requestJson(url, { method: "GET", headers: { accept: "application/json", ...headers } }, signal);
+}
+
+async function requestJson(url: string, init: RequestInit, signal: AbortSignal) {
+	signal.throwIfAborted();
+	const response = await fetch(url, { ...init, signal, redirect: "error" });
 	if (!response.ok) {
 		await response.body?.cancel();
 		throw new WebAccessError(
@@ -32,27 +39,12 @@ export async function postJson(url: string, headers: Record<string, string>, bod
 		await response.body?.cancel();
 		throw new WebAccessError("too-large");
 	}
-	const reader = response.body?.getReader();
-	if (!reader) throw new WebAccessError("empty");
-	const chunks: Uint8Array[] = [];
-	let bytes = 0;
+	if (!response.body) throw new WebAccessError("empty");
+	const text = (await readCapped(response.body, signal)).toString("utf8");
 	try {
-		while (true) {
-			signal.throwIfAborted();
-			const { done, value } = await reader.read();
-			if (done) break;
-			bytes += value.byteLength;
-			if (bytes > MAX_PAGE_BYTES) throw new WebAccessError("too-large");
-			chunks.push(value);
-		}
-		try {
-			return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
-		} catch {
-			throw new WebAccessError("malformed");
-		}
-	} finally {
-		await reader.cancel().catch(() => {});
-		reader.releaseLock();
+		return JSON.parse(text) as unknown;
+	} catch {
+		throw new WebAccessError("malformed");
 	}
 }
 

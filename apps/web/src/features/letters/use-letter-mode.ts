@@ -34,9 +34,8 @@ export function useOpenLetterVersionFromUrl() {
 
 	useEffect(() => {
 		if (!version) return;
-		const editor = useEditorStore.getState();
-		editor.setShareTab("history");
-		editor.setHistoryVersion(version);
+		useEditorStore.getState().setSheetTab("history");
+		useEditorStore.setState({ historyVersionId: version });
 		void navigate({
 			to: ".",
 			resetScroll: false,
@@ -46,13 +45,13 @@ export function useOpenLetterVersionFromUrl() {
 	}, [version, navigate]);
 }
 
-/** `?assistant=` or `?ask=` opens the assistant on that conversation or question, then leaves the URL. */
+/** `?assistant=` opens the assistant on that conversation; `?ask=` only fills its composer. Both then leave the URL. */
 export function useOpenLetterAssistantFromUrl() {
 	const { assistant, ask } = routeApi.useSearch();
 	const navigate = routeApi.useNavigate();
 
 	useEffect(() => {
-		if (!openAssistantFrom({ assistant, ask })) return;
+		if (!openAssistantFrom({ assistant, draft: ask })) return;
 		void navigate({
 			to: ".",
 			resetScroll: false,

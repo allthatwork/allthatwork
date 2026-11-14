@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { parseReactiveResumeV4JSON } from "./reactive-resume-v4-json";
 
 const baseV4 = () => ({

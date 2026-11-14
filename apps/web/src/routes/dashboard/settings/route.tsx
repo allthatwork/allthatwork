@@ -43,9 +43,6 @@ function RouteComponent() {
 				aria-label={t`Settings`}
 				className="flex flex-col gap-1 border-line [view-transition-name:settings-nav] max-lg:border-b max-sm:hidden lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:border-e lg:py-7 lg:ps-6 lg:pe-3"
 			>
-				<h1 className="ms-2 mb-3.5 font-display text-[26px] leading-8 font-medium max-lg:hidden">
-					<Trans>Settings</Trans>
-				</h1>
 				<div className="flex gap-1 max-lg:overflow-x-auto max-lg:px-6 max-lg:py-2 lg:flex-col">
 					{SETTINGS_PAGES.map((page) => (
 						<Link

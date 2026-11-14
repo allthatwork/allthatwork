@@ -13,9 +13,9 @@ import { Route as HomeRouteRouteImport } from "./routes/_home/route";
 import { Route as AgentRouteRouteImport } from "./routes/agent/route";
 import { Route as AuthRouteRouteImport } from "./routes/auth/route";
 import { Route as DashboardRouteRouteImport } from "./routes/dashboard/route";
-import { Route as UsernameSlugRouteImport } from "./routes/$username/$slug";
 import { Route as HomeIndexRouteImport } from "./routes/_home/index";
 import { Route as HomeAtsCheckerRouteImport } from "./routes/_home/ats-checker";
+import { Route as HomeResumeTemplatesRouteImport } from "./routes/_home/resume-templates";
 import { Route as AgentIndexRouteImport } from "./routes/agent/index";
 import { Route as AgentThreadIdRouteImport } from "./routes/agent/$threadId";
 import { Route as AgentNewRouteImport } from "./routes/agent/new";
@@ -27,7 +27,6 @@ import { Route as AuthLoginRouteImport } from "./routes/auth/login";
 import { Route as AuthNativeCallbackRouteImport } from "./routes/auth/native-callback";
 import { Route as AuthRegisterRouteImport } from "./routes/auth/register";
 import { Route as AuthResetPasswordRouteImport } from "./routes/auth/reset-password";
-import { Route as AuthResumePasswordRouteImport } from "./routes/auth/resume-password";
 import { Route as AuthVerify2faRouteImport } from "./routes/auth/verify-2fa";
 import { Route as AuthVerify2faBackupRouteImport } from "./routes/auth/verify-2fa-backup";
 import { Route as BuilderResumeIdRouteRouteImport } from "./routes/builder/$resumeId/route";
@@ -36,7 +35,6 @@ import { Route as DashboardCareerRouteRouteImport } from "./routes/dashboard/car
 import { Route as DashboardCoverLettersRouteImport } from "./routes/dashboard/cover-letters";
 import { Route as DashboardSettingsRouteRouteImport } from "./routes/dashboard/settings/route";
 import { Route as DashboardTrashRouteImport } from "./routes/dashboard/trash";
-import { Route as TemplatesSplatRouteImport } from "./routes/templates/$";
 import { Route as BuilderResumeIdIndexRouteImport } from "./routes/builder/$resumeId/index";
 import { Route as BuilderLetterCoverLetterIdRouteImport } from "./routes/builder/letter/$coverLetterId";
 import { Route as DashboardApplicationsIndexRouteImport } from "./routes/dashboard/applications/index";
@@ -81,11 +79,6 @@ const DashboardRouteRoute = DashboardRouteRouteImport.update({
   path: "/dashboard",
   getParentRoute: () => rootRouteImport,
 } as any);
-const UsernameSlugRoute = UsernameSlugRouteImport.update({
-  id: "/$username/$slug",
-  path: "/$username/$slug",
-  getParentRoute: () => rootRouteImport,
-} as any);
 const HomeIndexRoute = HomeIndexRouteImport.update({
   id: "/",
   path: "/",
@@ -94,6 +87,11 @@ const HomeIndexRoute = HomeIndexRouteImport.update({
 const HomeAtsCheckerRoute = HomeAtsCheckerRouteImport.update({
   id: "/ats-checker",
   path: "/ats-checker",
+  getParentRoute: () => HomeRouteRoute,
+} as any);
+const HomeResumeTemplatesRoute = HomeResumeTemplatesRouteImport.update({
+  id: "/resume-templates",
+  path: "/resume-templates",
   getParentRoute: () => HomeRouteRoute,
 } as any);
 const AgentIndexRoute = AgentIndexRouteImport.update({
@@ -151,11 +149,6 @@ const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
   path: "/reset-password",
   getParentRoute: () => AuthRouteRoute,
 } as any);
-const AuthResumePasswordRoute = AuthResumePasswordRouteImport.update({
-  id: "/resume-password",
-  path: "/resume-password",
-  getParentRoute: () => AuthRouteRoute,
-} as any);
 const AuthVerify2faRoute = AuthVerify2faRouteImport.update({
   id: "/verify-2fa",
   path: "/verify-2fa",
@@ -195,11 +188,6 @@ const DashboardTrashRoute = DashboardTrashRouteImport.update({
   id: "/trash",
   path: "/trash",
   getParentRoute: () => DashboardRouteRoute,
-} as any);
-const TemplatesSplatRoute = TemplatesSplatRouteImport.update({
-  id: "/templates/$",
-  path: "/templates/$",
-  getParentRoute: () => rootRouteImport,
 } as any);
 const BuilderResumeIdIndexRoute = BuilderResumeIdIndexRouteImport.update({
   id: "/",
@@ -347,8 +335,8 @@ export interface FileRoutesByFullPath {
   "/builder/$resumeId": typeof BuilderResumeIdRouteRouteWithChildren;
   "/dashboard/career": typeof DashboardCareerRouteRouteWithChildren;
   "/dashboard/settings": typeof DashboardSettingsRouteRouteWithChildren;
-  "/$username/$slug": typeof UsernameSlugRoute;
   "/ats-checker": typeof HomeAtsCheckerRoute;
+  "/resume-templates": typeof HomeResumeTemplatesRoute;
   "/agent/$threadId": typeof AgentThreadIdRoute;
   "/agent/new": typeof AgentNewRoute;
   "/auth/consent": typeof AuthConsentRoute;
@@ -358,12 +346,10 @@ export interface FileRoutesByFullPath {
   "/auth/native-callback": typeof AuthNativeCallbackRoute;
   "/auth/register": typeof AuthRegisterRoute;
   "/auth/reset-password": typeof AuthResetPasswordRoute;
-  "/auth/resume-password": typeof AuthResumePasswordRoute;
   "/auth/verify-2fa": typeof AuthVerify2faRoute;
   "/auth/verify-2fa-backup": typeof AuthVerify2faBackupRoute;
   "/dashboard/cover-letters": typeof DashboardCoverLettersRoute;
   "/dashboard/trash": typeof DashboardTrashRoute;
-  "/templates/$": typeof TemplatesSplatRoute;
   "/agent/": typeof AgentIndexRoute;
   "/auth/": typeof AuthIndexRoute;
   "/dashboard/": typeof DashboardIndexRoute;
@@ -393,8 +379,8 @@ export interface FileRoutesByFullPath {
   "/dashboard/career/knowledge/stories/{-$storyId}": typeof DashboardCareerKnowledgeStoriesChar123StoryIdChar125Route;
 }
 export interface FileRoutesByTo {
-  "/$username/$slug": typeof UsernameSlugRoute;
   "/ats-checker": typeof HomeAtsCheckerRoute;
+  "/resume-templates": typeof HomeResumeTemplatesRoute;
   "/agent/$threadId": typeof AgentThreadIdRoute;
   "/agent/new": typeof AgentNewRoute;
   "/auth/consent": typeof AuthConsentRoute;
@@ -404,12 +390,10 @@ export interface FileRoutesByTo {
   "/auth/native-callback": typeof AuthNativeCallbackRoute;
   "/auth/register": typeof AuthRegisterRoute;
   "/auth/reset-password": typeof AuthResetPasswordRoute;
-  "/auth/resume-password": typeof AuthResumePasswordRoute;
   "/auth/verify-2fa": typeof AuthVerify2faRoute;
   "/auth/verify-2fa-backup": typeof AuthVerify2faBackupRoute;
   "/dashboard/cover-letters": typeof DashboardCoverLettersRoute;
   "/dashboard/trash": typeof DashboardTrashRoute;
-  "/templates/$": typeof TemplatesSplatRoute;
   "/": typeof HomeIndexRoute;
   "/agent": typeof AgentIndexRoute;
   "/auth": typeof AuthIndexRoute;
@@ -448,8 +432,8 @@ export interface FileRoutesById {
   "/builder/$resumeId": typeof BuilderResumeIdRouteRouteWithChildren;
   "/dashboard/career": typeof DashboardCareerRouteRouteWithChildren;
   "/dashboard/settings": typeof DashboardSettingsRouteRouteWithChildren;
-  "/$username/$slug": typeof UsernameSlugRoute;
   "/_home/ats-checker": typeof HomeAtsCheckerRoute;
+  "/_home/resume-templates": typeof HomeResumeTemplatesRoute;
   "/agent/$threadId": typeof AgentThreadIdRoute;
   "/agent/new": typeof AgentNewRoute;
   "/auth/consent": typeof AuthConsentRoute;
@@ -459,12 +443,10 @@ export interface FileRoutesById {
   "/auth/native-callback": typeof AuthNativeCallbackRoute;
   "/auth/register": typeof AuthRegisterRoute;
   "/auth/reset-password": typeof AuthResetPasswordRoute;
-  "/auth/resume-password": typeof AuthResumePasswordRoute;
   "/auth/verify-2fa": typeof AuthVerify2faRoute;
   "/auth/verify-2fa-backup": typeof AuthVerify2faBackupRoute;
   "/dashboard/cover-letters": typeof DashboardCoverLettersRoute;
   "/dashboard/trash": typeof DashboardTrashRoute;
-  "/templates/$": typeof TemplatesSplatRoute;
   "/_home/": typeof HomeIndexRoute;
   "/agent/": typeof AgentIndexRoute;
   "/auth/": typeof AuthIndexRoute;
@@ -504,8 +486,8 @@ export interface FileRouteTypes {
     | "/builder/$resumeId"
     | "/dashboard/career"
     | "/dashboard/settings"
-    | "/$username/$slug"
     | "/ats-checker"
+    | "/resume-templates"
     | "/agent/$threadId"
     | "/agent/new"
     | "/auth/consent"
@@ -515,12 +497,10 @@ export interface FileRouteTypes {
     | "/auth/native-callback"
     | "/auth/register"
     | "/auth/reset-password"
-    | "/auth/resume-password"
     | "/auth/verify-2fa"
     | "/auth/verify-2fa-backup"
     | "/dashboard/cover-letters"
     | "/dashboard/trash"
-    | "/templates/$"
     | "/agent/"
     | "/auth/"
     | "/dashboard/"
@@ -550,8 +530,8 @@ export interface FileRouteTypes {
     | "/dashboard/career/knowledge/stories/{-$storyId}";
   fileRoutesByTo: FileRoutesByTo;
   to:
-    | "/$username/$slug"
     | "/ats-checker"
+    | "/resume-templates"
     | "/agent/$threadId"
     | "/agent/new"
     | "/auth/consent"
@@ -561,12 +541,10 @@ export interface FileRouteTypes {
     | "/auth/native-callback"
     | "/auth/register"
     | "/auth/reset-password"
-    | "/auth/resume-password"
     | "/auth/verify-2fa"
     | "/auth/verify-2fa-backup"
     | "/dashboard/cover-letters"
     | "/dashboard/trash"
-    | "/templates/$"
     | "/"
     | "/agent"
     | "/auth"
@@ -604,8 +582,8 @@ export interface FileRouteTypes {
     | "/builder/$resumeId"
     | "/dashboard/career"
     | "/dashboard/settings"
-    | "/$username/$slug"
     | "/_home/ats-checker"
+    | "/_home/resume-templates"
     | "/agent/$threadId"
     | "/agent/new"
     | "/auth/consent"
@@ -615,12 +593,10 @@ export interface FileRouteTypes {
     | "/auth/native-callback"
     | "/auth/register"
     | "/auth/reset-password"
-    | "/auth/resume-password"
     | "/auth/verify-2fa"
     | "/auth/verify-2fa-backup"
     | "/dashboard/cover-letters"
     | "/dashboard/trash"
-    | "/templates/$"
     | "/_home/"
     | "/agent/"
     | "/auth/"
@@ -657,8 +633,6 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren;
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren;
   BuilderResumeIdRouteRoute: typeof BuilderResumeIdRouteRouteWithChildren;
-  UsernameSlugRoute: typeof UsernameSlugRoute;
-  TemplatesSplatRoute: typeof TemplatesSplatRoute;
   BuilderLetterCoverLetterIdRoute: typeof BuilderLetterCoverLetterIdRoute;
 }
 
@@ -692,13 +666,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardRouteRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    "/$username/$slug": {
-      id: "/$username/$slug";
-      path: "/$username/$slug";
-      fullPath: "/$username/$slug";
-      preLoaderRoute: typeof UsernameSlugRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
     "/_home/": {
       id: "/_home/";
       path: "/";
@@ -711,6 +678,13 @@ declare module "@tanstack/react-router" {
       path: "/ats-checker";
       fullPath: "/ats-checker";
       preLoaderRoute: typeof HomeAtsCheckerRouteImport;
+      parentRoute: typeof HomeRouteRoute;
+    };
+    "/_home/resume-templates": {
+      id: "/_home/resume-templates";
+      path: "/resume-templates";
+      fullPath: "/resume-templates";
+      preLoaderRoute: typeof HomeResumeTemplatesRouteImport;
       parentRoute: typeof HomeRouteRoute;
     };
     "/agent/": {
@@ -790,13 +764,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthResetPasswordRouteImport;
       parentRoute: typeof AuthRouteRoute;
     };
-    "/auth/resume-password": {
-      id: "/auth/resume-password";
-      path: "/resume-password";
-      fullPath: "/auth/resume-password";
-      preLoaderRoute: typeof AuthResumePasswordRouteImport;
-      parentRoute: typeof AuthRouteRoute;
-    };
     "/auth/verify-2fa": {
       id: "/auth/verify-2fa";
       path: "/verify-2fa";
@@ -852,13 +819,6 @@ declare module "@tanstack/react-router" {
       fullPath: "/dashboard/trash";
       preLoaderRoute: typeof DashboardTrashRouteImport;
       parentRoute: typeof DashboardRouteRoute;
-    };
-    "/templates/$": {
-      id: "/templates/$";
-      path: "/templates/$";
-      fullPath: "/templates/$";
-      preLoaderRoute: typeof TemplatesSplatRouteImport;
-      parentRoute: typeof rootRouteImport;
     };
     "/builder/$resumeId/": {
       id: "/builder/$resumeId/";
@@ -1033,11 +993,13 @@ declare module "@tanstack/react-router" {
 
 interface HomeRouteRouteChildren {
   HomeAtsCheckerRoute: typeof HomeAtsCheckerRoute;
+  HomeResumeTemplatesRoute: typeof HomeResumeTemplatesRoute;
   HomeIndexRoute: typeof HomeIndexRoute;
 }
 
 const HomeRouteRouteChildren: HomeRouteRouteChildren = {
   HomeAtsCheckerRoute: HomeAtsCheckerRoute,
+  HomeResumeTemplatesRoute: HomeResumeTemplatesRoute,
   HomeIndexRoute: HomeIndexRoute,
 };
 
@@ -1069,7 +1031,6 @@ interface AuthRouteRouteChildren {
   AuthNativeCallbackRoute: typeof AuthNativeCallbackRoute;
   AuthRegisterRoute: typeof AuthRegisterRoute;
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute;
-  AuthResumePasswordRoute: typeof AuthResumePasswordRoute;
   AuthVerify2faRoute: typeof AuthVerify2faRoute;
   AuthVerify2faBackupRoute: typeof AuthVerify2faBackupRoute;
   AuthIndexRoute: typeof AuthIndexRoute;
@@ -1083,7 +1044,6 @@ const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthNativeCallbackRoute: AuthNativeCallbackRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
-  AuthResumePasswordRoute: AuthResumePasswordRoute,
   AuthVerify2faRoute: AuthVerify2faRoute,
   AuthVerify2faBackupRoute: AuthVerify2faBackupRoute,
   AuthIndexRoute: AuthIndexRoute,
@@ -1214,8 +1174,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   BuilderResumeIdRouteRoute: BuilderResumeIdRouteRouteWithChildren,
-  UsernameSlugRoute: UsernameSlugRoute,
-  TemplatesSplatRoute: TemplatesSplatRoute,
   BuilderLetterCoverLetterIdRoute: BuilderLetterCoverLetterIdRoute,
 };
 export const routeTree = rootRouteImport

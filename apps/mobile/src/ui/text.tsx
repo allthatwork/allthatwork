@@ -1,9 +1,12 @@
 import type { ColorToken, type as typeScale } from "./tokens";
 import type { ReactNode } from "react";
 import type { TextProps as NativeTextProps, StyleProp, ViewProps, ViewStyle } from "react-native";
-import { ScrollView, Text as NativeText, View } from "react-native";
+import { RefreshControl, Text as NativeText, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useKeyboardScrollSpace } from "./keyboard";
 import { useTheme } from "./theme";
+import { usePullRefresh } from "./use-pull-refresh";
 
 export type TextVariant = keyof typeof typeScale;
 
@@ -14,8 +17,8 @@ export type TextProps = NativeTextProps & {
 	/** A colour token. Defaults to `ink`. */
 	color?: ColorToken | undefined;
 	/**
-	 * Hanken Grotesk weight for UI variants, where tokens.md names one (field labels 600, document names 600).
-	 * Ignored for the Newsreader and mono variants.
+	 * Figtree weight for UI variants, where tokens.md names one (field labels 600, document names 600).
+	 * Ignored for the Instrument Serif (single weight) and mono variants.
 	 */
 	weight?: 400 | 500 | 600 | 700 | undefined;
 	align?: "auto" | "left" | "center" | "right" | undefined;
@@ -49,12 +52,15 @@ export type ScreenProps = {
 	contentStyle?: StyleProp<ViewStyle>;
 	/** Measures the viewport after safe areas, before content padding. */
 	onLayout?: ViewProps["onLayout"];
+	onRefresh?: (() => Promise<unknown>) | undefined;
 };
 
 /** A screen on the `bg` desk with phone side padding (`s4`). */
-export function Screen({ children, scroll = true, edges = [], contentStyle, onLayout }: ScreenProps) {
+export function Screen({ children, scroll = true, edges = [], contentStyle, onLayout, onRefresh }: ScreenProps) {
 	const { colors, space } = useTheme();
 	const insets = useSafeAreaInsets();
+	const keyboardSpace = useKeyboardScrollSpace();
+	const pull = usePullRefresh(...(onRefresh ? [onRefresh] : []));
 	const padding = [{ padding: space.s4, gap: space.s4 }, contentStyle];
 
 	return (
@@ -69,9 +75,20 @@ export function Screen({ children, scroll = true, edges = [], contentStyle, onLa
 			}}
 		>
 			{scroll ? (
-				<ScrollView onLayout={onLayout} contentInsetAdjustmentBehavior="automatic" contentContainerStyle={padding}>
+				<KeyboardAwareScrollView
+					extraKeyboardSpace={keyboardSpace}
+					onLayout={onLayout}
+					bottomOffset={space.s4}
+					keyboardShouldPersistTaps="handled"
+					contentInsetAdjustmentBehavior="automatic"
+					contentContainerStyle={padding}
+					alwaysBounceVertical
+					refreshControl={
+						onRefresh ? <RefreshControl {...pull} tintColor={colors.accent} colors={[colors.accent]} /> : undefined
+					}
+				>
 					{children}
-				</ScrollView>
+				</KeyboardAwareScrollView>
 			) : (
 				<View onLayout={onLayout} style={[{ flex: 1 }, padding]}>
 					{children}

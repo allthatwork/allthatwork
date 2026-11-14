@@ -71,10 +71,18 @@ The letter editor looks like the resume editor, with two modes: **Write** and **
   <Step title="From: your details">
     Under **From**, choose the **Resume** your details come from. With **Use details from** that resume turned on, your name, headline, email, phone and location stay linked: when you change them on the resume, the letter changes too, and tells you the next time you open it.
 
-    Turn the switch off to keep a copy of your details in the letter instead. The copy doesn't change when the resume does.
+    Turn the switch off to keep a copy of your details in the letter instead. Edit **Full name**, **Email**, **Phone** and **Location** below the switch. These edits change only this letter; your source resume stays unchanged. The copy doesn't change when the resume does.
+
+    Choose **No resume** to write a standalone letter with the same sender fields. Removing a resume keeps the details and design currently shown. Sender edits update the preview, automatic signature and downloads, and save with the letter.
+
+    Turning **Use details from** back on replaces the letter's independent details with the resume's current details. Choosing a resume for a standalone letter also replaces its sender details and links its design. Changing resumes while the sender switch is off keeps your independent details.
 
     <Frame>
       <img src="/images/guides/writing-a-cover-letter/letter-from-resume.webp" alt="The From section with Game Developer Resume selected and the switch Use details from Game Developer Resume turned on, labelled Linked" />
+    </Frame>
+
+    <Frame caption="With No resume selected, sender fields belong to this letter. The preview and automatic signature use Jordan's saved details.">
+      <img src="/images/guides/writing-a-cover-letter/letter-sender-details.png" alt="Standalone letter with No resume selected and Full name, Email, Phone and Location fields filled with fictional Jordan Reyes details, also visible in the letter preview" />
     </Frame>
 
   </Step>
@@ -166,28 +174,31 @@ When updating a letter through the API, setting `template` or `metadata` gives i
 
 Select **Download PDF** in the editor bar, or press <kbd>⌘</kbd> <kbd>P</kbd> (<kbd>Ctrl</kbd> <kbd>P</kbd>). The PDF includes the header with your name and contact details, and is named after you, for example `David-Kowalski-Cover-Letter.pdf`.
 
-For other formats, select **Share**, or press <kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>E</kbd> (<kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>E</kbd>). The **Share & export** sheet opens on **Download**:
+For other formats, select **Export**, or press <kbd>⌘</kbd> <kbd>Shift</kbd> <kbd>E</kbd> (<kbd>Ctrl</kbd> <kbd>Shift</kbd> <kbd>E</kbd>). The **Download & history** sheet opens on **Download**:
 
 <Frame caption="Download options for a letter">
   <img
     src="/images/guides/writing-a-cover-letter/letter-share-download.webp"
-    alt="The Share and export sheet for a letter with Download selected, listing PDF, Resume plus letter (2 files), Word, Markdown and JSON, a File name field and a Download PDF button"
+    alt="The Download and history sheet for a letter with Download selected, listing PDF, Resume plus letter (2 files), Word, Markdown and JSON, a File name field and a Download PDF button"
   />
 </Frame>
 
-| Option              | What you get                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------------- |
-| **PDF**             | The letter exactly as it looks on the page. Best for applying.                                          |
-| **Resume + letter** | The linked resume and this letter as two PDFs, named to match. Shows only when the letter has a resume. |
-| **Word**            | A `.docx` file with simplified layout, for portals that ask for Word.                                   |
-| **Markdown**        | Plain text with headings, to paste into application forms.                                              |
-| **JSON**            | A backup of the letter that imports back into Reactive Resume as a letter.                              |
+| Option              | What you get                                                                                                   |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **PDF**             | The letter exactly as it looks on the page. Best for applying.                                                 |
+| **Resume + letter** | The linked resume and this letter as two PDFs, named to match. Shows only when the letter has a resume.        |
+| **Word**            | A `.docx` file with simplified layout, including your name and contact details, for portals that ask for Word. |
+| **OpenDocument**    | An editable `.odt` file with simplified layout, including your name and contact details.                       |
+| **Markdown**        | Plain text with headings, to paste into application forms.                                                     |
+| **JSON**            | A backup of the letter that imports back into Reactive Resume as a letter.                                     |
 
 Edit **File name** if you like, then select the download button.
 
+In the native app, select **Download** to open **Download & history**. On a phone, the icon is labelled **Download & history**.
+
 Letters have no public link. To share one, download it and attach the file.
 
-When you download a resume from its own Share sheet and the resume's application has a letter, you can also tick **Also download the … cover letter** (the label names the company) to get both files at once. See [Exporting your resume](/guides/exporting-your-resume).
+When you download a resume from its **Download & history** sheet and the resume's application has a letter, you can also tick **Also download the … cover letter** (the label names the company) to get both files at once. See [Exporting your resume](/guides/exporting-your-resume).
 
 ## Letters and applications
 
@@ -195,7 +206,7 @@ When you download a resume from its own Share sheet and the resume's application
 - When the application moves to **Applied** or a later stage, the letter as it reads then is saved in its **History** as the version you sent. The application shows it under **What you sent** as "Version sent" with the date.
 - In **Documents**, a letter's menu has **Link to application…** to link or unlink it without opening it.
 
-To see earlier versions of a letter, open **History** in the editor bar (the clock icon) or the **History** tab in **Share & export**. It works like resume history; see [Undoing changes and version history](/guides/undoing-changes-and-version-history).
+To see earlier versions of a letter, open **History** in the editor bar (the clock icon) or the **History** tab in **Download & history**. It works like resume history; see [Undoing changes and version history](/guides/undoing-changes-and-version-history).
 
 ## Manage a letter
 

@@ -5,7 +5,7 @@ import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { templateSchema } from "@reactive-resume/schema/templates";
 import { APP_NAME } from "@reactive-resume/utils/brand";
-import { localeSchema } from "@reactive-resume/utils/locale";
+import { supportedLocales } from "@reactive-resume/utils/locale";
 import { cn } from "@reactive-resume/utils/style";
 import { SCENE } from "./scroll";
 import { Doodle, labelClass } from "./ui";
@@ -22,8 +22,7 @@ type Question = {
 function useQuestions(): Question[] {
 	const { i18n } = useLingui();
 	const templates = i18n.number(templateSchema.options.length);
-	// Every locale but Lingui's pseudo-locale, which only exists to test layouts.
-	const languages = i18n.number(localeSchema.options.length - 1);
+	const languages = i18n.number(supportedLocales.length);
 
 	return [
 		{
@@ -60,7 +59,7 @@ function useQuestions(): Question[] {
 		{
 			id: "interviews",
 			question: t`Can it help me prepare for interviews?`,
-			answer: t`Yes. Every job you track gets its own workspace: check your fit against the posting, draft answers from stories you wrote once, get a short plan before the interview, practise out loud with feedback and debrief afterwards. When offers arrive, compare them side by side. The coaching uses your own AI key; the comparison doesn’t need one.`,
+			answer: t`Yes. Every job you track gets its own workspace: check your fit against the posting, draft answers from stories you wrote once, get a short plan before the interview, practice out loud with feedback and debrief afterwards. When offers arrive, compare them side by side. The coaching uses your own AI key; the comparison doesn’t need one.`,
 		},
 		{
 			id: "self-host",
@@ -128,7 +127,7 @@ function FaqItem({ item, index }: FaqItemProps) {
 			<div className="ps-13 pe-2 pb-8">
 				<div
 					data-note
-					className="relative rounded-[3px] bg-paper px-6 py-5 text-[oklch(0.28_0.01_95)] shadow-[0_1px_2px_oklch(0.2_0.01_95/.12),0_18px_36px_-18px_oklch(0.2_0.01_95/.4)]"
+					className="relative rounded-md bg-paper px-6 py-5 text-[oklch(0.28_0.01_95)] shadow-[0_1px_2px_oklch(0.2_0.01_95/.12),0_18px_36px_-18px_oklch(0.2_0.01_95/.4)]"
 					style={{ "--tilt": `${index % 2 === 0 ? -0.5 : 0.4}deg` } as CSSProperties}
 				>
 					<p className="font-display text-[clamp(17px,1.3vw,20px)] leading-normal text-pretty">{item.answer}</p>
@@ -172,12 +171,6 @@ export function Faq() {
 			aria-labelledby="faq-title"
 			className="relative mx-auto grid max-w-[1440px] items-start gap-x-16 gap-y-10 border-t border-line px-(--gutter) pt-[12vh] pb-[14vh] min-[900px]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
 		>
-			<Doodle
-				name="note"
-				wipe="clamp(0, (var(--p) - .3) / .2, 1)"
-				className="start-[4vw] bottom-[8vh] w-[11vw] translate-y-[calc(var(--p)*-30px)] rotate-[-6deg] max-[900px]:hidden"
-			/>
-
 			<div className="flex flex-col gap-[22px] min-[900px]:sticky min-[900px]:top-[14vh]">
 				<span className={cn(labelClass, "text-ink-3")}>{t`Questions`}</span>
 				<h2
@@ -192,7 +185,7 @@ export function Faq() {
 					<Trans>
 						9 short answers to what people ask before they start. Anything else, ask on{" "}
 						<a
-							href="https://discord.gg/aSyA5ZSxpb"
+							href="https://discord.gg/jSVSJyWd2k"
 							className="text-accent-text italic underline underline-offset-[3px] transition-colors hover:text-accent-hover"
 						>
 							Discord
@@ -200,6 +193,14 @@ export function Faq() {
 						.
 					</Trans>
 				</p>
+				{/* In the sticky column, so it travels with the heading instead of crossing it. */}
+				<div aria-hidden="true" className="relative mt-4 aspect-[800/746] w-[11vw] max-[900px]:hidden">
+					<Doodle
+						name="note"
+						wipe="clamp(0, (var(--p) - .1) / .2, 1)"
+						className="start-0 top-0 w-full rotate-[-6deg]"
+					/>
+				</div>
 			</div>
 
 			<div className="border-t border-line">

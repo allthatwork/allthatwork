@@ -1,5 +1,3 @@
-import _slugify from "@sindresorhus/slugify";
-import { adjectives, animals, colors, uniqueNamesGenerator } from "unique-names-generator";
 import { v7 as uuidv7 } from "uuid";
 
 /**
@@ -8,17 +6,6 @@ import { v7 as uuidv7 } from "uuid";
  */
 export function generateId() {
 	return uuidv7();
-}
-
-/** Slugifies a string, with some pre-defined options.
- *
- * @param value - The value to slugify.
- * @returns The slugified value.
- */
-export function slugify(value: string) {
-	const slug = _slugify(value, { decamelize: false });
-	if (slug || !value.trim()) return slug;
-	return slugify(generateRandomName());
 }
 
 /**
@@ -49,19 +36,6 @@ export function toUsername(value: string) {
 }
 
 /**
- * Generates a random name using the unique-names-generator library.
- * @returns The random name.
- */
-export function generateRandomName() {
-	return uniqueNamesGenerator({
-		dictionaries: [adjectives, colors, animals],
-		style: "capital",
-		separator: " ",
-		length: 3,
-	});
-}
-
-/**
  * Strips HTML tags from a string and returns the text content.
  * @param html - The HTML string to strip.
  * @returns The text content without HTML tags.
@@ -75,9 +49,30 @@ export const escapeHtml = (text: string) =>
 		.replaceAll('"', "&quot;")
 		.replaceAll("'", "&#39;");
 
+/** Lowercase text without accents, for loose matching: "Österreich" becomes "osterreich". */
+const fold = (text: string) =>
+	text
+		.normalize("NFD")
+		.replace(/[̀-ͯ]/g, "")
+		.toLowerCase();
+
+/** The options whose label contains the query, ignoring case and accents, or whose value is the whole query. */
+export function filterOptions<T extends { value: string; label: string }>(options: readonly T[], query: string): T[] {
+	const needle = fold(query.trim());
+	if (!needle) return [...options];
+	return options.filter((option) => fold(option.label).includes(needle) || fold(option.value) === needle);
+}
+
 export function stripHtml(html: string | undefined): string {
 	if (!html) return "";
-	return html.replace(/<[^>]*>/g, "").trim();
+	return html.replace(/<[^<>]*>/g, "").trim();
+}
+
+/** FNV-1a over the text: a short, stable fingerprint. Not for security. */
+export function fnv1a(text: string): number {
+	let hash = 0x811c9dc5;
+	for (let index = 0; index < text.length; index++) hash = Math.imul(hash ^ text.charCodeAt(index), 0x01000193);
+	return hash >>> 0;
 }
 
 /**

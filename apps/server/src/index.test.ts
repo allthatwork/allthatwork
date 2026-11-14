@@ -1,5 +1,5 @@
 import { once } from "node:events";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { serve } from "@hono/node-server";
 
 const events = vi.hoisted(() => [] as string[]);

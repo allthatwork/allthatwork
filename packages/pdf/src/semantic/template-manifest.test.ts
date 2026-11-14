@@ -1,7 +1,7 @@
 import type { SemanticNode } from "@reactive-resume/resume/stylesheet/types";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { Template } from "@reactive-resume/schema/templates";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { templateSchema } from "@reactive-resume/schema/templates";
 import { getTemplateSemanticManifest } from "./template-manifest";
@@ -24,6 +24,22 @@ const buildFixture = (): ResumeData => {
 		customFields: [],
 	};
 	data.summary.content = "<p>Summary</p>";
+	// The one-line entry header brings its parts into the tree, so every manifest part shows up.
+	data.metadata.design.entry = { layout: "inline", lead: "organization", accent: "none" };
+	data.sections.education.items = [
+		{
+			id: "education/1",
+			hidden: false,
+			school: "Cambridge",
+			area: "Mathematics",
+			degree: "BSc",
+			grade: "First",
+			location: "Cambridge",
+			period: "1835",
+			website: { url: "", label: "", inlineLink: false },
+			description: "",
+		},
+	];
 	data.sections.experience.columns = 1;
 	data.sections.experience.items = [
 		{
@@ -66,7 +82,7 @@ const buildFixture = (): ResumeData => {
 
 const buildFixtureTree = (template: Template, showHeader = true): SemanticNode => {
 	const data = buildFixture();
-	const page = { fullWidth: false, main: ["summary", "experience", "projects"], sidebar: ["skills"] };
+	const page = { fullWidth: false, main: ["summary", "experience", "education", "projects"], sidebar: ["skills"] };
 
 	return buildSemanticTree({ data, template, page, pageNumber: 1, showHeader });
 };

@@ -4,7 +4,7 @@ import type { Credentials } from "@/auth/session";
 // built-in fetch does not.
 import type { InferRouterInputs, InferRouterOutputs, RouterClient } from "@orpc/server";
 // The server router is a type-only peer dependency, so the runtime:server deny rule for app:mobile still holds;
-// apps/mobile/.oxlintrc.json rejects value imports from it.
+// the mobile override in the root vite.config.ts rejects value imports from it.
 // @boundaries-ignore type-only import of the server router
 import type router from "@reactive-resume/api/routers";
 import { createORPCClient, onError } from "@orpc/client";
@@ -52,6 +52,7 @@ async function withCredentials(
 }
 
 const bearer = (credentials: Credentials, headers: Headers) => {
+	headers.set("x-client-timezone", Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
 	if (credentials.accessToken) headers.set("authorization", `Bearer ${credentials.accessToken}`);
 	else headers.delete("authorization");
 	return headers;
@@ -118,8 +119,7 @@ export type RouterOutput = InferRouterOutputs<typeof router>;
  * Sends the bearer token and returns the raw response; callers check `ok` and read `arrayBuffer()`/`json()`.
  * The body is sent again after a token refresh, so pass a repeatable one (string, `FormData`, bytes), never a stream.
  */
-export async function rest(path: `/${string}`, init: RequestInit = {}): Promise<Response> {
-	const scope = getAccountScope();
+export async function rest(path: `/${string}`, init: RequestInit = {}, scope = getAccountScope()): Promise<Response> {
 	if (path === "/career/voice/transcribe") {
 		if (!(init.body instanceof FormData)) throw new Error("Expected a recording form.");
 		await authorizeAiRequest(

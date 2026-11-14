@@ -9,25 +9,25 @@
 	},
 	"scripts": {
 		"dev": "email dev --dir src/templates --port 3002",
-		"typecheck": "tsgo --noEmit",
-		"test": "vitest run --passWithNoTests",
-		"test:coverage": "vitest run --coverage --passWithNoTests",
-		"test:ci": "vitest run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests",
-		"test:agent": "vitest run --reporter=agent --reporter=json --outputFile.json=reports/vitest-results.json --passWithNoTests"
+		"typecheck": "tsrs --noEmit",
+		"test": "vp test run --passWithNoTests",
+		"test:coverage": "vp test run --coverage --passWithNoTests",
+		"test:ci": "vp test run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests"
 	},
 	"dependencies": {
 		"@reactive-resume/env": "workspace:*",
 		"@reactive-resume/utils": "workspace:*",
-		"nodemailer": "^10.1.2",
+		"nodemailer": "^10.2.1",
 		"react": "catalog:",
-		"react-email": "^6.11.3"
+		"react-email": "^6.11.5"
 	},
 	"devDependencies": {
-		"@react-email/ui": "^6.11.3",
+		"@react-email/ui": "^6.11.5",
 		"@reactive-resume/config": "workspace:*",
 		"@types/nodemailer": "^8.0.2",
 		"@types/react": "catalog:",
-		"@typescript/native-preview": "catalog:",
-		"typescript": "catalog:"
+		"tsrs": "catalog:",
+		"typescript": "catalog:",
+		"vite-plus": "catalog:"
 	}
 }

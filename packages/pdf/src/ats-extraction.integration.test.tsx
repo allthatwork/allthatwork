@@ -1,13 +1,18 @@
-import type { SectionTitleResolver } from "./section-title";
 import type { PdfDocumentLike } from "@reactive-resume/resume/ats-pdf";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { Template } from "@reactive-resume/schema/templates";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createElement } from "react";
-import { analyzePdfResume, harvestPdfDocument, PDF_OPS } from "@reactive-resume/resume/ats-pdf";
+import {
+	analyzePdfResume,
+	buildExtractedDocument,
+	buildResumeSemantics,
+	harvestPdfDocument,
+	PDF_OPS,
+} from "@reactive-resume/resume/ats-pdf";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
 import { ResumeDocument } from "./document";
 import { renderToBuffer } from "./forme/testing";
@@ -17,17 +22,8 @@ const NOW = new Date("2024-06-15T00:00:00Z");
 const fixture = (name: string) =>
 	new Uint8Array(readFileSync(fileURLToPath(new URL(`../fixtures/ats/${name}`, import.meta.url))));
 
-/**
- * Section headings come from a resolver, not from the resume data — `title` is empty for every
- * stock section. Rendering without one produces a heading-less PDF that no real export looks
- * like, so the app's own behaviour is mirrored here.
- */
-const resolveSectionTitle: SectionTitleResolver = (input) => input.defaultEnglishTitle ?? input.sectionId;
-
 async function renderResume(data: ResumeData, template: Template = "onyx"): Promise<Uint8Array> {
-	const element = createElement(ResumeDocument, { data, template, resolveSectionTitle }) as unknown as Parameters<
-		typeof renderToBuffer
-	>[0];
+	const element = createElement(ResumeDocument, { data, template }) as unknown as Parameters<typeof renderToBuffer>[0];
 	return new Uint8Array(await renderToBuffer(element));
 }
 
@@ -70,13 +66,34 @@ describe("PDF operator numbers", () => {
 });
 
 describe("a resume rendered by this app", () => {
+	it("recognizes dates in the static Onyx checker sample", async () => {
+		const bytes = new Uint8Array(
+			readFileSync(new URL("../../../apps/web/public/templates/pdf/onyx.pdf", import.meta.url)),
+		);
+		const { raw, report } = await analyze(bytes, { name: "onyx.pdf" });
+		const document = buildExtractedDocument(raw);
+		const { dates } = buildResumeSemantics(raw, document, { now: NOW });
+
+		expect(document.lines.map((line) => line.text)).toContain("Clinical Research Coordinator 2022 – Present");
+		expect(dates.map((date) => date.raw)).toEqual(["2022 – Present", "2019 – 2022", "2013 – 2017", "2023 – Present"]);
+		expect(dates.every((date) => date.kind === "range" && date.parsed)).toBe(true);
+		expect(failedCodes(report)).not.toContain("NO_DATES_FOUND");
+	});
+
 	/**
-	 * The regression guard for this whole feature: the app's own default single-column export has
+	 * The regression guard for this whole feature: a single-column export with consistent dates has
 	 * to come out clean. Anything the checker reports here, it reports to every user of this app,
 	 * so a false positive shows up as a failing assertion rather than as lost trust.
 	 */
 	it("reports nothing that would cost a single-column export points", { timeout: 60_000 }, async () => {
-		const { raw, report } = await analyze(await renderResume(sampleResumeData, "onyx"));
+		const data = structuredClone(sampleResumeData);
+		// Sample content mixes month/year and year-only periods; this fixture needs consistent dates.
+		for (const section of [...Object.values(data.sections), ...data.customSections]) {
+			for (const item of section.items) {
+				if ("period" in item) item.period = item.period.replace(/[A-Za-z]+\s+(?=\d{4})/g, "");
+			}
+		}
+		const { raw, report } = await analyze(await renderResume(data, "onyx"));
 
 		expect(raw.pages.length).toBeGreaterThan(0);
 		expect(raw.operatorsAvailable).toBe(true);

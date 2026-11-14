@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { handleAgentSkillArchive, handleAgentSkillsIndex, loadAgentSkills } from "./agent-skills";
 
 const skillsRoot = fileURLToPath(new URL("../../../../plugins/reactive-resume/skills", import.meta.url));

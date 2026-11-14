@@ -39,16 +39,23 @@ export async function authorizeAiRequest(
 	};
 	current();
 	const options = { context: { scope: scope ?? undefined }, ...(signal ? { signal } : {}) };
-	const providers = await api.aiProviders.list({}, options);
-	let id = fields.aiProviderId ?? fields.providerId ?? (connectionTest ? fields.id : undefined);
-	if (chat && typeof fields.threadId === "string") {
-		const conversation = await api.agent.threads.get({ id: fields.threadId }, options);
-		id = conversation.thread.aiProviderId;
-	}
-	const usable = providers.filter((provider) => provider.enabled && provider.testStatus === "success");
-	const provider =
-		providers.find((entry) => entry.managed) ??
-		(id ? providers.find((entry) => entry.id === id && (connectionTest || usable.includes(entry))) : usable[0]);
+	// The provider the server will use: the one named, the thread's, or the default (same order as the server).
+	const resolveProvider = async () => {
+		const providers = await api.aiProviders.list({}, options);
+		let id = fields.aiProviderId ?? fields.providerId ?? (connectionTest ? fields.id : undefined);
+		if (chat && typeof fields.threadId === "string") {
+			const conversation = await api.agent.threads.get({ id: fields.threadId }, options);
+			id = conversation.thread.aiProviderId;
+		}
+		const usable = providers.filter((provider) => provider.enabled && provider.testStatus === "success");
+		return (
+			providers.find((entry) => entry.managed) ??
+			(id ? providers.find((entry) => entry.id === id && (connectionTest || usable.includes(entry))) : usable[0])
+		);
+	};
+	const destinationOf = (entry: { id: string; provider: string; model: string; baseURL?: string | null }) =>
+		[entry.id, entry.provider, entry.model, entry.baseURL ?? ""].join("|");
+	const provider = await resolveProvider();
 	if (!provider) throw new Error(t`Choose a tested AI provider before sharing data.`);
 	const destination = `${provider.label} (${provider.provider}${provider.baseURL ? ` · ${new URL(provider.baseURL).origin}` : ""})`;
 	const web = path[0] === "applications" || chat || scheduled;
@@ -62,9 +69,15 @@ export async function authorizeAiRequest(
 			: operation === "career.voice.speak"
 				? t`The text to read aloud is sent through your server to this speech provider. It can contain personal information.`
 				: t`Your request and relevant resume, letter, job posting, application, career information, conversation history, and attachments are sent through your server to this AI provider, according to the feature and context you selected. They can contain personal information.`;
-	const webNotice = web
-		? t`If web access is used, links and search terms also go to ${webStatus?.provider ?? provider.provider} and the sites being read.`
-		: "";
+	// Older servers leave `searxng` out. With it, searches go to the server's SearXNG and only reading uses the connection.
+	const reader = webStatus?.provider;
+	const webNotice = !web
+		? ""
+		: webStatus?.searxng !== true
+			? t`If web access is used, links and search terms also go to ${reader ?? provider.provider} and the sites being read.`
+			: reader
+				? t`If web access is used, search terms go to your server's search service and the search engines it uses, and links go to ${reader} and the sites being read.`
+				: t`If web access is used, search terms go to your server's search service and the search engines it uses, and links go to the sites being read.`;
 	const scheduleNotice = scheduled
 		? t`This enables recurring processing while the schedule is on, using your server's selected providers. Turn the schedule off to stop future runs.`
 		: "";
@@ -83,7 +96,13 @@ export async function authorizeAiRequest(
 			);
 		});
 		current();
-		if (!allowed) throw new DOMException(t`Data sharing cancelled. Nothing was sent to the AI provider.`, "AbortError");
+		if (!allowed) throw new DOMException(t`Data sharing canceled. Nothing was sent to the AI provider.`, "AbortError");
+		// The approval covers the provider shown. If its settings or the default changed while the dialog was open,
+		// nothing is sent.
+		const approved = await resolveProvider();
+		current();
+		if (!approved || destinationOf(approved) !== destinationOf(provider))
+			throw new Error(t`Your AI settings changed while you were deciding. Nothing was sent; try again.`);
 	});
 	dialogs = result.catch(() => undefined);
 	await result;

@@ -3,11 +3,11 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, expect, it } from "vitest";
+import { afterAll, beforeAll, expect, it } from "vite-plus/test";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const turbo = join(root, "node_modules", "turbo", "bin", "turbo");
-const tasks = ["build", "typecheck", "test", "test:coverage", "test:ci", "test:agent"];
+const tasks = ["build", "typecheck", "test", "test:coverage", "test:ci"];
 type DryTask = { taskId: string; task: string; hash: string };
 let directory: string;
 let baseline: Map<string, DryTask>;
@@ -33,7 +33,7 @@ beforeAll(async () => {
 	await writeFile(join(directory, "pnpm-workspace.yaml"), 'packages: ["packages/*"]\n');
 	await writeFile(join(directory, ".gitignore"), "node_modules/\n.turbo/\ncoverage/\nreports/\n");
 	await writeFile(join(directory, "turbo.json"), await readFile(join(root, "turbo.json")));
-	for (const file of ["vitest.shared.mts", "vitest.setup.ts"]) {
+	for (const file of ["vite.config.ts", "vitest.shared.mts", "vitest.setup.ts"]) {
 		await writeFile(join(directory, file), "export {};\n");
 	}
 
@@ -104,20 +104,23 @@ it("keeps cache keys stable when sources are unchanged", () => {
 	expect(dryRun()).toEqual(baseline);
 });
 
-it.each(["vitest.shared.mts", "vitest.setup.ts"])("invalidates consumer tests when %s changes", async (file) => {
-	const path = join(directory, file);
-	const original = await readFile(path);
-	try {
-		await writeFile(path, "export const changed = true;\n");
-		const result = dryRun();
-		for (const task of tasks.filter((task) => task.startsWith("test"))) {
-			const id = `app#${task}`;
-			expect(result.get(id)?.hash, id).not.toBe(baseline.get(id)?.hash);
+it.each(["vite.config.ts", "vitest.shared.mts", "vitest.setup.ts"])(
+	"invalidates consumer tests when %s changes",
+	async (file) => {
+		const path = join(directory, file);
+		const original = await readFile(path);
+		try {
+			await writeFile(path, "export const changed = true;\n");
+			const result = dryRun();
+			for (const task of tasks.filter((task) => task.startsWith("test"))) {
+				const id = `app#${task}`;
+				expect(result.get(id)?.hash, id).not.toBe(baseline.get(id)?.hash);
+			}
+		} finally {
+			await writeFile(path, original);
 		}
-	} finally {
-		await writeFile(path, original);
-	}
-});
+	},
+);
 
 it("hashes runtime secrets for tests without invalidating builds or typechecks", () => {
 	const before = dryRun({ AUTH_SECRET: "cache-audit-before" });
@@ -129,7 +132,7 @@ it("hashes runtime secrets for tests without invalidating builds or typechecks",
 	}
 });
 
-it.each(["test:coverage", "test:ci", "test:agent"])("restores %s reports from cache", async (task) => {
+it.each(["test:coverage", "test:ci"])("restores %s reports from cache", async (task) => {
 	const output = task === "test:coverage" ? "coverage" : "reports";
 	const path = join(directory, "packages", "app", output, `${task.replace(":", "-")}.txt`);
 	const run = () =>

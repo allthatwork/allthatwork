@@ -1,0 +1,132 @@
+require "base64"
+require "fileutils"
+require "securerandom"
+require "tmpdir"
+
+ROOT = File.expand_path("../../..", __dir__)
+MOBILE = File.join(ROOT, "apps/mobile")
+OUTPUT = File.join(ENV.fetch("RUNNER_TEMP"), "mobile-release")
+
+def secret_file(directory, name, value, base64: false)
+  path = File.join(directory, name)
+  File.write(path, base64 ? Base64.strict_decode64(value.gsub(/\s/, "")) : value, mode: "wb", perm: 0600)
+  path
+end
+
+platform :android do
+  desc "Build a signed production App Bundle, or a manual APK for the requested ABI"
+  lane :build do |options|
+    abi = options[:abi]
+    UI.user_error!("Unsupported Android ABI") if abi && !%w[arm64-v8a armeabi-v7a x86_64].include?(abi)
+    FileUtils.mkdir_p(OUTPUT)
+    Dir.mktmpdir("android-signing-", ENV.fetch("RUNNER_TEMP")) do |directory|
+      keystore = secret_file(directory, "upload.jks", ENV.fetch("ANDROID_KEYSTORE_BASE64"), base64: true)
+      gradle(
+        project_dir: File.join(MOBILE, "android"),
+        task: abi ? "assemble" : "bundle", build_type: "Release", flags: "--no-daemon",
+        print_command: false,
+        properties: {
+          "android.enableMinifyInReleaseBuilds" => "true",
+          "android.enableShrinkResourcesInReleaseBuilds" => "true",
+          "android.injected.signing.store.file" => keystore,
+          "android.injected.signing.store.password" => ENV.fetch("ANDROID_KEYSTORE_PASSWORD"),
+          "android.injected.signing.key.alias" => ENV.fetch("ANDROID_KEY_ALIAS"),
+          "android.injected.signing.key.password" => ENV.fetch("ANDROID_KEY_PASSWORD")
+        }.merge(abi ? { "reactNativeArchitectures" => abi } : {})
+      )
+      source = lane_context[abi ? SharedValues::GRADLE_APK_OUTPUT_PATH : SharedValues::GRADLE_AAB_OUTPUT_PATH]
+      name = abi ? "reactive-resume-#{abi}.apk" : "ReactiveResume.aab"
+      FileUtils.cp(source, File.join(OUTPUT, name))
+      maps = File.join(MOBILE, "android/app/build/generated/sourcemaps/react/release")
+      FileUtils.cp_r(maps, File.join(OUTPUT, "sourcemaps")) if Dir.exist?(maps)
+      %w[mapping native-debug-symbols].each do |kind|
+        source = File.join(MOBILE, "android/app/build/outputs", kind, "release")
+        FileUtils.cp_r(source, File.join(OUTPUT, kind)) if Dir.exist?(source)
+      end
+    end
+  end
+
+  desc "Submit a Google Play production release"
+  lane :upload do
+    upload_to_play_store(
+      package_name: "me.rxresu",
+      json_key_data: ENV.fetch("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"),
+      aab: File.join(OUTPUT, "ReactiveResume.aab"),
+      track: "production", release_status: "completed",
+      changes_not_sent_for_review: false, rescue_changes_not_sent_for_review: false,
+      skip_upload_apk: true, skip_upload_metadata: true, skip_upload_changelogs: true,
+      skip_upload_images: true, skip_upload_screenshots: true
+    )
+  end
+end
+
+platform :ios do
+  desc "Archive and export a signed production IPA with existing Apple capabilities"
+  lane :build do
+    FileUtils.mkdir_p(OUTPUT)
+    keychain = "mobile-#{ENV.fetch('GITHUB_RUN_ID')}-#{ENV.fetch('GITHUB_RUN_ATTEMPT')}"
+    keychain_password = SecureRandom.hex(32)
+    create_keychain(name: keychain, password: keychain_password, default_keychain: false, unlock: true, timeout: 0)
+    begin
+      Dir.mktmpdir("ios-signing-", ENV.fetch("RUNNER_TEMP")) do |directory|
+        certificate = secret_file(directory, "distribution.p12", ENV.fetch("IOS_DISTRIBUTION_P12_BASE64"), base64: true)
+        profile = secret_file(directory, "app.mobileprovision", ENV.fetch("IOS_PROVISION_PROFILE_BASE64"), base64: true)
+        import_certificate(
+          certificate_path: certificate, certificate_password: ENV.fetch("IOS_DISTRIBUTION_P12_PASSWORD"),
+          keychain_name: keychain, keychain_password: keychain_password
+        )
+        installed = install_provisioning_profile(path: profile)
+        begin
+          profile_data = FastlaneCore::ProvisioningProfile.parse(profile)
+          UI.user_error!("Provisioning profile must belong to me.rxresu and team 654ASRW868") unless
+            profile_data["Entitlements"]["application-identifier"] == "654ASRW868.me.rxresu" &&
+            profile_data["TeamIdentifier"].include?("654ASRW868")
+          UI.user_error!("Use an App Store distribution profile") if
+            profile_data["ProvisionedDevices"] || profile_data["ProvisionsAllDevices"] ||
+            profile_data["Entitlements"]["get-task-allow"]
+          cocoapods(podfile: File.join(MOBILE, "ios/Podfile"))
+          update_code_signing_settings(
+            path: File.join(MOBILE, "ios/ReactiveResume.xcodeproj"),
+            use_automatic_signing: false, team_id: "654ASRW868", targets: ["ReactiveResume"],
+            build_configurations: ["Release"], code_sign_identity: "Apple Distribution",
+            profile_uuid: profile_data.fetch("UUID")
+          )
+          ENV["SOURCEMAP_FILE"] = File.join(OUTPUT, "main.jsbundle.map")
+          build_app(
+            workspace: File.join(MOBILE, "ios/ReactiveResume.xcworkspace"), scheme: "ReactiveResume",
+            configuration: "Release", export_method: "app-store",
+            output_directory: OUTPUT, output_name: "ReactiveResume.ipa",
+            archive_path: File.join(ENV.fetch("RUNNER_TEMP"), "ReactiveResume.xcarchive"),
+            buildlog_path: File.join(ENV.fetch("RUNNER_TEMP"), "mobile-build-logs"), xcodebuild_formatter: "",
+            export_options: {
+              signingStyle: "manual", teamID: "654ASRW868",
+              provisioningProfiles: { "me.rxresu" => profile_data.fetch("UUID") }
+            }
+          )
+          symbols = File.join(ENV.fetch("RUNNER_TEMP"), "ReactiveResume.xcarchive/dSYMs")
+          FileUtils.cp_r(symbols, File.join(OUTPUT, "dSYMs")) if Dir.exist?(symbols)
+        ensure
+          FileUtils.rm_f(installed)
+        end
+      end
+    ensure
+      delete_keychain(name: keychain)
+    end
+  end
+
+  desc "Submit to App Review and release automatically after approval"
+  lane :upload do
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"), issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_PRIVATE_KEY")
+    )
+    upload_to_app_store(
+      api_key: api_key, app_identifier: "me.rxresu",
+      ipa: File.join(OUTPUT, "ReactiveResume.ipa"),
+      submit_for_review: true, automatic_release: true,
+      # Metadata processing also applies automatic_release; existing listing fields stay in App Store Connect.
+      skip_metadata: false, skip_screenshots: true, force: true,
+      precheck_include_in_app_purchases: false
+    )
+  end
+end

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { copyCoverLetterStyle } from "@reactive-resume/resume/cover-letter";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 
@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 	exportCareer: vi.fn(),
 	exportDirectory: vi.fn().mockResolvedValue({ companies: [], contacts: [], employment: [], notes: [] }),
 	listViews: vi.fn(),
+	getPipeline: vi.fn(),
 }));
 vi.mock("@reactive-resume/db/client", () => ({ db: { select: mocks.select } }));
 vi.mock("@reactive-resume/db/schema", () => ({
@@ -23,6 +24,7 @@ vi.mock("@reactive-resume/env/server", () => ({ env: {} }));
 vi.mock("@reactive-resume/auth/config", () => ({ isCustomOAuthProviderEnabled: () => false }));
 vi.mock("../storage/service", () => ({ getStorageService: vi.fn() }));
 vi.mock("../cover-letters/service", () => ({ coverLetterService: { getById: mocks.getLetter } }));
+vi.mock("../applications/lanes", () => ({ applicationLaneService: { get: mocks.getPipeline } }));
 vi.mock("../career/service", () => ({ careerService: { exportData: mocks.exportCareer } }));
 vi.mock("../directory/service", () => ({ directoryService: { exportData: mocks.exportDirectory } }));
 vi.mock("../applications/views", () => ({ applicationViewService: { list: mocks.listViews } }));
@@ -32,6 +34,7 @@ describe("account backup", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mocks.predicates.length = 0;
+		mocks.getPipeline.mockResolvedValue({ revision: 0, lanes: [] });
 	});
 
 	it.each([false, true])(
@@ -111,6 +114,8 @@ describe("account backup", () => {
 			expect(exported.career).toEqual(career);
 			expect(mocks.exportDirectory).toHaveBeenCalledExactlyOnceWith("owner");
 			expect(exported.directory).toEqual({ companies: [], contacts: [], employment: [], notes: [] });
+			expect(exported.applicationPipeline).toEqual({ revision: 0, lanes: [] });
+			expect(mocks.getPipeline).toHaveBeenCalledExactlyOnceWith("owner");
 			expect(exported.aiContentReports).toEqual([{ id: "report", userId: "owner", content: "Reported output" }]);
 			expect(mocks.predicates).toContainEqual({ column: "aiContentReport.userId", value: "owner" });
 			// The fork's own settings come along, so an import can restore them.

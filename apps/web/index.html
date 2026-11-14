@@ -22,15 +22,20 @@
 				}
 			})();
 		</script>
+		<!-- The CSP has no 'unsafe-eval', so zod can't compile its parsers. Turning that off before any module loads also
+		     skips zod's `new Function` probe, which the browser reports as a CSP violation even though zod catches it. -->
+		<script>
+			globalThis.__zod_globalConfig = { jitless: true };
+		</script>
 		<meta name="application-name" content="All That Work" />
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-title" content="All That Work" />
-		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 		<!-- Keep the homepage description between 120 and 160 characters. -->
 		<meta
 			name="description"
-			content="Free, open-source resume builder. Create, update, and share a professional resume in minutes, with PDF and Word downloads — no ads, no paywall."
+			content="Free, open-source resume builder. Create, update, and share your resume, with PDF and Word downloads, no ads and no paywall."
 		/>
 
 		<link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48 128x128" />
@@ -38,7 +43,7 @@
 		<link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" type="image/png" sizes="180x180 any" />
 		<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
 
-		<title>All That Work — A free and open-source resume builder</title>
+		<title>Free resume builder with PDF &amp; Word downloads | All That Work</title>
 	</head>
 	<body>
 		<!-- Empty here; the server prerenders the homepage into it (apps/server/src/static/web.ts). -->

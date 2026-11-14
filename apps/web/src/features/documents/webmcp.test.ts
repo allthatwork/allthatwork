@@ -2,7 +2,7 @@
 
 import type { WebMcpTool } from "@/libs/webmcp";
 import { renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { useDocumentWebMcpTools } from "./webmcp";
 
 const mocks = vi.hoisted(() => ({ list: vi.fn(), navigate: vi.fn() }));

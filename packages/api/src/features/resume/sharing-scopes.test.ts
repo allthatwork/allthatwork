@@ -1,5 +1,5 @@
 import type { RequestPermission } from "../../context";
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { createProcedureClient } from "@orpc/server";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 
@@ -31,6 +31,9 @@ it.each(["write", "read"] as RequestPermission[])(
 			isPublic: false,
 			isLocked: false,
 			showDownloadButtons: true,
+			showInSearchEngines: false,
+			hideContactDetails: false,
+			isPrimary: false,
 			hasPassword: false,
 			passwordHash: null,
 			username: "owner",

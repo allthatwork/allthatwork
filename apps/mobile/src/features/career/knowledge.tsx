@@ -1,5 +1,4 @@
 import { useLingui } from "@lingui/react/macro";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { useWindowDimensions } from "react-native";
 import { Facts } from "./facts";
@@ -8,17 +7,18 @@ import { Preferences } from "./preferences";
 import { LoadState } from "./shared";
 import { Stories } from "./stories";
 import { useSession } from "@/auth/session";
-import { Screen, Segmented, Text } from "@/ui";
+import { Screen, Segmented, Text, useTheme } from "@/ui";
 
 export function KnowledgeScreen() {
 	const { t } = useLingui();
 	const [tab, setTab] = useState("facts");
 	const { fontScale } = useWindowDimensions();
+	const { size } = useTheme();
 	const session = useSession();
-	const { profile } = useCareerQueries();
-	return (
-		<Screen>
-			<Stack.Screen options={{ title: t`Knowledge` }} />
+	const { facts, stories, profile } = useCareerQueries();
+	const refresh = () => Promise.allSettled([facts.refetch(), stories.refetch(), profile.refetch()]);
+	const intro = (
+		<>
 			<Text color="ink3">{t`Your facts, stories and preferences. Editing Knowledge sends nothing to an AI connection.`}</Text>
 			<Segmented
 				orientation={fontScale > 1.3 ? "vertical" : "horizontal"}
@@ -31,9 +31,21 @@ export function KnowledgeScreen() {
 					{ value: "preferences", label: t`Preferences` },
 				]}
 			/>
-			{tab === "facts" ? (
-				<Facts key={session.server} />
-			) : tab === "stories" ? (
+		</>
+	);
+	// Facts can run to hundreds, so that tab scrolls as a virtualized list with the intro as its header.
+	if (tab === "facts")
+		return (
+			<Screen scroll={false} contentStyle={{ padding: 0 }}>
+				<Facts key={session.server} onRefresh={refresh}>
+					{intro}
+				</Facts>
+			</Screen>
+		);
+	return (
+		<Screen onRefresh={refresh} contentStyle={{ width: "100%", maxWidth: size.formSheet, alignSelf: "center" }}>
+			{intro}
+			{tab === "stories" ? (
 				<Stories key={session.server} />
 			) : (
 				<>

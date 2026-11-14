@@ -1,6 +1,6 @@
 import type { RouterOutput } from "@/libs/orpc/client";
 import { strToU8, zipSync } from "fflate";
-import { slugify } from "@reactive-resume/utils/string";
+import { slugify } from "@reactive-resume/utils/slug";
 
 type AccountExport = RouterOutput["auth"]["exportData"];
 
@@ -10,7 +10,7 @@ const json = (value: unknown) => strToU8(`${JSON.stringify(value, null, 2)}\n`);
 const fileName = (name: string, id: string) => `${slugify(name)}-${id}.json`;
 
 /**
- * "Export everything": account, documents, applications and career records, including source metadata and conversations.
+ * "Export everything": account, documents, applications with their stages, and career records, including source metadata and conversations.
  * Extract the archive to import individual resumes and letters; the other files are records. Attachments remain references.
  */
 export function buildAccountZip(data: AccountExport): Uint8Array {
@@ -19,6 +19,8 @@ export function buildAccountZip(data: AccountExport): Uint8Array {
 		"applications.json": json(data.applications),
 		"application-views.json": json(data.applicationViews),
 		"directory.json": json(data.directory ?? { companies: [], contacts: [], employment: [], notes: [] }),
+		// Stage definitions, including removed ones that history still names. Servers before custom stages omit them.
+		...(data.applicationPipeline ? { "application-stages.json": json(data.applicationPipeline) } : {}),
 		"career.json": json(data.career),
 		"ai-content-reports.json": json(data.aiContentReports),
 	};

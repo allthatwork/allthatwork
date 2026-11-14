@@ -1,5 +1,5 @@
 import type { Passage } from "@reactive-resume/resume/proposals";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { mapWritingReview, reviewPassages } from "./review";
 
 const passage = (id: string, chars: number): Passage => {

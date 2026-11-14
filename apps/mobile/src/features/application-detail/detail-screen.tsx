@@ -17,15 +17,18 @@ import { Banner, Button, Card, ConfirmDialog, EmptyState, Screen, showToast, Tex
 
 type ApplicationDetailProps = { id: string };
 
+import type { ApplicationLane } from "@/features/applications/lanes";
+
 type Overlay =
 	| { kind: "interview"; interview: InterviewTimelineEntry | null }
-	| { kind: "close" | "applied" | "posting" | "delete" }
+	| { kind: "close" | "applied"; lane?: ApplicationLane }
+	| { kind: "posting" | "delete" }
 	| null;
 
 /** One application: stage stepper, next step, what was sent, facts, contacts, notes, timeline and attachments. */
 export function ApplicationDetail({ id }: ApplicationDetailProps) {
 	const { t } = useLingui();
-	const { space } = useTheme();
+	const { space, size } = useTheme();
 	const router = useRouter();
 	const session = useSession();
 	const query = useApplication(id);
@@ -44,14 +47,14 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 	if (session.status !== "signed-in") return <EmptyState icon="briefcase" title={t`Sign in to view applications`} />;
 	if (query.isPending)
 		return (
-			<Screen>
+			<Screen onRefresh={query.refetch}>
 				<Stack.Screen options={{ title: t`Application` }} />
 				<ActivityIndicator />
 			</Screen>
 		);
 	if (!application)
 		return (
-			<Screen>
+			<Screen onRefresh={query.refetch}>
 				<Stack.Screen options={{ title: t`Application` }} />
 				<EmptyState
 					icon="warning-circle"
@@ -71,7 +74,16 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 	const openInterview = (interview: InterviewTimelineEntry | null) => setOverlay({ kind: "interview", interview });
 
 	return (
-		<Screen contentStyle={{ gap: space.s6, paddingBottom: space.s12 }}>
+		<Screen
+			onRefresh={query.refetch}
+			contentStyle={{
+				gap: space.s6,
+				paddingBottom: space.s12,
+				width: "100%",
+				maxWidth: size.sheetDetail,
+				alignSelf: "center",
+			}}
+		>
 			<Stack.Screen options={{ title: application.company }} />
 			<View style={{ gap: space.s1 }}>
 				<Text variant="display">{application.role}</Text>
@@ -107,9 +119,12 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 						/>
 					</View>
 				</Card>
-			) : (
-				<StageStepper application={application} onMarkApplied={() => setOverlay({ kind: "applied" })} />
-			)}
+			) : null}
+			<StageStepper
+				application={application}
+				onMarkApplied={(lane) => setOverlay({ kind: "applied", lane })}
+				onCloseLane={(lane) => setOverlay({ kind: "close", lane })}
+			/>
 
 			<NextStepCard application={application} onOpenInterview={openInterview} />
 			<WhatYouSent application={application} />
@@ -132,7 +147,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 					variant="danger"
 					fullWidth
 					icon="trash"
-					label={t`Delete…`}
+					label={t`Delete application…`}
 					disabled={remove.isPending}
 					onPress={() => setOverlay({ kind: "delete" })}
 				/>
@@ -144,14 +159,24 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 				open={overlay?.kind === "interview"}
 				onClose={close}
 			/>
-			<CloseSheet application={application} open={overlay?.kind === "close"} onClose={close} />
-			<MarkAppliedSheet application={application} open={overlay?.kind === "applied"} onClose={close} />
+			<CloseSheet
+				lane={overlay?.kind === "close" ? overlay.lane : undefined}
+				application={application}
+				open={overlay?.kind === "close"}
+				onClose={close}
+			/>
+			<MarkAppliedSheet
+				lane={overlay?.kind === "applied" ? overlay.lane : undefined}
+				application={application}
+				open={overlay?.kind === "applied"}
+				onClose={close}
+			/>
 			<PostingSheet application={application} open={overlay?.kind === "posting"} onClose={close} />
 			<ConfirmDialog
 				open={overlay?.kind === "delete"}
 				title={t`Delete this application?`}
 				message={t`“${application.role} · ${application.company}” and its timeline are deleted permanently. This can't be undone.`}
-				confirmLabel={t`Delete`}
+				confirmLabel={t`Delete application`}
 				destructive
 				onCancel={close}
 				onConfirm={() => {

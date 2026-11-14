@@ -6,6 +6,7 @@ import { authRouter } from "../features/auth/router";
 import { boardsRouter } from "../features/boards/router";
 import { careerRouter } from "../features/career/router";
 import { coverLettersRouter } from "../features/cover-letters/router";
+import { customDomainRouter } from "../features/custom-domain/router";
 import { directoryRouter } from "../features/directory/router";
 import { documentsRouter } from "../features/documents/router";
 import { flagsRouter } from "../features/flags/router";
@@ -23,6 +24,7 @@ export default {
 	boards: boardsRouter,
 	career: careerRouter,
 	coverLetters: coverLettersRouter,
+	customDomain: customDomainRouter,
 	documents: documentsRouter,
 	directory: directoryRouter,
 	flags: flagsRouter,

@@ -18,11 +18,13 @@ import { currentInterview, minutesUntil } from "./logic";
 import { useNow, useUserTime } from "@/features/application-detail/hooks";
 import { InterviewSheet } from "@/features/application-detail/interview-sheet";
 import { applicationError } from "@/features/applications/error";
+import { useApplicationLanes } from "@/features/applications/lane-queries";
+import { getLaneLabel, resolveLane } from "@/features/applications/lanes";
 import { useApplication } from "@/features/applications/queries";
-import { getStageColor, getStageLabel } from "@/features/applications/stages";
 import { routes } from "@/routes";
 import { useWorkspaceChrome } from "@/shell/workspace-chrome";
 import { Banner, Button, EmptyState, Screen, Text, useTheme } from "@/ui";
+import { useKeyboardScrollSpace } from "@/ui/keyboard";
 
 export type WorkspaceSearch = { version?: string; speak?: boolean; story?: string };
 
@@ -68,6 +70,7 @@ type WorkspaceScreenProps = { tab: WorkspaceTab; children: (props: WorkspaceTabP
 export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 	const { t } = useLingui();
 	const { space } = useTheme();
+	const keyboardSpace = useKeyboardScrollSpace();
 	const router = useRouter();
 	const params = useLocalSearchParams<{ id: string; version?: string; speak?: string; story?: string }>();
 	const id = params.id;
@@ -128,6 +131,7 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 		<View style={{ flex: 1 }}>
 			<Stack.Screen options={{ title: application.company }} />
 			<KeyboardAwareScrollView
+				extraKeyboardSpace={keyboardSpace}
 				bottomOffset={space.s6}
 				keyboardShouldPersistTaps="handled"
 				contentInsetAdjustmentBehavior="automatic"
@@ -198,8 +202,9 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 type HeaderProps = { application: Application; onAskCoach: () => void };
 
 function Header({ application, onAskCoach }: HeaderProps) {
+	const lanes = useApplicationLanes();
 	const { t } = useLingui();
-	const { colors, space } = useTheme();
+	const { radius, space } = useTheme();
 	const router = useRouter();
 	const { day } = useUserTime();
 	useWorkspaceChrome({ title: application.company, subtitle: application.role });
@@ -221,11 +226,11 @@ function Header({ application, onAskCoach }: HeaderProps) {
 						style={{
 							width: 8,
 							height: 8,
-							borderRadius: 4,
-							backgroundColor: getStageColor(application.status, colors),
+							borderRadius: radius.rSm,
+							backgroundColor: resolveLane(lanes.lanes, application).color,
 						}}
 					/>
-					<Text variant="callout">{getStageLabel(application.status)}</Text>
+					<Text variant="callout">{getLaneLabel(resolveLane(lanes.lanes, application))}</Text>
 					{meta.map((item) => (
 						<Text key={item} variant="callout" color="ink2">
 							· {item}
@@ -289,7 +294,7 @@ function TabBadges({ saved, interview, now }: TabBadgesProps) {
 					extra && palette ? (
 						<View
 							key={tab}
-							style={{ paddingHorizontal: space.s1, borderRadius: radius.rPill, backgroundColor: palette.background }}
+							style={{ paddingHorizontal: space.s1, borderRadius: radius.rLg, backgroundColor: palette.background }}
 						>
 							<Text variant="micro" color={palette.text}>
 								{extra.text}

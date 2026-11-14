@@ -1,5 +1,5 @@
 import type { PromptSection } from "@deepseek-ai/dsh-system-prompt";
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { Config } from "./config";
 import { apply } from "./index";
 

@@ -42,11 +42,10 @@
 	},
 	"scripts": {
 		"build": "tsdown",
-		"typecheck": "tsgo --noEmit",
-		"test": "vitest run --passWithNoTests",
-		"test:coverage": "vitest run --coverage --passWithNoTests",
-		"test:ci": "vitest run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests",
-		"test:agent": "vitest run --reporter=agent --reporter=json --outputFile.json=reports/vitest-results.json --passWithNoTests",
+		"typecheck": "tsrs --noEmit",
+		"test": "vp test run --passWithNoTests",
+		"test:coverage": "vp test run --coverage --passWithNoTests",
+		"test:ci": "vp test run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests",
 		"prepublishOnly": "pnpm build"
 	},
 	"peerDependencies": {
@@ -62,10 +61,10 @@
 		"@deepseek-ai/schemastery": "^3.18.5",
 		"@reactive-resume/config": "workspace:*",
 		"@reactive-resume/mcp": "workspace:*",
-		"@typescript/native-preview": "catalog:",
-		"tsdown": "^0.23.1",
+		"tsdown": "^0.23.3",
+		"tsrs": "catalog:",
 		"typescript": "catalog:",
-		"vitest": "catalog:"
+		"vite-plus": "catalog:"
 	},
 	"dsh": {
 		"bundle": {

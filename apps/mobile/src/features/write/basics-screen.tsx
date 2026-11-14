@@ -201,7 +201,6 @@ function CustomFields({ fields, locked, focusField }: CustomFieldsProps) {
 						<IconButton
 							icon={field.link ? "link-simple-horizontal" : "link-simple-horizontal-break"}
 							label={field.link ? t`Edit link` : t`Add a link`}
-							selected={!!field.link}
 							disabled={locked}
 							onPress={() => setLinkFor(field.id)}
 						/>

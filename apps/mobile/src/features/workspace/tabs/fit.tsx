@@ -48,7 +48,7 @@ function Fit({ application, version }: WorkspaceTabProps) {
 				title={t`Check this role against your evidence`}
 				message={t`Each requirement in the posting is checked against the facts and stories in your Knowledge. Gaps show as missing evidence, never missing ability.`}
 			>
-				<AiNotice />
+				<AiNotice centered />
 				{provider ? (
 					<Button icon="list-checks" label={checkLabel} loading={generate.isPending} onPress={check} />
 				) : null}
@@ -217,7 +217,7 @@ function EvidenceEditor({ requirement, onCancel, onSaved }: EvidenceEditorProps)
 			if (!fact) throw new Error("not saved");
 			onSaved(fact.id);
 		} catch (error) {
-			showToast({ message: workspaceError(error, t`Couldn't save that to Knowledge.`) });
+			showToast({ message: workspaceError(error, t`Couldn't save that to Knowledge. Try again.`) });
 		}
 	};
 

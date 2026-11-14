@@ -4,7 +4,6 @@ import { useLingui } from "@lingui/react/macro";
 import { useRouter, useGlobalSearchParams, useLocalSearchParams, useNavigation } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaInsetsContext, useSafeAreaInsets } from "react-native-safe-area-context";
 import { WORKSPACE_TABS } from "@reactive-resume/schema/career";
 import { createSlot } from "./slot";
@@ -12,6 +11,7 @@ import { TopBar } from "./top-bar";
 import { useIsTablet } from "./use-is-tablet";
 import { routes } from "@/routes";
 import { IconButton, Text, useTheme } from "@/ui";
+import { KeyboardFrame } from "@/ui/keyboard";
 
 /** What workspace tabs put into the application chrome with `useWorkspaceChrome`. */
 export type WorkspaceChromeSlots = {
@@ -87,7 +87,7 @@ function Frame({ children }: { children: ReactNode }) {
 		fit: t({ message: "Fit", context: "Application workspace tab: how well a job fits your experience" }),
 		apply: t`Apply`,
 		prepare: t`Prepare`,
-		practise: t`Practise`,
+		practise: t({ message: "Practice", context: "Application workspace tab: rehearse interview answers" }),
 		debrief: t`Debrief`,
 		messages: t`Messages`,
 		saved: t({ message: "Saved", context: "Application workspace tab: earlier results kept for this job" }),
@@ -181,7 +181,7 @@ function Frame({ children }: { children: ReactNode }) {
 				)}
 			</View>
 			{slots.banner}
-			<KeyboardAvoidingView
+			<KeyboardFrame
 				behavior="padding"
 				automaticOffset
 				style={{ flex: 1, flexDirection: "row", paddingLeft: insets.left, paddingRight: insets.right }}
@@ -201,7 +201,7 @@ function Frame({ children }: { children: ReactNode }) {
 				<SafeAreaInsetsContext value={{ ...insets, left: 0, right: 0, top: 0 }}>
 					<View style={{ flex: 1 }}>{children}</View>
 				</SafeAreaInsetsContext>
-			</KeyboardAvoidingView>
+			</KeyboardFrame>
 		</View>
 	);
 }

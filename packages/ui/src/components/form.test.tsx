@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { FormControl, FormItem, FormLabel, FormMessage } from "./form";
 import { InputGroup, InputGroupInput } from "./input-group";
 import { Slider } from "./slider";

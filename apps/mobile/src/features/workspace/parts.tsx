@@ -5,7 +5,7 @@ import type { GenerateTask, WorkspaceTab } from "@reactive-resume/schema/career"
 import type { ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useState } from "react";
+import { Children, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, View } from "react-native";
 import { AIProviderSetupSheet, useHasAIProvider } from "@/features/ai/providers";
 import { ReportAiContent } from "@/features/ai/report-content";
@@ -16,7 +16,7 @@ export const tabLabel = (tab: WorkspaceTab) =>
 		fit: t({ message: "Fit", context: "Application workspace tab: how well a job fits your experience" }),
 		apply: t`Apply`,
 		prepare: t`Prepare`,
-		practise: t`Practise`,
+		practise: t`Practice`,
 		debrief: t`Debrief`,
 		messages: t`Messages`,
 		saved: t({ message: "Saved", context: "Application workspace tab: earlier results kept for this job" }),
@@ -158,12 +158,26 @@ export function StatusPill({ status }: { status: EvidenceStatus }) {
 }
 
 /** Names exactly what an AI action sends, and where. */
-export function PrivacyLine({ children }: { children: string }) {
+type PrivacyLineProps = { children: string; centered?: boolean };
+
+export function PrivacyLine({ children, centered = false }: PrivacyLineProps) {
 	const { colors, size, space } = useTheme();
 	return (
-		<View style={{ flexDirection: "row", gap: space.s1 }}>
+		<View
+			style={{
+				width: centered ? "100%" : undefined,
+				flexDirection: centered ? "column" : "row",
+				alignItems: centered ? "center" : "flex-start",
+				gap: space.s1,
+			}}
+		>
 			<Icon name="lock" size={size.icon.meta} color={colors.ink3} />
-			<Text variant="caption" color="ink3" style={{ flex: 1 }}>
+			<Text
+				variant="caption"
+				color="ink3"
+				align={centered ? "center" : undefined}
+				style={centered ? undefined : { flex: 1 }}
+			>
 				{children}
 			</Text>
 		</View>
@@ -174,7 +188,9 @@ export function PrivacyLine({ children }: { children: string }) {
  * Where an AI button's data goes, or, with no usable connection, a button that adds one in place. Tabs show their AI
  * buttons only when `useHasAIProvider().defaultProvider` is set.
  */
-export function AiNotice({ sends }: { sends?: string | undefined }) {
+type AiNoticeProps = { sends?: string | undefined; centered?: boolean };
+
+export function AiNotice({ sends, centered = false }: AiNoticeProps) {
 	const { t } = useLingui();
 	const connection = useHasAIProvider();
 	const [setup, setSetup] = useState(false);
@@ -198,7 +214,7 @@ export function AiNotice({ sends }: { sends?: string | undefined }) {
 	const label = provider.label;
 	return (
 		<>
-			<PrivacyLine>
+			<PrivacyLine centered={centered}>
 				{sends ??
 					t`Sends this application's posting, notes and documents, plus Knowledge that's switched on, to ${label}.`}
 			</PrivacyLine>
@@ -218,7 +234,7 @@ export function EmptyNotice({ title, message, children }: EmptyNoticeProps) {
 				alignItems: "center",
 				gap: space.s3,
 				padding: space.s6,
-				borderRadius: radius.rXl,
+				borderRadius: radius.rLg,
 				borderWidth: 1,
 				borderStyle: "dashed",
 				borderColor: colors.line2,
@@ -232,7 +248,13 @@ export function EmptyNotice({ title, message, children }: EmptyNoticeProps) {
 					{message}
 				</Text>
 			) : null}
-			{children}
+			{Children.map(children, (child) => (
+				<View
+					style={{ width: "100%", flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: space.s3 }}
+				>
+					{child}
+				</View>
+			))}
 		</View>
 	);
 }
@@ -278,7 +300,7 @@ export function Progress({ value, label }: { value: number; label: string }) {
 			accessibilityRole="progressbar"
 			accessibilityLabel={label}
 			accessibilityValue={{ min: 0, max: 100, now: Math.round(clamped * 100) }}
-			style={{ height: 6, borderRadius: radius.rPill, backgroundColor: colors.line, overflow: "hidden" }}
+			style={{ height: 6, borderRadius: radius.rLg, backgroundColor: colors.line, overflow: "hidden" }}
 		>
 			<View style={{ width: `${clamped * 100}%`, height: "100%", backgroundColor: colors.accent }} />
 		</View>

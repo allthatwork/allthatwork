@@ -1,4 +1,5 @@
 import z from "zod";
+import { searchRegionsSchema } from "@reactive-resume/utils/region";
 import { timezoneSchema } from "@reactive-resume/utils/timezone";
 
 /** The workspace tabs of one application, in the order a search happens. */
@@ -60,6 +61,11 @@ export const careerProfileDataSchema = z.object({
 	maxOfficeDays: z.number().int().min(0).max(5).nullable().default(null),
 	noticeWeeks: z.number().int().min(0).max(52).nullable().default(null),
 	memoryMode: memoryModeSchema.default("ask"),
+	/**
+	 * Countries web searches target, first is primary. Absent or null is automatic (from the account
+	 * time zone), [] is anywhere. No default, so a save that leaves it out keeps the stored value.
+	 */
+	searchRegions: searchRegionsSchema,
 });
 export type CareerProfileData = z.infer<typeof careerProfileDataSchema>;
 
@@ -278,6 +284,9 @@ export const offerTermsSchema = z.object({
 	respondBy: z.iso.datetime({ offset: true }).nullable().default(null),
 });
 export type OfferTerms = z.infer<typeof offerTermsSchema>;
+
+/** Manually entered terms use the same saved offer shape as confirmed message proposals. */
+export const careerOfferInputSchema = offerTermsSchema.extend({ applicationId: z.string().min(1) });
 
 const text = (max = 2000) => z.string().trim().max(max);
 

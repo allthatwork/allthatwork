@@ -3,7 +3,7 @@ import type { Application } from "../types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -19,10 +19,18 @@ const api = vi.hoisted(() => ({
 	invalidate: vi.fn(),
 	confirm: vi.fn(),
 }));
+vi.mock("@tanstack/react-router", () => ({ useRouteContext: () => ({ session: { user: { timezone: "UTC" } } }) }));
 vi.mock("@/libs/orpc/client", () => ({
 	client: { applications: { ai: { parsePosting: api.parsePosting } } },
 	orpc: {
 		applications: {
+			lanes: {
+				get: {
+					queryOptions: () => ({ queryKey: ["lanes"], queryFn: () => new Promise(() => {}) }),
+					queryKey: () => ["lanes"],
+				},
+			},
+			priorNoResponse: { queryOptions: () => ({ queryKey: ["prior"], queryFn: async () => [] }) },
 			bulkDelete: { mutationOptions: () => ({ mutationFn: api.bulkDelete }) },
 			bulkUpdate: { mutationOptions: () => ({ mutationFn: api.bulkUpdate }) },
 			create: { mutationOptions: () => ({ mutationFn: api.create }) },
@@ -39,7 +47,12 @@ vi.mock("@/libs/orpc/client", () => ({
 }));
 vi.mock("../use-application-actions", () => ({
 	useInvalidateApplications: () => api.invalidate,
-	useApplicationActions: () => ({ moveTo: api.moveTo, close: api.close, remove: { mutate: api.remove } }),
+	useApplicationActions: () => ({
+		moveTo: api.moveTo,
+		close: api.close,
+		remove: { mutate: api.remove },
+		update: { isError: false, variables: undefined },
+	}),
 }));
 vi.mock("@/hooks/use-confirm", () => ({ useConfirm: () => api.confirm }));
 vi.mock("@reactive-resume/ui/hooks/use-breakpoint", () => ({ useBreakpoint: () => "desktop" }));

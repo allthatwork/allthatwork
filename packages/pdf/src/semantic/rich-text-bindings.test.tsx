@@ -1,6 +1,6 @@
 import type { SemanticNode } from "@reactive-resume/resume/stylesheet/types";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { createElement } from "react";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { ResumeDocument } from "../document";

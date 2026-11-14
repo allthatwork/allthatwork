@@ -1,6 +1,6 @@
 import type { ResumeData, StyleRule } from "@reactive-resume/schema/resume/data";
 import { readdirSync, readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { compileStylesheet } from "@reactive-resume/resume/stylesheet";
 import { styleRulesSchema } from "@reactive-resume/schema/resume/data";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";

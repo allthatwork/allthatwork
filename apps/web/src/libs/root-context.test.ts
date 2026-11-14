@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { QueryClient } from "@tanstack/react-query";
 import { loadRootContext, sessionQueryKey } from "./root-context";
 

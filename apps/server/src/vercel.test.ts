@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { TRUSTED_IP_HEADERS } from "@reactive-resume/utils/rate-limit";
 
 const mocks = vi.hoisted(() => ({

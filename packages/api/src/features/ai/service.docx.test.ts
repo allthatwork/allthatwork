@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 import { deflateRawSync } from "node:zlib";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 
 const generateTextMock = vi.hoisted(() => vi.fn());

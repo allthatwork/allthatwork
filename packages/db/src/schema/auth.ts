@@ -1,7 +1,7 @@
 import type { ApplicationsLayout } from "@reactive-resume/schema/applications/layout";
 import type { SQL } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { defineRelations, sql } from "drizzle-orm";
 import * as pg from "drizzle-orm/pg-core";
 import { generateId } from "@reactive-resume/utils/string";
 
@@ -52,6 +52,17 @@ export const user = pg.pgTable(
 	},
 	(t) => [pg.index().on(t.createdAt.asc()), pg.uniqueIndex("user_email_lower_unique_idx").on(lower(t.email))],
 );
+
+/**
+ * Usernames people stopped using (renamed or deleted accounts). Old public links point at them, so for a while only
+ * their previous owner can take one again. A trigger in the migration records them on every rename or deletion.
+ */
+export const releasedUsername = pg.pgTable("released_username", {
+	username: pg.text("username").primaryKey(),
+	/** The account that released it, or null when that account was deleted. */
+	userId: pg.text("user_id"),
+	releasedAt: pg.timestamp("released_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const session = pg.pgTable(
 	"session",
@@ -122,6 +133,20 @@ export const account = pg.pgTable(
 		pg.uniqueIndex("account_provider_id_account_id_unique").on(t.providerId, t.accountId),
 	],
 );
+
+// Better Auth joins sessions to users, users to accounts, and provider accounts to their owners.
+export const authRelations = defineRelations({ user, session, account }, (r) => ({
+	user: {
+		accounts: r.many.account({ from: r.user.id, to: r.account.userId }),
+		sessions: r.many.session({ from: r.user.id, to: r.session.userId }),
+	},
+	session: {
+		user: r.one.user({ from: r.session.userId, to: r.user.id }),
+	},
+	account: {
+		user: r.one.user({ from: r.account.userId, to: r.user.id }),
+	},
+}));
 
 export const verification = pg.pgTable(
 	"verification",

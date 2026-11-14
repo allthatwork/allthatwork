@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import * as forme from "@formepdf/core";
 import { act } from "react";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";

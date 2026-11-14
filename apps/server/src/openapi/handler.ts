@@ -1,6 +1,6 @@
 import { SmartCoercionPlugin } from "@orpc/json-schema";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
-import { onError } from "@orpc/server";
+import { onError, ORPCError } from "@orpc/server";
 import { RequestHeadersPlugin, StrictGetMethodPlugin } from "@orpc/server/plugins";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { env } from "@reactive-resume/env/server";
@@ -20,6 +20,8 @@ const openAPIHandler = new OpenAPIHandler(openAPIRouter, {
 	],
 	interceptors: [
 		onError((error) => {
+			// Signed-out or expired callers are routine; their 401 still reaches the client.
+			if (error instanceof ORPCError && error.code === "UNAUTHORIZED") return;
 			console.error("[OpenAPI]", error);
 		}),
 	],

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { compileStylesheet } from "@reactive-resume/resume/stylesheet";
 import { buildGeneratedDocumentation } from "./generate-reference";
 

@@ -1,6 +1,7 @@
 import type { ModelCallOptions } from "./request-limits";
 import { z } from "zod";
 import { improveSystemPrompt, improveUserPromptTemplate } from "@reactive-resume/ai/prompts";
+import { inertMarkers } from "./data-block";
 import { generateJson } from "./generate-json";
 import { getModel } from "./service";
 
@@ -77,8 +78,8 @@ function buildUserPrompt(input: ImproveInput): string {
 	const values: Record<string, string> = {
 		REQUEST: request,
 		WHERE: input.where || "Not given",
-		LINE: input.line,
-		CONTEXT: contextAround(input.context, input.line) || "None",
+		LINE: inertMarkers(input.line),
+		CONTEXT: inertMarkers(contextAround(input.context, input.line) || "None"),
 	};
 
 	// One pass, so text in the line that looks like a placeholder stays as it is.

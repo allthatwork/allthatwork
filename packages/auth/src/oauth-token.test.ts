@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vite-plus/test";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import * as schema from "@reactive-resume/db/schema";
 
@@ -45,7 +45,7 @@ it("only allows offline_access tokens to outlive an expired browser session", as
 			.setExpirationTime("5m")
 			.sign(privateKey);
 		if (scope === "api:read") {
-			await expect(verifyOAuthToken(token)).rejects.toThrow("OAuth session has ended.");
+			await expect(verifyOAuthToken(token)).rejects.toThrow("OAuth session has ended. Sign in again.");
 		} else {
 			await expect(verifyOAuthToken(token)).resolves.toMatchObject({ sub: "owner", scope });
 		}

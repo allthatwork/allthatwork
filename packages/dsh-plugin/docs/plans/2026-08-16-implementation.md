@@ -271,7 +271,7 @@ lib
 `test/smoke.test.ts`:
 
 ```ts
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { name } from "../src/index.ts";
 
 it("exports the cordis plugin name", () => {
@@ -344,7 +344,7 @@ git commit -m "chore: scaffold the plugin package with build, test, and lint"
 `test/config.test.ts`:
 
 ```ts
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { Config } from "../src/config.ts";
 
 it("applies defaults for every optional field", () => {
@@ -483,7 +483,7 @@ The test does not boot a real Harness. It passes a hand-rolled fake context that
 `test/apply.test.ts`:
 
 ```ts
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { Config } from "../src/config.ts";
 import { apply, inject } from "../src/index.ts";
 
@@ -629,7 +629,7 @@ This is the plugin's substance — the reason it exists rather than a raw `dsh-m
 `test/prompt.test.ts`:
 
 ```ts
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { Config } from "../src/config.ts";
 import { apply } from "../src/index.ts";
 import { PATCH_GUIDE } from "../src/prompt.ts";
@@ -835,7 +835,7 @@ This is the test that gives the generated list a consumer. It extracts every too
 `test/tool-names.test.ts`:
 
 ```ts
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { buildPatchGuide } from "../src/prompt.ts";
 import { TOOL_NAMES } from "../src/tool-names.generated.ts";
 
@@ -909,7 +909,7 @@ Then run `pnpm typecheck` to confirm nothing else referenced it.
 `test/tool-names-drift.test.ts`:
 
 ```ts
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { TOOL_NAMES } from "../src/tool-names.generated.ts";
 
 const ORIGIN = process.env.RXRESUME_ORIGIN ?? "https://rxresu.me";

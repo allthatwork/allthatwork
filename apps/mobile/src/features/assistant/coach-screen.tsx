@@ -5,9 +5,9 @@ import type { IconName } from "@/ui";
 import { plural } from "@lingui/core/macro";
 import { Trans, useLingui } from "@lingui/react/macro";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Stack } from "expo-router";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
+import { formatList } from "@reactive-resume/utils/locale";
 import { refreshThreads, useThreads } from "./chat";
 import { ChatView, ContextChip } from "./chat-view";
 import { ModelButton, ModelSheet, ProviderGate, useConversationProvider } from "./provider";
@@ -66,7 +66,7 @@ type CoachScreenProps = {
 };
 
 export function CoachScreen({ offerIds }: CoachScreenProps) {
-	const { t } = useLingui();
+	const { t, i18n } = useLingui();
 	const { colors, space } = useTheme();
 	const queryClient = useQueryClient();
 	const providers = useHasAIProvider();
@@ -108,13 +108,14 @@ export function CoachScreen({ offerIds }: CoachScreenProps) {
 				]
 			: []),
 	];
+	const list = formatList(i18n.locale, parts);
 	const connection = /connection$/i.test(label) ? label : t`${label} connection`;
 	const privacy = [
 		chips.memory && knowledge.isError
 			? t`Knowledge couldn't load. Try again or switch Knowledge off before sending.`
 			: chips.memory && knowledge.isPending
 				? t`Loading Knowledge before you send…`
-				: t`When you press send, ${parts.join(", ")} go to ${connection}.`,
+				: t`When you tap send, ${list} go to ${connection}.`,
 		...(chips.web ? [t`Search terms go to your web search service.`] : []),
 	].join(" ");
 
@@ -126,18 +127,13 @@ export function CoachScreen({ offerIds }: CoachScreenProps) {
 
 	return (
 		<View style={{ flex: 1, backgroundColor: colors.surface }}>
-			<Stack.Screen
-				options={{
-					title: summary ? title(summary) : t`Coach`,
-					headerLargeTitle: false,
-					headerRight: () => (
-						<View style={{ flexDirection: "row" }}>
-							<IconButton icon="clock-counter-clockwise" label={t`Conversations`} onPress={() => setListOpen(true)} />
-							<IconButton icon="note-pencil" label={t`New conversation`} onPress={newConversation} />
-						</View>
-					),
-				}}
-			/>
+			<View style={{ paddingHorizontal: space.s4, flexDirection: "row", alignItems: "center" }}>
+				<Text variant="label" style={{ flex: 1 }}>
+					{summary ? title(summary) : t`Coach`}
+				</Text>
+				<IconButton icon="clock-counter-clockwise" label={t`Conversations`} onPress={() => setListOpen(true)} />
+				<IconButton icon="note-pencil" label={t`New conversation`} onPress={newConversation} />
+			</View>
 			<ProviderGate
 				providers={providers}
 				readOnly={threadId !== null}
@@ -189,6 +185,15 @@ export function CoachScreen({ offerIds }: CoachScreenProps) {
 					}}
 					context={context}
 					document={null}
+					onRefresh={() =>
+						Promise.allSettled([
+							threads.refetch(),
+							queryClient.invalidateQueries({ queryKey: orpc.career.key() }),
+							queryClient.invalidateQueries({ queryKey: orpc.applications.key() }),
+							queryClient.invalidateQueries({ queryKey: orpc.auth.getProfile.key() }),
+							queryClient.invalidateQueries({ queryKey: orpc.aiProviders.key() }),
+						])
+					}
 					connection={connection}
 					privacy={privacy}
 					placeholder={t`Ask about your next career step…`}
@@ -269,7 +274,7 @@ function Starters({ disabled, onPick }: { disabled: boolean; onPick: (text: stri
 			icon: "list-numbers",
 			text: t`Help me turn an accomplishment into a Situation, Task, Action, Result and Reflection story.`,
 		},
-		{ icon: "user-sound", text: t`What interview answers should I practise?` },
+		{ icon: "user-sound", text: t`What interview answers should I practice?` },
 	];
 	return (
 		<View style={{ gap: space.s4, paddingTop: space.s4 }}>
@@ -298,7 +303,7 @@ function Starters({ disabled, onPick }: { disabled: boolean; onPick: (text: stri
 						padding: space.s3,
 						borderWidth: 1,
 						borderColor: colors.line,
-						borderRadius: radius.rXl,
+						borderRadius: radius.rLg,
 						backgroundColor: pressed ? colors.press : colors.raised,
 						opacity: disabled ? 0.6 : 1,
 					})}
@@ -340,7 +345,7 @@ function ConversationsSheet(props: ConversationsSheetProps) {
 			await client.agent.threads.update({ id: target.id, title: next });
 			props.onRenamed();
 		} catch {
-			showToast({ message: t`Couldn't rename it.` });
+			showToast({ message: t`Couldn't rename the conversation. Try again.` });
 		}
 	};
 

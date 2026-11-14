@@ -16,7 +16,7 @@ import {
 } from "@reactive-resume/schema/applications/views";
 import { protectedProcedure } from "../../context";
 import { resumeMutationRateLimit } from "../../middleware/rate-limit";
-import { lockDocumentOwner } from "../documents/ownership";
+import { lockUser } from "../documents/ownership";
 
 type Row = typeof schema.applicationView.$inferSelect;
 
@@ -74,7 +74,7 @@ async function clearDefault(client: DbOrTx, userId: string) {
 async function write<T>(userId: string, name: string | undefined, run: (tx: DbOrTx) => Promise<T>): Promise<T> {
 	try {
 		return await db.transaction(async (tx) => {
-			await lockDocumentOwner(tx, userId);
+			await lockUser(tx, userId);
 			return run(tx);
 		});
 	} catch (error) {

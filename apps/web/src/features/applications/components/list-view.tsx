@@ -1,13 +1,14 @@
-import type { Application } from "../types";
+import type { ApplicationSummary } from "../types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ApplicationSort, ApplicationSortKey } from "@reactive-resume/schema/applications/filters";
 import type { ListColumnId } from "@reactive-resume/schema/applications/layout";
-import { t } from "@lingui/core/macro";
+import type { MouseEvent } from "react";
+import { plural, t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useMutation } from "@tanstack/react-query";
 import { AnimatePresence, m } from "motion/react";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { defaultSortDirection } from "@reactive-resume/schema/applications/filters";
 import { LIST_COLUMN_MAX_WIDTH, LIST_COLUMN_WIDTHS, ROLE_MIN_WIDTH } from "@reactive-resume/schema/applications/layout";
 import { Button } from "@reactive-resume/ui/components/button";
@@ -19,17 +20,22 @@ import {
 	DropdownMenuTrigger,
 } from "@reactive-resume/ui/components/dropdown-menu";
 import { Icon } from "@reactive-resume/ui/components/icon";
+import { IconButton } from "@reactive-resume/ui/components/icon-button";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
+import { getCategoryLane, getLaneLabel, laneMoveInput } from "../lanes";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
 import { sortApplications } from "../sort";
-import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel, LIST_ORDER, PIPELINE } from "../stages";
+import { getStageColor, getStageLabel, LIST_ORDER } from "../stages";
 import { useInvalidateApplications } from "../use-application-actions";
+import { useApplicationLanes } from "../use-application-lanes";
+import { ClosedLaneItems } from "./application-actions-menu";
 import { StaleNote } from "./application-card";
 import { LIST_COLUMNS } from "./list-columns";
+import { useCareerTime } from "@/features/career/shared";
 import { useConfirm } from "@/hooks/use-confirm";
 import { D2, EASE, EXIT } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
@@ -40,7 +46,7 @@ const CHECK_WIDTH = 40;
 type ShownColumn = { id: ListColumnId; width: number };
 
 type ListViewProps = {
-	applications: Application[];
+	applications: ApplicationSummary[];
 	/** The stages the filters show; a group each. */
 	stages: readonly ApplicationStatus[];
 	/** Rows changed since the last filter change that no longer match, with the group they showed in. */
@@ -52,14 +58,14 @@ type ListViewProps = {
 	/** Saves a column's width; null takes it back to its starting width. */
 	onColumnResize: (id: ListColumnId, width: number | null) => void;
 	selectedId: string | null;
-	onOpen: (application: Application) => void;
+	onOpen: (application: ApplicationSummary) => void;
 };
 
 const NO_STALE: ReadonlyMap<string, ApplicationStatus> = new Map();
 
 /** A changed row whose stage is filtered out stays in the group it was in until the filters change. */
 const groupFor = (
-	application: Application,
+	application: ApplicationSummary,
 	stages: readonly ApplicationStatus[],
 	stale: ReadonlyMap<string, ApplicationStatus>,
 ) => (stages.includes(application.status) ? application.status : (stale.get(application.id) ?? application.status));
@@ -277,8 +283,8 @@ export function ApplicationList({
 											selected={application.id === selectedId}
 											stale={stale.has(application.id)}
 											checked={checked.has(application.id)}
-											onCheck={() => toggleRow(application.id)}
-											onOpen={() => onOpen(application)}
+											onCheck={toggleRow}
+											onOpen={onOpen}
 										/>
 									))}
 							</tbody>
@@ -294,7 +300,7 @@ export function ApplicationList({
 				)}
 			</div>
 
-			{/* The bulk bar rises from the bottom edge and floats over the list, so the rows never move. */}
+			{/* The bulk bar rises from the bottom edge and floats over the page, so the rows never move. */}
 			<AnimatePresence>
 				{checkedIds.length > 0 && (
 					<m.div
@@ -303,7 +309,7 @@ export function ApplicationList({
 						animate={{ opacity: 1, transform: "translateY(0%)" }}
 						exit={{ opacity: 0, transform: "translateY(100%)", transition: { duration: D2 * EXIT, ease: EASE } }}
 						transition={{ duration: D2, ease: EASE }}
-						className="sticky bottom-4 z-20 justify-self-center max-sm:bottom-[calc(69px+env(safe-area-inset-bottom))]"
+						className="fixed inset-x-0 bottom-6 z-30 mx-auto w-fit max-w-[calc(100vw-32px)] max-sm:bottom-[calc(69px+env(safe-area-inset-bottom))]"
 					>
 						<BulkBar ids={checkedIds} onDone={() => setChecked(new Set())} />
 					</m.div>
@@ -406,19 +412,25 @@ function ColumnResizeHandle({
 	);
 }
 
+/** Keeps a click on a cell's own control from opening the row. */
+const stopClick = (event: MouseEvent) => event.stopPropagation();
+
 type ApplicationRowProps = {
-	application: Application;
+	application: ApplicationSummary;
 	columns: readonly ShownColumn[];
 	phone: boolean;
 	selected: boolean;
 	/** Changed and no longer matching the filters: faded, with a note under the company. */
 	stale: boolean;
 	checked: boolean;
-	onCheck: () => void;
-	onOpen: () => void;
+	onCheck: (id: string) => void;
+	onOpen: (application: ApplicationSummary) => void;
 };
 
-function ApplicationRow({
+// Memoized with id-taking callbacks, so one row's change doesn't re-render the other rows. The whole row opens the
+// application (a click handler, not a stretched overlay, which Safari let capture clicks across the page); cells with
+// their own controls stop the click.
+const ApplicationRow = memo(function ApplicationRow({
 	application,
 	columns,
 	phone,
@@ -429,15 +441,16 @@ function ApplicationRow({
 	onOpen,
 }: ApplicationRowProps) {
 	const { i18n } = useLingui();
+	const { timeZone } = useCareerTime();
 	const noReplyDays = useNoReplyDays();
-	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, i18n.locale);
+	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, i18n.locale, timeZone);
 
 	const fade = stale && "opacity-55";
 	const initial = (
 		<span
 			aria-hidden="true"
 			className={cn(
-				"grid size-8 shrink-0 place-items-center rounded-[7px] bg-sunken text-[13px] font-semibold text-ink-2",
+				"grid size-8 shrink-0 place-items-center rounded-lg bg-sunken text-[13px] font-semibold text-ink-2",
 				fade,
 			)}
 		>
@@ -446,7 +459,7 @@ function ApplicationRow({
 	);
 
 	const openButton = (
-		<button type="button" onClick={onOpen} className="grid min-w-0 text-start after:absolute after:inset-0">
+		<button type="button" data-application-open className="grid min-w-0 cursor-pointer text-start">
 			<span className={cn("truncate font-medium", fade)}>{application.role}</span>
 			<span className={cn("truncate text-xs text-ink-3", fade)}>
 				{phone
@@ -459,7 +472,11 @@ function ApplicationRow({
 
 	if (phone) {
 		return (
-			<tr className={cn("relative border-b border-line", selected && "bg-accent-soft/50")}>
+			<tr
+				data-application-id={application.id}
+				onClick={() => onOpen(application)}
+				className={cn("cursor-pointer border-b border-line", selected && "bg-accent-soft/50")}
+			>
 				<td className="py-2.5 ps-1">
 					<div className="flex items-center gap-3">
 						{initial}
@@ -475,15 +492,17 @@ function ApplicationRow({
 
 	return (
 		<tr
+			data-application-id={application.id}
+			onClick={() => onOpen(application)}
 			className={cn(
-				"relative border-b border-line transition-colors duration-quick hover:bg-hover",
+				"cursor-pointer border-b border-line transition-colors duration-quick hover:bg-hover",
 				selected && "bg-accent-soft/50",
 			)}
 		>
-			<td className="relative z-10 ps-3">
+			<td onClick={stopClick} className="cursor-default ps-3">
 				<Checkbox
 					checked={checked}
-					onCheckedChange={onCheck}
+					onCheckedChange={() => onCheck(application.id)}
 					aria-label={t`Select ${application.role} at ${application.company}`}
 				/>
 			</td>
@@ -498,7 +517,8 @@ function ApplicationRow({
 				return (
 					<td
 						key={column.id}
-						className={cn("overflow-hidden px-2 whitespace-nowrap", definition.interactive && "relative z-10", fade)}
+						onClick={definition.interactive ? stopClick : undefined}
+						className={cn("overflow-hidden px-2 whitespace-nowrap", definition.interactive && "cursor-default", fade)}
 					>
 						{definition.cell(context)}
 					</td>
@@ -506,7 +526,7 @@ function ApplicationRow({
 			})}
 		</tr>
 	);
-}
+});
 
 type BulkBarProps = { ids: string[]; onDone: () => void };
 
@@ -514,6 +534,7 @@ type BulkBarProps = { ids: string[]; onDone: () => void };
 function BulkBar({ ids, onDone }: BulkBarProps) {
 	const invalidate = useInvalidateApplications();
 	const confirm = useConfirm();
+	const { lanes, active, mode } = useApplicationLanes();
 	const [tag, setTag] = useState("");
 
 	const bulkUpdate = useMutation({
@@ -521,7 +542,9 @@ function BulkBar({ ids, onDone }: BulkBarProps) {
 		onSuccess: (result) => {
 			invalidate();
 			onDone();
-			toast.add({ description: t`Updated ${result.updated}` });
+			toast.add({
+				description: plural(result.updated, { one: "# application updated", other: "# applications updated" }),
+			});
 		},
 		onError: () => toast.add({ type: "error", description: t`Couldn't update the applications. Try again.` }),
 	});
@@ -530,35 +553,43 @@ function BulkBar({ ids, onDone }: BulkBarProps) {
 		onSuccess: (result) => {
 			invalidate();
 			onDone();
-			toast.add({ description: t`Deleted ${result.deleted}` });
+			toast.add({
+				description: plural(result.deleted, { one: "# application deleted", other: "# applications deleted" }),
+			});
 		},
 		onError: () => toast.add({ type: "error", description: t`Couldn't delete the applications. Try again.` }),
 	});
 
 	return (
-		<div className="flex flex-wrap items-center gap-1.5 rounded-xl bg-ink px-3 py-2 text-bg shadow-e3">
-			<span className="me-1 text-sm font-semibold">
+		<div
+			role="toolbar"
+			aria-label={t`Applications`}
+			className="flex flex-wrap items-center gap-1 rounded-xl border border-line bg-raised p-1.5 text-ink shadow-e3"
+		>
+			<span className="px-2 text-sm font-semibold whitespace-nowrap" aria-live="polite">
 				<Plural value={ids.length} one="# selected" other="# selected" />
 			</span>
 
 			<DropdownMenu>
-				<DropdownMenuTrigger render={<Button size="sm" variant="secondary" />}>
-					<Icon name="arrow-right" size={16} />
+				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" />}>
+					<Icon name="arrow-right" />
 					<Trans>Move to…</Trans>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start">
-					{PIPELINE.map((status) => (
-						<DropdownMenuItem key={status} onClick={() => bulkUpdate.mutate({ ids, status })}>
-							<span aria-hidden="true" className="size-2 rounded-full" style={{ background: getStageColor(status) }} />
-							{getStageLabel(status)}
-						</DropdownMenuItem>
-					))}
+					{active
+						.filter((lane) => lane.category !== "closed")
+						.map((lane) => (
+							<DropdownMenuItem key={lane.id} onClick={() => bulkUpdate.mutate({ ids, ...laneMoveInput(lane, mode) })}>
+								<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: lane.color }} />
+								<span className="truncate">{getLaneLabel(lane)}</span>
+							</DropdownMenuItem>
+						))}
 				</DropdownMenuContent>
 			</DropdownMenu>
 
 			<Popover>
-				<PopoverTrigger render={<Button size="sm" variant="secondary" />}>
-					<Icon name="tag" size={16} />
+				<PopoverTrigger render={<Button size="sm" variant="ghost" />}>
+					<Icon name="tag" />
 					<Trans>Add tag</Trans>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-60 p-2">
@@ -580,39 +611,43 @@ function BulkBar({ ids, onDone }: BulkBarProps) {
 			</Popover>
 
 			<DropdownMenu>
-				<DropdownMenuTrigger render={<Button size="sm" variant="secondary" />}>
+				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" />}>
 					<Trans>Close…</Trans>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start">
-					{CLOSED_REASONS.map((reason) => (
-						<DropdownMenuItem
-							key={reason}
-							onClick={() => bulkUpdate.mutate({ ids, status: "closed", closedReason: reason })}
-						>
-							{getClosedReasonLabel(reason)}
-						</DropdownMenuItem>
-					))}
+					<ClosedLaneItems
+						lanes={active}
+						onPick={(lane, reason) =>
+							bulkUpdate.mutate(
+								lane
+									? { ids, ...laneMoveInput(lane, mode, reason) }
+									: { ids, ...laneMoveInput(getCategoryLane(lanes, "closed"), mode, reason ?? null) },
+							)
+						}
+					/>
 				</DropdownMenuContent>
 			</DropdownMenu>
 
 			<Button
 				size="sm"
-				variant="secondary"
-				className="text-danger-text"
+				variant="ghost"
+				className="text-danger-text hover:bg-danger-soft"
 				onClick={async () => {
-					const confirmed = await confirm(t`Delete ${ids.length} applications?`, {
-						description: t`They and their timelines are deleted permanently. This can't be undone.`,
-						confirmText: t`Delete`,
-					});
+					const confirmed = await confirm(
+						plural(ids.length, { one: "Delete # application?", other: "Delete # applications?" }),
+						{
+							description: t`They and their timelines are deleted permanently. This can't be undone.`,
+							confirmText: plural(ids.length, { one: "Delete # application", other: "Delete # applications" }),
+						},
+					);
 					if (confirmed) bulkDelete.mutate({ ids });
 				}}
 			>
+				<Icon name="trash" />
 				<Trans>Delete…</Trans>
 			</Button>
 
-			<Button size="sm" variant="ghost" className="ms-auto text-bg hover:bg-bg/15" onClick={onDone}>
-				<Trans>Clear</Trans>
-			</Button>
+			<IconButton icon="x" size="icon-sm" label={t`Clear selection`} className="text-ink-2" onClick={onDone} />
 		</div>
 	);
 }

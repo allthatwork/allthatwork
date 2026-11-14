@@ -16,7 +16,7 @@
 		"rust"
 	],
 	"scripts": {
-		"typecheck": "tsgo --noEmit",
+		"typecheck": "tsrs --noEmit",
 		"build:native": "bash rust/build.sh"
 	},
 	"peerDependencies": {
@@ -24,11 +24,11 @@
 		"react-native": "^0.88.0"
 	},
 	"dependencies": {
-		"expo-modules-core": "~58.0.22"
+		"expo-modules-core": "~58.0.28"
 	},
 	"devDependencies": {
-		"@formepdf/core": "0.28.0",
+		"@formepdf/core": "0.29.0",
 		"@reactive-resume/config": "workspace:*",
-		"@typescript/native-preview": "catalog:"
+		"tsrs": "catalog:"
 	}
 }

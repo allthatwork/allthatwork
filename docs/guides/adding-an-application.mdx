@@ -1,6 +1,6 @@
 ---
 title: "Adding an application"
-description: "Save a job from its link or posting, then prepare a resume or record what you already submitted."
+description: "Save a job from a link, pasted posting or optional keyword search, then prepare a resume or record what you already submitted."
 ---
 
 Save a job as soon as you find one you like, or record an application you've already submitted. Paste the job link or posting text, check the role and company, and save it. A saved posting gives [Check](/guides/checking-your-resume), [the assistant](/guides/using-the-assistant) and [your cover letter](/guides/writing-a-cover-letter) context for this job.
@@ -12,7 +12,7 @@ Saving a job and preparing a resume manually work without an AI connection or an
 <Steps>
   <Step title="Open the Save a job dialog">
     In **Applications**, select **Save job**. You can also press <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd>{" "}
-    on Windows and Linux) and run **New Application**.
+    on Windows and Linux) and run **New application**.
   </Step>
   <Step title="Paste the job link or posting">
     Paste into **Job link or posting text**. A single web address counts as a link; anything else counts as posting
@@ -25,7 +25,9 @@ Saving a job and preparing a resume manually work without an AI connection or an
   </Step>
   <Step title="Pick a stage">
     **Saved** is the default. Choose **Already applied** or **Already interviewing** only if that happened, then confirm
-    the application date and select any documents you actually submitted.
+    the application date and select any documents you actually submitted. Your own Saved, Applied and Interview stages
+    appear here too. If you applied to the same company before and never heard back, those applications are listed as a
+    reminder; you can still save.
   </Step>
   <Step title="Add it">
     Select **Save job** to open its details, or **Record application** when recording a submission. **Save and prepare
@@ -34,12 +36,40 @@ Saving a job and preparing a resume manually work without an AI connection or an
   </Step>
 </Steps>
 
-<Frame caption="The Add an application dialog with pasted posting text">
+<Frame caption="The Save a job dialog with pasted posting text, ready to save or prepare a resume">
   <img
     src="/images/guides/adding-an-application/add-an-application-dialog.webp"
-    alt="Add an application dialog with posting text pasted, a hint to fill in the role and company, Role set to Level Designer, Company set to Brightline Studios, the Stage control on Applied, and the Add and Add and tailor a resume buttons"
+    alt="Save a job dialog with posting text, Role and Company fields, stage choices, Location, Salary, a resume selector, and Save job and Save and prepare resume buttons"
   />
 </Frame>
+
+## Find a posting with keyword search
+
+If search is available on your installation, the **Save a job** dialog also shows **Search job postings**. Search needs a configured **Web access** connection or server-provided search; an AI provider alone does not enable it. Check **Settings → AI & developer → Web access**, or ask your administrator if the server provides search. You can always paste a link or posting instead.
+
+<Steps>
+  <Step title="Search for a role">
+    Enter a role, company or location under **Search job postings**, then select **Search**. Search runs only when you
+    select the button or press Enter in that field.
+  </Step>
+  <Step title="Choose a posting">
+    Review the result title and description. **View posting** opens the source page in a new tab. Select **Use posting**
+    to put its address into **Job link or posting text**. This clears any role, company, location and salary already in
+    the dialog; it does not read or save the posting.
+  </Step>
+  <Step title="Read and review">
+    Select **Read posting**, then review **Saved description** and the role, company, location and salary. Correct
+    missing or inaccurate details. If the page cannot be read, use **Paste description instead**.
+  </Step>
+  <Step title="Save the job">
+    Choose the appropriate stage, then select **Save job**, **Record application** or **Save and prepare resume**, as
+    described above. Search results are not saved as applications until you choose to save.
+  </Step>
+</Steps>
+
+Search sends your search terms to the configured web search service. Reading a link retrieves its public page through the selected web reader or the built-in reader. If you have a usable default AI provider, **Read posting** also sends the posting text to it to suggest job details. Saving a job never submits an application or contacts the employer.
+
+If search fails or finds nothing useful, change your keywords or paste a posting link directly. For searches that run on a schedule, see [Finding roles automatically](/guides/finding-roles-automatically).
 
 ## What gets read from a posting
 
@@ -65,7 +95,7 @@ The Add dialog keeps things short on purpose. Once the application is saved, its
 
 ## Other ways to add applications
 
-- **From a spreadsheet**: import many at once from a CSV file. See [Importing applications from CSV](/guides/importing-applications-from-csv).
+- **From a spreadsheet**: import many at once from a CSV file in the web app. See [Importing applications from CSV](/guides/importing-applications-from-csv).
 - **From an AI client**: create applications over MCP. See [Managing applications with MCP](/guides/managing-applications-with-mcp).
 
 ## Next steps

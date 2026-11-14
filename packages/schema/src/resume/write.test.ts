@@ -1,10 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { resumeDataSchema } from "./data";
 import { defaultResumeData } from "./default";
 import { sampleResumeData } from "./sample";
 import { parseResumeDataForWrite, writableResumeDataSchema } from "./write";
 
 describe("writableResumeDataSchema", () => {
+	it("rejects deep extension data including objects hidden under a URL key", () => {
+		let extension: unknown = "leaf";
+		for (let index = 0; index < 100; index++) extension = { child: extension };
+		for (const key of ["extension", "url"]) {
+			const result = writableResumeDataSchema.safeParse({ ...defaultResumeData, [key]: extension });
+			expect(result.error?.issues[0]?.message).toBe("Resume content is nested too deeply.");
+		}
+	});
+
 	it.each([defaultResumeData, sampleResumeData])("accepts canonical initial resume data", (data) => {
 		expect(parseResumeDataForWrite(data)).toEqual(resumeDataSchema.parse(data));
 	});
@@ -47,6 +56,22 @@ describe("writableResumeDataSchema", () => {
 			},
 		};
 		expect(parseResumeDataForWrite(data).metadata.styleRules).toEqual([]);
+	});
+
+	it("caps each text field and the whole document, exempting URLs from the per-field cap", () => {
+		const withSummary = (content: string) => ({
+			...defaultResumeData,
+			summary: { ...defaultResumeData.summary, content },
+		});
+		const withPicture = (url: string) => ({ ...defaultResumeData, picture: { ...defaultResumeData.picture, url } });
+
+		expect(writableResumeDataSchema.safeParse(withSummary("a".repeat(200_000))).success).toBe(true);
+		expect(writableResumeDataSchema.safeParse(withSummary("a".repeat(200_001))).error?.issues[0]?.path).toEqual([
+			"summary",
+			"content",
+		]);
+		expect(writableResumeDataSchema.safeParse(withPicture(`data:,${"a".repeat(300_000)}`)).success).toBe(true);
+		expect(writableResumeDataSchema.safeParse(withPicture(`data:,${"a".repeat(10_000_000)}`)).success).toBe(false);
 	});
 
 	it("rejects bounds within custom-section item arrays", () => {

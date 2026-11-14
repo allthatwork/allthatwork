@@ -1,5 +1,5 @@
 import type { BaseSettingsSnapshot, ResolvedNodeStyle, ResolveStylesheetContext, SemanticNode } from "./types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import fc from "fast-check";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { resolveStylesheet } from "./cascade";
@@ -274,6 +274,12 @@ describe("Semantic CSS cascade and structural resolution", () => {
 			"flex-shrink": 3,
 			"flex-basis": "25%",
 		});
+	});
+
+	it("rejects property names inherited from Object.prototype instead of crashing", () => {
+		const compiled = compileStylesheet({ languageVersion: 1, text: "@version 1;item { constructor: red; }" });
+
+		expect(compiled.diagnostics).toContainEqual(expect.objectContaining({ code: "UNSUPPORTED_PROPERTY" }));
 	});
 
 	it("keeps valid resolved declarations when a neighboring value is invalid", () => {

@@ -1,4 +1,5 @@
-import type { Application } from "./types";
+import type { ApplicationLane } from "./lanes";
+import type { ApplicationSummary } from "./types";
 import type {
 	ApplicationClosedReason,
 	ApplicationStatus,
@@ -7,9 +8,10 @@ import type {
 import { t } from "@lingui/core/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { getCategoryLane, getLaneLabel, laneMoveInput } from "./lanes";
 import { applicationsListQueryKey } from "./queries";
-import { getStageLabel } from "./stages";
-import { getOrpcErrorMessage } from "@/libs/error-message";
+import { applicationLanesQueryKey, useApplicationLanes } from "./use-application-lanes";
+import { toastError } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
 
 /**
@@ -26,15 +28,10 @@ export function useInvalidateApplications() {
 		void queryClient.invalidateQueries({ queryKey: orpc.documents.list.key() });
 		// A move out of Saved copies the written answers into the workspace's Saved items.
 		void queryClient.invalidateQueries({ queryKey: orpc.career.savedItems.key() });
+		void queryClient.invalidateQueries({ queryKey: applicationLanesQueryKey() });
 		if (id) void queryClient.invalidateQueries({ queryKey: orpc.applications.getById.queryKey({ input: { id } }) });
 	};
 }
-
-const failed = (error: unknown) =>
-	toast.add({
-		type: "error",
-		description: getOrpcErrorMessage(error, { fallback: t`Something went wrong. Try again.` }),
-	});
 
 /**
  * Stage changes, closing and deleting, shared by the list, board and detail sheet. A move shows at once (the list
@@ -44,20 +41,33 @@ export function useApplicationActions() {
 	const queryClient = useQueryClient();
 	const invalidate = useInvalidateApplications();
 	const listKey = applicationsListQueryKey();
+	const { lanes, mode } = useApplicationLanes();
 
 	const update = useMutation({
 		...orpc.applications.update.mutationOptions(),
 		onMutate: async (input) => {
 			await queryClient.cancelQueries({ queryKey: listKey });
-			const previous = queryClient.getQueryData<Application[]>(listKey);
-			const status = input.status as ApplicationStatus | undefined;
-			queryClient.setQueryData<Application[]>(listKey, (rows) =>
-				rows?.map((row): Application =>
+			const previous = queryClient.getQueryData<ApplicationSummary[]>(listKey);
+			const lane = input.laneId ? lanes.find((item) => item.id === input.laneId) : undefined;
+			const status = lane?.category ?? (input.status as ApplicationStatus | undefined);
+			// A move to another category lands in that category's default lane, as the server does.
+			const laneId = lane?.id ?? (mode === "lanes" && status ? getCategoryLane(lanes, status).id : undefined);
+			const closedReason =
+				input.closedReason !== undefined
+					? input.closedReason
+					: lane?.closedReason
+						? lane.closedReason
+						: status && status !== "closed"
+							? null
+							: undefined;
+			queryClient.setQueryData<ApplicationSummary[]>(listKey, (rows) =>
+				rows?.map((row): ApplicationSummary =>
 					row.id === input.id
 						? {
 								...row,
 								...(status ? { status } : {}),
-								...(input.closedReason !== undefined ? { closedReason: input.closedReason } : {}),
+								...(laneId ? { laneId } : {}),
+								...(closedReason !== undefined ? { closedReason } : {}),
 								...(input.targetingBuildStatus !== undefined
 									? { targetingBuildStatus: input.targetingBuildStatus }
 									: {}),
@@ -69,7 +79,26 @@ export function useApplicationActions() {
 		},
 		onError: (error, _input, context) => {
 			if (context?.previous) queryClient.setQueryData(listKey, context.previous);
-			failed(error);
+			toastError(error, t`Couldn't update the application. Try again.`);
+		},
+		// Toasts live on the mutation, not on mutate(): a board card's menu unmounts when the card changes column, and
+		// mutate()'s own callbacks die with it.
+		onSuccess: (_data, input) => {
+			const lane = input.laneId
+				? lanes.find((item) => item.id === input.laneId)
+				: input.status
+					? getCategoryLane(lanes, input.status as ApplicationStatus)
+					: undefined;
+			if (!lane) return;
+			const label = getLaneLabel(lane);
+			toast.add({
+				description:
+					lane.category !== "closed"
+						? t`Moved to ${label}`
+						: lane.systemKey
+							? t`Application closed`
+							: t`Closed as ${label}`,
+			});
 		},
 		onSettled: (_data, _error, input) => invalidate(input.id),
 	});
@@ -80,23 +109,22 @@ export function useApplicationActions() {
 			invalidate(input.id);
 			toast.add({ description: t`Application deleted` });
 		},
-		onError: failed,
+		onError: (error) => toastError(error, t`Couldn't delete the application. Try again.`),
 	});
 
 	return {
 		update,
 		remove,
-		moveTo: (application: Pick<Application, "id">, status: ApplicationStatus) =>
-			update.mutate(
-				{ id: application.id, status },
-				{ onSuccess: () => toast.add({ description: t`Moved to ${getStageLabel(status)}` }) },
-			),
-		close: (application: Pick<Application, "id">, closedReason: ApplicationClosedReason) =>
-			update.mutate(
-				{ id: application.id, status: "closed", closedReason },
-				{ onSuccess: () => toast.add({ description: t`Application closed` }) },
-			),
-		setBuildStatus: (application: Pick<Application, "id">, targetingBuildStatus: TargetingBuildStatus | null) =>
+		/** Moves to a lane; a Closed lane without a preset needs the outcome. */
+		moveTo: (
+			application: Pick<ApplicationSummary, "id">,
+			lane: ApplicationLane,
+			closedReason?: ApplicationClosedReason | null,
+		) => update.mutate({ id: application.id, ...laneMoveInput(lane, mode, closedReason) }),
+		/** Closes into the default Closed lane with an outcome. */
+		close: (application: Pick<ApplicationSummary, "id">, closedReason: ApplicationClosedReason) =>
+			update.mutate({ id: application.id, ...laneMoveInput(getCategoryLane(lanes, "closed"), mode, closedReason) }),
+		setBuildStatus: (application: Pick<ApplicationSummary, "id">, targetingBuildStatus: TargetingBuildStatus | null) =>
 			update.mutate({ id: application.id, targetingBuildStatus }),
 	};
 }

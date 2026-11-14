@@ -15,7 +15,7 @@ export interface Config {
 	toolCallTimeoutMs: number;
 }
 
-export const Config = z.object({
+export const Config: z<{ [K in keyof Config]?: Config[K] | null } & Record<string, unknown>, Config> = z.object({
 	// Not `.required()`: the bundle patch mounts this plugin as soon as the
 	// package is installed, so a missing key has to be an inert no-op rather
 	// than a validation error that takes the whole profile down at boot.

@@ -19,7 +19,8 @@ import {
 } from "@reactive-resume/schema/cover-letter/data";
 import { resumeDataSchema } from "@reactive-resume/schema/resume/data";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
-import { lockDocumentOwner } from "../documents/ownership";
+import { coverLetterDto } from "../../dto/cover-letter";
+import { lockUser } from "../documents/ownership";
 import { resumeService } from "../resume/service";
 import { sanitizeCoverLetterHtml } from "./html";
 import { getLetterVersion, saveLetterSessionVersion, writeLetterVersion } from "./versions";
@@ -177,7 +178,7 @@ async function insert(
 ): Promise<CoverLetter> {
 	if (client === db)
 		return db.transaction(async (tx) => {
-			await lockDocumentOwner(tx, input.userId);
+			await lockUser(tx, input.userId);
 			return insert(input, tx);
 		});
 	const content = coverLetterContentSchema.parse(input);
@@ -194,7 +195,7 @@ async function insert(
 			designLinked: input.designLinked ?? false,
 		})
 		.returning();
-	if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Failed to save the letter." });
+	if (!row) throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Couldn't save the letter. Try again." });
 	const letter = toLetter(row);
 	await writeLetterVersion(client, { letter, userId: input.userId, kind: "created" });
 	return letter;
@@ -207,7 +208,7 @@ async function updateRevision(
 ): Promise<CoverLetter> {
 	if (client === db)
 		return db.transaction(async (tx) => {
-			await lockDocumentOwner(tx, input.userId);
+			await lockUser(tx, input.userId);
 			return updateRevision(input, changes, tx);
 		});
 	const [row] = await client
@@ -268,7 +269,7 @@ export const coverLetterService = {
 		if (input.template) style.metadata.template = input.template;
 		const linked = Boolean(input.resumeId) && !input.template;
 		const letter = await db.transaction(async (tx) => {
-			await lockDocumentOwner(tx, input.userId);
+			await lockUser(tx, input.userId);
 			const letter = await insert(
 				{
 					userId: input.userId,
@@ -329,6 +330,15 @@ export const coverLetterService = {
 		changes.senderLinked = senderLinked;
 		changes.designLinked = designLinked;
 
+		if (input.sender !== undefined) {
+			if (senderLinked)
+				throw new ORPCError("BAD_REQUEST", { message: "Turn off the sender link before editing sender details." });
+			const style = changes.style ?? stored.style;
+			const sender = coverLetterDto.update.input.shape.sender.unwrap().parse(input.sender);
+			const fields = Object.fromEntries(Object.entries(sender).filter(([, value]) => value !== undefined));
+			changes.style = { ...style, basics: { ...style.basics, ...fields } };
+		}
+
 		if (input.template) {
 			const style = changes.style ?? stored.style;
 			changes.style = { ...style, metadata: { ...style.metadata, template: input.template } };
@@ -366,7 +376,7 @@ export const coverLetterService = {
 			await (input.applicationId === undefined
 				? persist(db)
 				: db.transaction(async (tx) => {
-						await lockDocumentOwner(tx, input.userId);
+						await lockUser(tx, input.userId);
 						return persist(tx);
 					})),
 			input.userId,
@@ -381,6 +391,10 @@ export const coverLetterService = {
 	refreshStyle: async (input: RevisionInput & { resumeId: string }) => {
 		const letter = await getById(input);
 		const style = await getResumeStyle(input.userId, input.resumeId, letter.style.sectionId, letter.style.itemId);
+		if (!letter.senderLinked) {
+			style.basics = letter.style.basics;
+			style.picture = letter.style.picture;
+		}
 		style.metadata.template = letter.style.metadata.template;
 		return resolveLinks(await updateRevision(input, { style, sourceResumeId: input.resumeId }), input.userId);
 	},

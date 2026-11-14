@@ -31,7 +31,7 @@ turn on an optional feature.
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `APP_URL`      | The public address people use to reach your instance, for example `https://resume.example.com`. Must start with `http://` or `https://`. Used for sign-in redirects, OAuth callbacks, links in emails, public resume links, social previews and upload URLs. With an `https://` address, session cookies are marked secure. |
 | `DATABASE_URL` | PostgreSQL connection string: `postgresql://USER:PASSWORD@HOST:5432/DATABASE`. Must start with `postgres://` or `postgresql://`. URL-encode special characters in the password. Add provider options such as `?sslmode=require` when your database needs them.                                                              |
-| `AUTH_SECRET`  | Secret used to sign sessions and encrypt sign-in data. Generate one with `openssl rand -hex 32`.                                                                                                                                                                                                                            |
+| `AUTH_SECRET`  | Secret used to sign sessions and encrypt sign-in data. Generate one with `openssl rand -hex 32`. In production it must be at least 32 characters, and the example value from `.env.example` stops the server at startup.                                                                                                    |
 
 <Warning>
   Keep `AUTH_SECRET` the same for the life of your instance. Changing it signs everyone out and makes data encrypted
@@ -46,6 +46,20 @@ turn on an optional feature.
 | `NODE_ENV`       | `production` in the image | When `production`, the server listens on `PORT` and turns on rate limiting. Leave it as the image sets it.                                                        |
 | `SERVER_PORT`    | `3001`                    | Port the server listens on when `NODE_ENV` is not `production`, which is the local development setup. Ignored by the image.                                       |
 | `ROOT_RESUME_ID` | unset                     | Shows one public resume at `/` instead of the home page. See [Show one resume at your root address](/self-hosting/examples#show-one-resume-at-your-root-address). |
+
+## Second domain and custom domains
+
+Both are off unless set. Every account's short link, `/<username>`, opens the resume its owner marked **Primary resume** in Share, with or without them.
+
+| Variable                        | Default | Description                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ALIAS_URL`                 | unset   | A second domain, such as `https://rx.cv`, that serves the same public pages as `APP_URL`: resumes, short links, the home page. Sign-in and the editor redirect to `APP_URL`, and search engines are pointed there. When set, Share copies links on this domain. Point the domain at this server.                                 |
+| `CUSTOM_DOMAIN_TARGET`          | unset   | The host people point their own domain's CNAME record at, such as `domains.example.com`. It must resolve to this server.                                                                                                                                                                                                         |
+| `CUSTOM_DOMAIN_PROVIDER_SECRET` | unset   | At least 32 characters. Traefik's HTTP provider sends it in an `X-Provider-Secret` header to read `/api/internal/traefik?service=<service>&entryPoint=<entry point>&certResolver=<resolver>`, which returns a router, and so a certificate, for every verified domain. Custom domains need both this and `CUSTOM_DOMAIN_TARGET`. |
+| `OLACV_API_KEY`                 | unset   | An OlaCV API token. With `FLAG_OLACV_SUGGESTION`, Share checks which `.cv` names are free before suggesting one. The server calls `https://ola.cv/api/v1/domains/check` with the account's candidate names only; the token never reaches the browser.                                                                            |
+
+For DNS, HTTPS, alias routing and the custom-domain provider endpoint, see
+[Sharing domains](/self-hosting/sharing-domains). Setting domain variables doesn't create proxy routes or certificates.
 
 ## Font mirror
 
@@ -136,14 +150,14 @@ Reactive Resume sends email for account verification, password resets and email 
 `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` and `SMTP_FROM` are all set. Until then, each email is written to the server log
 instead, so you can still copy verification links from there.
 
-| Variable      | Default | Description                                                                                                                                                 |
-| ------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SMTP_HOST`   | unset   | SMTP server hostname.                                                                                                                                       |
-| `SMTP_PORT`   | `587`   | SMTP server port.                                                                                                                                           |
-| `SMTP_USER`   | unset   | SMTP username.                                                                                                                                              |
-| `SMTP_PASS`   | unset   | SMTP password.                                                                                                                                              |
-| `SMTP_FROM`   | unset   | Sender address, for example `Reactive Resume <noreply@example.com>`.                                                                                        |
-| `SMTP_SECURE` | `false` | `true` connects with TLS from the start (usually port `465`). `false` upgrades the connection with STARTTLS when the server offers it (usually port `587`). |
+| Variable      | Default | Description                                                                                                                                                                    |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `SMTP_HOST`   | unset   | SMTP server hostname.                                                                                                                                                          |
+| `SMTP_PORT`   | `587`   | SMTP server port.                                                                                                                                                              |
+| `SMTP_USER`   | unset   | SMTP username.                                                                                                                                                                 |
+| `SMTP_PASS`   | unset   | SMTP password.                                                                                                                                                                 |
+| `SMTP_FROM`   | unset   | Sender address, for example `Reactive Resume <noreply@example.com>`.                                                                                                           |
+| `SMTP_SECURE` | `false` | `true` connects with TLS from the start (usually port `465`). `false` requires a successful STARTTLS upgrade and fails if the server does not support it (usually port `587`). |
 
 ## Storage
 
@@ -185,15 +199,16 @@ Settings show that AI is enabled globally and hide personal provider controls; t
 changes. Existing personal providers remain stored and become available again if you remove the server configuration.
 Shared credentials stay in the environment and do not require `ENCRYPTION_SECRET`.
 
-| Variable             | Default          | Description                                                                                                                                                                                                                          |
-| -------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ENCRYPTION_SECRET`  | unset            | Encrypts personal AI and web-access keys. At least 32 characters; generate one with `openssl rand -hex 32` and keep it different from `AUTH_SECRET`. A shorter value stops the server at startup. Required for saving personal keys. |
-| `AI_PROVIDER`        | unset            | Shared provider identifier, such as `openai`, `anthropic`, `gemini`, `ollama` or `openai-compatible`. Uses the same providers as the personal provider settings.                                                                     |
-| `AI_MODEL`           | unset            | Shared model name, such as `gpt-5-mini`. Required with `AI_PROVIDER`.                                                                                                                                                                |
-| `AI_API_KEY`         | unset            | Shared provider key. Required with `AI_PROVIDER`, except for Ollama. Never returned to the browser.                                                                                                                                  |
-| `AI_BASE_URL`        | provider default | Optional shared provider endpoint; required for `openai-compatible`. Local or private endpoints need `FLAG_ALLOW_UNSAFE_AI_BASE_URL=true`.                                                                                           |
-| `REDIS_URL`          | unset            | Redis connection string, `redis://` or `rediss://`. Optional.                                                                                                                                                                        |
-| `AI_TEST_TIMEOUT_MS` | `30000`          | How long **Save and test** waits for a provider to answer, in milliseconds. Raise it for local models that load slowly on first use.                                                                                                 |
+| Variable                | Default          | Description                                                                                                                                                                                                                          |
+| ----------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ENCRYPTION_SECRET`     | unset            | Encrypts personal AI and web-access keys. At least 32 characters; generate one with `openssl rand -hex 32` and keep it different from `AUTH_SECRET`. A shorter value stops the server at startup. Required for saving personal keys. |
+| `AI_PROVIDER`           | unset            | Shared provider identifier, such as `openai`, `anthropic`, `gemini`, `ollama` or `openai-compatible`. Uses the same providers as the personal provider settings.                                                                     |
+| `AI_MODEL`              | unset            | Shared model name, such as `gpt-5-mini`. Required with `AI_PROVIDER`.                                                                                                                                                                |
+| `AI_API_KEY`            | unset            | Shared provider key. Required with `AI_PROVIDER`, except for Ollama. Never returned to the browser.                                                                                                                                  |
+| `AI_BASE_URL`           | provider default | Optional shared provider endpoint; required for `openai-compatible`. Local or private endpoints need `FLAG_ALLOW_UNSAFE_AI_BASE_URL=true`.                                                                                           |
+| `REDIS_URL`             | unset            | Redis connection string, `redis://` or `rediss://`. Optional.                                                                                                                                                                        |
+| `AI_TEST_TIMEOUT_MS`    | `30000`          | How long **Save and test** waits for a provider to answer, in milliseconds. Raise it for local models that load slowly on first use.                                                                                                 |
+| `AI_REQUEST_TIMEOUT_MS` | `300000`         | How long a single AI action (importing a resume, reviewing, improving, reading a posting) waits for a provider, in milliseconds. Raise it for slow local models.                                                                     |
 
 <Warning>
   Changing `ENCRYPTION_SECRET` makes every saved AI and web-access key unreadable. People then need to enter their keys
@@ -203,8 +218,10 @@ Shared credentials stay in the environment and do not require `ENCRYPTION_SECRET
 Redis is optional on a single server. Without it, everything works, with these limits:
 
 - An Assistant reply that is interrupted by a page reload can't be picked up again.
-- Rate limits, **Stop** on a running Assistant reply, live updates between open tabs and the check that counts each
-  public resume view once an hour are kept in the memory of one server process.
+- Rate limits, **Stop** on a running Assistant reply and the check that counts each public resume view once an hour
+  are kept in the memory of one server process.
+- Live resume updates fall back to PostgreSQL `LISTEN`/`NOTIFY`, sharing a single connection per server process
+  across all active subscriptions.
 
 Set `REDIS_URL` when you run more than one server process, or when you want replies to survive a reload. When Redis is
 configured, the [health endpoint](/self-hosting/docker#check-the-health-endpoint) also checks it.
@@ -215,6 +232,14 @@ only works when the server has a matching ACL user; otherwise Redis replies `WRO
 pair`. Passwordless (`nopass`) ACL users keep an explicitly empty password: `redis://<user>:@<host>`.
 
 Saved AI providers and Assistant conversations are kept in PostgreSQL, so they remain available without Redis.
+
+## Career scheduling
+
+| Variable      | Default | Description                                                                                                                                                                                                                                                                          |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CRON_SECRET` | unset   | Authenticates `GET` and `POST /api/career/run` with `Authorization: Bearer <secret>`. At least 16 characters; generate it with `openssl rand -hex 32`. Required for Vercel Cron or an external HTTP scheduler. Node.js/Docker and Cloudflare schedule internally without this token. |
+
+Without `CRON_SECRET`, the HTTP runner returns `404`; an invalid bearer token returns `401`. On Vercel, set the secret in the Production environment and redeploy so Vercel Cron can supply it. Users must still opt in to each schedule. See [Career scheduling](/contributing/career-platform#operate-scheduled-work) for deployment timing and verification, and [Self-hosting on Vercel](/self-hosting/vercel#scheduled-career-work) for its setup.
 
 ## Web access
 
@@ -230,11 +255,22 @@ when the shared configuration is removed. Shared connections do not require `ENC
 Explicit generic configuration wins over legacy Firecrawl variables. Incomplete generic configuration, a missing key
 for Tavily/Exa, or a custom URL for those providers stops startup instead of silently choosing another connection.
 
-| Variable              | Default         | Description                                                                                                                                                                |
-| --------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `WEB_ACCESS_PROVIDER` | unset           | One selected provider: `firecrawl`, `tavily` or `exa`.                                                                                                                     |
-| `WEB_ACCESS_API_KEY`  | unset           | Shared provider key. Required except for Firecrawl with an explicit custom URL.                                                                                            |
-| `WEB_ACCESS_API_URL`  | Firecrawl Cloud | Optional Firecrawl base URL without `/v2`, e.g. `http://localhost:3102`. Private service URLs are operator-controlled. Tavily and Exa always use their official endpoints. |
+| Variable                 | Default         | Description                                                                                                                                                                                              |
+| ------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WEB_ACCESS_PROVIDER`    | unset           | One selected provider: `firecrawl`, `tavily` or `exa`.                                                                                                                                                   |
+| `WEB_ACCESS_API_KEY`     | unset           | Shared provider key. Required except for Firecrawl with an explicit custom URL.                                                                                                                          |
+| `WEB_ACCESS_API_URL`     | Firecrawl Cloud | Optional Firecrawl base URL without `/v2`, e.g. `http://localhost:3102`. Private service URLs are operator-controlled. Tavily and Exa always use their official endpoints.                               |
+| `WEB_SEARCH_SEARXNG_URL` | unset           | Optional SearXNG base URL without `/search`, e.g. `http://searxng:8080`. Sends every web search there instead of the web connection; reading is unchanged. Private service URLs are operator-controlled. |
+
+`WEB_SEARCH_SEARXNG_URL` is independent of the `WEB_ACCESS_*` variables, so shared and personal connections keep
+working beside it. When it is set, Applications search, role discovery and assistant web search go to that SearXNG
+instance for every user, with or without a web connection, and the instance must list `json` in `search.formats`.
+Each of a user's search countries is one SearXNG request, using its likely language and country, such as `en-AU`,
+`ja-JP` or `pt-BR`. This applies to posting search, assistant search, background discovery and the connection test,
+independently of the interface language. Reading still uses the web connection, then the built-in
+reader, so sites that block plain fetches still need Firecrawl, Tavily or Exa. With it set, **Test connection** tests
+search against SearXNG and reading against the connection. See
+[Search directly from Reactive Resume](/self-hosting/job-search-and-ai#search-directly-from-reactive-resume).
 
 Connections enable Applications keyword search and assistant web tools. URL import uses the selected reader, then
 falls back to the built-in reader on recoverable failures. Saving pasted text and manual preparation work without
@@ -262,6 +298,7 @@ All flags default to `false`.
 | `FLAG_DISABLE_API_RATE_LIMIT`          | Turns off API and authentication rate limiting, including sign-in, sign-up, OAuth, requests made with API keys, PDF export and AI requests. Intended for test installations.                                                                                                                                |
 | `FLAG_ALLOW_UNSAFE_AI_BASE_URL`        | Lets AI providers use `http://` addresses and private or local network addresses, such as an Ollama server on your network. Without it, a provider's base URL must be public `https://`.                                                                                                                    |
 | `FLAG_ALLOW_UNSAFE_OAUTH_REDIRECT_URI` | Lets MCP and OAuth clients that register themselves use any redirect address, including custom schemes and private hosts. By default a redirect must go to your instance's own address, an `http://` loopback address (`localhost`, `127.0.0.1`, `::1`) or a public `https://` address.                     |
+| `FLAG_OLACV_SUGGESTION`                | Suggests registering a `.cv` domain made from the account's username or name at OlaCV to people who haven't connected a custom domain. Needs custom domains to be on. With `OLACV_API_KEY`, only a name OlaCV reports as free and not premium is suggested, with its price.                                 |
 
 <Warning>
   Only turn on the two `FLAG_ALLOW_UNSAFE_*` flags on an instance where you trust every user. On a shared instance, an

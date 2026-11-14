@@ -1,5 +1,5 @@
 import type { ExperienceItem, ResumeData } from "@reactive-resume/schema/resume/data";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
 import { lintResumeForAts } from "./index";

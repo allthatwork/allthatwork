@@ -1,8 +1,10 @@
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { createProcedureClient } from "@orpc/server";
 
 const deleteAccount = vi.hoisted(() => vi.fn());
-vi.mock("@reactive-resume/auth/config", () => ({ auth: { api: {} } }));
+vi.mock("@reactive-resume/auth/config", () => ({
+	auth: { api: { getSession: vi.fn(async () => ({ session: { createdAt: new Date() } })) } },
+}));
 vi.mock("./service", () => ({ authService: { deleteAccount } }));
 const { authRouter } = await import("./router");
 
@@ -35,7 +37,7 @@ it.each(["apiKey", "bearer", "session"] as const)(
 		} else {
 			await expect(remove({})).rejects.toMatchObject({
 				code: "FORBIDDEN",
-				message: "Account deletion must be performed in your browser settings.",
+				message: "Delete your account from Settings in a web browser.",
 			});
 			expect(deleteAccount).not.toHaveBeenCalled();
 		}

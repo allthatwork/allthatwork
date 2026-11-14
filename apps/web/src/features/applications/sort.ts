@@ -1,4 +1,4 @@
-import type { Application } from "./types";
+import type { ApplicationSummary } from "./types";
 import type {
 	ApplicationSort,
 	ApplicationSortDirection,
@@ -8,7 +8,7 @@ import { t } from "@lingui/core/macro";
 import { getNextStep } from "./next-step";
 
 type SortSource = Pick<
-	Application,
+	ApplicationSummary,
 	| "role"
 	| "company"
 	| "status"
@@ -26,7 +26,7 @@ type SortSource = Pick<
  * When the application was sent. Saved ones have none, and neither do closed ones whose timeline shows they never got
  * past Saved; the rest use the applied date on record.
  */
-export function appliedDate(application: Pick<Application, "status" | "activity" | "appliedAt">): Date | null {
+export function appliedDate(application: Pick<ApplicationSummary, "status" | "activity" | "appliedAt">): Date | null {
 	if (application.status === "saved") return null;
 	if (application.status === "closed") {
 		const stages = application.activity.flatMap((entry) => (entry.type === "stage" ? [entry.stage] : []));

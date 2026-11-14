@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { ATS_CATEGORIES, ATS_RULE_CATALOG_V1, ATS_RULE_CODES } from "./catalog";
 
 describe("ATS_RULE_CATALOG_V1", () => {

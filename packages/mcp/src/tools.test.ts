@@ -1,6 +1,6 @@
 // oxlint-disable typescript/no-non-null-assertion -- These tests assert registered tool names before exercising handlers.
 
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { ORPCError } from "@orpc/server";
 import { TOOL_META } from "./tool-meta";
 

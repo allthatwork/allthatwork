@@ -3,6 +3,8 @@ title: "Importing applications from CSV"
 description: "Move job applications from a spreadsheet into Reactive Resume with CSV import, check how columns are matched, and export your applications back to CSV."
 ---
 
+CSV import/export is available in the web app. Open Reactive Resume in your browser to use it; the mobile app does not offer CSV import/export.
+
 If you've been tracking your job search in a spreadsheet, you can bring it into **Applications** in one go. Save the sheet as CSV, paste or upload it, check how the columns were matched, and import. You can also export your applications to CSV at any time.
 
 ## Import applications
@@ -99,8 +101,9 @@ Up to 500 applications import at a time. If your file has more, the summary says
 <Steps>
   <Step title="Open Export to CSV">Select the **⋯** button next to **Save job**, then **Export to CSV…**.</Step>
   <Step title="Choose what to export">
-    Under **Applications to export**, choose **Current filters** (the applications matching your current search, closed
-    ones included) or **All applications (including closed)**.
+    Under **Applications to export**, choose **Current filters** to export applications matching your search and **Show
+    closed** setting. Closed applications are included only when **Show closed** is on. Choose **All applications
+    (including closed)** to include every application regardless of those settings.
   </Step>
   <Step title="Limit by date, if you like">
     Set **Application date from** and **Application date to** to export only applications from that period. Leave them
@@ -116,9 +119,13 @@ Up to 500 applications import at a time. If your file has more, the summary says
   />
 </Frame>
 
-The file is named `applications-YYYY-MM-DD.csv` and opens in any spreadsheet app. It has these columns: Company, Role, Stage, Stage Date, Application Date, Location, Salary, Source, URL, Tags, Contacts, Notes, Closed Reason, Stage History, Timeline, Created At and Updated At.
+The file is named `applications-YYYY-MM-DD.csv` and opens in any spreadsheet app. It has these columns: Company, Role, Stage, Lane, Lane Category, Lane Closed Reason, Stage Date, Application Date, Location, Salary, Source, URL, Job Description, Posting Source, Tags, Contacts, Notes, Closed Reason, Stage History, Timeline, Created At and Updated At.
 
-You can import an exported file again; most columns match automatically. To download everything in your account, including documents, see [Exporting your data](/guides/exporting-your-data).
+**Job Description** contains the saved posting text. **Posting Source** contains its source metadata as JSON, such as how and when it was retrieved and whether it was clipped, when available. The export also includes your contacts, notes and timeline, so treat the downloaded file as private application data and check it before sharing.
+
+**Stage** is always one of the standard stages, so other spreadsheets and older versions can read it. **Lane** is the name of your own stage, **Lane Category** what it counts as, and **Lane Closed Reason** its preset outcome, if any.
+
+You can import an exported file again; most columns match automatically. When a file names stages (a **Lane** column), the **Stages** list asks where each one goes: one of your stages that counts the same, or **Add “_name_” as a new stage**. Matching names are suggested, but nothing imports until every stage has a choice, so no application quietly lands in the wrong stage. A stage that contradicts the row's **Stage** value is listed as invalid. On a server without custom stages, the names aren't kept and rows import with their standard stage. To download everything in your account, including documents, see [Exporting your data](/guides/exporting-your-data).
 
 ## Troubleshooting
 

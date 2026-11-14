@@ -1,11 +1,17 @@
 import type { DbOrTx } from "@reactive-resume/db/client";
-import { and, eq, gt, inArray, like, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import type { SelectedFields } from "drizzle-orm/pg-core";
+import type { SelectResultFields } from "drizzle-orm/query-builders/select.types";
+import { and, desc, eq, gt, inArray, isNull, like, or, sql } from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
-import { isRandomSlug, slugify } from "@reactive-resume/utils/string";
+import { isValidSlug, MAX_SLUG_LENGTH } from "@reactive-resume/schema/resume/slug";
+import { slugify } from "@reactive-resume/utils/slug";
+import { isRandomSlug } from "@reactive-resume/utils/string";
+import { ownerIsNotBanned } from "./access-policy";
 
 /** Lowercase letters and numbers, in groups joined by single dashes. Only new and changed slugs must match. */
-export const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+export { SLUG_PATTERN } from "@reactive-resume/schema/resume/slug";
 
 // After a rename the old address keeps working this long.
 const REDIRECT_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
@@ -46,9 +52,13 @@ function pickFreeSlug(stem: string, taken: ReadonlySet<string>) {
 	}
 }
 
+// Slugs cannot exceed 64 chars. Keep base stem short enough so numerical suffixes stay within 64.
+const MAX_STEM_LENGTH = 56;
+
 /** A slug made from `name` that none of the user's resumes uses yet. */
 export async function findFreeSlug(client: DbOrTx, userId: string, name: string) {
-	const stem = slugify(name) || "resume";
+	const rawStem = slugify(name) || "resume";
+	const stem = rawStem.slice(0, MAX_STEM_LENGTH).replace(/-+$/, "") || "resume";
 	const rows = await client
 		.select({ slug: schema.resume.slug })
 		.from(schema.resume)
@@ -61,18 +71,34 @@ export async function findFreeSlug(client: DbOrTx, userId: string, name: string)
 
 /** Whether a slug can be this resume's address, and if not, why and what would work instead. */
 export async function checkSlug(input: { userId: string; resumeId: string; slug: string }) {
-	if (!SLUG_PATTERN.test(input.slug)) {
-		const suggestion = slugify(input.slug);
-		return { status: "invalid" as const, ...(suggestion && suggestion !== input.slug ? { suggestion } : {}) };
-	}
-
 	const [holder] = await db
 		.select({ id: schema.resume.id, name: schema.resume.name })
 		.from(schema.resume)
 		.where(and(eq(schema.resume.userId, input.userId), eq(schema.resume.slug, input.slug)));
 
+	if (holder?.id === input.resumeId) return { status: "current" as const };
+
+	if (!isValidSlug(input.slug)) {
+		const rawSuggestion = slugify(input.slug);
+		const candidate = rawSuggestion
+			? rawSuggestion.slice(0, MAX_SLUG_LENGTH).replace(/-+$/, "") || undefined
+			: undefined;
+
+		let suggestion = candidate && candidate !== input.slug ? candidate : undefined;
+		if (suggestion) {
+			const [candidateHolder] = await db
+				.select({ id: schema.resume.id })
+				.from(schema.resume)
+				.where(and(eq(schema.resume.userId, input.userId), eq(schema.resume.slug, suggestion)));
+			if (candidateHolder && candidateHolder.id !== input.resumeId) {
+				suggestion = await findFreeSlug(db, input.userId, suggestion);
+			}
+		}
+
+		return { status: "invalid" as const, ...(suggestion ? { suggestion } : {}) };
+	}
+
 	if (!holder) return { status: "available" as const };
-	if (holder.id === input.resumeId) return { status: "current" as const };
 
 	return {
 		status: "taken" as const,
@@ -144,4 +170,44 @@ export function matchesSlug(slug: string) {
 				),
 		),
 	);
+}
+
+/**
+ * Which resume a public address names: a slug (current, or a previous one whose redirect hasn't expired), an account's
+ * primary resume, or an ID.
+ */
+export type ResumeMatch = { username: string; slug: string } | { username: string; primary: true } | { id: string };
+
+/**
+ * The resume `match` names, outside Trash, with an unbanned owner and meeting any `extra` conditions. A current
+ * username or slug wins over another's redirect.
+ */
+export async function findResume<TColumns extends SelectedFields>(
+	match: ResumeMatch,
+	columns: TColumns,
+	...extra: (SQL | undefined)[]
+): Promise<SelectResultFields<TColumns> | undefined> {
+	// Widened for the query builder, whose types can't follow a generic selection; the result is narrowed back.
+	const [resume] = await db
+		.select(columns as SelectedFields)
+		.from(schema.resume)
+		.innerJoin(schema.user, eq(schema.resume.userId, schema.user.id))
+		.where(
+			and(
+				"slug" in match ? matchesSlug(match.slug) : undefined,
+				// Usernames are stored lowercase, so `/Jane` opens the same page as `/jane`. A previous username whose
+				// redirect hasn't expired finds it too, so old links can move to the current address.
+				"username" in match ? matchesUsername(match.username.toLowerCase()) : eq(schema.resume.id, match.id),
+				"primary" in match ? eq(schema.resume.isPrimary, true) : undefined,
+				isNull(schema.resume.trashedAt),
+				ownerIsNotBanned(),
+				...extra,
+			),
+		)
+		.orderBy(
+			...("username" in match ? [desc(sql`${schema.user.username} = ${match.username.toLowerCase()}`)] : []),
+			...("slug" in match ? [desc(sql`${schema.resume.slug} = ${match.slug}`)] : []),
+		)
+		.limit(1);
+	return resume as SelectResultFields<TColumns> | undefined;
 }

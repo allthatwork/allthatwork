@@ -1,6 +1,6 @@
-import type { Application } from "./types";
+import type { Application, ApplicationSummary } from "./types";
 import type { ApplicationFilters } from "@reactive-resume/schema/applications/filters";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { DEFAULT_APPLICATION_FILTERS, OPEN_STAGES } from "@reactive-resume/schema/applications/filters";
 import {
@@ -91,7 +91,7 @@ const f = (patch: Partial<ApplicationFilters> = {}): ApplicationFilters => ({
 	...patch,
 });
 
-const ids = (applications: Application[]) => applications.map((application) => application.id);
+const ids = (applications: ApplicationSummary[]) => applications.map((application) => application.id);
 const run = (applications: Application[], filters: ApplicationFilters) =>
 	ids(filterApplications(applications, filters, context));
 
@@ -524,7 +524,7 @@ describe("cards changed while filtered", () => {
 		const a = app({ id: "a" });
 		const b = app({ id: "b" });
 		const notQueued = f({ build: ["none"] });
-		const matches = (application: Application) => application.targetingBuildStatus === null;
+		const matches = (application: ApplicationSummary) => application.targetingBuildStatus === null;
 
 		// The filters change: the snapshot starts from what matches.
 		const snapshot = snapshotOf([a, b]);

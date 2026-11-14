@@ -23,7 +23,7 @@
 			]
 		},
 		"apps/web": {
-			"entry": ["lingui.config.ts", "vite.config.ts", "vitest.config.ts", "src/features/homepage/prerender.tsx"],
+			"entry": ["lingui.config.ts", "vitest.config.ts", "src/features/homepage/prerender.tsx"],
 			"vite": {
 				"config": []
 			},
@@ -61,7 +61,6 @@
 				"@vercel/blob",
 				"ai",
 				"bcryptjs",
-				"cjk-regex",
 				"css-tree",
 				"docx",
 				"drizzle-zod",
@@ -69,6 +68,7 @@
 				"fast-png",
 				"fflate",
 				"ioredis",
+				"isbot",
 				"jose",
 				"jsonrepair",
 				"node-html-parser",
@@ -87,7 +87,7 @@
 			]
 		},
 		"tooling": {
-			"entry": ["**/*.mjs", "mcp/seed.ts"],
+			"entry": ["**/*.mjs"],
 			"ignoreDependencies": ["@formepdf/core", "@orpc/client", "css-tree"]
 		},
 		"packages/api": {

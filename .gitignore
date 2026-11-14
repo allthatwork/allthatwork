@@ -49,7 +49,7 @@ temp
 
 # AI
 .codex
-.agents
+.agents/*
 .claude
 .cursor
 .mcp.json
@@ -77,8 +77,14 @@ temp
 /apps/mobile/.expo
 /apps/mobile/dist
 /apps/mobile/expo-env.d.ts
+/tooling/mobile/.bundle/
+/tooling/mobile/vendor/
+/tooling/mobile/fastlane/report.xml
 
 # Design exports live in Figma/Penpot; keep only runtime assets in source.
 /apps/mobile/assets/launch-kit/
 /apps/mobile/assets/reactive-resume-launch-kit.zip
 /apps/mobile/assets/reactive-resume-mobile-launch-assets.zip
+
+# Lingui compile output (the fill-translations gate compiles to validate; the apps load .po directly)
+/apps/*/locales/*.js

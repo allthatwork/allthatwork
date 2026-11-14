@@ -2,13 +2,14 @@ import type { CareerImportFact, CareerSource } from "@reactive-resume/schema/car
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as tables from "@reactive-resume/db/schema";
 import { copyCoverLetterStyle } from "@reactive-resume/resume/cover-letter";
 import {
+	careerOfferInputSchema,
 	careerProfileDataSchema,
 	aiLimitsSchema,
 	EMPTY_WORKSPACE,
@@ -19,6 +20,13 @@ import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 const fixture = vi.hoisted(() => ({
 	db: undefined as ReturnType<typeof drizzle> | undefined,
 	generate: vi.fn(),
+	provider: vi.fn(async () => ({
+		id: "fixture",
+		label: "Fixture",
+		provider: "openai",
+		model: "fixture",
+		apiKey: "synthetic",
+	})),
 	storageDelete: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock("@reactive-resume/db/client", () => ({
@@ -37,13 +45,7 @@ vi.mock("../ai-providers/service", () => ({
 			model: "fixture",
 			apiKey: "synthetic",
 		}),
-		getDefaultRunnable: async () => ({
-			id: "fixture",
-			label: "Fixture",
-			provider: "openai",
-			model: "fixture",
-			apiKey: "synthetic",
-		}),
+		getDefaultRunnable: fixture.provider,
 	},
 }));
 vi.mock("../ai/service", () => ({ getModel: () => ({}) }));
@@ -76,6 +78,19 @@ function resumeData(headline: string) {
 	data.basics.headline = headline;
 	return data;
 }
+
+describe("mergeCareerProfile", () => {
+	it("carries stored search regions only when the input leaves the key out", async () => {
+		const { mergeCareerProfile } = await import("./service");
+		const stored = careerProfileDataSchema.parse({ searchRegions: ["AU"] });
+		const missing = careerProfileDataSchema.parse({ priorities: "x" });
+
+		expect(mergeCareerProfile(stored, missing)).toEqual({ ...missing, searchRegions: ["AU"] });
+		expect(mergeCareerProfile(stored, { ...missing, searchRegions: [] }).searchRegions).toEqual([]);
+		expect(mergeCareerProfile(stored, { ...missing, searchRegions: null }).searchRegions).toBeNull();
+		expect(mergeCareerProfile(stored, { ...missing, searchRegions: ["DE", "FR"] }).searchRegions).toEqual(["DE", "FR"]);
+	}, 30_000);
+});
 
 // Real PostgreSQL, opt-in only. Every table and FK comes from shipped migrations in a unique schema.
 describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", () => {
@@ -173,8 +188,9 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 
 	beforeEach(async () => {
 		fixture.generate.mockReset();
+		fixture.provider.mockClear();
 		fixture.storageDelete.mockReset().mockResolvedValue(undefined);
-		await pool.query('TRUNCATE "user" CASCADE');
+		await pool.query('TRUNCATE "user", "released_username" CASCADE');
 		await getDb()
 			.insert(tables.user)
 			.values(
@@ -392,6 +408,46 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 				.sort(),
 		).toEqual(["duplicate", "saved"]);
 		expect(await service.facts({ userId: "alice" })).toHaveLength(1);
+	});
+
+	it("saves manual offers without AI, preserves terms and rejects another owner's application", async () => {
+		const input = careerOfferInputSchema.parse({
+			applicationId: "alice-app",
+			currency: "EUR",
+			period: "year",
+			base: 95000,
+			variable: null,
+			equity: "Options; value unknown",
+			officeDays: 0,
+		});
+		const before = await applications.getById({ userId: "alice", id: "alice-app" });
+		const first = await service.createOffer("alice", input);
+		const second = await service.createOffer("alice", {
+			...input,
+			applicationId: "alice-other",
+			currency: "USD",
+			period: "month",
+			base: 8000,
+			variable: 0,
+		});
+		expect(first).toMatchObject({
+			applicationId: "alice-app",
+			userId: "alice",
+			data: { kind: "offer", currency: "EUR", period: "year", base: 95000, variable: null, officeDays: 0 },
+		});
+		expect(second).toMatchObject({
+			applicationId: "alice-other",
+			data: { kind: "offer", currency: "USD", period: "month", variable: 0 },
+		});
+		expect(await service.savedItems({ userId: "alice", kind: "offer" })).toHaveLength(2);
+		expect(await service.savedItems({ userId: "bob", kind: "offer" })).toEqual([]);
+		await expect(service.createOffer("bob", input)).rejects.toMatchObject({ code: "NOT_FOUND" });
+		await expect(service.createOffer("alice", { ...input, applicationId: "missing" })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		expect(await applications.getById({ userId: "alice", id: "alice-app" })).toEqual(before);
+		expect(fixture.generate).not.toHaveBeenCalled();
+		expect(fixture.provider).not.toHaveBeenCalled();
 	});
 
 	it("isolates accounts and application-private evidence until its owner explicitly shares it", async () => {
@@ -797,6 +853,56 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		});
 	});
 
+	it("adopts the device country on the first search without a Preferences visit", async () => {
+		const { searchScope } = await import("../web-access/regions");
+		await service.saveProfile("alice", careerProfileDataSchema.parse({ priorities: "Autonomy" }));
+		expect(await searchScope("alice", "Australia/Melbourne")).toEqual({ regions: ["AU"], locations: [] });
+		expect(await service.profile("alice")).toMatchObject({ priorities: "Autonomy", searchRegions: ["AU"] });
+		expect((await service.profile("bob")).searchRegions).toBeUndefined();
+		await searchScope("alice", "Europe/Berlin");
+		expect((await service.profile("alice")).searchRegions).toEqual(["AU"]);
+	});
+
+	it.each([null, [], ["DE"]])(
+		"keeps explicit search regions %j when the device country differs",
+		async (searchRegions) => {
+			const { searchScope } = await import("../web-access/regions");
+			await service.saveProfile("alice", careerProfileDataSchema.parse({ searchRegions }));
+			expect((await searchScope("alice", "Australia/Melbourne")).regions).toEqual(searchRegions ?? []);
+			expect((await service.profile("alice")).searchRegions).toEqual(searchRegions);
+		},
+	);
+
+	it("uses the account country before the device and ignores unknown device time zones", async () => {
+		const { searchScope } = await import("../web-access/regions");
+		await getDb().update(tables.user).set({ timezone: "Europe/Berlin" }).where(eq(tables.user.id, "alice"));
+		expect((await searchScope("alice", "Australia/Melbourne")).regions).toEqual(["DE"]);
+		expect((await service.profile("alice")).searchRegions).toBeUndefined();
+		expect((await searchScope("bob", "Not/AZone")).regions).toEqual([]);
+		expect((await service.profile("bob")).searchRegions).toBeUndefined();
+	});
+
+	it("keeps a concurrent explicit preference save when initializing the device country", async () => {
+		const { searchScope } = await import("../web-access/regions");
+		await Promise.all([
+			searchScope("alice", "Australia/Melbourne"),
+			service.saveProfile("alice", careerProfileDataSchema.parse({ priorities: "Autonomy", searchRegions: ["DE"] })),
+		]);
+		expect(await service.profile("alice")).toMatchObject({ priorities: "Autonomy", searchRegions: ["DE"] });
+	});
+
+	it("keeps stored search regions when a save from an older client leaves the key out", async () => {
+		await service.saveProfile("alice", careerProfileDataSchema.parse({ searchRegions: ["AU"] }));
+		const older = careerProfileDataSchema.parse({ priorities: "x" });
+		delete older.searchRegions;
+
+		expect(await service.saveProfile("alice", older)).toMatchObject({ priorities: "x", searchRegions: ["AU"] });
+		expect(await service.profile("alice")).toMatchObject({ priorities: "x", searchRegions: ["AU"] });
+
+		await service.saveProfile("alice", careerProfileDataSchema.parse({ searchRegions: null }));
+		expect((await service.profile("alice")).searchRegions).toBeNull();
+	});
+
 	it("exports source metadata and owned coaching records without credentials, then cascades account deletion", async () => {
 		await service.saveProfile("alice", careerProfileDataSchema.parse({ priorities: "Autonomy" }));
 		const saved = await fact("alice", "I mentor junior engineers.");
@@ -990,6 +1096,8 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		["story deleted", "answer"],
 		["profile edited", "fit"],
 		["fact switched off", "answer"],
+		["pipeline renamed", "fit"],
+		["pipeline renamed", "answer"],
 	] as const)("rejects %s during in-flight %s generation", async (change, task) => {
 		const remembered = await fact("alice", "I restored a failed service.");
 		const original = await service.saveStory("alice", { ...story([remembered.id]), result: "Original story outcome" });
@@ -1022,7 +1130,15 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		else if (change === "story deleted") await service.deleteStory("alice", original.id);
 		else if (change === "profile edited")
 			await service.saveProfile("alice", careerProfileDataSchema.parse({ priorities: "Different priorities" }));
-		else await service.updateFact("alice", { id: remembered.id, status: "excluded" });
+		else if (change === "pipeline renamed") {
+			const { applicationLaneService } = await import("../applications/lanes");
+			const pipeline = await applicationLaneService.get("alice");
+			await applicationLaneService.update("alice", {
+				id: "application-lane:alice:saved",
+				label: "Wishlist",
+				expectedRevision: pipeline.revision,
+			});
+		} else await service.updateFact("alice", { id: remembered.id, status: "excluded" });
 		release.resolve();
 		await expect(pending).rejects.toMatchObject({ code: "CONFLICT" });
 		expect(await getDb().select().from(tables.careerArtifact)).toEqual([]);
@@ -1743,7 +1859,7 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		expect((await applications.getById({ userId: "alice", id: "alice-app" })).status).toBe("offer");
 	});
 
-	it("discards a briefing when its schedule is paused while the provider runs", async () => {
+	it.each(["paused", "closed"] as const)("discards a briefing when %s while the provider runs", async (state) => {
 		const started = Promise.withResolvers<void>();
 		const release = Promise.withResolvers<void>();
 		fixture.generate.mockImplementationOnce(async () => {
@@ -1782,15 +1898,24 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		const running = runCareerJobs();
 		await started.promise;
 		try {
-			const { careerScheduleInputSchema } = await import("@reactive-resume/schema/career");
-			const [schedule] = await careerJobs.list("alice");
-			await careerJobs.save("alice", { ...careerScheduleInputSchema.parse(schedule), id: "pause-me", enabled: false });
+			if (state === "closed") {
+				await applications.update({ userId: "alice", id: "alice-app", status: "closed", closedReason: "no-response" });
+			} else {
+				const { careerScheduleInputSchema } = await import("@reactive-resume/schema/career");
+				const [schedule] = await careerJobs.list("alice");
+				await careerJobs.save("alice", {
+					...careerScheduleInputSchema.parse(schedule),
+					id: "pause-me",
+					enabled: false,
+				});
+			}
 		} finally {
 			release.resolve();
 			await running;
 		}
 		expect(await getDb().select().from(tables.careerArtifact)).toEqual([]);
 		expect(await getDb().select().from(tables.careerNotification)).toEqual([]);
+		expect(await careerJobs.list("alice")).toMatchObject([{ id: "pause-me", enabled: state === "closed" }]);
 	});
 	it("lists complete user history while bounding optional structured AI context", async () => {
 		await getDb()

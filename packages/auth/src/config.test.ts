@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { env } from "@reactive-resume/env/server";
 import { auth } from "./config";
 
@@ -20,6 +20,15 @@ describe("session freshness", () => {
 	it("disables the freshness gate so provider unlinking works for week-old sessions", () => {
 		expect(auth.options.session?.freshAge).toBe(0);
 	});
+});
+
+it.each([
+	["GET", "/reference"],
+	["GET", "/token"],
+	["POST", "/delete-anonymous-user"],
+])("does not serve %s %s", async (method, path) => {
+	const response = await auth.handler(new Request(`${env.APP_URL}/api/auth${path}`, { method }));
+	expect(response.status).toBe(404);
 });
 
 it("publishes the configured native authentication HTTP contract", async () => {

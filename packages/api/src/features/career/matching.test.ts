@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { matchOpportunity } from "./matching";
 
 const phrases = ["Senior Product Manager", "Product Lead — Onboarding", "Berlin", "Remote within Europe"];

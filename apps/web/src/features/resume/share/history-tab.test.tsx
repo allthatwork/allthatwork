@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 
 it.each(["name", "restore"])("stops History %s after the save barrier fails", async (action) => {
-	if (action === "restore") useEditorStore.getState().setHistoryVersion("version");
+	if (action === "restore") useEditorStore.setState({ historyVersionId: "version" });
 	const client = new QueryClient();
 	render(
 		<QueryClientProvider client={client}>

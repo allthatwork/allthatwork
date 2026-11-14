@@ -69,12 +69,12 @@ export function useAuthAccounts() {
 	});
 
 	const getAccountByProviderId = useCallback(
-		(providerId: string) => accounts?.find((account) => account.providerId === providerId),
+		(providerId: AuthProvider | (string & {})) => accounts?.find((account) => account.providerId === providerId),
 		[accounts],
 	);
 
 	const hasAccount = useCallback(
-		(providerId: string) => !!getAccountByProviderId(providerId),
+		(providerId: AuthProvider | (string & {})) => !!getAccountByProviderId(providerId),
 		[getAccountByProviderId],
 	);
 
@@ -92,9 +92,15 @@ export function useAuthProviderActions() {
 	const queryClient = useQueryClient();
 	const link = useCallback(async (provider: AuthProvider) => {
 		const providerName = getProviderName(provider);
-		const toastId = toast.add({ type: "loading", description: t`Linking your ${providerName} account...` });
+		const toastId = toast.add({
+			type: "loading",
+			description: t`Connecting your ${providerName} account…`,
+		});
 
-		const { error } = await authClient.linkSocial({ provider, callbackURL: "/dashboard/settings/account" });
+		const { error } = await authClient.linkSocial({
+			provider,
+			callbackURL: "/dashboard/settings/account",
+		});
 
 		if (error) {
 			toast.add({
@@ -103,7 +109,7 @@ export function useAuthProviderActions() {
 					error,
 					t({
 						comment: "Fallback toast when linking a social authentication provider fails",
-						message: "Failed to link provider. Please try again.",
+						message: `Couldn't connect your ${providerName} account. Try again.`,
 					}),
 				),
 				id: toastId,
@@ -114,12 +120,16 @@ export function useAuthProviderActions() {
 		toast.close(toastId);
 	}, []);
 
+	/**
+	 * Unlinks a social account. Better Auth's /unlink-account endpoint expects
+	 * the internal database account ID (`account.id`), not `account.accountId`.
+	 */
 	const unlink = useCallback(
 		async (provider: AuthProvider, accountId: string) => {
 			const providerName = getProviderName(provider);
 			const toastId = toast.add({
 				type: "loading",
-				description: t`Unlinking your ${providerName} account...`,
+				description: t`Disconnecting your ${providerName} account…`,
 			});
 
 			const { error } = await authClient.unlinkAccount({ accountId });
@@ -131,7 +141,7 @@ export function useAuthProviderActions() {
 						error,
 						t({
 							comment: "Fallback toast when unlinking a social authentication provider fails",
-							message: "Failed to unlink provider. Please try again.",
+							message: `Couldn't disconnect your ${providerName} account. Try again.`,
 						}),
 					),
 					id: toastId,

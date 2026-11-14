@@ -1,4 +1,4 @@
-import type { Application } from "@/features/applications/types";
+import type { ApplicationSummary } from "@/features/applications/types";
 import type { LetterDraft } from "@/features/letters/store";
 import type { CoverLetter } from "@reactive-resume/schema/cover-letter/data";
 import type { CSSProperties, ReactElement, ReactNode } from "react";
@@ -27,13 +27,15 @@ import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { cn } from "@reactive-resume/utils/style";
 import { templates } from "@/dialogs/resume/template/data";
+import { getDisplayLane, getLaneLabel } from "@/features/applications/lanes";
 import { applicationsListQueryOptions } from "@/features/applications/queries";
-import { getStageColor, getStageLabel } from "@/features/applications/stages";
+import { useApplicationLanes } from "@/features/applications/use-application-lanes";
 import { useLetterWords } from "@/features/letters/compose";
 import { countWords, LETTER_LENGTH, letterLength } from "@/features/letters/length";
 import { discardLetterDraft, startLetterDraft, useLetterEditorStore } from "@/features/letters/store";
 import { useLetterMode } from "@/features/letters/use-letter-mode";
 import { ACCENTS, FONT_PAIRINGS, matchFontPairing, rgbaToHex } from "@/features/resume/editor/design/presets";
+import { TextField, validateEmail } from "@/features/resume/editor/write/fields";
 import { RichTextEditor } from "@/features/resume/editor/write/rich-text-editor";
 import { AiProviderLoadState } from "@/features/settings/integrations/ai-provider-load-state";
 import { useHasUsableAiProvider } from "@/features/settings/integrations/hooks/use-has-usable-ai-provider";
@@ -68,7 +70,7 @@ function Section({ id, title, aside, children }: SectionProps) {
 	return (
 		<section aria-labelledby={id} className="grid gap-3 px-4 py-5">
 			<div className="flex items-center justify-between gap-3">
-				<h2 id={id} className="text-xs font-semibold tracking-[0.04em] text-ink-3 uppercase">
+				<h2 id={id} className="text-xs font-semibold text-ink-3">
 					{title}
 				</h2>
 				{aside}
@@ -112,16 +114,18 @@ export function LetterWritePanel() {
 
 type ForSectionProps = {
 	letter: CoverLetter;
-	application: Application | null;
-	applications: Application[];
+	application: ApplicationSummary | null;
+	applications: ApplicationSummary[];
 	disabled: boolean;
 };
 
 /** FOR: the application the letter is for. Linking one fills the recipient; without one, drafting uses the resume. */
 function ForSection({ letter, application, applications, disabled }: ForSectionProps) {
+	const { lanes } = useApplicationLanes();
+	const lane = application ? getDisplayLane(lanes, application) : null;
 	const choices = applications.filter((item) => item.status !== "closed" || item.id === application?.id);
 
-	const choose = (next: Application | null) =>
+	const choose = (next: ApplicationSummary | null) =>
 		void updateLetter({
 			applicationId: next?.id ?? null,
 			// The recipient comes from the application: its company, and its first contact when it has one.
@@ -176,12 +180,8 @@ function ForSection({ letter, application, applications, disabled }: ForSectionP
 						<span className="flex min-w-0 items-center gap-1.5 text-xs text-ink-3">
 							<span className="truncate">{application.company}</span>
 							<span aria-hidden="true">·</span>
-							<span
-								aria-hidden="true"
-								className="size-1.5 shrink-0 rounded-full"
-								style={{ background: getStageColor(application.status) }}
-							/>
-							{getStageLabel(application.status)}
+							<span aria-hidden="true" className="size-1.5 shrink-0 rounded-sm" style={{ background: lane?.color }} />
+							<span className="truncate">{lane && getLaneLabel(lane)}</span>
 						</span>
 					</span>
 					{menu(
@@ -208,7 +208,7 @@ function ForSection({ letter, application, applications, disabled }: ForSectionP
 	);
 }
 
-type LetterSectionProps = { letter: CoverLetter; application: Application | null; disabled: boolean };
+type LetterSectionProps = { letter: CoverLetter; application: ApplicationSummary | null; disabled: boolean };
 
 /** TO: name or team, company and date for structured letters; older (freeform) letters keep their recipient block. */
 function ToSection({ letter, application, disabled }: LetterSectionProps) {
@@ -285,7 +285,11 @@ function ToSection({ letter, application, disabled }: LetterSectionProps) {
 }
 
 /** FROM: the resume the sender's details come from, and whether they stay live or are copied into the letter. */
-function FromSection({ letter, disabled }: { letter: CoverLetter; disabled: boolean }) {
+type FromSectionProps = { letter: CoverLetter; disabled: boolean };
+
+function FromSection({ letter, disabled: readOnly }: FromSectionProps) {
+	const disabled = useLetterEditorStore((state) => state.changing) || readOnly;
+	const edit = useLetterEditorStore((state) => state.edit);
 	const id = useId();
 	const { data: resumes } = useQuery(orpc.resume.list.queryOptions({ input: {} }));
 	const resume = resumes?.find((item) => item.id === letter.sourceResumeId);
@@ -332,7 +336,7 @@ function FromSection({ letter, disabled }: { letter: CoverLetter; disabled: bool
 					description={
 						letter.senderLinked
 							? t`Linked. Name, email, phone and city update when the resume does.`
-							: t`Off. The letter keeps its own copy of your details.`
+							: t`Off. Edit this letter’s details below. Turning this on replaces them with the resume’s current details.`
 					}
 					checked={letter.senderLinked}
 					disabled={disabled}
@@ -340,8 +344,40 @@ function FromSection({ letter, disabled }: { letter: CoverLetter; disabled: bool
 				/>
 			) : (
 				<p className="text-xs text-ink-3">
-					<Trans>Your name and contact details come from a resume.</Trans>
+					<Trans>Enter your details below. Choosing a resume replaces them and links its design.</Trans>
 				</p>
+			)}
+			{(!letter.sourceResumeId || !letter.senderLinked) && (
+				<fieldset disabled={disabled} className="grid min-w-0 grid-cols-2 gap-3">
+					<TextField
+						label={<Trans>Full name</Trans>}
+						wide
+						autoComplete="name"
+						value={letter.style.basics.name}
+						onChange={(name) => edit({ sender: { name } })}
+					/>
+					<TextField
+						label={<Trans>Email</Trans>}
+						type="email"
+						autoComplete="email"
+						validate={validateEmail}
+						value={letter.style.basics.email}
+						onChange={(email) => edit({ sender: { email } })}
+					/>
+					<TextField
+						label={<Trans>Phone</Trans>}
+						type="tel"
+						autoComplete="tel"
+						value={letter.style.basics.phone}
+						onChange={(phone) => edit({ sender: { phone } })}
+					/>
+					<TextField
+						label={<Trans>Location</Trans>}
+						wide
+						value={letter.style.basics.location}
+						onChange={(location) => edit({ sender: { location } })}
+					/>
+				</fieldset>
 			)}
 		</Section>
 	);
@@ -455,7 +491,12 @@ function LetterFramingField({ letter, field, defaultValue, disabled }: LetterFra
 	);
 }
 
-type EmptyBodyProps = { letter: CoverLetter; application: Application | null; disabled: boolean; onWrite: () => void };
+type EmptyBodyProps = {
+	letter: CoverLetter;
+	application: ApplicationSummary | null;
+	disabled: boolean;
+	onWrite: () => void;
+};
 
 function EmptyBody({ letter, application, disabled, onWrite }: EmptyBodyProps) {
 	const providerState = useHasUsableAiProvider();
@@ -509,7 +550,7 @@ function EmptyBody({ letter, application, disabled, onWrite }: EmptyBodyProps) {
 type DraftBoxProps = {
 	draft: Exclude<LetterDraft, { phase: "idle" }>;
 	letter: CoverLetter;
-	application: Application | null;
+	application: ApplicationSummary | null;
 	onKeep: (text: string) => void;
 };
 
@@ -646,7 +687,7 @@ function LengthSection({ content }: { content: string }) {
 				</span>
 			}
 		>
-			<div aria-hidden="true" className="relative h-1.5 overflow-hidden rounded-full bg-sunken">
+			<div aria-hidden="true" className="relative h-1.5 overflow-hidden rounded-sm bg-sunken">
 				<span
 					className="absolute inset-y-0 bg-line-2"
 					style={{
@@ -656,7 +697,7 @@ function LengthSection({ content }: { content: string }) {
 				/>
 				<span
 					className={cn(
-						"absolute inset-y-0 start-0 w-full translate-x-(--fill) rounded-full transition-[translate] duration-quick ease-enter rtl:-translate-x-(--fill)",
+						"absolute inset-y-0 start-0 w-full translate-x-(--fill) rounded-sm transition-[translate] duration-quick ease-enter rtl:-translate-x-(--fill)",
 						fill,
 					)}
 					style={

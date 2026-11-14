@@ -1,6 +1,6 @@
 import type { RelinkResult } from "./save";
 import type { LetterDocument } from "@/draft/types";
-import type { Application } from "@/features/applications/types";
+import type { ApplicationSummary as Application } from "@/features/applications/types";
 import type { WritableDraft } from "immer";
 import type { ReactNode } from "react";
 import { plural, t } from "@lingui/core/macro";
@@ -8,7 +8,8 @@ import { useLingui } from "@lingui/react/macro";
 import { ORPCError } from "@orpc/client";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Keyboard, ScrollView, View } from "react-native";
+import { Keyboard, View, useWindowDimensions } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { coverLetterTextToHtml, defaultCoverLetterSignOff, greetingName } from "@reactive-resume/resume/cover-letter";
 import { useLetterWords } from "./compose";
 import { designSummary } from "./design-presets";
@@ -20,8 +21,10 @@ import { relinkLetter } from "./save";
 import { letterFieldFocus, useLetterStore } from "@/draft";
 import { AIProviderSetupSheet, useHasAIProvider } from "@/features/ai/providers";
 import { WallClockField } from "@/features/application-detail/date-field";
+import { useApplicationLanes } from "@/features/applications/lane-queries";
+import { getLaneLabel, resolveLane } from "@/features/applications/lanes";
 import { useApplications } from "@/features/applications/queries";
-import { getStageColor, getStageLabel } from "@/features/applications/stages";
+import { BoundText, useValidators } from "@/features/write/entry-fields";
 import { routes } from "@/routes";
 import {
 	Banner,
@@ -38,6 +41,7 @@ import {
 	useReducedMotion,
 	useTheme,
 } from "@/ui";
+import { useKeyboardScrollSpace } from "@/ui/keyboard";
 
 type Recipe = (letter: WritableDraft<LetterDocument>) => void;
 
@@ -57,8 +61,8 @@ function Section({ title, aside, children }: SectionProps) {
 	return (
 		<View style={{ gap: space.s3, padding: space.s4, borderBottomWidth: 1, borderBottomColor: colors.line }}>
 			<View style={{ flexDirection: "row", alignItems: "center", gap: space.s3 }}>
-				<Text accessibilityRole="header" variant="micro" color="ink3" style={{ flex: 1 }}>
-					{title.toLocaleUpperCase()}
+				<Text accessibilityRole="header" variant="eyebrow" color="ink3" style={{ flex: 1 }}>
+					{title}
 				</Text>
 				{aside}
 			</View>
@@ -78,12 +82,13 @@ export function LetterWrite({ id }: { id: string }) {
 	const draft = useLetterDrafting((state) => state.draft);
 	const applications = useApplications();
 	const { size, space } = useTheme();
+	const keyboardSpace = useKeyboardScrollSpace();
 
 	if (!letter) {
 		return status === "error" ? (
 			<Banner
 				tone="danger"
-				message={t`Cover letter could not be loaded.`}
+				message={t`Couldn't load the cover letter.`}
 				action={{
 					label: t`Retry`,
 					onPress: () =>
@@ -103,7 +108,12 @@ export function LetterWrite({ id }: { id: string }) {
 
 	return (
 		<View style={{ flex: 1 }}>
-			<ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
+			<KeyboardAwareScrollView
+				extraKeyboardSpace={keyboardSpace}
+				bottomOffset={size.hit + space.s4}
+				keyboardShouldPersistTaps="handled"
+				keyboardDismissMode="interactive"
+			>
 				{disabled ? (
 					<Banner icon="lock" tone="info" message={t`This letter is locked. Unlock it in Documents to edit.`} />
 				) : null}
@@ -117,7 +127,7 @@ export function LetterWrite({ id }: { id: string }) {
 				/>
 				<DesignNote letter={letter} />
 				<View style={{ height: size.hit + space.s5 }} />
-			</ScrollView>
+			</KeyboardAwareScrollView>
 			<LetterRichTextToolbar />
 		</View>
 	);
@@ -141,8 +151,11 @@ type ForSectionProps = {
 
 /** FOR: the application the letter is for. Linking one fills the recipient; without one, drafting uses the resume. */
 function ForSection({ application, applications, disabled }: ForSectionProps) {
+	const lanes = useApplicationLanes();
 	const { t } = useLingui();
 	const { colors, radius, size, space } = useTheme();
+	const { fontScale } = useWindowDimensions();
+	const stacked = fontScale > 1.3;
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const search = query.trim().toLocaleLowerCase();
@@ -167,13 +180,13 @@ function ForSection({ application, applications, disabled }: ForSectionProps) {
 			{application ? (
 				<View
 					style={{
-						flexDirection: "row",
-						alignItems: "center",
+						flexDirection: stacked ? "column" : "row",
+						alignItems: stacked ? "flex-start" : "center",
 						gap: space.s3,
 						padding: space.s3,
 						borderWidth: 1,
 						borderColor: colors.line,
-						borderRadius: radius.rXl,
+						borderRadius: radius.rLg,
 					}}
 				>
 					<View
@@ -190,25 +203,38 @@ function ForSection({ application, applications, disabled }: ForSectionProps) {
 							{application.company.charAt(0).toLocaleUpperCase()}
 						</Text>
 					</View>
-					<View style={{ flex: 1, minWidth: 0 }}>
-						<Text weight={500} numberOfLines={1}>
+					<View style={stacked ? { alignSelf: "stretch" } : { flex: 1, minWidth: 0 }}>
+						<Text weight={500} numberOfLines={stacked ? undefined : 2}>
 							{application.role}
 						</Text>
-						<View style={{ flexDirection: "row", alignItems: "center", gap: space.s1 }}>
-							<Text variant="caption" color="ink3" numberOfLines={1} style={{ flexShrink: 1 }}>
-								{application.company} ·
+						<View
+							style={{
+								flexDirection: stacked ? "column" : "row",
+								alignItems: stacked ? "flex-start" : "center",
+								gap: space.s1,
+							}}
+						>
+							<Text
+								variant="caption"
+								color="ink3"
+								numberOfLines={stacked ? undefined : 1}
+								style={stacked ? { alignSelf: "stretch" } : { flexShrink: 1 }}
+							>
+								{application.company}
 							</Text>
-							<View
-								style={{
-									width: space.s2 - space.s0,
-									height: space.s2 - space.s0,
-									borderRadius: radius.rPill,
-									backgroundColor: getStageColor(application.status, colors),
-								}}
-							/>
-							<Text variant="caption" color="ink3">
-								{getStageLabel(application.status)}
-							</Text>
+							<View style={{ flexDirection: "row", alignItems: "center", gap: space.s1 }}>
+								<View
+									style={{
+										width: space.s2 - space.s0,
+										height: space.s2 - space.s0,
+										borderRadius: radius.rLg,
+										backgroundColor: resolveLane(lanes.lanes, application).color,
+									}}
+								/>
+								<Text variant="caption" color="ink3">
+									{getLaneLabel(resolveLane(lanes.lanes, application))}
+								</Text>
+							</View>
 						</View>
 					</View>
 					<Button size="sm" variant="secondary" label={t`Change`} disabled={disabled} onPress={() => setOpen(true)} />
@@ -250,7 +276,7 @@ function ForSection({ application, applications, disabled }: ForSectionProps) {
 							<ListRow
 								key={item.id}
 								title={item.role}
-								subtitle={`${item.company} · ${getStageLabel(item.status)}`}
+								subtitle={`${item.company} · ${getLaneLabel(resolveLane(lanes.lanes, item))}`}
 								leading="briefcase"
 								selected={item.id === application?.id}
 								onPress={() => choose(item)}
@@ -334,11 +360,21 @@ function ToSection({ letter, application, disabled }: LetterSectionProps) {
 }
 
 /** FROM: the resume the sender's details come from, and whether they stay live or are copied into the letter. */
-function FromSection({ letter, disabled }: { letter: LetterDocument; disabled: boolean }) {
+type FromSectionProps = { letter: LetterDocument; disabled: boolean };
+
+function FromSection({ letter, disabled }: FromSectionProps) {
+	const validate = useValidators();
+	const text = (key: "name" | "email" | "phone" | "location") => ({
+		value: letter.style.basics[key],
+		disabled,
+		focus: letterFieldFocus,
+		onChange: (value: string) => edit(`sender.${key}`, (draft) => void (draft.style.basics[key] = value)),
+	});
 	const { t } = useLingui();
 	const resumes = useResumes();
 	const resume = resumes.data?.find((item) => item.id === letter.sourceResumeId);
-	const resumeName = resume?.name ?? t`the resume`;
+	const resumeName = resume?.name;
+	const useDetailsLabel = resumeName ? t`Use details from “${resumeName}”` : t`Use details from the resume`;
 
 	const setResume = (resumeId: string) =>
 		void relinkLetter((draft) => {
@@ -381,24 +417,36 @@ function FromSection({ letter, disabled }: { letter: LetterDocument; disabled: b
 			) : null}
 			{letter.sourceResumeId ? (
 				<ListRow
-					title={t`Use details from “${resumeName}”`}
+					title={useDetailsLabel}
 					subtitle={
 						letter.senderLinked
 							? t`Linked. Name, email, phone and city update when the resume does.`
-							: t`Off. The letter keeps its own copy of your details.`
+							: t`Off. Edit this letter’s details below. Turning this on replaces them with the resume’s current details.`
 					}
 					trailing={
-						<Switch
-							label={t`Use details from “${resumeName}”`}
-							value={letter.senderLinked}
-							disabled={disabled}
-							onValueChange={setLinked}
-						/>
+						<Switch label={useDetailsLabel} value={letter.senderLinked} disabled={disabled} onValueChange={setLinked} />
 					}
 				/>
 			) : (
-				<Text variant="caption" color="ink3">{t`Your name and contact details come from a resume.`}</Text>
+				<Text
+					variant="caption"
+					color="ink3"
+				>{t`Enter your details below. Choosing a resume replaces them and links its design.`}</Text>
 			)}
+			{!letter.sourceResumeId || !letter.senderLinked ? (
+				<>
+					<BoundText label={t`Full name`} autoComplete="name" {...text("name")} />
+					<BoundText
+						label={t`Email`}
+						keyboardType="email-address"
+						autoComplete="email"
+						validate={validate.email}
+						{...text("email")}
+					/>
+					<BoundText label={t`Phone`} keyboardType="phone-pad" autoComplete="tel" {...text("phone")} />
+					<BoundText label={t`Location`} {...text("location")} />
+				</>
+			) : null}
 		</Section>
 	);
 }
@@ -532,7 +580,7 @@ function EmptyBody({ letter, application, disabled, onWrite }: EmptyBodyProps) {
 				borderWidth: 1,
 				borderStyle: "dashed",
 				borderColor: colors.line2,
-				borderRadius: radius.rXl,
+				borderRadius: radius.rLg,
 			}}
 		>
 			<Text color="ink2">
@@ -709,7 +757,7 @@ function LengthSection({ words }: { words: number }) {
 				importantForAccessibility="no-hide-descendants"
 				style={{
 					height: space.s2 - space.s0,
-					borderRadius: radius.rPill,
+					borderRadius: radius.rLg,
 					backgroundColor: colors.sunken,
 					overflow: "hidden",
 				}}
@@ -728,7 +776,7 @@ function LengthSection({ words }: { words: number }) {
 					style={{
 						height: "100%",
 						width: percent(Math.min(words, LETTER_LENGTH.scale)),
-						borderRadius: radius.rPill,
+						borderRadius: radius.rLg,
 						backgroundColor: length === "empty" ? colors.line2 : length === "comfortable" ? colors.accent : colors.warn,
 					}}
 				/>

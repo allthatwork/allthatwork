@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { contrastOnWhite, isDarkColor, parseColorString, rgbaStringToHex } from "./color";
 
 describe("rgbaStringToHex", () => {
@@ -27,6 +27,12 @@ describe("isDarkColor", () => {
 });
 
 describe("parseColorString", () => {
+	it("rejects oversized colour values before parsing or falling back", () => {
+		const value = `rgb(1,2,3${" ".repeat(100000)}!)`;
+		expect(parseColorString(value)).toBeNull();
+		expect(rgbaStringToHex(value)).toBe("#000000");
+	});
+
 	describe("rgb format", () => {
 		it("parses rgb without alpha as alpha=1", () => {
 			expect(parseColorString("rgb(255, 128, 64)")).toEqual({ r: 255, g: 128, b: 64, a: 1 });

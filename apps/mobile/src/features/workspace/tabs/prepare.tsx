@@ -10,9 +10,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
+import { formatList } from "@reactive-resume/utils/locale";
 import {
 	latest,
-	useFlags,
 	useGenerate,
 	useSavedItems,
 	useSchedules,
@@ -25,6 +25,7 @@ import { minutesUntil, preparePhase } from "../logic";
 import { Actions, AiNotice, Block, CheckRow, EmptyNotice, Pill, PrivacyLine, useWorking, workingSteps } from "../parts";
 import { WorkspaceScreen } from "../shell";
 import { orpc } from "@/api/client";
+import { useFlags } from "@/api/flags";
 import { useHasAIProvider } from "@/features/ai/providers";
 import { interviewTypeLabel, useUserTime } from "@/features/application-detail/hooks";
 import { routes } from "@/routes";
@@ -98,12 +99,12 @@ function PlanEmpty({ application, interview }: PlanEmptyProps) {
 						loading={generate.isPending}
 						onPress={() => void generate.run({ task: "briefing", interviewId: interview.id }).catch(() => undefined)}
 					/>
-					<PrivacyLine>
+					<PrivacyLine centered>
 						{t`Sends this application (posting, notes, interview details) and Knowledge that's switched on to ${name}.`}
 					</PrivacyLine>
 				</>
 			) : (
-				<AiNotice />
+				<AiNotice centered />
 			)}
 		</EmptyNotice>
 	);
@@ -142,7 +143,7 @@ function Plan({ application, interview, briefing, readOnly, go }: PlanProps) {
 			case "draft-story":
 				return { label: t`Draft story`, onPress: () => router.push(routes.career("knowledge")) };
 			case "practise":
-				return { label: t`Practise`, onPress: () => go("practise", { speak: true }) };
+				return { label: t`Practice`, onPress: () => go("practise", { speak: true }) };
 			case "questions":
 			case "none":
 				return null;
@@ -272,7 +273,7 @@ function RefreshSwitch({ application, interview }: RefreshSwitchProps) {
 			const next = when(row.nextRunAt);
 			showToast({ message: row.enabled ? t`Briefing refresh is on · ${next}` : t`Briefing refresh paused` });
 		},
-		onError: (error) => showToast({ message: workspaceError(error, t`Couldn't change the schedule.`) }),
+		onError: (error) => showToast({ message: workspaceError(error, t`Couldn't change the schedule. Try again.`) }),
 	});
 
 	const enabled = (save.isPending ? save.variables.enabled : schedule?.enabled) ?? false;
@@ -415,15 +416,7 @@ function Soon({ application, interview, briefing, now, go }: SoonProps) {
 			: minutes === 0
 				? t`Starts now`
 				: plural(-minutes, { one: "Started # minute ago", other: "Started # minutes ago" });
-	const who = [
-		interviewTypeLabel(interview.kind),
-		// Hermes may ship without Intl.ListFormat; a comma list reads fine in its place.
-		typeof Intl.ListFormat === "function"
-			? new Intl.ListFormat(i18n.locale, { type: "conjunction" }).format(names)
-			: names.join(", "),
-	]
-		.filter(Boolean)
-		.join(" · ");
+	const who = [interviewTypeLabel(interview.kind), formatList(i18n.locale, names)].filter(Boolean).join(" · ");
 	const rows = [
 		{ title: t`Check the details`, short: t`Time, link, who, what you sent` },
 		{ title: t`Your two-minute introduction`, short: t`Focus, experience, why this role` },
@@ -439,7 +432,7 @@ function Soon({ application, interview, briefing, now, go }: SoonProps) {
 					alignItems: "center",
 					gap: space.s3,
 					padding: space.s4,
-					borderRadius: radius.r2xl,
+					borderRadius: radius.rLg,
 					backgroundColor: colors.warnSoft,
 				}}
 			>

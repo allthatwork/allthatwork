@@ -3,7 +3,7 @@
 import type { Resume } from "@/features/resume/builder/draft";
 import type { WebMcpTool } from "@/libs/webmcp";
 import { renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { produce } from "immer";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";

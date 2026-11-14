@@ -1,5 +1,5 @@
 import type { Template } from "@reactive-resume/schema/templates";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { createElement } from "react";
 import { copyCoverLetterStyle, createCoverLetterResumeData } from "@reactive-resume/resume/cover-letter";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";

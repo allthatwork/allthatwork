@@ -1,7 +1,7 @@
 import type { ColorScheme } from "./tokens";
 import Storage from "expo-sqlite/kv-store";
 import { useSyncExternalStore } from "react";
-import { Appearance, useColorScheme } from "react-native";
+import { Appearance, Platform, useColorScheme } from "react-native";
 import { colors, fonts, motion, radius, shadows, size, space, type } from "./tokens";
 
 /** Settings → Preferences → Appearance. System is the default. */
@@ -19,8 +19,9 @@ let preference = readPreference();
 
 // The override goes through Appearance, so native UI (alerts, keyboards, pickers) follows it too and
 // `useColorScheme` already reports the effective scheme.
-const applyPreference = (value: ThemePreference) =>
-	Appearance.setColorScheme(value === "system" ? "unspecified" : value);
+const applyPreference = (value: ThemePreference) => {
+	if (Platform.OS !== "web") Appearance.setColorScheme(value === "system" ? "unspecified" : value);
+};
 
 /** Call once at startup, before the first render. */
 export function initTheme() {
@@ -53,5 +54,7 @@ export type Theme = (typeof themes)[ColorScheme];
 
 /** The token set for the effective colour scheme. */
 export function useTheme(): Theme {
-	return themes[useColorScheme() === "dark" ? "dark" : "light"];
+	const preference = useThemePreference();
+	const system = useColorScheme();
+	return themes[(preference === "system" ? system : preference) === "dark" ? "dark" : "light"];
 }

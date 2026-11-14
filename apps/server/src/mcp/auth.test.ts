@@ -1,4 +1,4 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vite-plus/test";
 
 const resolve = vi.hoisted(() => vi.fn());
 vi.mock("@reactive-resume/api/context", () => ({ resolveAuthenticationFromRequestHeaders: resolve }));

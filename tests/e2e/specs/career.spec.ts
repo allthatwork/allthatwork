@@ -23,6 +23,72 @@ async function createApplication(page: Page) {
 	return applicationId;
 }
 
+test("coach stories wait for exact-content approval and respect Skip", async ({ authPage: page }, testInfo) => {
+	test.skip(process.env.FLAG_ALLOW_UNSAFE_AI_BASE_URL !== "true", "Needs FLAG_ALLOW_UNSAFE_AI_BASE_URL=true");
+	test.setTimeout(90_000);
+	await page.setViewportSize({ width: 1280, height: 1100 });
+	const provider = await page.request.post("/api/openapi/ai-providers", {
+		data: {
+			label: "Demo connection",
+			provider: "openai-compatible",
+			model: "stub",
+			baseURL: stub.baseURL,
+			apiKey: "stub-key",
+		},
+	});
+	await expect(provider).toBeOK();
+	await expect(await page.request.post(`/api/openapi/ai-providers/${(await provider.json()).id}/test`)).toBeOK();
+	await expect(
+		await page.request.post("/api/openapi/career/facts", {
+			data: {
+				text: "I wrote a setup checklist and reviewed it with support.",
+				category: "experience",
+				source: {
+					kind: "manual",
+					id: "security-story-fact",
+					quote: "I wrote a setup checklist and reviewed it with support.",
+				},
+			},
+		}),
+	).toBeOK();
+	const stories = async () => {
+		const response = await page.request.get("/api/openapi/career/stories");
+		await expect(response).toBeOK();
+		return response.json();
+	};
+	await page.goto("/dashboard/career/coach");
+	for (const approve of [false, true]) {
+		const composer = page.getByPlaceholder("Ask about your next career step…");
+		await composer.fill("Review a story about my onboarding work.");
+		await expect(page.getByRole("button", { name: "Send", exact: true })).toBeEnabled();
+		await composer.press("Enter");
+		await expect(page.getByText("Save this story to Knowledge?", { exact: true })).toBeVisible({ timeout: 20_000 });
+		await expect(page.getByRole("button", { name: "Save story", exact: true })).toBeEnabled();
+		expect(await stories()).toEqual([]);
+		if (approve)
+			await page
+				.getByText("Save this story to Knowledge?", { exact: true })
+				.locator("..")
+				.screenshot({ path: testInfo.outputPath("story-approval.png") });
+		await page.getByRole("button", { name: approve ? "Save story" : "Skip", exact: true }).click();
+		await expect(page.getByText("Save this story to Knowledge?", { exact: true })).toBeHidden();
+		await expect(page.getByText("Story decision received.", { exact: true })).toHaveCount(approve ? 2 : 1, {
+			timeout: 20_000,
+		});
+		if (approve)
+			await expect.poll(stories).toEqual([
+				expect.objectContaining({
+					data: expect.objectContaining({
+						title: "Improving customer onboarding",
+						action: "I wrote a setup checklist and reviewed it with support.",
+						result: "",
+					}),
+				}),
+			]);
+		else expect(await stories()).toEqual([]);
+	}
+});
+
 test("knowledge corrections persist and the workspace opens without an AI provider", async ({ authPage: page }) => {
 	const applicationId = await createApplication(page);
 	const original = "I reduced packing errors by 12 percent.";
@@ -66,4 +132,79 @@ test("a fit check's missing evidence is saved to Knowledge from the table", asyn
 
 	await page.goto("/dashboard/career/knowledge/facts");
 	await expect(page.getByText(evidence, { exact: true })).toBeVisible();
+});
+
+test("manual offers save and compare without an AI provider", async ({ authPage: page }, testInfo) => {
+	await page.setViewportSize({ width: 1440, height: 1150 });
+	const jobs: string[] = [];
+	for (const company of ["Brightpath", "Canopy Systems"]) {
+		const response = await page.request.post("/api/openapi/applications", {
+			data: { company, role: "Product engineer" },
+		});
+		await expect(response).toBeOK();
+		jobs.push(await response.json());
+	}
+	const [firstJob, secondJob] = jobs;
+	if (!firstJob || !secondJob) throw new Error("Expected two applications");
+	const aiRequests: string[] = [];
+	page.on("request", (request) => {
+		if (/career[/.](generate|applyReply)|ai-providers.*test/.test(request.url())) aiRequests.push(request.url());
+	});
+	await page.goto(`/dashboard/applications/${firstJob}/messages`);
+	await page
+		.getByLabel("Paste a message from Brightpath")
+		.fill(
+			"Hi Alex, we are pleased to offer you the Product engineer role at Brightpath. The written offer is EUR 95,000 per year, with 30 days of leave and a Berlin office. Please review the terms and let us know your questions.",
+		);
+	await page.getByRole("heading", { name: "Product engineer" }).click();
+	await page.getByRole("main").screenshot({ path: testInfo.outputPath("messages.png") });
+	await page.getByRole("button", { name: "Add offer", exact: true }).click();
+	await page.getByLabel("Currency", { exact: true }).fill("EUR");
+	await page.getByLabel("Base salary", { exact: true }).fill("95000");
+	await page.getByLabel("Learning budget", { exact: true }).fill("95k");
+	await expect(page.getByLabel("Learning budget")).not.toHaveAttribute("aria-invalid", "true");
+	await page.getByRole("button", { name: "Save offer", exact: true }).click();
+	await expect(page.getByLabel("Learning budget")).toHaveAttribute("aria-invalid", "true");
+	await expect(page.getByText("Enter a full amount, such as 95000, or leave blank.")).toBeVisible();
+	await page.getByLabel("Learning budget", { exact: true }).fill("");
+	await page.getByLabel("Where you work", { exact: true }).fill("Berlin");
+	await page.getByLabel("Leave", { exact: true }).fill("30 days");
+	await page.getByRole("button", { name: "Save offer", exact: true }).click();
+	await expect(page.getByRole("button", { name: "Save offer", exact: true })).toBeHidden();
+	await page.goto(`/dashboard/applications/${firstJob}/saved`);
+	await expect(page.getByRole("link", { name: "Open in Offers" })).toBeVisible();
+	await expect(page.getByText(/Everything the coach wrote/)).toHaveCount(0);
+	await expect(page.getByText("used the message", { exact: true })).toHaveCount(0);
+	await page.goto("/dashboard/career/offers");
+	await page.getByRole("button", { name: "Add offer", exact: true }).click();
+	await page.getByLabel("Application", { exact: true }).selectOption(secondJob);
+	await page.getByLabel("Currency", { exact: true }).fill("USD");
+	await page.getByLabel("Pay period", { exact: true }).selectOption("month");
+	await page.getByLabel("Base salary", { exact: true }).fill("8000");
+	await page.getByLabel("Bonus", { exact: true }).fill("0");
+	await page.getByLabel("Where you work", { exact: true }).fill("Remote");
+	await page.getByRole("button", { name: "Save offer", exact: true }).click();
+	await expect(page.getByRole("button", { name: "Save offer", exact: true })).toBeHidden();
+	await page.reload();
+	await expect(page.getByText("€95,000 a year", { exact: true })).toBeVisible();
+	await expect(page.getByText("$8,000 a month", { exact: true })).toBeVisible();
+	await expect(page.getByText("Different currency, not compared").first()).toBeVisible();
+	const response = await page.request.get("/api/openapi/career/saved?kind=offer");
+	await expect(response).toBeOK();
+	const offers = await response.json();
+	expect(offers).toHaveLength(2);
+	expect(offers).toEqual(
+		expect.arrayContaining([
+			expect.objectContaining({
+				applicationId: firstJob,
+				data: expect.objectContaining({ base: 95000, variable: null, currency: "EUR", period: "year" }),
+			}),
+			expect.objectContaining({
+				applicationId: secondJob,
+				data: expect.objectContaining({ base: 8000, variable: 0, currency: "USD", period: "month" }),
+			}),
+		]),
+	);
+	expect(aiRequests).toEqual([]);
+	await page.getByRole("main").screenshot({ path: testInfo.outputPath("offers.png") });
 });

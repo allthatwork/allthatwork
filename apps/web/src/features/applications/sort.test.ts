@@ -1,6 +1,6 @@
 import type { Application } from "./types";
 import type { ApplicationSort } from "@reactive-resume/schema/applications/filters";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { APPLICATION_SORT_KEYS, defaultSortDirection } from "@reactive-resume/schema/applications/filters";
 import { appliedDate, getDirectionOptions, sortApplications } from "./sort";

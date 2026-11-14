@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { serializeStylesheetColor, toStylesheetPickerColor } from "./color-format";
 
 describe("stylesheet picker color formatting", () => {

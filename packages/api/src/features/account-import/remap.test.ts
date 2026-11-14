@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { flattenIds, mapIdList, remapIds } from "./remap";
 
 const ids = flattenIds({ fact: { "old-fact": "new-fact" }, artifact: { "old-item": "new-item" } });

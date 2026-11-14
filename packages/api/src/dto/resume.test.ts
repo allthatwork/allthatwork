@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { resumeDto } from "./resume";
 
@@ -60,5 +60,36 @@ describe("resume DTO output validation", () => {
 			id: "resume-id",
 			name: "Renamed",
 		});
+	});
+
+	it("does not fail output validation on existing legacy records with long slug", () => {
+		const legacyRecord = {
+			id: "r1",
+			name: "Legacy Resume",
+			slug: "a".repeat(300),
+			tags: [],
+			isPublic: false,
+			showDownloadButtons: true,
+			showInSearchEngines: false,
+			hideContactDetails: false,
+			isPrimary: false,
+			isLocked: false,
+			createdAt: new Date(),
+			updatedAt: new Date(),
+			hasPassword: false,
+			applicationId: null,
+			data: defaultResumeData,
+		};
+		expect(() => resumeDto.getById.output.parse(legacyRecord)).not.toThrow();
+	});
+
+	it("allows checking slugs longer than 64 characters so service can suggest truncations", () => {
+		const longSlug = "a".repeat(300);
+		expect(() => resumeDto.checkSlug.input.parse({ resumeId: "r1", slug: longSlug })).not.toThrow();
+	});
+
+	it("allows update inputs with slugs longer than 64 characters so service can check if unchanged", () => {
+		const longSlug = "a".repeat(300);
+		expect(() => resumeDto.update.input.parse({ id: "r1", slug: longSlug })).not.toThrow();
 	});
 });

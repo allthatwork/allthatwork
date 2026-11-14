@@ -10,15 +10,14 @@
 		"./username-redirect": "./src/username-redirect.ts"
 	},
 	"scripts": {
-		"typecheck": "tsgo --noEmit",
-		"test": "vitest run --passWithNoTests",
-		"test:coverage": "vitest run --coverage --passWithNoTests",
-		"test:ci": "vitest run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests",
-		"test:agent": "vitest run --reporter=agent --reporter=json --outputFile.json=reports/vitest-results.json --passWithNoTests"
+		"typecheck": "tsrs --noEmit",
+		"test": "vp test run --passWithNoTests",
+		"test:coverage": "vp test run --coverage --passWithNoTests",
+		"test:ci": "vp test run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests"
 	},
 	"dependencies": {
 		"@better-auth/api-key": "catalog:",
-		"@better-auth/drizzle-adapter": "1.7.10",
+		"@better-auth/drizzle-adapter": "catalog:",
 		"@better-auth/infra": "catalog:",
 		"@better-auth/oauth-provider": "catalog:",
 		"@better-auth/passkey": "catalog:",
@@ -30,13 +29,14 @@
 		"bcryptjs": "catalog:",
 		"better-auth": "catalog:",
 		"drizzle-orm": "catalog:",
-		"jose": "^6.2.12",
+		"jose": "^6.2.13",
 		"react": "catalog:"
 	},
 	"devDependencies": {
 		"@reactive-resume/config": "workspace:*",
 		"@types/react": "catalog:",
-		"@typescript/native-preview": "catalog:",
-		"typescript": "catalog:"
+		"tsrs": "catalog:",
+		"typescript": "catalog:",
+		"vite-plus": "catalog:"
 	}
 }

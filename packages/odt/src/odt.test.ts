@@ -1,5 +1,5 @@
 import type { Template } from "@reactive-resume/schema/templates";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { strFromU8, unzipSync } from "fflate";
 import { getResumeExportData } from "@reactive-resume/resume/export-sections";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";

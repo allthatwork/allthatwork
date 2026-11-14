@@ -1,14 +1,15 @@
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { Image } from "expo-image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, PixelRatio, ScrollView, View } from "react-native";
+import { PixelRatio, View } from "react-native";
 import { coverLetterTextToHtml } from "@reactive-resume/resume/cover-letter";
 import { LETTER_RENDER_OPTIONS, letterPageData, useLetterWords } from "./compose";
 import { useLetterDrafting } from "./drafting";
 import { useLetterStore } from "@/draft";
 import { nativeEnvironment } from "@/draft/native";
+import { PageImage } from "@/preview/page-image";
+import { usePageZoom, ZoomViewport } from "@/preview/use-page-zoom";
 import { usePreview } from "@/preview/usePreview";
 import { Banner, Button, IconButton, Skeleton, Text, useReducedMotion, useTheme } from "@/ui";
 
@@ -35,25 +36,22 @@ function useThrottled<T>(value: T, ms: number) {
 /** The pages of a letter's render data, with errors, text loss and a zoom bar. Also shows read-only versions. */
 export function LetterPages({ data, zoomBar = true }: { data: ResumeData | null; zoomBar?: boolean | undefined }) {
 	const { t } = useLingui();
-	const { colors, motion, shadows, size, space } = useTheme();
-	const reducedMotion = useReducedMotion();
+	const { colors, shadows, size, space } = useTheme();
 	const [width, setWidth] = useState(0);
-	const [zoom, setZoom] = useState<number | null>(null);
+	const zoomController = usePageZoom();
+	const { zoom, step, change } = zoomController;
 	const pageWidth = Math.max(size.hit, width - space.s8);
 	const [firstWidth, setFirstWidth] = useState(A4.width);
-	const displayScale = (pageWidth / firstWidth) * (zoom ?? 1);
+	const displayScale = pageWidth / firstWidth;
 	const preview = usePreview(width ? data : null, undefined, {
 		focused: nativeEnvironment.focused(),
 		renderOptions: LETTER_RENDER_OPTIONS,
-		scale: Math.min(6, Math.max(0.1, displayScale * PixelRatio.get())),
+		scale: Math.min(6, Math.max(0.1, displayScale * (zoom ?? 1) * PixelRatio.get())),
 	});
 	const { result } = preview;
 	// Letter and free-form pages differ from A4; the scale follows the rendered width.
 	const renderedWidth = result?.pages[0]?.width;
 	if (renderedWidth && renderedWidth !== firstWidth) setFirstWidth(renderedWidth);
-	const step = (delta: number) =>
-		setZoom((value) => Math.min(1.5, Math.max(0.6, Math.round(((value ?? 1) + delta) * 10) / 10)));
-
 	return (
 		<View
 			style={{ flex: 1, backgroundColor: colors.sunken }}
@@ -62,7 +60,7 @@ export function LetterPages({ data, zoomBar = true }: { data: ResumeData | null;
 			{preview.error ? (
 				<Banner
 					tone="danger"
-					message={t`Preview could not be rendered. Retry, or try another template or font in Design.`}
+					message={t`Couldn't render the preview. Retry, or try another template or font in Design.`}
 					action={{ label: t`Retry`, onPress: preview.retry }}
 				/>
 			) : null}
@@ -71,16 +69,13 @@ export function LetterPages({ data, zoomBar = true }: { data: ResumeData | null;
 					tone="warn"
 					message={
 						result.lostCharacters.length > 0
-							? t`Some characters could not be drawn: ${result.lostCharacters.join(", ")}. Choose another font in Design.`
-							: t`Some text could not be drawn. Choose another font in Design.`
+							? t`Some characters couldn't be drawn: ${result.lostCharacters.join(", ")}. Choose another font in Design.`
+							: t`Some text couldn't be drawn. Choose another font in Design.`
 					}
 				/>
 			) : null}
-			<ScrollView horizontal contentContainerStyle={{ minWidth: width }}>
-				<ScrollView
-					accessibilityLabel={t`Letter page`}
-					contentContainerStyle={{ padding: space.s4, gap: space.s6, alignItems: "center", minWidth: width }}
-				>
+			<ZoomViewport controller={zoomController} width={width} pageWidth={pageWidth}>
+				<View accessibilityLabel={t`Letter page`} style={{ gap: space.s6, alignItems: "center" }}>
 					{!result ? (
 						preview.error ? null : (
 							<View style={{ width: pageWidth, gap: space.s3, alignItems: "center" }}>
@@ -92,8 +87,8 @@ export function LetterPages({ data, zoomBar = true }: { data: ResumeData | null;
 						result.pages.map((page) => (
 							<View key={page.index} style={{ gap: space.s2 }}>
 								<Text variant="caption" color="ink3" align="center">{t`Page ${page.index + 1}`}</Text>
-								<Image
-									source={{ uri: page.uri }}
+								<PageImage
+									uri={page.uri}
 									accessibilityLabel={t`Letter page ${page.index + 1}`}
 									style={{
 										width: page.width * displayScale,
@@ -101,15 +96,12 @@ export function LetterPages({ data, zoomBar = true }: { data: ResumeData | null;
 										backgroundColor: colors.paper,
 										boxShadow: shadows.ePage.boxShadow,
 									}}
-									contentFit="fill"
-									transition={reducedMotion ? 0 : motion.d2}
-									cachePolicy="none"
 								/>
 							</View>
 						))
 					)}
-				</ScrollView>
-			</ScrollView>
+				</View>
+			</ZoomViewport>
 			{zoomBar ? (
 				<View
 					style={{
@@ -124,13 +116,12 @@ export function LetterPages({ data, zoomBar = true }: { data: ResumeData | null;
 					<Button
 						variant="ghost"
 						label={zoom === null ? t`Fit` : t`${Math.round(zoom * 100)}%`}
-						onPress={() => setZoom(null)}
+						onPress={() => change(1)}
 					/>
 					<IconButton icon="plus" label={t`Zoom in`} disabled={(zoom ?? 1) >= 1.5} onPress={() => step(0.1)} />
 					<Text variant="caption" color="ink3">
 						{plural(result?.pageCount ?? 1, { one: "# page", other: "# pages" })}
 					</Text>
-					{preview.rendering && result ? <ActivityIndicator color={colors.accent} /> : null}
 				</View>
 			) : null}
 		</View>

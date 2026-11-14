@@ -1,7 +1,8 @@
-import type { ViteUserConfig } from "vitest/config";
-import type { VitestEnvironment } from "vitest/node";
+import type { ViteUserConfig } from "vite-plus/test/config";
+import type { VitestEnvironment } from "vite-plus/test/node";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "vitest/config";
+import { defineConfig } from "vite-plus";
 
 const workspaceRoot = fileURLToPath(new URL(".", import.meta.url));
 const setupFile = fileURLToPath(new URL("./vitest.setup.ts", import.meta.url));
@@ -26,6 +27,8 @@ export const createVitestProjectConfig = ({
 		plugins,
 		test: {
 			name,
+			// Separate Vitest processes must not clear another package's module cache.
+			fsModuleCachePath: resolve(dirname, "node_modules/.vitest-cache"),
 			environment,
 			environmentOptions: {
 				happyDOM: {
@@ -44,6 +47,7 @@ export const createVitestProjectConfig = ({
 			include: ["src/**/*.{test,spec}.?(c|m)[jt]s?(x)"],
 			exclude: ["node_modules", "dist", ".output", "coverage", "reports"],
 			pool: "threads",
+			maxWorkers: 2,
 			// Isolation stays on: without it, test files in a worker share one module registry, so a
 			// `vi.mock` in one file leaks into another and whichever file imported a module first wins.
 			// That made every suite mocking `@reactive-resume/env/server` order-dependent and flaky.

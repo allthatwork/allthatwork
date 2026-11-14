@@ -1,18 +1,18 @@
-import type { Application } from "./types";
+import type { ApplicationSummary } from "./types";
 import { FOUND_BY_IN_APP_SEARCH } from "@reactive-resume/schema/applications/data";
 
 // Starting points for the pick lists; the values already in use come first.
 export const FOUND_ON_PRESETS = ["Greenhouse", "Ashby", "Lever", "LinkedIn", "Indeed", "Company website", "Other"];
 export const FOUND_BY_PRESETS = ["Me", "Referral", "Recruiter", FOUND_BY_IN_APP_SEARCH];
 
-type PickValues = (application: Application) => (string | null | undefined)[];
+type PickValues = (application: ApplicationSummary) => (string | null | undefined)[];
 
 /**
  * Suggestions for a free-text field: the values used on these applications, most used first (ties by name), then the
  * presets nobody has used yet. Values that differ only in case count as one, spelled as first seen.
  */
 export function suggestValues(
-	applications: Application[],
+	applications: ApplicationSummary[],
 	pick: PickValues,
 	presets: readonly string[] = [],
 ): string[] {
@@ -33,10 +33,10 @@ export function suggestValues(
 	return [...used, ...presets.filter((preset) => !counts.has(preset.toLowerCase()))];
 }
 
-export const foundOnSuggestions = (applications: Application[]) =>
+export const foundOnSuggestions = (applications: ApplicationSummary[]) =>
 	suggestValues(applications, (application) => [application.source], FOUND_ON_PRESETS);
 
-export const foundBySuggestions = (applications: Application[]) =>
+export const foundBySuggestions = (applications: ApplicationSummary[]) =>
 	suggestValues(applications, (application) => [application.foundBy], FOUND_BY_PRESETS);
 
 /** A fit typed by hand: a whole number from 0 to 100, with or without "%". Empty clears it; anything else is invalid. */

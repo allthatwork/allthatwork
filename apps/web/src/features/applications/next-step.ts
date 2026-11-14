@@ -1,15 +1,19 @@
-import type { Application } from "./types";
+import type { ApplicationSummary } from "./types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import type { IconName } from "@reactive-resume/ui/components/icon";
 import { plural, t } from "@lingui/core/macro";
 import { useRouteContext } from "@tanstack/react-router";
 import { NO_REPLY_DAYS } from "@reactive-resume/utils/reminders";
 import { interviewKindOf, isInterview } from "./interviews";
+import { isCanonicalStageEvent, isCurrentLaneEvent } from "./lanes";
 import { getClosedReasonLabel } from "./stages";
 
 const DAY_MS = 86_400_000;
 
-type NextStepSource = Pick<Application, "status" | "activity" | "followUpAt" | "followUpNote" | "appliedAt">;
+type NextStepSource = Pick<ApplicationSummary, "status" | "activity" | "followUpAt" | "followUpNote" | "appliedAt">;
+type StageSource = Pick<ApplicationSummary, "status" | "activity" | "appliedAt"> & {
+	laneId?: string | null | undefined;
+};
 
 /**
  * What an application needs next, derived rather than stored: the earliest interview still to come, else the
@@ -23,19 +27,30 @@ export type NextStep =
 	| { kind: "not-applied" }
 	| { kind: "closed" };
 
-/** When the application entered its current stage (its latest entry for that stage), or when it was added. */
-function stageSince(application: Pick<Application, "status" | "activity" | "appliedAt">): Date {
-	const entries = application.activity
-		.filter((entry) => entry.type === "stage" && entry.stage === application.status)
-		.map((entry) => new Date(entry.at).getTime());
+/** The latest matching stage entry's date, or when the application was added. */
+function since(application: StageSource, matches: (entry: ApplicationSummary["activity"][number]) => boolean): Date {
+	const entries = application.activity.filter(matches).map((entry) => new Date(entry.at).getTime());
 	return new Date(entries.length > 0 ? Math.max(...entries) : new Date(application.appliedAt).getTime());
 }
 
 const daysBetween = (from: Date, to: Date) => Math.max(0, Math.floor((to.getTime() - from.getTime()) / DAY_MS));
 
-/** Whole days the application has spent in its current stage. */
-export const daysInStage = (application: Pick<Application, "status" | "activity" | "appliedAt">, now = new Date()) =>
-	daysBetween(stageSince(application), now);
+/** Whole days the application has spent in its current lane. */
+export const daysInLane = (application: StageSource, now = new Date()) =>
+	daysBetween(
+		since(application, (entry) => isCurrentLaneEvent(entry, application)),
+		now,
+	);
+
+/** Whole days since the application entered its current stage; moving between lanes of that stage doesn't count. */
+const daysInStage = (application: StageSource, now: Date) =>
+	daysBetween(
+		since(
+			application,
+			(entry) => entry.type === "stage" && entry.stage === application.status && isCanonicalStageEvent(entry),
+		),
+		now,
+	);
 
 /** The account's days without a reply before a follow-up is suggested (Settings → Preferences); 0 means never. */
 export function useNoReplyDays() {
@@ -76,19 +91,21 @@ export function getNextStep(
 
 export type NextStepText = { icon: IconName; title: string; sub: string; tone: "normal" | "warn" | "muted" };
 
-const formatWhen = (date: Date, locale: string, withTime: boolean) =>
+const formatWhen = (date: Date, locale: string, timeZone: string, withTime: boolean) =>
 	date.toLocaleString(locale, {
 		weekday: "short",
 		day: "numeric",
 		month: "short",
-		...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
+		// Follow-ups retain the browser-local calendar date used by their date-only editor.
+		...(withTime ? { timeZone, hour: "2-digit", minute: "2-digit" } : {}),
 	});
 
 /** How a next step reads in the list, on cards and in the detail sheet. */
 export function describeNextStep(
 	step: NextStep,
-	application: Pick<Application, "status" | "closedReason">,
+	application: Pick<ApplicationSummary, "status" | "closedReason">,
 	locale: string,
+	timeZone: string,
 ): NextStepText {
 	switch (step.kind) {
 		case "interview": {
@@ -97,7 +114,7 @@ export function describeNextStep(
 			return {
 				icon: "calendar-dot",
 				title: t`${kind} interview`,
-				sub: `${formatWhen(step.at, locale, true)}${where}`,
+				sub: `${formatWhen(step.at, locale, timeZone, true)}${where}`,
 				tone: "normal",
 			};
 		}
@@ -105,7 +122,7 @@ export function describeNextStep(
 			return {
 				icon: step.overdue ? "clock" : "calendar-dot",
 				title: step.note || t`Follow up`,
-				sub: formatWhen(step.at, locale, false),
+				sub: formatWhen(step.at, locale, timeZone, false),
 				tone: step.overdue ? "warn" : "normal",
 			};
 		case "no-reply":

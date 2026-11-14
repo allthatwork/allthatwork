@@ -1,5 +1,5 @@
 import type { ResolvedNodeStyle } from "@reactive-resume/resume/stylesheet";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { adaptResolvedPdfNode } from "./adapter";
 
 describe("adaptResolvedPdfNode", () => {

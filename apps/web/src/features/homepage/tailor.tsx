@@ -46,10 +46,11 @@ export function Tailor() {
 			aria-labelledby="tailor-title"
 			className="relative h-[260vh] motion-reduce:h-svh min-[900px]:h-[300vh]"
 		>
-			<div className="sticky top-0 h-svh overflow-hidden [--ap:clamp(0,(var(--p)-.74)/.1,1)] [--cv:clamp(0,(var(--p)-.64)/.12,1)] [--cvx:-60%] [--kwa:var(--t1)] [--kwb:var(--t2)] [--kwc:var(--t3)] [--kwd:var(--t4)] [--pw:min(56vw,36vh)] [--sw:clamp(0,var(--p)/.14,1)] [--t1:clamp(0,(var(--p)-.14)/.1,1)] [--t2:clamp(0,(var(--p)-.26)/.1,1)] [--t3:clamp(0,(var(--p)-.38)/.1,1)] [--t4:clamp(0,(var(--p)-.5)/.1,1)] min-[900px]:[--cvx:-40%] min-[900px]:[--pw:min(23vw,46vh)]">
+			<div className="sticky top-0 h-svh overflow-clip [--ap:clamp(0,(var(--p)-.74)/.1,1)] [--cv:clamp(0,(var(--p)-.64)/.12,1)] [--cvx:-60%] [--kwa:var(--t1)] [--kwb:var(--t2)] [--kwc:var(--t3)] [--kwd:var(--t4)] [--pw:min(56vw,36vh)] [--sw:clamp(0,var(--p)/.14,1)] [--t1:clamp(0,(var(--p)-.14)/.1,1)] [--t2:clamp(0,(var(--p)-.26)/.1,1)] [--t3:clamp(0,(var(--p)-.38)/.1,1)] [--t4:clamp(0,(var(--p)-.5)/.1,1)] min-[900px]:[--cvx:-40%] min-[900px]:[--pw:min(23vw,46vh)]">
 				<Doodle
 					name="scissors"
 					wipe="clamp(0, (var(--p) - .08) / .2, 1)"
+					sizes="12vw"
 					className="start-[41vw] top-[74vh] w-[12vw] translate-y-[calc(var(--p)*-40px)] rotate-[12deg] max-[900px]:hidden"
 				/>
 
@@ -104,7 +105,7 @@ export function Tailor() {
 				<div className="absolute start-(--gutter) top-[calc(10vh+17vw)] z-2 flex w-[calc(100vw-2*var(--gutter))] flex-col gap-4 min-[900px]:top-[40vh] min-[900px]:w-[min(390px,30vw)]">
 					<div
 						data-thread-from
-						className="relative flex rotate-[-1deg] flex-col gap-3 rounded-[14px] border border-line bg-raised p-[18px] font-ui text-sm leading-[1.55] text-ink shadow-e3"
+						className="relative flex rotate-[-1deg] flex-col gap-3 rounded-lg border border-line bg-raised p-[18px] font-ui text-sm leading-[1.55] text-ink shadow-e3"
 					>
 						{/* The story's hinge: the role moves to Applied, and the posting is stamped to say so. */}
 						<Stamp tone="applied" stamp="--ap" className="absolute -end-3 -top-4 z-1 text-[14px]">
@@ -113,7 +114,7 @@ export function Tailor() {
 						<div className="flex items-center gap-[11px]">
 							<span
 								aria-hidden="true"
-								className="font-anybody flex size-9 shrink-0 items-center justify-center rounded-[9px] bg-ink text-[19px] leading-none font-medium text-bg font-stretch-[95%]"
+								className="font-anybody flex size-9 shrink-0 items-center justify-center rounded-lg bg-ink text-[19px] leading-none font-medium text-bg font-stretch-[95%]"
 							>
 								F
 							</span>
@@ -139,17 +140,17 @@ export function Tailor() {
 						</div>
 					</div>
 
-					<div className="min-[900px]:short:hidden hidden flex-col gap-2 rounded-[14px] border border-dashed border-line-2 px-3.5 py-3 min-[900px]:flex">
-						<div className="font-martian grid grid-cols-4 text-[10px] leading-none font-medium tracking-[.06em] text-ink-3 uppercase">
+					<div className="min-[900px]:short:hidden hidden flex-col gap-2 rounded-lg border border-dashed border-line-2 px-3.5 py-3 min-[900px]:flex">
+						<div className="font-martian grid grid-cols-4 text-xs leading-none font-medium text-ink-3">
 							{stages.map((stage) => (
 								<span key={stage.label} className="flex min-w-0 items-center gap-[5px]">
-									<span aria-hidden="true" className={cn("size-[7px] shrink-0 rounded-full", stage.dot)} />
+									<span aria-hidden="true" className={cn("size-[7px] shrink-0 rounded-sm", stage.dot)} />
 									{stage.label}
 								</span>
 							))}
 						</div>
 						<div className="relative h-10">
-							<div className="absolute start-[calc(var(--ap)*25%)] top-0 flex h-10 w-[calc(25%-6px)] min-w-max flex-col justify-center overflow-hidden rounded-[9px] border border-line bg-raised px-2 font-ui text-[11.5px] leading-[1.2] font-semibold whitespace-nowrap text-ink shadow-e2 [transition:inset-inline-start_.5s_var(--ease)]">
+							<div className="absolute start-[calc(var(--ap)*25%)] top-0 flex h-10 w-[calc(25%-6px)] min-w-max flex-col justify-center overflow-hidden rounded-lg border border-line bg-raised px-2 font-ui text-[11.5px] leading-[1.2] font-semibold whitespace-nowrap text-ink shadow-e2 [transition:inset-inline-start_.5s_var(--ease)]">
 								{t`Fieldnote`}
 								<span className="text-[10.5px] font-normal text-ink-3">{t`Resume attached`}</span>
 							</div>
@@ -160,19 +161,19 @@ export function Tailor() {
 				<div className="absolute end-[14vw] top-[73%] aspect-[612/792] w-(--pw) -translate-y-1/2 opacity-[clamp(0,var(--p)*20,1)] min-[900px]:end-[8vw] min-[900px]:top-[58%]">
 					<div
 						aria-hidden="true"
-						className="@container absolute inset-0 [transform:translate(calc(var(--dir)*var(--cv)*var(--cvx)),calc(var(--cv)*8%))_rotate(calc(var(--dir)*var(--cv)*-8deg))] overflow-hidden rounded-[2px] bg-[#fbfaf6] shadow-paper [transition:transform_.5s_var(--ease)]"
+						className="@container absolute inset-0 [transform:translate(calc(var(--dir)*var(--cv)*var(--cvx)),calc(var(--cv)*8%))_rotate(calc(var(--dir)*var(--cv)*-8deg))] overflow-hidden rounded-sm bg-[#fbfaf6] shadow-paper [transition:transform_.5s_var(--ease)]"
 					>
 						<div className="flex flex-col gap-[2.6cqw] p-[9cqw] font-display text-[2.2cqw] leading-normal text-[oklch(0.3_0.01_95)]">
-							<span className="font-martian text-[1.6cqw] font-medium tracking-[.08em] text-[oklch(0.48_0.176_258)] uppercase">
+							<span className="font-martian text-[1.6cqw] font-medium text-[oklch(0.48_0.176_258)]">
 								{t`Cover letter · Fieldnote`}
 							</span>
 							<span className="text-[3cqw]">{t`Dear Fieldnote team,`}</span>
 							{["92%", "86%", "90%", "62%"].map((width) => (
-								<span key={width} className="h-[1.2cqw] rounded-[1cqw] bg-[oklch(0.9_0.006_95)]" style={{ width }} />
+								<span key={width} className="h-[1.2cqw] rounded-sm bg-[oklch(0.9_0.006_95)]" style={{ width }} />
 							))}
 						</div>
 					</div>
-					<div data-thread-to className="absolute inset-0 rounded-[2px] shadow-paper">
+					<div data-thread-to className="absolute inset-0 rounded-sm shadow-paper">
 						<Sheet />
 					</div>
 				</div>

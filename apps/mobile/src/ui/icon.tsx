@@ -52,6 +52,7 @@ import { CloudWarningIcon } from "phosphor-react-native/src/icons/CloudWarning";
 import { CodeIcon } from "phosphor-react-native/src/icons/Code";
 import { CompassIcon } from "phosphor-react-native/src/icons/Compass";
 import { CopyIcon } from "phosphor-react-native/src/icons/Copy";
+import { DiscordLogoIcon } from "phosphor-react-native/src/icons/DiscordLogo";
 import { DotsSixVerticalIcon } from "phosphor-react-native/src/icons/DotsSixVertical";
 import { DotsThreeIcon } from "phosphor-react-native/src/icons/DotsThree";
 import { DotsThreeVerticalIcon } from "phosphor-react-native/src/icons/DotsThreeVertical";
@@ -69,6 +70,7 @@ import { FilePlusIcon } from "phosphor-react-native/src/icons/FilePlus";
 import { FileTextIcon } from "phosphor-react-native/src/icons/FileText";
 import { FingerprintIcon } from "phosphor-react-native/src/icons/Fingerprint";
 import { GearSixIcon } from "phosphor-react-native/src/icons/GearSix";
+import { GithubLogoIcon } from "phosphor-react-native/src/icons/GithubLogo";
 import { GlobeIcon } from "phosphor-react-native/src/icons/Globe";
 import { GlobeHemisphereWestIcon } from "phosphor-react-native/src/icons/GlobeHemisphereWest";
 import { GlobeSimpleIcon } from "phosphor-react-native/src/icons/GlobeSimple";
@@ -123,6 +125,7 @@ import { RobotIcon } from "phosphor-react-native/src/icons/Robot";
 import { RowsIcon } from "phosphor-react-native/src/icons/Rows";
 import { ScalesIcon } from "phosphor-react-native/src/icons/Scales";
 import { ScissorsIcon } from "phosphor-react-native/src/icons/Scissors";
+import { ScrollIcon } from "phosphor-react-native/src/icons/Scroll";
 import { SealCheckIcon } from "phosphor-react-native/src/icons/SealCheck";
 import { ShareNetworkIcon } from "phosphor-react-native/src/icons/ShareNetwork";
 import { ShieldCheckIcon } from "phosphor-react-native/src/icons/ShieldCheck";
@@ -166,6 +169,7 @@ import { UploadSimpleIcon } from "phosphor-react-native/src/icons/UploadSimple";
 import { UserCircleIcon } from "phosphor-react-native/src/icons/UserCircle";
 import { UserPlusIcon } from "phosphor-react-native/src/icons/UserPlus";
 import { UserSoundIcon } from "phosphor-react-native/src/icons/UserSound";
+import { VibrateIcon } from "phosphor-react-native/src/icons/Vibrate";
 import { WarningIcon } from "phosphor-react-native/src/icons/Warning";
 import { WarningCircleIcon } from "phosphor-react-native/src/icons/WarningCircle";
 import { WaveformIcon } from "phosphor-react-native/src/icons/Waveform";
@@ -228,6 +232,7 @@ const icons = {
 	code: CodeIcon,
 	compass: CompassIcon,
 	copy: CopyIcon,
+	"discord-logo": DiscordLogoIcon,
 	"dots-six-vertical": DotsSixVerticalIcon,
 	"dots-three": DotsThreeIcon,
 	"dots-three-vertical": DotsThreeVerticalIcon,
@@ -245,6 +250,7 @@ const icons = {
 	"file-text": FileTextIcon,
 	fingerprint: FingerprintIcon,
 	"gear-six": GearSixIcon,
+	"github-logo": GithubLogoIcon,
 	globe: GlobeIcon,
 	"globe-hemisphere-west": GlobeHemisphereWestIcon,
 	"globe-simple": GlobeSimpleIcon,
@@ -299,6 +305,7 @@ const icons = {
 	rows: RowsIcon,
 	scales: ScalesIcon,
 	scissors: ScissorsIcon,
+	scroll: ScrollIcon,
 	"seal-check": SealCheckIcon,
 	"share-network": ShareNetworkIcon,
 	"shield-check": ShieldCheckIcon,
@@ -342,6 +349,7 @@ const icons = {
 	"user-circle": UserCircleIcon,
 	"user-plus": UserPlusIcon,
 	"user-sound": UserSoundIcon,
+	vibrate: VibrateIcon,
 	warning: WarningIcon,
 	"warning-circle": WarningCircleIcon,
 	waveform: WaveformIcon,

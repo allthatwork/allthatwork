@@ -1,4 +1,4 @@
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { call } from "@orpc/server";
 const create = vi.hoisted(() => vi.fn());
 vi.mock("./service", () => ({ resumeService: { create } }));

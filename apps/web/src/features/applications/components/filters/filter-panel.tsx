@@ -6,7 +6,7 @@ import type {
 	FiltersChange,
 	ListFacet,
 } from "../../filter";
-import type { Application } from "../../types";
+import type { ApplicationSummary } from "../../types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ApplicationFilters } from "@reactive-resume/schema/applications/filters";
 import type { ReactNode } from "react";
@@ -41,7 +41,7 @@ export type FilterPanelProps = {
 	facet: FilterFacet;
 	filters: ApplicationFilters;
 	onChange: FiltersChange;
-	applications: readonly Application[];
+	applications: readonly ApplicationSummary[];
 	context: FilterContext;
 	/** The lanes from Preferences. */
 	lanes: readonly string[];

@@ -1,6 +1,6 @@
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 import { fileURLToPath } from "node:url";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import * as forme from "@formepdf/core";
 import { encode } from "fast-png";
 import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";

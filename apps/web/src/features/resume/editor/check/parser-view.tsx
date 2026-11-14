@@ -49,7 +49,7 @@ const issueOnLine = (issues: readonly CheckIssue[], line: string) =>
 
 function IssueChip({ issue }: { issue: CheckIssue }) {
 	return (
-		<span className="h-[18px] shrink-0 rounded-full bg-warn-soft px-1.5 font-sans text-[10px] leading-[18px] font-semibold whitespace-nowrap text-warn-text">
+		<span className="h-[18px] shrink-0 rounded-sm bg-warn-soft px-1.5 font-sans text-[10px] leading-[18px] font-semibold whitespace-nowrap text-warn-text">
 			<Trans>issue {issue.number}</Trans>
 		</span>
 	);
@@ -129,18 +129,19 @@ function ParsedText({ parsed, issues }: { parsed: Parsed; issues: readonly Check
 		},
 	];
 
-	// Lines grouped under the headings a parser recognised, in the order it reads them.
+	// Only standalone headings replace a text line; fused columns must retain the full line in reading order.
 	const headingAt = new Map(semantics.headings.map((heading) => [heading.lineIndex, heading.text]));
 	const groups: { heading: string | null; lines: string[] }[] = [{ heading: null, lines: [] }];
 	doc.lines.forEach((line, index) => {
 		const heading = headingAt.get(index);
-		if (heading !== undefined) groups.push({ heading, lines: [] });
+		if (heading === line.text.trim()) groups.push({ heading, lines: [] });
+		else if (heading !== undefined) groups.push({ heading: null, lines: [line.text] });
 		else groups.at(-1)?.lines.push(line.text);
 	});
 
 	return (
 		<>
-			<div className="flex flex-wrap justify-between gap-2 text-[11px] font-medium text-ink-3 uppercase">
+			<div className="flex flex-wrap justify-between gap-2 text-xs font-medium text-ink-3">
 				<span>
 					<Trans>Extracted from the PDF on the page · reading order</Trans>
 				</span>
@@ -152,7 +153,7 @@ function ParsedText({ parsed, issues }: { parsed: Parsed; issues: readonly Check
 					const issue = issueFor(issues, FIELD_CODES[field.id] ?? []);
 					return (
 						<div key={field.id} className="contents">
-							<dt className="text-ink-3 uppercase">{field.label}</dt>
+							<dt className="text-ink-3">{field.label}</dt>
 							<dd className={cn("flex min-w-0 items-center gap-2", (issue || !field.value) && "text-warn-text")}>
 								<span className="min-w-0 break-words">{field.value || notFound}</span>
 								{issue && <IssueChip issue={issue} />}

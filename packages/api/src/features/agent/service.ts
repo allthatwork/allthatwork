@@ -15,10 +15,11 @@ import {
 	ToolLoopAgent,
 	wrapLanguageModel,
 } from "ai";
-import { and, asc, count, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, getColumns, inArray, isNull, sql } from "drizzle-orm";
 import { agentWebSources } from "@reactive-resume/ai/tools/agent-tool-contracts";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
+import { env } from "@reactive-resume/env/server";
 import { generateId } from "@reactive-resume/utils/string";
 import { aiProvidersService } from "../ai-providers/service";
 import { assertAgentEnvironment } from "../ai/credentials";
@@ -29,6 +30,7 @@ import { coverLetterService } from "../cover-letters/service";
 import { resumeService } from "../resume/service";
 import { getStorageService, inferContentType } from "../storage/service";
 import { webAccessService } from "../web-access/credentials";
+import { searchScope } from "../web-access/regions";
 import { readPage, searchWeb } from "../web-access/service";
 import { isRunAlive, monitorRunCancellation, requestRunCancellation } from "./cancellation";
 import { pruneAgentModelContext, replyContextBudget } from "./context";
@@ -56,6 +58,7 @@ const AGENT_TIMEOUT_MESSAGE = "Time limit reached. Your progress is saved. Ask m
 const MAX_ATTACHMENTS_PER_MESSAGE = 10;
 const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 const MAX_THREAD_ATTACHMENT_BYTES = 100 * 1024 * 1024;
+const MAX_ACCOUNT_ATTACHMENT_BYTES = 1024 * 1024 * 1024;
 const READABLE_ATTACHMENT_TYPES = new Set(["text/plain", "text/markdown", "application/json"]);
 const DIRECT_MODEL_FILE_ATTACHMENT_TYPES = new Set([
 	"application/pdf",
@@ -104,9 +107,10 @@ type MessageContext = {
 
 type SendMessageInput = {
 	userId: string;
+	deviceTimeZone?: string | undefined;
 	threadId: string;
 	message: UIMessage;
-	attachmentIds?: unknown;
+	attachmentIds?: string[] | undefined;
 	context?: MessageContext | undefined;
 };
 
@@ -187,10 +191,21 @@ function withAttachmentUiParts(message: UIMessage, attachments: AgentAttachmentR
 	};
 }
 
+/**
+ * Drops file parts the model mustn't see as sent: attachment references (the server adds what it read) and, from
+ * user messages, any other URL, which the AI SDK would download on the server for every turn.
+ */
 function withoutAgentAttachmentUiParts(message: UIMessage): UIMessage {
 	return {
 		...message,
-		parts: message.parts.filter((part) => !(part.type === "file" && part.url.startsWith(AGENT_ATTACHMENT_URL_PREFIX))),
+		parts: message.parts.filter(
+			(part) =>
+				!(
+					part.type === "file" &&
+					(part.url.startsWith(AGENT_ATTACHMENT_URL_PREFIX) ||
+						(message.role === "user" && !part.url.startsWith("data:")))
+				),
+		),
 	};
 }
 
@@ -349,41 +364,7 @@ export function buildAttachmentModelParts(
 	});
 }
 
-function uniqueAttachmentIds(ids: unknown) {
-	if (ids === undefined) return [];
-	if (!Array.isArray(ids)) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Attachment IDs must be an array.",
-		});
-	}
-
-	if (ids.length > MAX_ATTACHMENTS_PER_MESSAGE) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Too many attachments for one message.",
-		});
-	}
-
-	const unique = new Set<string>();
-	for (const id of ids) {
-		if (typeof id !== "string" || !id.trim()) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "Attachment IDs must be non-empty strings.",
-			});
-		}
-		unique.add(id.trim());
-	}
-
-	if (unique.size !== ids.length) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Attachment IDs must be unique.",
-		});
-	}
-
-	return [...unique];
-}
-
-async function getUnlinkedMessageAttachments(input: { ids: unknown; threadId: string; userId: string }) {
-	const ids = uniqueAttachmentIds(input.ids);
+async function getUnlinkedMessageAttachments({ ids, ...input }: { ids: string[]; threadId: string; userId: string }) {
 	if (ids.length === 0) return [];
 
 	const attachments = await db
@@ -400,7 +381,7 @@ async function getUnlinkedMessageAttachments(input: { ids: unknown; threadId: st
 
 	if (attachments.length !== ids.length) {
 		throw new ORPCError("BAD_REQUEST", {
-			message: "One or more attachments are unavailable or already linked to a message.",
+			message: "One or more attachments are unavailable or already sent. Attach the files again.",
 		});
 	}
 
@@ -409,7 +390,7 @@ async function getUnlinkedMessageAttachments(input: { ids: unknown; threadId: st
 		const attachment = attachmentsById.get(id);
 		if (!attachment) {
 			throw new ORPCError("BAD_REQUEST", {
-				message: "One or more attachments are unavailable or already linked to a message.",
+				message: "One or more attachments are unavailable or already sent. Attach the files again.",
 			});
 		}
 
@@ -441,7 +422,7 @@ async function linkAttachmentsToMessage(input: {
 
 	if (linked.length !== ids.length) {
 		throw new ORPCError("CONFLICT", {
-			message: "One or more attachments were already linked to another message.",
+			message: "One or more attachments were already sent with another message. Attach the files again.",
 		});
 	}
 }
@@ -453,7 +434,7 @@ function readAttachmentModelInputs(attachments: AgentAttachmentRecord[]): Promis
 			const stored = await storage.read(attachment.storageKey);
 			if (!stored) {
 				throw new ORPCError("BAD_REQUEST", {
-					message: `Attachment ${attachment.filename} could not be read.`,
+					message: `Couldn't read ${attachment.filename}. Attach it again.`,
 				});
 			}
 
@@ -519,7 +500,12 @@ async function persistMessage(input: {
 	return message;
 }
 
-async function updateAssistantToolResultMessage(input: { userId: string; threadId: string; message: UIMessage }) {
+async function updateAssistantToolResultMessage(input: {
+	userId: string;
+	threadId: string;
+	message: UIMessage;
+	contextScope?: string | undefined;
+}) {
 	const existingRows = await listThreadMessages({
 		threadId: input.threadId,
 		userId: input.userId,
@@ -530,6 +516,14 @@ async function updateAssistantToolResultMessage(input: { userId: string; threadI
 			message: "The answered assistant message was not found.",
 		});
 	}
+	const stored = toMessage(existingRow);
+	if (
+		input.contextScope &&
+		(stored.metadata as { contextScope?: string } | undefined)?.contextScope !== input.contextScope
+	)
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Send a new message after removing context. Previous tool approvals cannot be continued.",
+		});
 
 	const {
 		message: mergedMessage,
@@ -537,7 +531,7 @@ async function updateAssistantToolResultMessage(input: { userId: string; threadI
 		alreadyResolvedCount,
 		pendingContinuationCount,
 		conflictingCount,
-	} = mergeClientToolResponses(toMessage(existingRow), input.message);
+	} = mergeClientToolResponses(stored, input.message);
 
 	if (conflictingCount > 0) {
 		throw new ORPCError("BAD_REQUEST", {
@@ -651,6 +645,21 @@ async function cleanupActiveRun(input: {
 	}
 }
 
+/**
+ * Compares links the way people write them: a fragment or the punctuation ending a sentence
+ * ("read https://example.com/job.") doesn't make it a different page. Host case is normalized by URL.
+ */
+function sourceKey(value: string): string | null {
+	try {
+		if (value.length > 2048) return null;
+		const url = new URL(value.trim().replace(/[.,;:!?'"*)\]]+$/, ""));
+		url.hash = "";
+		return url.toString();
+	} catch {
+		return null;
+	}
+}
+
 function messageText(message: UIMessage) {
 	const textParts: string[] = [];
 
@@ -735,6 +744,7 @@ async function proposeEdits(input: {
 }
 
 function createAgent(input: {
+	deviceTimeZone?: string | undefined;
 	career?: {
 		context: Awaited<ReturnType<typeof careerService.context>>;
 		shareApplication: boolean;
@@ -743,9 +753,10 @@ function createAgent(input: {
 		tab: WorkspaceTab | undefined;
 		offers: Awaited<ReturnType<typeof careerService.savedItems>>;
 		sourceMessageId: string | undefined;
-		allowedSources: Set<string>;
 		query: string;
 	};
+	/** Pages the model may read: links the user wrote or sources found earlier; search results join them. */
+	allowedSources: Iterable<string>;
 	userId: string;
 	threadId: string;
 	/** Null when the message leaves the document out. */
@@ -764,6 +775,8 @@ function createAgent(input: {
 	};
 	model: ReturnType<typeof getModel>;
 	connection: WebAccessConnection | null;
+	/** Whether web search is available: through the connection, or the server's SearXNG without one. */
+	search: boolean;
 	signal: AbortSignal;
 	stepTimeoutMs: number;
 	/** Settings → AI limits: steps, answer length, retries, attachment text and web calls in one reply. */
@@ -796,40 +809,50 @@ function createAgent(input: {
 		};
 
 	const { document } = input;
-	const allowedSources = input.career?.allowedSources ?? new Set<string>();
+	const allowedSources = new Map<string, string>();
+	const allow = (url: string | null | undefined) => {
+		const key = url ? sourceKey(url) : null;
+		if (key) allowedSources.set(key, key);
+	};
+	for (const url of input.allowedSources) allow(url);
 	if (input.career?.shareApplication) {
 		const application = input.career.context.application;
-		if (application?.sourceUrl) allowedSources.add(application.sourceUrl);
+		allow(application?.sourceUrl);
 		const interview = input.career.context.interview;
 		if (interview?.type === "interview")
-			for (const participant of interview.participants ?? [])
-				if (participant.profileUrl) allowedSources.add(participant.profileUrl);
+			for (const participant of interview.participants ?? []) allow(participant.profileUrl);
 	}
 	const tools = buildAgentTools({
 		document: document?.kind ?? null,
 		// The career coach searches only when the user switched Web research on for this message.
-		externalSearch: input.connection !== null && (!input.career || input.career.web),
+		externalSearch: input.search && (!input.career || input.career.web),
 		maxWebCalls: input.limits.replyWebCalls,
 		signal: input.signal,
 		handlers: {
 			searchWeb: timedToolHandler("search_web", async (query: string, signal: AbortSignal) => {
+				// General research searches the user's countries but keeps the query as written.
+				const { regions } = await searchScope(input.userId, input.deviceTimeZone);
 				const result = await searchWeb(query, {
 					connection: input.connection,
 					userId: input.userId,
 					signal,
+					regions,
 				});
-				for (const resultSource of result) allowedSources.add(resultSource.url);
+				for (const resultSource of result) allow(resultSource.url);
 				return result;
 			}),
 			readPage: timedToolHandler("read_page", async (url: string, signal: AbortSignal) => {
-				if (input.career && !allowedSources.has(url))
-					throw new Error("Read only retrieved URLs or public links supplied by the user.");
-				const { html: _html, ...page } = await readPage(url, {
+				// Text the model reads (pages, attachments, postings) can ask it to put data in a URL; an allowlist keeps
+				// every request to a page the user or a search chose.
+				const key = sourceKey(url);
+				const approvedUrl = key ? allowedSources.get(key) : undefined;
+				if (!approvedUrl) throw new Error("Read only retrieved URLs or public links supplied by the user.");
+				const { html: _html, ...page } = await readPage(approvedUrl, {
 					connection: input.connection,
 					userId: input.userId,
 					signal,
 				});
-				allowedSources.add(page.resolvedUrl ?? page.requestedUrl);
+				allow(page.resolvedUrl ?? page.requestedUrl);
 				return page;
 			}),
 			readDocument: timedToolHandler("read_document", async () => {
@@ -867,6 +890,8 @@ function createAgent(input: {
 			});
 
 	return new ToolLoopAgent({
+		toolApproval: { search_web: "user-approval", save_story: "user-approval" },
+		experimental_toolApprovalSecret: env.AUTH_SECRET,
 		// Providers without native inputExamples support get them appended to the tool description.
 		model: wrapLanguageModel({
 			model: input.model,
@@ -898,27 +923,7 @@ function createAgent(input: {
 }
 
 const threadSummarySelection = {
-	scope: schema.agentThread.scope,
-	applicationId: schema.agentThread.applicationId,
-	id: schema.agentThread.id,
-	userId: schema.agentThread.userId,
-	aiProviderId: schema.agentThread.aiProviderId,
-	sourceResumeId: schema.agentThread.sourceResumeId,
-	workingResumeId: schema.agentThread.workingResumeId,
-	coverLetterId: schema.agentThread.coverLetterId,
-	title: schema.agentThread.title,
-	status: schema.agentThread.status,
-	reviewPatches: schema.agentThread.reviewPatches,
-	editsProposed: schema.agentThread.editsProposed,
-	editsAccepted: schema.agentThread.editsAccepted,
-	activeRunId: schema.agentThread.activeRunId,
-	activeStreamId: schema.agentThread.activeStreamId,
-	activeRunStartedAt: schema.agentThread.activeRunStartedAt,
-	lastMessageAt: schema.agentThread.lastMessageAt,
-	archivedAt: schema.agentThread.archivedAt,
-	deletedAt: schema.agentThread.deletedAt,
-	createdAt: schema.agentThread.createdAt,
-	updatedAt: schema.agentThread.updatedAt,
+	...getColumns(schema.agentThread),
 	resumeName: schema.resume.name,
 	coverLetterName: schema.coverLetter.name,
 	providerLabel: schema.aiProvider.label,
@@ -969,13 +974,9 @@ export const agentService = {
 				: input.resumeId
 					? { kind: "resume", id: input.resumeId }
 					: null;
+			// The router's input refine already pairs the scope with exactly one document or application.
 			const scope = input.scope ?? "document";
-			if (scope === "document" && !document)
-				throw new ORPCError("BAD_REQUEST", { message: "Choose a resume or a letter." });
-			if (scope !== "document") {
-				if (document || (scope === "application") !== Boolean(input.applicationId)) throw new ORPCError("BAD_REQUEST");
-				await requireCareerApplication(input);
-			}
+			if (scope !== "document") await requireCareerApplication(input);
 
 			// Confirms the caller owns the document (throws otherwise) and names it for the summary.
 			const described = !document
@@ -998,7 +999,7 @@ export const agentService = {
 				: await aiProvidersService.getDefaultRunnable({ userId: input.userId });
 			if (!provider)
 				throw new ORPCError("BAD_REQUEST", {
-					message: "No tested AI provider is available.",
+					message: "Test and turn on an AI provider in Settings → AI & developer first.",
 				});
 
 			const [thread] = await db
@@ -1118,6 +1119,10 @@ export const agentService = {
 			try {
 				if (thread.activeRunId) await requestRunCancellation(thread.activeRunId, "USER_DELETED");
 			} finally {
+				// Deleting a conversation deletes what was said in it; the thread row stays only as a tombstone.
+				await db
+					.delete(schema.agentMessage)
+					.where(and(eq(schema.agentMessage.threadId, input.id), eq(schema.agentMessage.userId, input.userId)));
 				await db.delete(schema.agentAttachment).where(eq(schema.agentAttachment.threadId, input.id));
 				try {
 					await getStorageService().delete(`uploads/${input.userId}/agent/${input.id}`);
@@ -1142,13 +1147,13 @@ export const agentService = {
 			});
 			if (thread.status === "archived") {
 				throw new ORPCError("CONFLICT", {
-					message: "This thread is archived.",
+					message: "This conversation is archived. Start a new conversation to continue.",
 				});
 			}
 			if (thread.activeRunId) {
 				if (!isStaleAgentRun(thread)) {
 					throw new ORPCError("CONFLICT", {
-						message: "This thread already has an active run.",
+						message: "This conversation is still replying. Wait for it to finish, or stop it.",
 					});
 				}
 				// Lazy reap: a dead run's claim heals on the next send instead of CONFLICTing forever.
@@ -1166,7 +1171,7 @@ export const agentService = {
 			}
 			if ((!document && !isCareer) || !thread.aiProviderId) {
 				throw new ORPCError("BAD_REQUEST", {
-					message: "This conversation is read-only.",
+					message: "This conversation is read-only. Start a new conversation to continue.",
 				});
 			}
 			if (input.message.role !== "user" && input.message.role !== "assistant") {
@@ -1178,11 +1183,7 @@ export const agentService = {
 			// and tool results. The career coach's chips only choose what this message adds: earlier messages in the chat
 			// still go, and its privacy line says so.
 			const freshContext = !isCareer && (input.context?.document === false || input.context?.posting === false);
-			if (freshContext && input.message.role !== "user") {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "Send a new message after removing context. Previous tool approvals cannot be continued.",
-				});
-			}
+			const contextScope = JSON.stringify([input.context?.document !== false, input.context?.posting !== false]);
 
 			// Deliberately schema-less: provider-echoed tool parts must pass, and replayed history is never re-validated.
 			const validated = await safeValidateUIMessages({
@@ -1193,6 +1194,12 @@ export const agentService = {
 					message: "Invalid UI message parts.",
 				});
 			}
+			// Files reach the model only as uploaded attachments: a URL here would make the server download it.
+			if (
+				input.message.role === "user" &&
+				input.message.parts.some((part) => part.type === "file" && !part.url.startsWith(AGENT_ATTACHMENT_URL_PREFIX))
+			)
+				throw new ORPCError("BAD_REQUEST", { message: "Attach files by uploading them." });
 
 			const loaded = document ? await loadDocument(input.userId, document) : null;
 			if (loaded?.locked)
@@ -1232,7 +1239,7 @@ export const agentService = {
 			});
 			if (!claimed) {
 				throw new ORPCError("CONFLICT", {
-					message: "This thread already has an active run.",
+					message: "This conversation is still replying. Wait for it to finish, or stop it.",
 				});
 			}
 
@@ -1251,6 +1258,7 @@ export const agentService = {
 				id: responseMessageId,
 				role: "assistant",
 				parts: [],
+				metadata: { contextScope, contextMessageId: input.message.id },
 			};
 
 			try {
@@ -1274,6 +1282,7 @@ export const agentService = {
 						userId: input.userId,
 						threadId: input.threadId,
 						message: input.message,
+						contextScope: freshContext ? contextScope : undefined,
 					});
 					draftRowId = continuation.rowId;
 					draftUiMessage = continuation.message;
@@ -1333,16 +1342,24 @@ export const agentService = {
 				);
 				const messages = messageRows.map(toMessage);
 				const memoryCutoff = isCareer ? await careerService.memoryCutoff(input.userId) : null;
+				const contextMessageId = (draftUiMessage.metadata as { contextMessageId?: string } | undefined)
+					?.contextMessageId;
+				const contextMessage = messages.find((message) => message.role === "user" && message.id === contextMessageId);
+				if (freshContext && input.message.role === "assistant" && !contextMessage)
+					throw new ORPCError("BAD_REQUEST", { message: "Send a new message to continue with the selected context." });
 				const replay = freshContext
-					? [withAttachmentUiParts(input.message, attachmentsForModel)]
+					? input.message.role === "assistant" && contextMessage
+						? [contextMessage, draftUiMessage]
+						: [withAttachmentUiParts(input.message, attachmentsForModel)]
 					: memoryCutoff
 						? // History from before a fact changed is left out, but never the message being answered (a retry
 							// keeps its first createdAt).
 							messageRows.filter((row) => row.createdAt > memoryCutoff || row.id === sourceMessageId).map(toMessage)
 						: messages;
 				const connection = await webAccessService.resolve(input.userId);
+				const search = webAccessService.canSearch(connection !== null);
 				const modelMessages = await convertToModelMessages(
-					replay.map((message) => toModelInputMessage(message, runnableProvider, connection !== null)),
+					replay.map((message) => toModelInputMessage(message, runnableProvider, search)),
 				);
 				const attachmentModelParts = buildAttachmentModelParts(
 					await readAttachmentModelInputs(attachmentsForModel),
@@ -1362,8 +1379,9 @@ export const agentService = {
 				}
 
 				if (careerContext && careerContext.memoryVersion !== (await careerService.memoryVersion(input.userId)))
-					throw new ORPCError("CONFLICT", { message: "Career memory changed. Please retry with current information." });
+					throw new ORPCError("CONFLICT", { message: "Career memory changed. Try again." });
 				const agent = createAgent({
+					deviceTimeZone: input.deviceTimeZone,
 					userId: input.userId,
 					threadId: input.threadId,
 					document:
@@ -1383,15 +1401,18 @@ export const agentService = {
 										: [],
 									sourceMessageId,
 									query: messageText(input.message),
-									allowedSources: new Set([
-										...messages.flatMap((message) => agentWebSources(message).map((source) => source.url)),
-										...(messageText(input.message).match(/https?:\/\/[^\s<>")]+/g) ?? []),
-									]),
 								},
 							}
 						: {}),
+					allowedSources: [
+						...replay.flatMap((message) => agentWebSources(message).map((source) => source.url)),
+						...[...replay, input.message]
+							.filter((message) => message.role === "user")
+							.flatMap((message) => messageText(message).match(/https?:\/\/[^\s<>")]+/g) ?? []),
+					],
 					posting,
 					connection,
+					search,
 					signal: controller.signal,
 					stepTimeoutMs,
 					limits,
@@ -1470,6 +1491,8 @@ export const agentService = {
 												usage: part.totalUsage,
 												model: runnableProvider.model,
 												provider: runnableProvider.provider,
+												contextScope,
+												contextMessageId,
 											}
 										: undefined,
 								onFinish: async ({ responseMessage: completedMessage, isAborted }) => {
@@ -1676,6 +1699,16 @@ export const agentService = {
 					if (Number(stats?.totalBytes ?? 0) + input.data.byteLength > MAX_THREAD_ATTACHMENT_BYTES) {
 						throw new ORPCError("BAD_REQUEST");
 					}
+					// New threads would otherwise each bring a fresh 100 MiB.
+					// ponytail: uploads to two threads at once can pass this together; lock the user row if that matters.
+					const [account] = await tx
+						.select({ totalBytes: sql<number>`coalesce(sum(${schema.agentAttachment.size}), 0)` })
+						.from(schema.agentAttachment)
+						.where(eq(schema.agentAttachment.userId, input.userId));
+					if (Number(account?.totalBytes ?? 0) + input.data.byteLength > MAX_ACCOUNT_ATTACHMENT_BYTES)
+						throw new ORPCError("BAD_REQUEST", {
+							message: "Your assistant attachments use all their storage. Delete conversations you no longer need.",
+						});
 
 					// ponytail: hold the thread lock during storage I/O; reserve quota first if uploads contend.
 					storageAttempted = true;

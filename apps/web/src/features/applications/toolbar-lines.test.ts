@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { filterGroupWidth, toolbarFitsOneLine } from "./toolbar-lines";
 
 // Stage, Build, Found by, Lane, Fit, Dates and More filters, unset; then the same with Fit and Dates set and the count.

@@ -1,7 +1,6 @@
 import type { Application } from "../../types";
 import type { ApplicationTimelineEntry, InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import { t } from "@lingui/core/macro";
-import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
@@ -25,8 +24,10 @@ import { Input } from "@reactive-resume/ui/components/input";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { interviewKindOf } from "../../interviews";
-import { getStageColor, getStageLabel } from "../../stages";
+import { getCategoryLane, getLaneLabel, isCurrentLaneEvent } from "../../lanes";
 import { useInvalidateApplications } from "../../use-application-actions";
+import { useApplicationLanes } from "../../use-application-lanes";
+import { useCareerTime } from "@/features/career/shared";
 import { useClosingValue } from "@/hooks/use-closing-value";
 import { useConfirm } from "@/hooks/use-confirm";
 import { orpc } from "@/libs/orpc/client";
@@ -49,9 +50,10 @@ type ActivityProps = {
  * date (and a note's text) or deletes it; the entry that anchors the current stage can't be deleted.
  */
 export function Activity({ application, onOpenInterview }: ActivityProps) {
-	const { i18n } = useLingui();
+	const { format } = useCareerTime();
 	const invalidate = useInvalidateApplications();
 	const confirm = useConfirm();
+	const { lanes } = useApplicationLanes();
 	const [note, setNote] = useState("");
 	const [editing, setEditing] = useState<{ entry: ApplicationTimelineEntry; date: string; text: string } | null>(null);
 	// Closing keeps the entry's title and fields on screen until the dialog has faded out.
@@ -78,9 +80,9 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 	});
 
 	const sorted = [...application.activity].sort(byNewest);
-	const anchorId = sorted.find((entry) => entry.type === "stage" && entry.stage === application.status)?.id;
+	const anchorId = sorted.find((entry) => isCurrentLaneEvent(entry, application))?.id;
 	const formatDate = (value: Date | string, withTime: boolean) =>
-		new Date(value).toLocaleDateString(i18n.locale, {
+		format(value, {
 			month: "short",
 			day: "numeric",
 			// Stage and note entries are whole days, stored at noon UTC.
@@ -88,8 +90,13 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 		});
 
 	const describe = (entry: ApplicationTimelineEntry) => {
-		if (entry.type === "stage")
-			return { dot: getStageColor(entry.stage), text: t`Moved to ${getStageLabel(entry.stage)}` };
+		if (entry.type === "stage") {
+			// The lane as it's named now; else its name when the move happened; else the stage's default lane.
+			const lane = lanes.find((item) => item.id === entry.laneId && item.category === entry.stage);
+			const fallback = getCategoryLane(lanes, entry.stage);
+			const label = lane ? getLaneLabel(lane) : (entry.laneLabel ?? getLaneLabel(fallback));
+			return { dot: (lane ?? fallback).color, text: t`Moved to ${label}` };
+		}
 		if (entry.type === "note") return { dot: "var(--ink-3)", text: entry.text };
 		const kind = interviewKindOf(entry.kind);
 		return { dot: kind?.color ?? "var(--ink-3)", text: t`${kind?.label ?? entry.kind} interview` };
@@ -103,7 +110,7 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 
 	return (
 		<section aria-labelledby="application-activity" className="grid gap-2">
-			<h3 id="application-activity" className="text-xs font-semibold text-ink-3 uppercase">
+			<h3 id="application-activity" className="text-xs font-semibold text-ink-3">
 				<Trans>Activity</Trans>
 			</h3>
 			<form
@@ -130,7 +137,7 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 					const { dot, text } = describe(entry);
 					return (
 						<li key={entry.id} className="group flex items-start gap-2.5 py-1.5 text-sm">
-							<span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-full" style={{ background: dot }} />
+							<span aria-hidden="true" className="mt-1.5 size-2 shrink-0 rounded-sm" style={{ background: dot }} />
 							{entry.type === "interview" ? (
 								<button
 									type="button"
@@ -183,7 +190,7 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 										onClick={async () => {
 											const confirmed = await confirm(t`Delete this entry?`, {
 												description: t`It's removed from the timeline for good.`,
-												confirmText: t`Delete`,
+												confirmText: t`Delete entry`,
 											});
 											if (confirmed) deleteEntry.mutate({ id: application.id, entryId: entry.id });
 										}}

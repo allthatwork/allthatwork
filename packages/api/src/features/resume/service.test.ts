@@ -1,5 +1,5 @@
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 
 // The DB layer and side-effecting helpers are mocked; the branching in service.ts is what's under test.
@@ -12,6 +12,11 @@ const dbMock = vi.hoisted(() => ({
 const compareMock = vi.hoisted(() => vi.fn());
 const publishResumeUpdatedMock = vi.hoisted(() => vi.fn());
 const grantResumeAccessMock = vi.hoisted(() => vi.fn());
+
+vi.mock("../../middleware/rate-limit", async (original) => ({
+	...(await original<typeof import("../../middleware/rate-limit")>()),
+	consumeResumePasswordLimit: vi.fn(async () => true),
+}));
 
 vi.mock("../cover-letters/embedded", () => ({ adoptEmbeddedLetters: vi.fn(async () => undefined) }));
 vi.mock("@reactive-resume/db/client", () => ({ db: dbMock }));
@@ -88,28 +93,23 @@ const versionHistoryMock = vi.hoisted(() => ({
 }));
 vi.mock("./version-history", () => versionHistoryMock);
 const recordSlugChangeMock = vi.hoisted(() => vi.fn());
+// The lookup by username and slug; its query is tested against real SQL in public-pdf.test.ts.
+const findResumeMock = vi.hoisted(() => vi.fn());
 vi.mock("./slugs", () => ({
-	SLUG_PATTERN: /^[a-z0-9]+(-[a-z0-9]+)*$/,
 	checkSlug: vi.fn(),
 	findFreeSlug: vi.fn(async () => "generated-slug"),
 	findFreeRandomSlug: vi.fn(async () => "k3v9x2m7qa4p"),
-	matchesSlug: (slug: string) => ["slug", slug],
-	matchesUsername: (username: string) => ["username", username],
+	findResume: findResumeMock,
 	recordSlugChange: recordSlugChangeMock,
 }));
 
 const { resumeService } = await import("./service");
 const { parseStoredResumeData } = await import("./resume-data-validation");
 
-// A lookup by username and slug: `select().from().innerJoin().where().orderBy().limit()` resolving to `rows`.
-const slugLookup = (rows: unknown[]) => ({
-	from: () => ({ innerJoin: () => ({ where: () => ({ orderBy: () => ({ limit: async () => rows }) }) }) }),
-});
-
 // A `db.update(...).set(...).where(...).returning(...)` chain that resolves to `rows`.
 const createUpdateChain = (rows: unknown[]) => {
 	const returning = vi.fn(() => Promise.resolve(rows));
-	const where = vi.fn(() => ({ returning }));
+	const where = vi.fn((_condition?: unknown) => ({ returning }));
 	const set = vi.fn((_input: unknown) => ({ where }));
 	return { chain: { set }, set, where, returning };
 };
@@ -185,6 +185,7 @@ beforeEach(() => {
 	versionHistoryMock.writeVersion.mockResolvedValue({ id: "v" });
 	versionHistoryMock.saveSessionVersion.mockResolvedValue(undefined);
 	recordSlugChangeMock.mockReset();
+	findResumeMock.mockReset();
 	publishResumeUpdatedMock.mockResolvedValue(undefined);
 });
 
@@ -204,6 +205,18 @@ describe("versions.restore", () => {
 		expect(versionHistoryMock.writeVersion.mock.calls[0]?.[1].data).toEqual(currentData);
 		expect(versionHistoryMock.saveSessionVersion).not.toHaveBeenCalled();
 	});
+});
+
+describe("create", () => {
+	it.each(["", "Invalid Slug@123!", "a".repeat(65)])(
+		"rejects invalid explicit slug %s before persistence",
+		async (slug) => {
+			await expect(
+				resumeService.create({ userId: "u1", name: "Resume", slug, tags: [], locale: "en-US" }),
+			).rejects.toMatchObject({ code: "INVALID_SLUG", status: 400 });
+			expect(dbMock.transaction).not.toHaveBeenCalled();
+		},
+	);
 });
 
 describe("update", () => {
@@ -244,6 +257,7 @@ describe("update", () => {
 			} else {
 				await expect(resumeService.update(input)).resolves.toMatchObject({ id: "r1" });
 				expect(update.set).toHaveBeenCalledWith({ name: "Saved", autoName: false });
+				expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"], ["is_locked", false]]));
 			}
 		},
 	);
@@ -292,19 +306,28 @@ describe("update", () => {
 		expect(recordSlugChangeMock).not.toHaveBeenCalled();
 	});
 
-	it("rejects a new slug outside the pattern, but accepts an unchanged legacy one", async () => {
-		updateHarness({ slug: "Legacy_Slug" });
-		await expect(resumeService.update({ id: "r1", userId: "u1", slug: "Not Valid" })).rejects.toMatchObject({
-			code: "INVALID_SLUG",
-			status: 400,
-		});
+	it.each(["Legacy_Slug", "a".repeat(70)])(
+		"rejects invalid new addresses but accepts unchanged legacy %s",
+		async (legacySlug) => {
+			updateHarness({ slug: legacySlug });
+			await expect(resumeService.update({ id: "r1", userId: "u1", slug: "Not Valid" })).rejects.toMatchObject({
+				code: "INVALID_SLUG",
+				status: 400,
+			});
 
-		const { update } = updateHarness({ slug: "Legacy_Slug" });
-		await resumeService.update({ id: "r1", userId: "u1", name: "Renamed", slug: "Legacy_Slug" });
-		// A name typed by hand also ends automatic naming.
-		expect(update.set).toHaveBeenCalledWith({ name: "Renamed", autoName: false });
-		expect(recordSlugChangeMock).not.toHaveBeenCalled();
-	});
+			updateHarness({ slug: "old-slug" });
+			await expect(resumeService.update({ id: "r1", userId: "u1", slug: "a".repeat(65) })).rejects.toMatchObject({
+				code: "INVALID_SLUG",
+				status: 400,
+			});
+
+			const { update } = updateHarness({ slug: legacySlug });
+			await resumeService.update({ id: "r1", userId: "u1", name: "Renamed", slug: legacySlug });
+			// A name typed by hand also ends automatic naming. An unchanged address isn't written, so it stays not chosen.
+			expect(update.set).toHaveBeenCalledWith({ name: "Renamed", autoName: false });
+			expect(recordSlugChangeMock).not.toHaveBeenCalled();
+		},
+	);
 
 	it("throws RESUME_LOCKED when the pre-read reports the resume is locked", async () => {
 		const select = createLockedSelectChain([{ data: defaultResumeData, isLocked: true, updatedAt: new Date() }]);
@@ -317,6 +340,19 @@ describe("update", () => {
 			status: 403,
 		});
 		expect(select.forUpdate).toHaveBeenCalledWith("update");
+	});
+
+	it("does not update a resume in Trash", async () => {
+		const selectWhere = vi.fn((_condition: unknown) => ({ for: vi.fn(() => Promise.resolve([])) }));
+		const update = createUpdateChain([]);
+		const tx = { select: () => ({ from: () => ({ where: selectWhere }) }), update: () => update.chain };
+		dbMock.transaction.mockImplementationOnce(async (callback: (tx: unknown) => Promise<unknown>) => callback(tx));
+
+		await expect(resumeService.update({ id: "r1", userId: "u1", name: "Updated" })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		expect(selectWhere.mock.calls[0]?.[0]).toContainEqual(["trashed_at"]);
+		expect(update.set).not.toHaveBeenCalled();
 	});
 });
 
@@ -380,6 +416,7 @@ describe("patch", () => {
 				metadata: expect.objectContaining({ page: expect.objectContaining({ marginX: 14 }) }),
 			}),
 		});
+		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"], ["is_locked", false]]));
 	});
 
 	it.each([
@@ -418,16 +455,73 @@ describe("patch", () => {
 		expect((error as { data: unknown }).data).toEqual({ index: 0, operation });
 		expect(update.set).not.toHaveBeenCalled();
 	});
+
+	it("does not patch a resume in Trash", async () => {
+		const selectWhere = vi.fn((_condition: unknown) => ({ for: vi.fn(() => Promise.resolve([])) }));
+		const tx = {
+			select: vi.fn(() => ({ from: () => ({ where: selectWhere }) })),
+			update: vi.fn(),
+		};
+
+		await expect(
+			resumeService.patchInTransaction(tx as never, {
+				id: "r1",
+				userId: "u1",
+				operations: [{ op: "replace", path: "/basics/name", value: "Ada" }],
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(selectWhere.mock.calls[0]?.[0]).toContainEqual(["trashed_at"]);
+		expect(tx.update).not.toHaveBeenCalled();
+	});
 });
 
 describe("verifyPassword", () => {
+	it("charges aliases and username casing to the canonical resume before password work", async () => {
+		const { consumeResumePasswordLimit } = await import("../../middleware/rate-limit");
+		findResumeMock.mockResolvedValue({ id: "canonical", password: "hash" });
+		compareMock.mockResolvedValue(false);
+		for (const [username, slug] of [
+			["ada", "current"],
+			["ADA", "historical"],
+		]) {
+			await expect(
+				resumeService.verifyPassword({
+					username: username ?? "",
+					slug: slug ?? "",
+					password: "wrong",
+					trustedClient: "trusted-client",
+				}),
+			).rejects.toMatchObject({ code: "INVALID_PASSWORD" });
+			expect(consumeResumePasswordLimit).toHaveBeenLastCalledWith({
+				resumeId: "canonical",
+				trustedClient: "trusted-client",
+			});
+		}
+		vi.mocked(consumeResumePasswordLimit).mockResolvedValueOnce(false);
+		compareMock.mockClear();
+		await expect(
+			resumeService.verifyPassword({ username: "Ada", slug: "current", password: "wrong" }),
+		).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+		expect(compareMock).not.toHaveBeenCalled();
+	});
+
 	it("throws INVALID_PASSWORD when bcrypt.compare returns false", async () => {
-		dbMock.select.mockReturnValueOnce(slugLookup([{ id: "r1", password: "hash" }]));
+		findResumeMock.mockResolvedValueOnce({ id: "r1", password: "hash" });
 		compareMock.mockResolvedValueOnce(false);
 
 		await expect(
 			resumeService.verifyPassword({ slug: "s", username: "u", password: "p", responseHeaders: new Headers() }),
 		).rejects.toMatchObject({ code: "INVALID_PASSWORD" });
+		expect(grantResumeAccessMock).not.toHaveBeenCalled();
+	});
+
+	it("checks a password even when no shared resume matches, so timing doesn't reveal which exist", async () => {
+		compareMock.mockResolvedValueOnce(true);
+
+		await expect(
+			resumeService.verifyPassword({ slug: "s", username: "u", password: "p", responseHeaders: new Headers() }),
+		).rejects.toMatchObject({ code: "INVALID_PASSWORD" });
+		expect(compareMock).toHaveBeenCalledOnce();
 		expect(grantResumeAccessMock).not.toHaveBeenCalled();
 	});
 });
@@ -450,6 +544,24 @@ describe("delete", () => {
 			status: 403,
 		});
 	});
+
+	it("allows permanently deleting a resume that is in Trash", async () => {
+		const deleteWhere = vi.fn((_condition?: unknown) => Promise.resolve());
+		const selectWhere = vi.fn((_condition?: unknown) => Promise.resolve([{ isLocked: false }]));
+		runTransaction({
+			select: vi
+				.fn()
+				.mockReturnValueOnce(createLockedSelectChain([{ id: "u1" }]).chain)
+				.mockReturnValueOnce({ from: () => ({ where: selectWhere }) }),
+			delete: () => ({ where: deleteWhere }),
+		});
+
+		await expect(resumeService.delete({ id: "r1", userId: "u1" })).resolves.toBeUndefined();
+		expect(selectWhere).toHaveBeenCalledTimes(1);
+		expect(selectWhere.mock.calls[0]?.[0]).not.toContainEqual(["trashed_at"]);
+		expect(deleteWhere).toHaveBeenCalledTimes(1);
+		expect(deleteWhere.mock.calls[0]?.[0]).not.toContainEqual(["trashed_at"]);
+	});
 });
 
 describe.each([
@@ -466,7 +578,7 @@ describe.each([
 
 		await expect(run()).resolves.toBeUndefined();
 		expect(update.set).toHaveBeenCalledWith({ password: written });
-		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["is_locked", false]]));
+		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"], ["is_locked", false]]));
 	});
 
 	it.each([
@@ -478,21 +590,28 @@ describe.each([
 
 		await expect(run()).rejects.toMatchObject({ code });
 	});
+
+	it("does not update password for a resume in Trash", async () => {
+		const update = createUpdateChain([]);
+		dbMock.update.mockReturnValueOnce(update.chain);
+		const selectWhere = vi.fn((_cond: unknown) => Promise.resolve([]));
+		dbMock.select.mockReturnValueOnce({ from: () => ({ where: selectWhere }) });
+
+		await expect(run()).rejects.toMatchObject({ code: "NOT_FOUND" });
+		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"]]));
+		expect(selectWhere).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"]]));
+	});
 });
 
 describe("getBySlug", () => {
 	it.each(["u1", "other-user"])("password gate exempts only the owner (%s)", async (currentUserId) => {
-		dbMock.select.mockReturnValueOnce(
-			slugLookup([
-				{
-					...createResumeRow(defaultResumeData),
-					userId: "u1",
-					isPublic: true,
-					hasPassword: true,
-					passwordHash: "hash",
-				},
-			]),
-		);
+		findResumeMock.mockResolvedValueOnce({
+			...createResumeRow(defaultResumeData),
+			userId: "u1",
+			isPublic: true,
+			hasPassword: true,
+			passwordHash: "hash",
+		});
 		const request = resumeService.getBySlug({
 			username: "owner",
 			slug: "resume",
@@ -511,7 +630,7 @@ describe("getBySlug", () => {
 			hasPassword: false,
 			passwordHash: null,
 		};
-		dbMock.select.mockReturnValue(slugLookup([row]));
+		findResumeMock.mockResolvedValue(row);
 		await expect(
 			resumeService.getBySlug({
 				username: "owner",
@@ -524,13 +643,7 @@ describe("getBySlug", () => {
 
 describe("statistics.recordDownload", () => {
 	it("lets the owner download a password-protected resume without an unlock cookie", async () => {
-		dbMock.select.mockReturnValueOnce({
-			from: () => ({
-				innerJoin: () => ({
-					where: () => Promise.resolve([{ id: "r1", userId: "u1", isPublic: true, passwordHash: "hash" }]),
-				}),
-			}),
-		});
+		findResumeMock.mockResolvedValueOnce({ id: "r1", userId: "u1", isPublic: true, passwordHash: "hash" });
 		await expect(
 			resumeService.statistics.recordDownload({
 				username: "owner",
@@ -540,12 +653,87 @@ describe("statistics.recordDownload", () => {
 			}),
 		).resolves.toBe(true);
 	});
+
+	it("requires password when downloading via renamed slug", async () => {
+		findResumeMock.mockResolvedValueOnce({ id: "r1", userId: "u1", isPublic: true, passwordHash: "hash" });
+		await expect(
+			resumeService.statistics.recordDownload({
+				username: "owner",
+				slug: "old-slug",
+				requestHeaders: new Headers(),
+			}),
+		).rejects.toMatchObject({
+			code: "NEED_PASSWORD",
+			data: { username: "owner", slug: "old-slug" },
+		});
+	});
+
+	it("throws NOT_FOUND when renamed slug redirect has expired or does not exist", async () => {
+		await expect(
+			resumeService.statistics.recordDownload({
+				username: "owner",
+				slug: "expired-slug",
+				requestHeaders: new Headers(),
+			}),
+		).rejects.toMatchObject({ code: "NOT_FOUND" });
+	});
+});
+
+describe("statistics.getById", () => {
 	it("does not look in Trash for the resume", async () => {
 		const where = vi.fn((_condition: unknown) => Promise.resolve([]));
-		dbMock.select.mockReturnValueOnce({ from: () => ({ innerJoin: () => ({ where }) }) });
-		await expect(
-			resumeService.statistics.recordDownload({ username: "owner", slug: "resume", requestHeaders: new Headers() }),
-		).rejects.toMatchObject({ code: "NOT_FOUND" });
+		dbMock.select.mockReturnValueOnce({ from: () => ({ rightJoin: () => ({ where }) }) });
+
+		await expect(resumeService.statistics.getById({ id: "r1", userId: "u1" })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
 		expect(where.mock.calls[0]?.[0]).toContainEqual(["trashed_at"]);
+	});
+});
+
+describe("statistics.getDailySeries", () => {
+	it("does not look in Trash for the resume", async () => {
+		const where = vi.fn((_condition: unknown) => Promise.resolve([]));
+		dbMock.select.mockReturnValueOnce({ from: () => ({ where }) });
+
+		await expect(resumeService.statistics.getDailySeries({ id: "r1", userId: "u1" })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		expect(where.mock.calls[0]?.[0]).toContainEqual(["trashed_at"]);
+	});
+});
+
+describe("tags.list", () => {
+	it("does not include tags from resumes in Trash", async () => {
+		const where = vi.fn((_condition: unknown) => Promise.resolve([{ tags: ["tag1", "tag2"] }]));
+		dbMock.select.mockReturnValueOnce({ from: () => ({ where }) });
+
+		const result = await resumeService.tags.list({ userId: "u1" });
+		expect(result).toEqual(["tag1", "tag2"]);
+		expect(where.mock.calls[0]?.[0]).toContainEqual(["trashed_at"]);
+	});
+});
+
+describe("getById", () => {
+	it("reads a resume in Trash so its thumbnail can render", async () => {
+		const where = vi.fn((_condition: unknown) => Promise.resolve([]));
+		dbMock.select.mockReturnValueOnce({ from: () => ({ where }) });
+
+		await expect(resumeService.getById({ id: "r1", userId: "u1" })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		expect(where.mock.calls[0]?.[0]).not.toContainEqual(["trashed_at"]);
+	});
+});
+
+describe("setLocked", () => {
+	it("does not allow locking or unlocking a resume in Trash", async () => {
+		const update = createUpdateChain([]);
+		dbMock.update.mockReturnValueOnce(update.chain);
+
+		await expect(resumeService.setLocked({ id: "r1", userId: "u1", isLocked: true })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"]]));
 	});
 });

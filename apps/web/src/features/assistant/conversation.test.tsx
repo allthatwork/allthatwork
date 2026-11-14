@@ -1,22 +1,22 @@
 // @vitest-environment happy-dom
 import type { AssistantDocument } from "./document";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 
 const mocks = vi.hoisted(() => ({ chat: vi.fn(), send: vi.fn(), attach: vi.fn(), publish: vi.fn() }));
 vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => ({ invalidateQueries: vi.fn() }) }));
 vi.mock("@/features/resume/editor/store", () => ({
-	useEditorStore: (select: (state: unknown) => unknown) => select({ setAssistantProposals: mocks.publish }),
+	useEditorStore: { setState: mocks.publish },
 }));
 vi.mock("@/libs/orpc/client", () => ({
 	client: { agent: { attachments: { create: mocks.attach } } },
 	orpc: { agent: { threads: { list: { key: () => ["threads"] } } } },
 }));
 vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() } }));
+vi.mock("./use-assistant-chat", () => ({ useAssistantChat: mocks.chat }));
 vi.mock("./chat", () => ({
-	useAssistantChat: mocks.chat,
 	fileToBase64: async () => "Zm9v",
 	attachmentPart: (file: { id: string; filename: string; mediaType: string }) => ({
 		type: "file",

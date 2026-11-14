@@ -1,5 +1,5 @@
 import type { Application } from "./types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { foundBySuggestions, parseFit, suggestValues } from "./suggestions";
 
 const app = (fields: Partial<Application>) => fields as Application;

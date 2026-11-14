@@ -1,7 +1,7 @@
 import type { AiReasoning } from "@reactive-resume/ai/reasoning";
 import type { AIProvider } from "@reactive-resume/ai/types";
 import { ORPCError } from "@orpc/client";
-import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { acceptsCustomReasoning, aiReasoningSchema } from "@reactive-resume/ai/reasoning";
 import { aiProviderSchema } from "@reactive-resume/ai/types";
 import { db } from "@reactive-resume/db/client";
@@ -121,7 +121,10 @@ const automaticOrder = [
 ];
 
 function assertPersonalProvidersAllowed() {
-	if (env.AI_PROVIDER) throw new ORPCError("FORBIDDEN", { message: "AI is managed by the server." });
+	if (env.AI_PROVIDER)
+		throw new ORPCError("FORBIDDEN", {
+			message: "AI is set up by the server administrator and can't be changed here.",
+		});
 }
 
 /** A persisted reference keeps Assistant thread foreign keys valid; server credentials stay in the environment. */
@@ -175,7 +178,7 @@ export const aiProvidersService = {
 
 		const provider = await getOwnedProvider(input);
 		if (!provider.enabled || provider.testStatus !== "success") {
-			throw new ORPCError("BAD_REQUEST", { message: "AI provider must be tested and enabled before use." });
+			throw new ORPCError("BAD_REQUEST", { message: "Test and turn on this AI provider before using it." });
 		}
 
 		return {
@@ -244,8 +247,6 @@ export const aiProvidersService = {
 		const existing = await getOwnedProvider(input);
 		const provider = input.provider ?? aiProviderSchema.parse(existing.provider);
 		const nextApiKey = input.apiKey?.trim();
-		const encrypted = nextApiKey ? encryptCredential(nextApiKey) : {};
-		const credentialChanged = !!nextApiKey;
 		const nextBaseUrl =
 			input.baseURL !== undefined ? normalizeBaseUrl({ provider, baseURL: input.baseURL }) : existing.baseUrl;
 		const reasoning = input.reasoning !== undefined ? input.reasoning : storedReasoning(existing.reasoning);
@@ -254,12 +255,24 @@ export const aiProvidersService = {
 		const providerChanged = input.provider !== undefined && input.provider !== existing.provider;
 		const modelChanged = input.model !== undefined && input.model.trim() !== existing.model;
 		const baseUrlChanged = input.baseURL !== undefined && nextBaseUrl !== existing.baseUrl;
+		const hostChanged = providerChanged || baseUrlChanged;
+
+		// The saved key only goes where it was saved for: a new provider or address needs the key sent with it.
+		if (hostChanged && nextApiKey === undefined) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "Enter the API key again to change the provider or base URL.",
+			});
+		}
+
+		// On a new host the key is replaced even when empty (Ollama runs without one).
+		const encrypted = nextApiKey || hostChanged ? encryptCredential(nextApiKey ?? "") : {};
+		const credentialChanged = !!nextApiKey;
 		// A model can refuse a reasoning setting, so a new one needs a fresh test too.
 		const reasoningChanged = input.reasoning !== undefined && input.reasoning !== existing.reasoning;
 		const runtimeChanged = credentialChanged || providerChanged || modelChanged || baseUrlChanged || reasoningChanged;
 
 		if (input.enabled === true && existing.testStatus !== "success" && !runtimeChanged) {
-			throw new ORPCError("BAD_REQUEST", { message: "AI provider must be tested successfully before enabling." });
+			throw new ORPCError("BAD_REQUEST", { message: "Test this AI provider before turning it on." });
 		}
 
 		const [updated] = await db
@@ -276,10 +289,25 @@ export const aiProvidersService = {
 				...(runtimeChanged ? { enabled: false, testStatus: "untested", lastTestedAt: null, testError: null } : {}),
 				...encrypted,
 			})
-			.where(and(eq(schema.aiProvider.id, input.id), eq(schema.aiProvider.userId, input.userId)))
+			.where(
+				and(
+					eq(schema.aiProvider.id, input.id),
+					eq(schema.aiProvider.userId, input.userId),
+					eq(schema.aiProvider.provider, existing.provider),
+					eq(schema.aiProvider.model, existing.model),
+					existing.baseUrl === null
+						? isNull(schema.aiProvider.baseUrl)
+						: eq(schema.aiProvider.baseUrl, existing.baseUrl),
+					eq(schema.aiProvider.encryptedApiKey, existing.encryptedApiKey),
+					existing.reasoning === null
+						? isNull(schema.aiProvider.reasoning)
+						: eq(schema.aiProvider.reasoning, existing.reasoning),
+					eq(schema.aiProvider.testStatus, existing.testStatus),
+				),
+			)
 			.returning();
 
-		if (!updated) throw new ORPCError("NOT_FOUND");
+		if (!updated) throw new ORPCError("CONFLICT", { message: "The provider changed. Reload it before saving again." });
 		return toResponse(updated);
 	},
 
@@ -299,6 +327,21 @@ export const aiProvidersService = {
 		const provider = await getOwnedProvider(input);
 		const parsedProvider = aiProviderSchema.parse(provider.provider);
 		const apiKey = decryptCredential(provider.encryptedApiKey);
+		// A result applies only to the settings it tested: an edit made while the request ran resets the connection
+		// to untested, and a late result must not mark the new settings as working.
+		const tested = and(
+			eq(schema.aiProvider.id, input.id),
+			eq(schema.aiProvider.userId, input.userId),
+			eq(schema.aiProvider.provider, provider.provider),
+			eq(schema.aiProvider.model, provider.model),
+			provider.baseUrl === null ? isNull(schema.aiProvider.baseUrl) : eq(schema.aiProvider.baseUrl, provider.baseUrl),
+			eq(schema.aiProvider.encryptedApiKey, provider.encryptedApiKey),
+			provider.reasoning === null
+				? isNull(schema.aiProvider.reasoning)
+				: eq(schema.aiProvider.reasoning, provider.reasoning),
+		);
+		const changed = () =>
+			new ORPCError("CONFLICT", { message: "The provider changed during the test. Test it again." });
 
 		try {
 			const result = await testConnection({
@@ -319,12 +362,13 @@ export const aiProvidersService = {
 					testError: result.ok ? null : result.message,
 					lastTestedAt: new Date(),
 				})
-				.where(and(eq(schema.aiProvider.id, input.id), eq(schema.aiProvider.userId, input.userId)))
+				.where(tested)
 				.returning();
 
-			if (!updated) throw new ORPCError("NOT_FOUND");
+			if (!updated) throw changed();
 			return toResponse(updated);
 		} catch (error) {
+			if (error instanceof ORPCError && error.code === "CONFLICT") throw error;
 			// Only unexpected failures reach here now: provider-side outcomes come back as data above.
 			await db
 				.update(schema.aiProvider)
@@ -334,7 +378,7 @@ export const aiProvidersService = {
 					testError: error instanceof Error ? error.message : "Failed to test provider.",
 					lastTestedAt: new Date(),
 				})
-				.where(and(eq(schema.aiProvider.id, input.id), eq(schema.aiProvider.userId, input.userId)));
+				.where(tested);
 
 			throw error;
 		}
@@ -346,7 +390,7 @@ export const aiProvidersService = {
 		const provider = await getOwnedProvider(input);
 		if (!provider.enabled || provider.testStatus !== "success")
 			throw new ORPCError("BAD_REQUEST", {
-				message: "Test and switch on this connection before making it the default.",
+				message: "Test and turn on this provider before making it the default.",
 			});
 		const [updated] = await db.transaction(async (tx) => {
 			await tx

@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const { dbMock, queryMock, queryState } = vi.hoisted(() => {
 	const state = {
 		rows: [] as unknown[],
 		whereArg: undefined as unknown,
 		orderByArgs: [] as unknown[],
+		updateRows: undefined as unknown[] | undefined,
+		updateWhere: undefined as unknown,
 	};
 	const query = {
 		from: vi.fn(() => query),
@@ -18,9 +20,17 @@ const { dbMock, queryMock, queryState } = vi.hoisted(() => {
 		}),
 		limit: vi.fn(async () => state.rows),
 	};
+	const update = {
+		set: vi.fn(() => update),
+		where: vi.fn((arg: unknown) => {
+			state.updateWhere = arg;
+			return update;
+		}),
+		returning: vi.fn(async () => state.updateRows ?? state.rows),
+	};
 
 	return {
-		dbMock: { select: vi.fn(() => query) },
+		dbMock: { select: vi.fn(() => query), update: vi.fn(() => update) },
 		queryMock: query,
 		queryState: state,
 	};
@@ -54,6 +64,7 @@ vi.mock("drizzle-orm", () => ({
 	asc: (value: unknown) => ({ type: "asc", value }),
 	desc: (value: unknown) => ({ type: "desc", value }),
 	eq: (left: unknown, right: unknown) => ({ type: "eq", left, right }),
+	isNull: (value: unknown) => ({ type: "isNull", value }),
 	ne: (left: unknown, right: unknown) => ({ type: "ne", left, right }),
 	sql: (strings: TemplateStringsArray, ...values: unknown[]) => ({ type: "sql", strings: [...strings], values }),
 }));
@@ -67,6 +78,7 @@ vi.mock("../ai/service", () => ({ testConnection: vi.fn() }));
 vi.mock("../ai/url-policy", () => ({ resolveAiBaseUrl: vi.fn() }));
 
 const { aiProvidersService } = await import("./service");
+const { resolveAiBaseUrl } = await import("../ai/url-policy");
 
 function providerRow(overrides: Record<string, unknown> = {}) {
 	return {
@@ -98,6 +110,8 @@ describe("aiProvidersService", () => {
 		queryState.rows = [];
 		queryState.whereArg = undefined;
 		queryState.orderByArgs = [];
+		queryState.updateRows = undefined;
+		queryState.updateWhere = undefined;
 	});
 
 	it("prefers the default enabled and tested provider, then the most recently used, then creation order", async () => {
@@ -130,5 +144,37 @@ describe("aiProvidersService", () => {
 			{ type: "asc", value: "ai_provider.created_at" },
 		]);
 		expect(queryMock.limit).toHaveBeenCalledWith(1);
+	});
+
+	it("sends a saved key only to the host it was saved for", async () => {
+		queryState.rows = [providerRow()];
+		vi.mocked(resolveAiBaseUrl).mockReturnValue("https://other.example/v1");
+		const owner = { id: "provider-1", userId: "user-1" };
+
+		for (const change of [{ baseURL: "https://other.example/v1" }, { provider: "anthropic" as const }])
+			await expect(aiProvidersService.update({ ...owner, ...change })).rejects.toMatchObject({
+				code: "BAD_REQUEST",
+				message: "Enter the API key again to change the provider or base URL.",
+			});
+		expect(dbMock.update).not.toHaveBeenCalled();
+
+		await expect(
+			aiProvidersService.update({ ...owner, baseURL: "https://other.example/v1", apiKey: "new-key" }),
+		).resolves.toMatchObject({ id: "provider-1" });
+	});
+
+	it("rejects an update if the destination or credential changed after the ownership read", async () => {
+		queryState.rows = [providerRow()];
+		queryState.updateRows = [];
+		await expect(
+			aiProvidersService.update({ id: "provider-1", userId: "user-1", apiKey: "new-key" }),
+		).rejects.toMatchObject({ code: "CONFLICT" });
+		expect(queryState.updateWhere).toMatchObject({
+			conditions: expect.arrayContaining([
+				{ type: "eq", left: "ai_provider.provider", right: "openai" },
+				{ type: "isNull", value: "ai_provider.base_url" },
+				{ type: "eq", left: "ai_provider.encrypted_api_key", right: "encrypted-key" },
+			]),
+		});
 	});
 });

@@ -1,4 +1,4 @@
-import type { Application } from "../types";
+import type { ApplicationSummary } from "../types";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { Icon } from "@reactive-resume/ui/components/icon";
@@ -8,7 +8,7 @@ import { useApplicationActions } from "../use-application-actions";
 const stop = (event: React.SyntheticEvent) => event.stopPropagation();
 
 type BuildStatusControlProps = {
-	application: Pick<Application, "id" | "role" | "company" | "targetingBuildStatus">;
+	application: Pick<ApplicationSummary, "id" | "role" | "company" | "targetingBuildStatus">;
 	className?: string;
 };
 

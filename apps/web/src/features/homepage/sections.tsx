@@ -3,12 +3,15 @@ import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Icon } from "@reactive-resume/ui/components/icon";
-import { localeSchema } from "@reactive-resume/utils/locale";
+import { Label } from "@reactive-resume/ui/components/label";
+import { supportedLocales } from "@reactive-resume/utils/locale";
 import { cn } from "@reactive-resume/utils/style";
 import { prefersReducedMotion, SCENE, useLanding } from "./scroll";
 import { CtaLink, Doodle, labelClass } from "./ui";
+import { RollingNumber } from "@/components/ui/rolling-number";
+import { LocaleCombobox } from "@/features/locale/combobox";
 import { orpc } from "@/libs/orpc/client";
 
 const crowdinUrl = "https://crowdin.com/project/reactive-resume";
@@ -16,49 +19,6 @@ const crowdinUrl = "https://crowdin.com/project/reactive-resume";
 const statisticsStaleTime = 6 * 60 * 60 * 1000;
 // A fresh self-hosted install has a handful of users; a total that small reads as a joke, so it isn't shown.
 const smallestTotalShown = 100;
-
-type RollingNumberProps = { value: number; roll: boolean; delay: number };
-
-/** A total whose digits roll up into place, one column per digit, in the locale's own digits. */
-function RollingNumber({ value, roll, delay }: RollingNumberProps) {
-	const { i18n } = useLingui();
-	const text = i18n.number(value);
-	const digits = Array.from({ length: 10 }, (_, digit) => i18n.number(digit));
-
-	return (
-		<>
-			<span className="sr-only">{text}</span>
-			<span aria-hidden="true" dir="ltr" className="inline-flex">
-				{Array.from(text).map((character, index) => {
-					const digit = digits.indexOf(character);
-					return (
-						<span key={index} className="inline-block h-[1.15em] overflow-hidden">
-							<span
-								className="flex translate-y-[calc(var(--offset)*1.15em)] flex-col transition-transform duration-[2s] ease-[cubic-bezier(.2,.8,.2,1)] starting:translate-y-0"
-								style={
-									{
-										"--offset": roll ? -Math.max(0, digit) : 0,
-										transitionDelay: `${delay + index * 80}ms`,
-									} as CSSProperties
-								}
-							>
-								{digit === -1 ? (
-									<span className="h-[1.15em] leading-[1.15]">{character}</span>
-								) : (
-									digits.map((glyph) => (
-										<span key={glyph} className="h-[1.15em] leading-[1.15]">
-											{glyph}
-										</span>
-									))
-								)}
-							</span>
-						</span>
-					);
-				})}
-			</span>
-		</>
-	);
-}
 
 /** 08 Numbers: the live community totals, side by side, each figure over what it counts. */
 export function Numbers() {
@@ -105,7 +65,7 @@ export function Numbers() {
 									<span className="sr-only">{t`Loading the total`}</span>
 								</span>
 							) : (
-								<RollingNumber value={row.value} roll={inView} delay={index * 150} />
+								<RollingNumber value={row.value} roll={inView} delay={index * 150} duration="2s" stagger={80} />
 							)}
 						</dd>
 					</div>
@@ -139,7 +99,8 @@ const words = [
 /** 09 Languages. The word turns over every 1.9s while the section is near; it can be paused. */
 export function Languages() {
 	const { i18n } = useLingui();
-	const languageCount = i18n.number(localeSchema.options.length - 1);
+	const languageId = useId();
+	const languageCount = i18n.number(supportedLocales.length);
 	const near = useLanding((state) => state.activeScene >= SCENE.numbers && state.activeScene <= SCENE.faq);
 	const reducedMotion = useLanding((state) => state.reducedMotion);
 	const [index, setIndex] = useState(0);
@@ -162,6 +123,7 @@ export function Languages() {
 			<Doodle
 				name="globe"
 				wipe="clamp(0, (var(--p) - .25) / .2, 1)"
+				sizes="11vw"
 				className="start-[6vw] top-[10vh] w-[11vw] translate-y-[calc(var(--p)*-40px)] rotate-[-6deg] max-[900px]:hidden"
 			/>
 			<h2 id="languages-title" className={cn(labelClass, "text-ink-3")}>
@@ -196,19 +158,24 @@ export function Languages() {
 					type="button"
 					onClick={() => setPaused((value) => !value)}
 					aria-label={paused ? t`Play the list of languages` : t`Pause the list of languages`}
-					className="grid size-6 place-items-center rounded-full text-ink-3 transition-colors hover:bg-hover hover:text-ink motion-reduce:hidden"
+					className="grid size-6 place-items-center rounded-sm text-ink-3 transition-colors hover:bg-hover hover:text-ink motion-reduce:hidden"
 				>
 					<Icon name={paused ? "play" : "pause"} size={16} filled />
 				</button>
 			</div>
-			<p className="mt-3 max-w-[30em] font-display text-[clamp(17px,1.4vw,21px)] leading-normal text-pretty text-ink-2">
+			<p className="mt-3 flex max-w-[30em] flex-col font-display text-[clamp(17px,1.4vw,21px)] leading-normal text-pretty text-ink-2">
+				<span>{t`Translated into ${languageCount} languages.`}</span>{" "}
 				<a
 					href={crowdinUrl}
 					className="text-accent-text italic underline underline-offset-[3px] transition-colors hover:text-accent-hover"
 				>
-					{t`Translated into ${languageCount} languages. Help translate it into yours.`}
+					{t`Help translate it into yours.`}
 				</a>
 			</p>
+			<div className="grid w-full max-w-80 gap-1.5 text-start">
+				<Label htmlFor={languageId}>{t`Change language`}</Label>
+				<LocaleCombobox id={languageId} />
+			</div>
 		</section>
 	);
 }
@@ -232,21 +199,21 @@ export function Closing() {
 		>
 			<div
 				aria-hidden="true"
-				className="mb-4 w-[min(100%,560px)] rounded-[14px] border border-dashed border-line-2 px-3.5 py-3"
+				className="mb-4 w-[min(100%,560px)] rounded-lg border border-dashed border-line-2 px-3.5 py-3"
 			>
-				<div className="font-martian grid grid-cols-4 gap-2 text-[10px] leading-none font-medium tracking-[.06em] text-ink-3 uppercase">
+				<div className="font-martian grid grid-cols-4 gap-2 text-xs leading-none font-medium text-ink-3">
 					{stages.map((stage) => (
 						<span key={stage.label} className="flex min-w-0 items-center gap-[5px]">
-							<span className={cn("size-[7px] shrink-0 rounded-full", stage.dot)} />
+							<span className={cn("size-[7px] shrink-0 rounded-sm", stage.dot)} />
 							{stage.label}
 						</span>
 					))}
 				</div>
 				<div className="mt-2.5 grid grid-cols-4 gap-2 text-start">
-					<span className="flex h-11 items-center justify-center rounded-[9px] border-[1.5px] border-dashed border-accent font-display text-[15px] text-accent-text italic">
+					<span className="flex h-11 items-center justify-center rounded-lg border-[1.5px] border-dashed border-accent font-display text-[15px] text-accent-text italic">
 						{t`Yours`}
 					</span>
-					<span className="col-start-3 flex h-11 min-w-0 flex-col justify-center rounded-[9px] border border-line bg-raised px-2 font-ui text-[11.5px] leading-[1.2] font-semibold text-ink shadow-e2">
+					<span className="col-start-3 flex h-11 min-w-0 flex-col justify-center rounded-lg border border-line bg-raised px-2 font-ui text-[11.5px] leading-[1.2] font-semibold text-ink shadow-e2">
 						{t`Fieldnote`}
 						<span className="truncate text-[10.5px] font-normal text-ink-3">{t`Interview done`}</span>
 					</span>

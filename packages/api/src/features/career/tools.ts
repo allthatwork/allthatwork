@@ -4,7 +4,7 @@ import { and, desc, eq, gt, sql } from "drizzle-orm";
 import z from "zod";
 import { careerSystemPromptTemplate } from "@reactive-resume/ai/prompts";
 import { db } from "@reactive-resume/db/client";
-import { application, careerArtifact } from "@reactive-resume/db/schema";
+import { application, applicationLane, careerArtifact } from "@reactive-resume/db/schema";
 import { careerStoryInputSchema, factCategorySchema } from "@reactive-resume/schema/career";
 import { coachQuery, rankByRelevance, relevanceScores, storyText, terms } from "@reactive-resume/utils/relevance";
 import { careerService, modelFact } from "./service";
@@ -69,11 +69,15 @@ export function buildCareerInstructions(
 	},
 ) {
 	const { context } = input;
-	const company = context.application?.company;
 	// The web app records what a message shared from the same query (coach-thread.tsx), so keep the two in step.
 	const query = coachQuery(input.query ?? "", input.shareApplication ? context.application : null);
+	// The role and company are application data too: name them only when the user shares the application.
+	const application =
+		context.application && input.shareApplication
+			? ` (${context.application.role} at ${context.application.company})`
+			: "";
 	const task = context.application
-		? `Help with this one application (${context.application.role} at ${company}). ${input.tab ? `The user is ${TABS[input.tab]}.` : ""}`
+		? `Help with this one application${application}. ${input.tab ? `The user is ${TABS[input.tab]}.` : ""}`
 		: "Help with the whole search, across applications. Use list_opportunities to compare them.";
 	const selected = {
 		...(input.shareApplication
@@ -94,10 +98,13 @@ export function buildCareerInstructions(
 			? { offers: input.offers.map(({ application, data }) => ({ ...application, terms: data })) }
 			: {}),
 	};
-	return careerSystemPromptTemplate
-		.replace("{{TASK}}", task)
-		.replace("{{MEMORY}}", input.shareMemory ? MEMORY[context.profile.memoryMode] : MEMORY.off)
-		.replace("{{CONTEXT}}", JSON.stringify(selected));
+	// One pass with a function replacer: text inside a value (`{{CONTEXT}}`, `$&`) is never read as a placeholder.
+	const fill: Record<string, string> = {
+		TASK: task,
+		MEMORY: input.shareMemory ? MEMORY[context.profile.memoryMode] : MEMORY.off,
+		CONTEXT: JSON.stringify(selected),
+	};
+	return careerSystemPromptTemplate.replace(/\{\{(\w+)\}\}/g, (match, key: string) => fill[key] ?? match);
 }
 
 export function buildCareerTools(input: CareerToolsInput): ToolSet {
@@ -154,7 +161,7 @@ export function buildCareerTools(input: CareerToolsInput): ToolSet {
 		});
 		tools.save_story = tool({
 			description:
-				"Save a STARR story the user agreed to, grounded in existing fact IDs. Leave Result or Reflection empty rather than inventing them.",
+				"Propose a STARR story for the user to review and approve before saving, grounded in existing fact IDs. Leave Result or Reflection empty rather than inventing them. Nothing is saved until approval.",
 			inputSchema: careerStoryInputSchema
 				.omit({ applicationId: true })
 				.extend({ factIds: z.array(z.string()).min(1).max(30) }),
@@ -199,11 +206,18 @@ export function buildCareerTools(input: CareerToolsInput): ToolSet {
 						company: application.company,
 						role: application.role,
 						status: application.status,
+						laneId: application.laneId,
+						laneLabel: applicationLane.label,
+						closedReason: application.closedReason,
 						location: application.location,
 						salary: application.salary,
 						requirements: application.requirements,
 					})
 					.from(application)
+					.leftJoin(
+						applicationLane,
+						and(eq(applicationLane.id, application.laneId), eq(applicationLane.userId, input.userId)),
+					)
 					.where(eq(application.userId, input.userId))
 					.orderBy(desc(application.updatedAt))
 					.limit(input.context.limits.coachApplications),

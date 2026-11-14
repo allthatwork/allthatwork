@@ -1,11 +1,11 @@
 import type { CalendarEvent } from "./calendar";
-import type { Application } from "@/features/applications/types";
+import type { ApplicationSummary as Application } from "@/features/applications/types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { RefreshControl, Pressable, ScrollView, View } from "react-native";
 import {
 	collectEvents,
 	dateOfKey,
@@ -16,15 +16,18 @@ import {
 	upcomingEvents,
 	weekStartsOn,
 } from "./calendar";
+import { useApplicationSearch } from "./search";
 import { ApplicationsViewFrame } from "./views";
 import { interviewTypeLabel, useNow, useUserTime } from "@/features/application-detail/hooks";
 import { InterviewSheet } from "@/features/application-detail/interview-sheet";
 import { FollowUpSheet } from "@/features/application-detail/sheets";
 import { applicationError } from "@/features/applications/error";
+import { filterApplications } from "@/features/applications/list";
 import { useApplications } from "@/features/applications/queries";
 import { routes } from "@/routes";
 import { useIsTablet } from "@/shell/use-is-tablet";
 import { Banner, Button, Card, EmptyState, IconButton, SelectSheet, Sheet, Skeleton, Text, useTheme } from "@/ui";
+import { usePullRefresh } from "@/ui/use-pull-refresh";
 
 // Chips per day cell on tablet before "+N more"; phone cells show up to this many dots.
 const MAX_PER_DAY = 3;
@@ -51,21 +54,22 @@ function ApplicationCalendar() {
 	const tablet = useIsTablet();
 	const [width, setWidth] = useState(0);
 	const query = useApplications();
+	const pull = usePullRefresh(query.refetch);
+	const { search } = useApplicationSearch();
 	const userTime = useUserTime();
 	const now = useNow();
 	const timeZone = userTime.timeZone;
 	const today = dayKeyOf(now, timeZone);
-	const [month, setMonth] = useState(() => ({
-		year: Number(today.slice(0, 4)),
-		month: Number(today.slice(5, 7)) - 1,
-	}));
-	const [selected, setSelected] = useState(today);
+	const [browsedMonth, setBrowsedMonth] = useState<{ year: number; month: number } | null>(null);
+	const month = browsedMonth ?? { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) - 1 };
+	const [selectedDay, setSelectedDay] = useState<string | null>(null);
+	const selected = selectedDay ?? today;
 	const [picking, setPicking] = useState(false);
 	const [pickedId, setPickedId] = useState<string | null>(null);
 	const [editing, setEditing] = useState<Editing | null>(null);
 	const [editorOpen, setEditorOpen] = useState(false);
 
-	const applications = query.data ?? [];
+	const applications = filterApplications(query.data ?? [], { search, tag: "", showClosed: true });
 	const open = applications.filter((application) => application.status !== "closed");
 	const events = collectEvents(applications, timeZone);
 	const byDay = groupByDay(events);
@@ -75,13 +79,11 @@ function ApplicationCalendar() {
 	const monthInterviews = events.filter(
 		(event) => event.kind === "interview" && event.day.startsWith(monthPrefix),
 	).length;
-	const isThisMonth = today.startsWith(monthPrefix);
 
 	const utc = (options: Intl.DateTimeFormatOptions) =>
 		new Intl.DateTimeFormat(i18n.locale, { timeZone: "UTC", ...options });
 	const monthTitle = utc({ month: "long", year: "numeric" }).format(Date.UTC(month.year, month.month, 1));
 	const weekday = utc({ weekday: "narrow" });
-	const weekdayLong = utc({ weekday: "long" });
 	const fullDay = utc({ weekday: "long", day: "numeric", month: "long" });
 	const tomorrow = new Date(dateOfKey(today).getTime() + 86_400_000).toISOString().slice(0, 10);
 	const dayHeading = (key: string) =>
@@ -167,12 +169,12 @@ function ApplicationCalendar() {
 				<IconButton
 					icon="caret-left"
 					label={t`Previous month`}
-					onPress={() => setMonth(shiftMonth(month.year, month.month, -1))}
+					onPress={() => setBrowsedMonth(shiftMonth(month.year, month.month, -1))}
 				/>
 				<IconButton
 					icon="caret-right"
 					label={t`Next month`}
-					onPress={() => setMonth(shiftMonth(month.year, month.month, 1))}
+					onPress={() => setBrowsedMonth(shiftMonth(month.year, month.month, 1))}
 				/>
 			</View>
 			<View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.s2 }}>
@@ -180,10 +182,10 @@ function ApplicationCalendar() {
 					variant="secondary"
 					size="sm"
 					label={t`This month`}
-					disabled={isThisMonth}
+					disabled={browsedMonth === null && selectedDay === null}
 					onPress={() => {
-						setMonth({ year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) - 1 });
-						setSelected(today);
+						setBrowsedMonth(null);
+						setSelectedDay(null);
 					}}
 				/>
 				<Button
@@ -194,7 +196,7 @@ function ApplicationCalendar() {
 					onPress={schedule}
 				/>
 			</View>
-			<View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: radius.rXl, overflow: "hidden" }}>
+			<View style={{ borderWidth: 1, borderColor: colors.line, borderRadius: radius.rLg, overflow: "hidden" }}>
 				<View style={{ flexDirection: "row" }} importantForAccessibility="no-hide-descendants">
 					{days.slice(0, 7).map((day) => (
 						<Text
@@ -228,8 +230,11 @@ function ApplicationCalendar() {
 									key={day.key}
 									accessibilityRole="button"
 									accessibilityState={{ selected: isSelected }}
-									accessibilityLabel={`${weekdayLong.format(dateOfKey(day.key))} ${fullDay.format(dateOfKey(day.key))}${summary ? `: ${summary}` : ""}`}
-									onPress={() => setSelected(day.key)}
+									accessibilityLabel={`${fullDay.format(dateOfKey(day.key))}${summary ? `: ${summary}` : ""}`}
+									onPress={() => {
+										setBrowsedMonth(month);
+										setSelectedDay(day.key);
+									}}
 									style={{
 										flex: 1,
 										minHeight: tablet ? size.hit * 2 : size.hit,
@@ -252,7 +257,7 @@ function ApplicationCalendar() {
 											alignSelf: tablet ? "flex-end" : "center",
 											minWidth: space.s6,
 											minHeight: space.s6,
-											borderRadius: radius.rPill,
+											borderRadius: radius.rLg,
 											alignItems: "center",
 											justifyContent: "center",
 											backgroundColor: isToday ? colors.accent : "transparent",
@@ -287,7 +292,7 @@ function ApplicationCalendar() {
 													style={{
 														width: space.s1,
 														height: space.s1,
-														borderRadius: radius.rPill,
+														borderRadius: radius.rLg,
 														backgroundColor: event.kind === "interview" ? colors.accent : colors.warn,
 													}}
 												/>
@@ -311,15 +316,29 @@ function ApplicationCalendar() {
 		<View style={{ flex: 1 }} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
 			{tablet && width >= size.panel * 2 + space.s6 + space.s4 * 2 ? (
 				<View style={{ flex: 1, flexDirection: "row", gap: space.s6, paddingHorizontal: space.s4 }}>
-					<ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: space.s4 }}>
+					<ScrollView
+						alwaysBounceVertical
+						refreshControl={<RefreshControl {...pull} tintColor={colors.accent} colors={[colors.accent]} />}
+						style={{ flex: 1 }}
+						contentContainerStyle={{ paddingVertical: space.s4 }}
+					>
 						{grid}
 					</ScrollView>
-					<ScrollView style={{ width: size.panel, flexGrow: 0 }} contentContainerStyle={{ paddingVertical: space.s4 }}>
+					<ScrollView
+						alwaysBounceVertical
+						refreshControl={<RefreshControl {...pull} tintColor={colors.accent} colors={[colors.accent]} />}
+						style={{ width: size.panel, flexGrow: 0 }}
+						contentContainerStyle={{ paddingVertical: space.s4 }}
+					>
 						{agenda}
 					</ScrollView>
 				</View>
 			) : (
-				<ScrollView contentContainerStyle={{ padding: space.s4, gap: space.s6 }}>
+				<ScrollView
+					alwaysBounceVertical
+					refreshControl={<RefreshControl {...pull} tintColor={colors.accent} colors={[colors.accent]} />}
+					contentContainerStyle={{ padding: space.s4, gap: space.s6 }}
+				>
 					{grid}
 					{agenda}
 				</ScrollView>
@@ -370,7 +389,7 @@ function Legend({ color, label }: LegendProps) {
 	const { radius, space } = useTheme();
 	return (
 		<View style={{ flexDirection: "row", alignItems: "center", gap: space.s1 }}>
-			<View style={{ width: space.s2, height: space.s2, borderRadius: radius.rPill, backgroundColor: color }} />
+			<View style={{ width: space.s2, height: space.s2, borderRadius: radius.rLg, backgroundColor: color }} />
 			<Text variant="caption" color="ink3">
 				{label}
 			</Text>

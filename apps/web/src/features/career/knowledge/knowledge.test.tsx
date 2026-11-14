@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ const api = vi.hoisted(() => ({
 	fail: new Set<string>(),
 	read: vi.fn(),
 	saveProfile: vi.fn(),
+	createOffer: vi.fn(),
 	saveStory: vi.fn(),
 	saveFact: vi.fn(),
 	navigate: vi.fn(),
@@ -29,7 +30,14 @@ vi.mock("@/libs/orpc/client", () => {
 			retry: false,
 		}),
 		mutationOptions: () => ({
-			mutationFn: name === "saveStory" ? api.saveStory : name === "saveFact" ? api.saveFact : api.saveProfile,
+			mutationFn:
+				name === "createOffer"
+					? api.createOffer
+					: name === "saveStory"
+						? api.saveStory
+						: name === "saveFact"
+							? api.saveFact
+							: api.saveProfile,
 		}),
 	});
 	return {
@@ -46,6 +54,7 @@ vi.mock("@/libs/orpc/client", () => {
 					"updateFact",
 					"factGroups",
 					"overrides",
+					"createOffer",
 				].map((name) => [name, endpoint(name)]),
 			),
 		},
@@ -84,6 +93,7 @@ vi.mock("@/features/applications/queries", () => ({
 }));
 vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() } }));
 
+import { OfferEntry } from "../offer-entry";
 import { OffersPage } from "../offers";
 import { FactsPage } from "./facts";
 import { PreferencesPage } from "./preferences";
@@ -129,7 +139,7 @@ it("keeps an unfinished story after navigating away and remounting, until Cancel
 	let view = mount(<StoriesPage storyId={undefined} edit />);
 	const title = await screen.findByRole("textbox", { name: "Title" });
 	fireEvent.change(title, { target: { value: "My unfinished customer story" } });
-	fireEvent.change(screen.getByRole("textbox", { name: "Situation" }), {
+	fireEvent.change(screen.getByRole("textbox", { name: "Situation (required)" }), {
 		target: { value: "Customers were blocked." },
 	});
 	view.unmount();
@@ -137,13 +147,79 @@ it("keeps an unfinished story after navigating away and remounting, until Cancel
 	expect(((await screen.findByRole("textbox", { name: "Title" })) as HTMLTextAreaElement).value).toBe(
 		"My unfinished customer story",
 	);
-	expect((screen.getByRole("textbox", { name: "Situation" }) as HTMLTextAreaElement).value).toBe(
+	expect((screen.getByRole("textbox", { name: "Situation (required)" }) as HTMLTextAreaElement).value).toBe(
 		"Customers were blocked.",
 	);
 	fireEvent.click(screen.getByRole("button", { name: /^Cancel$/ }));
 	view.unmount();
 	mount(<StoriesPage storyId={undefined} edit />);
 	expect(((await screen.findByRole("textbox", { name: "Title" })) as HTMLTextAreaElement).value).toBe("");
+});
+
+it.each([
+	["all required parts", { situation: "", task: " ", action: "" }, ["Situation", "Task", "Action"]],
+	["Task", { situation: "Customers were blocked.", task: " ", action: "I repaired setup." }, ["Task"]],
+] as const)(
+	"names every missing story part (%s), focuses the first, and preserves the draft",
+	async (_, draft, missing) => {
+		api.saveStory.mockImplementation(async (data) => ({ id: "saved-story", data, updatedAt: new Date() }));
+		mount(<StoriesPage storyId={undefined} edit />);
+		const title = await screen.findByRole("textbox", { name: "Title" });
+		fireEvent.change(title, { target: { value: "Customer setup" } });
+		for (const [key, value] of Object.entries(draft)) {
+			const label = key.charAt(0).toUpperCase() + key.slice(1);
+			const field = screen.getByRole("textbox", { name: `${label} (required)` });
+			expect(field.getAttribute("aria-required")).toBe("true");
+			fireEvent.change(field, { target: { value } });
+		}
+		fireEvent.change(screen.getByRole("textbox", { name: "Reflection (optional)" }), {
+			target: { value: "Check setup sooner next time." },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Save story" }));
+		expect(api.saveStory).not.toHaveBeenCalled();
+		expect(screen.getAllByRole("alert").map((alert) => alert.textContent)).toEqual(
+			missing.map((label) => `Complete ${label} before saving.`),
+		);
+		await waitFor(() =>
+			expect(document.activeElement).toBe(screen.getByRole("textbox", { name: `${missing[0]} (required)` })),
+		);
+		for (const label of missing) {
+			const field = screen.getByRole("textbox", { name: `${label} (required)` });
+			expect(field.getAttribute("aria-invalid")).toBe("true");
+			expect(document.getElementById(field.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
+				`Complete ${label} before saving.`,
+			);
+		}
+		expect((title as HTMLTextAreaElement).value).toBe("Customer setup");
+		expect((screen.getByRole("textbox", { name: "Reflection (optional)" }) as HTMLTextAreaElement).value).toBe(
+			"Check setup sooner next time.",
+		);
+		for (const label of missing) {
+			fireEvent.change(screen.getByRole("textbox", { name: `${label} (required)` }), {
+				target: { value: `${label} detail` },
+			});
+		}
+		fireEvent.change(screen.getByRole("textbox", { name: "Reflection (optional)" }), { target: { value: "" } });
+		fireEvent.click(screen.getByRole("button", { name: "Save story" }));
+		await waitFor(() =>
+			expect(api.saveStory).toHaveBeenCalledWith(
+				expect.objectContaining({ result: "", reflection: "" }),
+				expect.anything(),
+			),
+		);
+		expect(screen.queryByRole("alert")).toBeNull();
+	},
+);
+
+it("focuses a missing story title before missing parts and associates its error", async () => {
+	mount(<StoriesPage storyId={undefined} edit />);
+	const title = await screen.findByRole("textbox", { name: "Title" });
+	fireEvent.click(screen.getByRole("button", { name: "Save story" }));
+	await waitFor(() => expect(document.activeElement).toBe(title));
+	expect(document.getElementById(title.getAttribute("aria-describedby") ?? "")?.textContent).toBe(
+		"Give the story a title before you can save.",
+	);
+	expect(api.saveStory).not.toHaveBeenCalled();
 });
 
 it("does not show another story for a missing explicit story ID", async () => {
@@ -308,7 +384,7 @@ it("hands the selected story to Practise for the next interview", async () => {
 		},
 	];
 	mount(<StoriesPage storyId="chosen-story" edit={false} />);
-	const button = await screen.findByRole("button", { name: /^Practise$/ });
+	const button = await screen.findByRole("button", { name: /^Practice$/ });
 	fireEvent.click(button);
 	expect(api.navigate).toHaveBeenCalledWith(
 		expect.objectContaining({
@@ -408,4 +484,68 @@ it("keeps archived facts out of the list until asked for, and restores one", asy
 	api.data.facts = [fact("live", "I mentor engineers.", "active"), fact("old", "I used Perl in 2009.", "active")];
 	fireEvent.click(screen.getByRole("button", { name: "Restore" }));
 	await waitFor(() => expect(screen.queryByText("I used Perl in 2009.")).toBeNull());
+});
+
+it("validates manual amounts and retains the draft after a failed save", async () => {
+	api.data.applications = [
+		{ id: "job-a", company: "Acme", role: "Engineer" },
+		{ id: "job-b", company: "Birch", role: "Engineer" },
+	];
+	api.createOffer.mockRejectedValueOnce(new Error("Offline"));
+	const view = mount(<OfferEntry application={{ id: "job-a", company: "Acme", role: "Engineer" }} />);
+	fireEvent.click(screen.getByRole("button", { name: "Add offer" }));
+	fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "eur" } });
+	fireEvent.change(screen.getByLabelText("Base salary"), { target: { value: "95k" } });
+	expect(screen.getByLabelText("Base salary").getAttribute("aria-invalid")).not.toBe("true");
+	fireEvent.blur(screen.getByLabelText("Base salary"));
+	expect(screen.getByLabelText("Base salary").getAttribute("aria-invalid")).toBe("true");
+	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
+	expect(api.createOffer).not.toHaveBeenCalled();
+	fireEvent.change(screen.getByLabelText("Base salary"), { target: { value: "95,000" } });
+	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
+	await screen.findByText("Couldn't save the offer. Your draft is still here. Try again.");
+	expect((screen.getByLabelText("Base salary") as HTMLInputElement).value).toBe("95,000");
+	api.createOffer.mockResolvedValue(null);
+	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
+	await waitFor(() => expect(screen.queryByRole("button", { name: "Save offer" })).toBeNull());
+	const first = api.createOffer.mock.calls.at(-1)?.[0];
+	expect(first).toMatchObject({
+		applicationId: "job-a",
+		currency: "EUR",
+		period: "year",
+		base: 95000,
+		variable: null,
+		learning: null,
+	});
+	view.unmount();
+});
+
+it("blocks invalid optional learning and skipped DST deadlines without losing the draft", async () => {
+	mount(<OfferEntry application={{ id: "job-a", company: "Acme", role: "Engineer" }} />);
+	fireEvent.click(screen.getByRole("button", { name: "Add offer" }));
+	fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "EUR" } });
+	const learning = screen.getByLabelText("Learning budget");
+	fireEvent.change(learning, { target: { value: "95k" } });
+	expect(learning.getAttribute("aria-invalid")).not.toBe("true");
+	expect(screen.queryByText("Enter a full amount, such as 95000, or leave blank.")).toBeNull();
+	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
+	expect(learning.getAttribute("aria-invalid")).toBe("true");
+	expect(api.createOffer).not.toHaveBeenCalled();
+	expect((learning as HTMLInputElement).value).toBe("95k");
+	fireEvent.change(learning, { target: { value: "" } });
+	fireEvent.change(screen.getByLabelText("Respond by"), { target: { value: "2027-03-28" } });
+	fireEvent.change(screen.getByLabelText("Time"), { target: { value: "02:30" } });
+	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
+	expect(api.createOffer).not.toHaveBeenCalled();
+	expect(screen.getByText("Choose a valid date and time in Europe/Berlin, or clear the deadline.")).toBeTruthy();
+	expect((screen.getByLabelText("Time") as HTMLInputElement).value).toBe("02:30");
+	fireEvent.change(screen.getByLabelText("Respond by"), { target: { value: "" } });
+	api.createOffer.mockResolvedValue(null);
+	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
+	await waitFor(() =>
+		expect(api.createOffer).toHaveBeenCalledWith(
+			expect.objectContaining({ base: null, variable: null, learning: null, respondBy: null }),
+			expect.anything(),
+		),
+	);
 });

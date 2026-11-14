@@ -3,11 +3,13 @@
 import type { Resume } from "./draft";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
+import { ORPCError } from "@orpc/client";
 import { sortSectionItemsByPeriod } from "@reactive-resume/resume/section-sort";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import {
+	clearResumeDrafts,
 	readUnsavedResumeData,
 	savePendingChanges,
 	useBuilderResumeUpdateSubscription,
@@ -40,7 +42,8 @@ const toastMocks = vi.hoisted(() => ({
 	close: vi.fn(),
 }));
 
-vi.mock("@orpc/client", () => ({
+vi.mock("@orpc/client", async (importOriginal) => ({
+	ORPCError: (await importOriginal<typeof import("@orpc/client")>()).ORPCError,
 	consumeEventIterator: consumeEventIteratorMock,
 }));
 
@@ -374,11 +377,42 @@ describe("builder resume autosave", () => {
 		onLine.mockRestore();
 	});
 
+	it("does not recreate private recovery data after account cleanup during a failed save", async () => {
+		let failSave = (_error: Error): void => {
+			throw new Error("Save did not start");
+		};
+		const pending = new Promise<Resume>((_resolve, reject) => {
+			failSave = reject;
+		});
+		orpcMocks.updateResume.mockReturnValueOnce(pending);
+		useResumeStore.getState().initialize(makeResume("departing"));
+		useResumeStore.getState().updateResumeData((draft) => {
+			draft.basics.name = "Private";
+		});
+		vi.advanceTimersByTime(500);
+		await flushMicrotasks();
+		clearResumeDrafts();
+		window.localStorage.clear();
+		failSave(new Error("late network failure"));
+		await flushMicrotasks();
+		expect(readUnsavedResumeData("departing")).toBeUndefined();
+		expect(useResumeStore.getState().resume).toBeNull();
+	});
+
+	it("expires local recovery after seven days", () => {
+		window.localStorage.setItem(
+			"reactive-resume:unsaved:expired",
+			JSON.stringify({ data: defaultResumeData, storedAt: Date.now() - 8 * 86_400_000 }),
+		);
+		expect(readUnsavedResumeData("expired")).toBeUndefined();
+		expect(window.localStorage.getItem("reactive-resume:unsaved:expired")).toBeNull();
+	});
+
 	it("restores changes kept on this device when the editor opens again", async () => {
 		const initial = makeResume("resume-restore");
 		window.localStorage.setItem(
 			"reactive-resume:unsaved:resume-restore",
-			JSON.stringify({ data: withBasicsName(initial, "Kept locally").data, storedAt: 1 }),
+			JSON.stringify({ data: withBasicsName(initial, "Kept locally").data, storedAt: Date.now() }),
 		);
 		orpcMocks.updateResume.mockImplementation((input: { id: string; data: ResumeData }) =>
 			Promise.resolve({ ...makeResume(input.id), data: input.data }),
@@ -429,18 +463,18 @@ describe("builder resume undo/redo", () => {
 		});
 
 		expect(store().undoStack.length).toBe(1);
-		expect(store().canUndo).toBe(true);
-		expect(store().canRedo).toBe(false);
+		expect(store().undoStack.length > 0).toBe(true);
+		expect(store().redoStack.length > 0).toBe(false);
 		expect(store().resume?.data.basics.name).toBe("Second");
 
 		store().undo();
 		expect(store().resume?.data.basics.name).toBe(defaultResumeData.basics.name);
-		expect(store().canUndo).toBe(false);
-		expect(store().canRedo).toBe(true);
+		expect(store().undoStack.length > 0).toBe(false);
+		expect(store().redoStack.length > 0).toBe(true);
 
 		store().redo();
 		expect(store().resume?.data.basics.name).toBe("Second");
-		expect(store().canRedo).toBe(false);
+		expect(store().redoStack.length > 0).toBe(false);
 	});
 
 	it("merges typing in one field into one step, but not edits to different fields", () => {
@@ -543,7 +577,7 @@ describe("builder resume undo/redo", () => {
 
 		store().undo();
 		expect(store().resume?.data.sections.experience.items).toEqual(authoredItems);
-		expect(store().canUndo).toBe(false);
+		expect(store().undoStack.length > 0).toBe(false);
 	});
 
 	it("retains the chosen order through autosave/reload and never resorts later field edits", async () => {
@@ -616,13 +650,13 @@ describe("builder resume undo/redo", () => {
 			draft.basics.name = "One";
 		});
 		store().undo();
-		expect(store().canRedo).toBe(true);
+		expect(store().redoStack.length > 0).toBe(true);
 
 		store().updateResumeData((draft) => {
 			draft.basics.name = "Two";
 		});
 
-		expect(store().canRedo).toBe(false);
+		expect(store().redoStack.length > 0).toBe(false);
 		expect(store().redoStack.length).toBe(0);
 	});
 
@@ -641,7 +675,9 @@ describe("builder resume undo/redo", () => {
 		store().replaceResumeFromServer({ ...current, data: cloneResumeData(current.data) });
 
 		expect(store().undoStack.length).toBe(1);
-		expect(store().canUndo).toBe(true);
+		expect(store().undoStack.length > 0).toBe(true);
+		// The same object stays, so the preview doesn't render the identical document again.
+		expect(store().resume?.data).toBe(current.data);
 	});
 
 	it("clears the undo stack when the server sends different data (external rebase)", () => {
@@ -659,7 +695,7 @@ describe("builder resume undo/redo", () => {
 		store().replaceResumeFromServer(withBasicsName(current, "External Name"));
 
 		expect(store().undoStack.length).toBe(0);
-		expect(store().canUndo).toBe(false);
+		expect(store().undoStack.length > 0).toBe(false);
 	});
 });
 
@@ -681,7 +717,11 @@ describe("resume update stream subscription", () => {
 		useResumeStore.getState().reset();
 	});
 
-	it("resubscribes after the stream errors", () => {
+	it.each([
+		{ name: "resubscribes after the stream drops", error: new Error("stream dropped"), subscribes: 2, reported: 1 },
+		// A signed-out tab would otherwise send a 401 every 2.5 s until it closes.
+		{ name: "stops once the session is signed out", error: new ORPCError("UNAUTHORIZED"), subscribes: 1, reported: 0 },
+	])("$name", ({ error, subscribes, reported }) => {
 		const onUpdate = vi.fn().mockResolvedValue(undefined);
 		const onError = vi.fn();
 		consumeEventIteratorMock.mockReturnValue(vi.fn().mockResolvedValue(undefined));
@@ -690,13 +730,12 @@ describe("resume update stream subscription", () => {
 		expect(orpcMocks.streamSubscribe).toHaveBeenCalledTimes(1);
 
 		const handlers = consumeEventIteratorMock.mock.calls[0]?.[1] as { onError: (error: unknown) => void };
-		act(() => handlers.onError(new Error("stream dropped")));
-		expect(onError).toHaveBeenCalledTimes(1);
-
+		act(() => handlers.onError(error));
+		expect(onError).toHaveBeenCalledTimes(reported);
 		act(() => {
 			vi.advanceTimersByTime(2500);
 		});
-		expect(orpcMocks.streamSubscribe).toHaveBeenCalledTimes(2);
+		expect(orpcMocks.streamSubscribe).toHaveBeenCalledTimes(subscribes);
 	});
 
 	it("replaces the builder draft from the server when there are no pending local edits", async () => {

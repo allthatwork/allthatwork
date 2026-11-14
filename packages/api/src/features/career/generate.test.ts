@@ -1,5 +1,5 @@
 import type { AiLimits } from "@reactive-resume/schema/career";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { aiLimitsSchema } from "@reactive-resume/schema/career";
 
 const mocks = vi.hoisted(() => ({

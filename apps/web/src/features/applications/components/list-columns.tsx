@@ -1,5 +1,5 @@
 import type { NextStepText } from "../next-step";
-import type { Application } from "../types";
+import type { ApplicationSummary } from "../types";
 import type { ApplicationSortKey } from "@reactive-resume/schema/applications/filters";
 import type { ListColumnId } from "@reactive-resume/schema/applications/layout";
 import type { ReactNode } from "react";
@@ -12,13 +12,13 @@ import { getStageColor, getStageLabel } from "../stages";
 import { BuildStatusControl } from "./build-status";
 import { formatRelativeTime } from "@/libs/locale";
 
-export type CellContext = { application: Application; next: NextStepText; locale: string };
+export type CellContext = { application: ApplicationSummary; next: NextStepText; locale: string };
 
 type ListColumnDefinition = {
 	label: () => string;
 	/** The sort its heading picks; none for the columns that don't sort. */
 	sort?: ApplicationSortKey;
-	/** Above the row's open overlay, for cells with their own controls. */
+	/** Cells with their own controls: a click there doesn't open the row. */
 	interactive?: boolean;
 	cell: (context: CellContext) => ReactNode;
 };

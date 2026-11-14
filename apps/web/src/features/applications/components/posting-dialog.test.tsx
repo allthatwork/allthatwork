@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import type { Application } from "../types";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { ViewPostingButton } from "./posting-dialog";

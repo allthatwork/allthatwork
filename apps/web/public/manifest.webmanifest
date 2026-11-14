@@ -3,19 +3,22 @@
 	"short_name": "All That Work",
 	"description": "A free and open-source resume builder.",
 	"id": "/?source=pwa",
-	"start_url": "/?source=pwa",
+	"start_url": "/dashboard",
 	"scope": "/",
 	"lang": "en",
 	"display": "standalone",
-	"orientation": "portrait",
 	"theme_color": "#F6F8FA",
 	"background_color": "#F6F8FA",
 	"icons": [
-		{ "src": "favicon.ico", "sizes": "16x16 32x32 48x48 128x128", "type": "image/x-icon" },
 		{ "src": "pwa-64x64.png", "sizes": "64x64", "type": "image/png" },
 		{ "src": "pwa-192x192.png", "sizes": "192x192", "type": "image/png" },
 		{ "src": "pwa-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
 		{ "src": "maskable-icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+	],
+	"shortcuts": [
+		{ "name": "Documents", "description": "Your resumes and cover letters", "url": "/dashboard" },
+		{ "name": "Applications", "description": "Track your job applications", "url": "/dashboard/applications" },
+		{ "name": "Career", "description": "Plan your job search", "url": "/dashboard/career" }
 	],
 	"screenshots": [
 		{
@@ -75,24 +78,5 @@
 			"label": "Template Gallery"
 		}
 	],
-	"categories": [
-		"ai",
-		"builder",
-		"business",
-		"career",
-		"cv",
-		"editor",
-		"free",
-		"generator",
-		"job-search",
-		"multilingual",
-		"open-source",
-		"privacy",
-		"productivity",
-		"resume",
-		"self-hosted",
-		"templates",
-		"utilities",
-		"writing"
-	]
+	"categories": ["productivity", "business", "utilities"]
 }

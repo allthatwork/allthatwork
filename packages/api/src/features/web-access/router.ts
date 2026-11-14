@@ -4,12 +4,16 @@ import { protectedProcedure } from "../../context";
 import { webAccessDto } from "../../dto/web-access";
 import { WebAccessError } from "./contracts";
 import { webAccessService } from "./credentials";
+import { searchScope } from "./regions";
 import { probeWebAccess } from "./service";
 
 const route = { tags: ["Integrations"] };
 const errors = {
-	FORBIDDEN: { message: "Web access is managed by the server.", status: 403 },
-	PRECONDITION_FAILED: { message: "Credential encryption is not configured.", status: 412 },
+	FORBIDDEN: { message: "Web access is set by the server administrator and can't be changed here.", status: 403 },
+	PRECONDITION_FAILED: {
+		message: "Web access can't be saved on this server. Ask the server administrator to set ENCRYPTION_SECRET.",
+		status: 412,
+	},
 };
 
 export const webAccessRouter = {
@@ -57,17 +61,27 @@ export const webAccessRouter = {
 			summary: "Test provider search and reading independently",
 		})
 		.errors({
-			PRECONDITION_FAILED: { message: "No external web connection is configured.", status: 412 },
+			PRECONDITION_FAILED: { message: "Set up web access in Settings → AI & developer first.", status: 412 },
 			RATE_LIMIT_EXCEEDED: { message: "Too many web requests. Try again later.", status: 429 },
 		})
 		.input(z.object({}).optional())
 		.output(webAccessDto.test.output)
 		.handler(async ({ context, signal }) => {
-			const connection = await webAccessService.resolve(context.user.id);
-			if (!connection)
-				throw new ORPCError("PRECONDITION_FAILED", { message: "No external web connection is configured." });
+			const [connection, { regions }] = await Promise.all([
+				webAccessService.resolve(context.user.id),
+				searchScope(context.user.id, context.reqHeaders.get("x-client-timezone") ?? undefined),
+			]);
+			// The server's SearXNG can be tested without a connection; reading then reports the built-in reader only.
+			if (!webAccessService.canSearch(connection !== null))
+				throw new ORPCError("PRECONDITION_FAILED", {
+					message: "Set up web access in Settings → AI & developer first.",
+				});
 			try {
-				return await probeWebAccess(connection, { userId: context.user.id, ...(signal ? { signal } : {}) });
+				return await probeWebAccess(connection, {
+					userId: context.user.id,
+					region: regions[0],
+					...(signal ? { signal } : {}),
+				});
 			} catch (error) {
 				if (!signal?.aborted && error instanceof WebAccessError && error.reason === "rate-limit")
 					throw new ORPCError("RATE_LIMIT_EXCEEDED", {

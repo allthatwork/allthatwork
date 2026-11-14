@@ -19,6 +19,7 @@ import { useSession } from "@/auth/session";
 import { useResumeStore } from "@/draft";
 import { routes } from "@/routes";
 import { Banner, Button, Card, EmptyState, ListRow, Segmented, Skeleton, Text, useTheme } from "@/ui";
+import { usePullRefresh } from "@/ui/use-pull-refresh";
 
 type CheckScreenProps = { id: string };
 export function CheckScreen({ id }: CheckScreenProps) {
@@ -37,6 +38,10 @@ export function CheckScreen({ id }: CheckScreenProps) {
 	const network = useNetworkState();
 	const data = useDeferredValue(sourceData);
 	const [refreshVersion, setRefreshVersion] = useState(() => Date.now());
+	const pull = usePullRefresh(() => {
+		setRefreshVersion(Date.now());
+		return Promise.resolve();
+	});
 	const check = useMemo(() => (data ? computeCheck(data, new Date(refreshVersion)) : null), [data, refreshVersion]);
 	const [writingReview, setWritingReview] = useState<WritingReview | null>(null);
 	const [tab, setTab] = useState<"issues" | "match" | "writing">("issues");
@@ -84,15 +89,7 @@ export function CheckScreen({ id }: CheckScreenProps) {
 			contentContainerStyle={{ padding: space.s4, gap: space.s4 }}
 			style={{ flex: 1, backgroundColor: colors.bg }}
 			keyboardShouldPersistTaps="handled"
-			refreshControl={
-				<RefreshControl
-					refreshing={false}
-					onRefresh={() => {
-						setRefreshVersion(Date.now());
-					}}
-					tintColor={colors.accent}
-				/>
-			}
+			refreshControl={<RefreshControl {...pull} colors={[colors.accent]} tintColor={colors.accent} />}
 		>
 			{offline && (
 				<Banner

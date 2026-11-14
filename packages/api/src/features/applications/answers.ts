@@ -1,8 +1,23 @@
 import type { DbOrTx } from "@reactive-resume/db/client";
 import { createHash } from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import * as schema from "@reactive-resume/db/schema";
 import { careerWorkspaceSchema, EMPTY_WORKSPACE } from "@reactive-resume/schema/career";
+
+/**
+ * The account's own facts among those workspace answers cite. Answers are a draft the client saves, so a saved item
+ * records only facts that belong to the account (a deleted or foreign id is dropped).
+ */
+export async function ownedFactIds(reader: DbOrTx, userId: string, answers: { factIds: string[] }[]) {
+	const ids = [...new Set(answers.flatMap((answer) => answer.factIds))];
+	if (!ids.length) return [];
+	const rows = await reader
+		.select({ id: schema.careerFact.id })
+		.from(schema.careerFact)
+		.where(and(eq(schema.careerFact.userId, userId), inArray(schema.careerFact.id, ids)));
+	const owned = new Set(rows.map((row) => row.id));
+	return ids.filter((id) => owned.has(id));
+}
 
 /**
  * Copies the workspace's written answers into Saved as an "Application answers" item: what was sent with it. Skips
@@ -35,7 +50,7 @@ export async function snapshotSentAnswers(client: DbOrTx, userId: string, applic
 		interviewId: null,
 		title: "Application answers",
 		data: { kind: "answers", answers },
-		evidence: { factIds: [...new Set(answers.flatMap((answer) => answer.factIds))], storyIds: [] },
+		evidence: { factIds: await ownedFactIds(client, userId, answers), storyIds: [] },
 		inputVersion: createHash("sha256").update(JSON.stringify(answers)).digest("hex"),
 	});
 }

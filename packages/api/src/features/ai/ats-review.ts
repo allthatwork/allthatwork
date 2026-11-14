@@ -2,6 +2,7 @@ import type { ModelCallOptions } from "./request-limits";
 import { z } from "zod";
 import { atsReviewSystemPrompt, atsReviewUserPromptTemplate } from "@reactive-resume/ai/prompts";
 import { aiLimitsSchema } from "@reactive-resume/schema/career";
+import { dataBlock, inertMarkers } from "./data-block";
 import { generateJson } from "./generate-json";
 import { getModel } from "./service";
 
@@ -118,14 +119,7 @@ function renderFindings(findings: AtsReviewInput["findings"]): string {
 function renderJobDescriptionSection(jobDescription: string | undefined): string {
 	if (!jobDescription) return "";
 
-	return [
-		"",
-		"## Job description",
-		"",
-		"<<<JOB_DESCRIPTION_START>>>",
-		jobDescription,
-		"<<<JOB_DESCRIPTION_END>>>",
-	].join("\n");
+	return ["", "## Job description", "", dataBlock("JOB_DESCRIPTION", jobDescription)].join("\n");
 }
 
 function renderPassagesSection(passages: AtsReviewInput["passages"]): string {
@@ -137,16 +131,17 @@ function renderPassagesSection(passages: AtsReviewInput["passages"]): string {
 		"",
 		"Each line is `[id] where: text`. When a suggestion rewrites one of these, set `passageId` to its id and `rewrite` to the whole new passage.",
 		"",
-		"<<<PASSAGES_START>>>",
-		...passages.map((passage) => `[${passage.id}] ${passage.where}: ${passage.text.replace(/\s+/g, " ")}`),
-		"<<<PASSAGES_END>>>",
+		dataBlock(
+			"PASSAGES",
+			passages.map((passage) => `[${passage.id}] ${passage.where}: ${passage.text.replace(/\s+/g, " ")}`).join("\n"),
+		),
 	].join("\n");
 }
 
 function buildUserPrompt(input: AtsReviewServiceInput): string {
 	// One pass over the template, so text inside the resume that happens to look like a placeholder stays as it is.
 	const sections: Record<string, string> = {
-		EXTRACTED_TEXT: input.extractedText,
+		EXTRACTED_TEXT: inertMarkers(input.extractedText),
 		FINDINGS: renderFindings(input.findings),
 		JOB_DESCRIPTION_SECTION: renderJobDescriptionSection(input.jobDescription),
 		PASSAGES_SECTION: renderPassagesSection(input.passages ?? []),

@@ -16,12 +16,13 @@ import {
 	serialize,
 } from "@formepdf/react";
 import { cloneElement, createElement, isValidElement } from "react";
+import { toSafeLink } from "@reactive-resume/utils/link";
 import { NODE_CONTENT_PREFIX, NODE_SOURCE_PREFIX, RESUME_NODE_PROP } from "../page-map";
 import { HOST } from "./primitives";
 import { flattenAlpha, flattenStyle, toFormeStyle, toPoints, WHITE } from "./style";
 
 // A4 in points, the size used for `vw`/`vh` until a page says otherwise.
-const DEFAULT_PAGE = { width: 595.28, height: 841.89 };
+export const DEFAULT_PAGE = { width: 595.28, height: 841.89 };
 /** Free-form pages start this tall; `renderResume` measures the content and converts again at its height. */
 export const FREE_FORM_MEASURE_HEIGHT = 14_400;
 
@@ -81,7 +82,7 @@ const PADDING_KEYS = [
 	"paddingVertical",
 ] as const;
 
-const pageDimensions = (size: PageSize | undefined, freeFormHeight = FREE_FORM_MEASURE_HEIGHT) => {
+export const pageDimensions = (size: PageSize | undefined, freeFormHeight = FREE_FORM_MEASURE_HEIGHT) => {
 	if (size === "LETTER") return { width: 612, height: 792 };
 	if (size && typeof size === "object") return { width: size.width, height: size.height ?? freeFormHeight };
 	return DEFAULT_PAGE;
@@ -548,7 +549,10 @@ function convertNode(node: HostNode, parentContext: Context, key: number): React
 				tagNode(element, props, context);
 				return element;
 			}
-			const href = node.type === HOST.link && typeof props.src === "string" ? props.src : undefined;
+			// Resume links come from any client (API, MCP, imports), so only web, mail and phone links reach the PDF:
+			// desktop viewers would otherwise follow `file:`, `javascript:` or custom-scheme links.
+			const href =
+				node.type === HOST.link && typeof props.src === "string" ? (toSafeLink(props.src) ?? undefined) : undefined;
 			const hasBlockChild = node.children.some(
 				(child) => child.type !== "#text" && child.type !== HOST.text && child.type !== HOST.link,
 			);
@@ -898,28 +902,7 @@ function convertPage(page: HostElement, context: Context, key: number, freeFormH
 	converted.style = unreversed.style;
 	const { children } = unreversed;
 	const fixed = children.filter((child) => isValidElement(child) && child.type === FormeFixed);
-	// Forme doesn't paint Page backgroundColor. Repeat a full-page box behind the content, outside the margins.
-	const backgroundColor = converted.style.backgroundColor;
-	const wrapContent = fixed.length > 0 || (backgroundColor !== undefined && converted.style.flexDirection === "row");
-	if (backgroundColor !== undefined) {
-		const backgroundStyle: FormeStyle = {
-			position: "absolute",
-			left: 0,
-			top: 0,
-			width: dimensions.width,
-			height: dimensions.height,
-			backgroundColor,
-		};
-		fixed.unshift(
-			createElement(
-				FormeFixed,
-				{ key: "background", position: "header" },
-				fixedOnPage(createElement(FormeView, { style: backgroundStyle }), backgroundStyle, pageContext, margin),
-			),
-		);
-		delete converted.style.backgroundColor;
-	}
-	if (!wrapContent)
+	if (fixed.length === 0)
 		return createElement(
 			FormePage,
 			{ key, size: pageSizeProp(size, dimensions), margin, style: converted.style },

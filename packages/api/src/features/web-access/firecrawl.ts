@@ -62,7 +62,14 @@ export async function searchFirecrawl(query: string, options: ProviderRequest) {
 		z.object({ success: z.literal(true), data: searchSchema }),
 		await request(
 			"search",
-			{ query, sources: ["web"], limit: options.maxResults, timeout: options.serviceTimeoutMs },
+			{
+				query,
+				sources: ["web"],
+				limit: options.maxResults,
+				timeout: options.serviceTimeoutMs,
+				// ISO country code: https://docs.firecrawl.dev/api-reference/endpoint/search (country, default "US").
+				...(options.region ? { country: options.region } : {}),
+			},
 			options,
 		),
 	);

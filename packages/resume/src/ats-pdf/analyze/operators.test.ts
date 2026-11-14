@@ -1,5 +1,5 @@
 import type { OperatorListLike } from "./operators";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { PDF_OPS } from "../pdf-ops";
 import { summarizePageOperators } from "./operators";
 

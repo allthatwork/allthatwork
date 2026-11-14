@@ -1,15 +1,15 @@
-import type { Application } from "../types";
+import type { ApplicationSummary } from "../types";
 import { t } from "@lingui/core/macro";
-import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
 import { ApplicationActionsMenu } from "./application-actions-menu";
 import { BuildStatusControl } from "./build-status";
+import { useCareerTime } from "@/features/career/shared";
 
 type ApplicationCardProps = {
-	application: Application;
+	application: ApplicationSummary;
 	onClick?: () => void;
 	/** The ⋯ menu (Move to…, Close…, Delete); cards dragged in the overlay go without. */
 	withMenu?: boolean;
@@ -26,14 +26,15 @@ export function ApplicationCard({
 	dragging = false,
 	stale = false,
 }: ApplicationCardProps) {
-	const { i18n } = useLingui();
+	const { locale, timeZone } = useCareerTime();
 	const noReplyDays = useNoReplyDays();
-	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, i18n.locale);
+	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, locale, timeZone);
 
 	return (
 		<div
+			data-application-id={application.id}
 			className={cn(
-				"group relative grid gap-2 rounded-[10px] border border-line bg-surface p-3 shadow-e1 transition-[border-color,scale] duration-quick ease-enter hover:border-line-2 active:not-has-[[data-slot=button]:active]:scale-[0.98]",
+				"group relative grid gap-2 rounded-lg border border-line bg-surface p-3 shadow-e1 transition-[border-color,scale] duration-quick ease-enter hover:border-line-2 active:not-has-[[data-slot=button]:active]:scale-[0.98]",
 				// The overlay card lifts as it's picked up and settles flat again while the drop animation flies it home.
 				stale && "border-dashed",
 				dragging &&
@@ -43,14 +44,15 @@ export function ApplicationCard({
 			<div className={cn("flex items-start gap-2.5", stale && "opacity-55")}>
 				<span
 					aria-hidden="true"
-					className="grid size-7 shrink-0 place-items-center rounded-[7px] bg-sunken text-xs font-semibold text-ink-2"
+					className="grid size-7 shrink-0 place-items-center rounded-lg bg-sunken text-xs font-semibold text-ink-2"
 				>
 					{application.company.slice(0, 1).toUpperCase()}
 				</span>
 				<button
 					type="button"
+					data-application-open
 					onClick={onClick}
-					className="grid min-w-0 flex-1 text-start after:absolute after:inset-0 after:rounded-[10px]"
+					className="grid min-w-0 flex-1 text-start after:absolute after:inset-0 after:rounded-lg"
 				>
 					<span className="line-clamp-2 text-sm font-semibold">{application.role}</span>
 					<span className="truncate text-xs text-ink-3">{application.company}</span>

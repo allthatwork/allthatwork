@@ -5,6 +5,7 @@ import { Children, isValidElement } from "react";
 import { Image, View } from "#react-pdf-renderer";
 import { useRender } from "../../context";
 import { PhosphorIcon } from "../../forme/icons";
+import { HEADING_NODE_PROP } from "../../page-map";
 import { resolvedPdfFlowProps, resolvedPdfTextProps } from "../../semantic/adapter";
 import {
 	projectRenderedChildren,
@@ -21,7 +22,7 @@ import { useTemplateIconSlot, useTemplatePageNodeKey, useTemplateStyle } from ".
 import { resolveIconSize } from "./icon-size";
 import { getPictureShadow } from "./picture-shadow";
 import { safeTextStyle } from "./safe-text-style";
-import { composeLinkStyles, composeStyles, mergeStyles } from "./styles";
+import { composeStyles, mergeStyles } from "./styles";
 
 const asStyleInput = (style: unknown): StyleInput => style as StyleInput;
 
@@ -179,6 +180,7 @@ export const Heading = ({
 	return (
 		<PdfText
 			{...props}
+			{...{ [HEADING_NODE_PROP]: resolvedNodeKey }}
 			{...resolvedPdfTextProps(resolved)}
 			style={composeStyles(headingStyle, asStyleInput(style), resolved.style, safeTextStyle)}
 		/>
@@ -210,7 +212,9 @@ export const Link = ({
 			{...props}
 			{...resolvedPdfTextProps(resolved)}
 			style={composeStyles(
-				composeLinkStyles({ hideUnderline: metadata.page.hideLinkUnderline }, linkStyle, asStyleInput(style)),
+				linkStyle,
+				asStyleInput(style),
+				{ textDecoration: metadata.page.hideLinkUnderline ? "none" : "underline" },
 				resolved.style,
 				safeTextStyle,
 			)}
@@ -281,6 +285,7 @@ export const SemanticHeaderView = ({ style, ...props }: ComponentProps<typeof Vi
 			<View
 				{...props}
 				data-resume-node={nodeKey}
+				data-region="header"
 				{...resolvedPdfFlowProps(regionResolved)}
 				{...resolvedPdfFlowProps(resolved)}
 				style={composeStyles(asStyleInput(style), regionResolved.style, resolved.style)}
@@ -297,8 +302,14 @@ export const SemanticRegionView = ({ region, style, ...props }: ComponentProps<t
 	const visible = useSemanticNodeVisible(nodeKey);
 	if (exists && !visible) return null;
 
+	// `data-region` lets the web page fold the columns on narrow screens; the PDF ignores it.
 	return (
-		<View {...props} {...resolvedPdfFlowProps(resolved)} style={composeStyles(asStyleInput(style), resolved.style)} />
+		<View
+			{...props}
+			data-region={region}
+			{...resolvedPdfFlowProps(resolved)}
+			style={composeStyles(asStyleInput(style), resolved.style)}
+		/>
 	);
 };
 

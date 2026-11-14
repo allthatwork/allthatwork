@@ -1,5 +1,5 @@
 import type { StageCount } from "./insights";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { computeInsights, computeOutcomes, computeTimeline } from "./insights";
 
 describe("computeOutcomes", () => {
@@ -78,3 +78,35 @@ it("labels the pipeline total and percentages using active applications", () => 
 	expect(insights.closed).toBe(4);
 	expect(insights.funnel[0]?.pct).toBe(100);
 });
+
+it.each(["closed", "applied"] as const)(
+	"uses recorded rejection dates after outcome changes and %s state",
+	(status) => {
+		const at = (day: number) => new Date(Date.UTC(2026, 0, day, 12));
+		const application = {
+			status,
+			closedReason: status === "closed" ? ("not-selected" as const) : null,
+			resumeId: null,
+			appliedAt: at(1),
+			activity: [
+				{ id: "sent", type: "stage" as const, stage: "applied" as const, at: at(1) },
+				{
+					id: "ghosted",
+					type: "stage" as const,
+					stage: "closed" as const,
+					at: at(5),
+					closedReason: "no-response" as const,
+				},
+				{
+					id: "reply",
+					type: "stage" as const,
+					stage: "closed" as const,
+					at: at(10),
+					closedReason: "not-selected" as const,
+					canonicalTransition: false,
+				},
+			],
+		};
+		expect(computeOutcomes([application], () => false)).toMatchObject({ sent: 1, heardBack: 1, medianDaysToReply: 9 });
+	},
+);

@@ -6,6 +6,7 @@ import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence } from "motion/react";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { hasApplicationSubmission } from "@reactive-resume/schema/applications/data";
 import { careerWorkspaceSchema } from "@reactive-resume/schema/career";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
@@ -35,7 +36,7 @@ import {
 import { CollapseRow, Swap, useCareerTime, withUndo, Working, workingSteps } from "../shared";
 import { AiNotice } from "./fit";
 import { useInvalidateApplications } from "@/features/applications/use-application-actions";
-import { getOrpcErrorMessage } from "@/libs/error-message";
+import { toastError } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
 
 type Answer = CareerWorkspace["answers"][number];
@@ -49,13 +50,14 @@ const shortLabel = (text: string) => {
 	return words.length > 4 ? `${words.slice(0, 4).join(" ")}…` : text;
 };
 
-const checklistItems = () => [
-	t`Review the selected resume and cover letter in their editors.`,
-	t`Check every claim, date and result against your experience.`,
-	t`Review required form answers and remove unsupported claims.`,
-	t`Submit through the employer's application page yourself.`,
-	t`Mark the application as applied to keep the versions you sent.`,
-];
+const checklistItems = (submitted: boolean) =>
+	[
+		t`Review the selected resume and cover letter in their editors.`,
+		t`Check every claim, date and result against your experience.`,
+		t`Review required form answers and remove unsupported claims.`,
+		t`Submit through the employer's application page yourself.`,
+		t`Mark the application as applied to keep the versions you sent.`,
+	].slice(0, submitted ? 3 : undefined);
 
 /** W4–W5: the written answers for the employer's form, and a checklist before submitting there yourself. */
 export function ApplyTab({ application, version }: WorkspaceTabProps) {
@@ -116,7 +118,7 @@ export function ApplyTab({ application, version }: WorkspaceTabProps) {
 	return (
 		<div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,1fr)_280px] @5xl:grid-cols-[minmax(0,1fr)_320px]">
 			<div className="grid gap-4">
-				{application.status !== "saved" && (
+				{hasApplicationSubmission(application) && (
 					<p className="flex gap-2.5 rounded-xl bg-accent-soft px-4 py-3 text-[13px] leading-[18px] text-accent-text">
 						<Icon name="check-circle" size={18} className="mt-px shrink-0" />
 						<span>
@@ -324,7 +326,7 @@ function AnswerCard({
 							<button
 								type="button"
 								onClick={onToggleUnit}
-								className="shrink-0 rounded-sm font-mono text-xs leading-[22px] font-medium tracking-[0.04em] text-ink-2 uppercase transition-colors duration-quick hover:text-ink"
+								className="shrink-0 rounded-sm font-mono text-xs leading-[22px] font-medium text-ink-2 transition-colors duration-quick hover:text-ink"
 							/>
 						}
 					>
@@ -370,7 +372,7 @@ function AnswerCard({
 									key={index}
 									className={cn(
 										part.type === "removed" && "text-ink-3 line-through",
-										part.type === "added" && "rounded-[3px] bg-accent-soft text-accent-text",
+										part.type === "added" && "rounded-md bg-accent-soft text-accent-text",
 									)}
 								>
 									{part.text}{" "}
@@ -514,10 +516,7 @@ type ChecklistProps = {
 	onSubmittingChange: (value: boolean) => void;
 };
 
-/**
- * "Before you submit": four ticks stored with the application, copy/download, and Mark as applied before submission.
- * The last item is done once the application has left Saved, however it was marked.
- */
+/** Manual content checks survive submission; submission actions follow the application record. */
 function Checklist({
 	application,
 	answers,
@@ -531,12 +530,13 @@ function Checklist({
 	const invalidate = useInvalidateApplications();
 	const workspace = useWorkspace(application.id);
 	const submit = useMutation(orpc.career.submitApplication.mutationOptions());
-	const items = checklistItems();
+	const submitted = hasApplicationSubmission(application);
+	const items = checklistItems(submitted);
 	const ticked = workspace.data.checklist;
-	const submitted = application.status !== "saved";
-	const last = items.length - 1;
-	const isDone = (index: number) => (index === last ? submitted : ticked.includes(index));
-	const done = items.filter((_, index) => isDone(index)).length;
+	// Before submission the last item is the Mark as applied button, never a stored tick.
+	const counted = (index: number) =>
+		ticked.includes(index) && !(application.status === "saved" && index === items.length - 1);
+	const done = items.filter((_, index) => counted(index)).length;
 	const written = answers.filter((answer) => answer.answer.trim());
 
 	const toggle = (index: number, on: boolean) => {
@@ -582,13 +582,7 @@ function Checklist({
 			});
 			toast.add({ description: t`Marked as applied. The versions you sent are kept.` });
 		} catch (error) {
-			toast.add({
-				type: "error",
-				description: getOrpcErrorMessage(error, {
-					fallback: t`Couldn't mark it as applied.`,
-					allowServerMessage: true,
-				}),
-			});
+			toastError(error, t`Couldn't mark it as applied. Try again.`, { allowServerMessage: true });
 		} finally {
 			onSubmittingChange(false);
 			invalidate(application.id);
@@ -600,11 +594,9 @@ function Checklist({
 		<aside className="grid gap-3.5 rounded-xl border border-line bg-surface p-4">
 			<div className="flex items-baseline justify-between gap-3">
 				<h2 className="text-sm font-semibold">
-					<Trans>Before you submit</Trans>
+					{submitted ? <Trans>Content review</Trans> : <Trans>Before you submit</Trans>}
 				</h2>
-				<span className="font-mono text-xs font-medium tracking-[0.04em] text-ink-2 uppercase">
-					{t`${done} of ${items.length}`}
-				</span>
+				<span className="font-mono text-xs font-medium text-ink-2">{t`${done} of ${items.length}`}</span>
 			</div>
 			<div
 				role="progressbar"
@@ -612,16 +604,16 @@ function Checklist({
 				aria-valuemin={0}
 				aria-valuemax={items.length}
 				aria-valuenow={done}
-				className="h-1.5 overflow-hidden rounded-full bg-line"
+				className="h-1.5 overflow-hidden rounded-sm bg-line"
 			>
 				<div
-					className="h-full rounded-full bg-accent transition-[width] duration-standard ease-enter"
+					className="h-full rounded-sm bg-accent transition-[width] duration-standard ease-enter"
 					style={{ width: `${(done / items.length) * 100}%` }}
 				/>
 			</div>
 			<ul className="grid gap-2.5">
 				{items.map((label, index) =>
-					!submitted && !readOnly && index === last ? (
+					application.status === "saved" && !readOnly && index === items.length - 1 ? (
 						<li key={label}>
 							<Button className="w-full" disabled={!canSubmit} loading={submitting} onClick={() => void markApplied()}>
 								<Trans>Mark as applied</Trans>
@@ -632,11 +624,13 @@ function Checklist({
 							<label className="flex cursor-pointer gap-2.5 text-[13px] leading-[19px]">
 								<Checkbox
 									className="mt-px"
-									checked={isDone(index)}
-									disabled={readOnly || submitting || index === last}
+									checked={ticked.includes(index)}
+									disabled={readOnly || submitting}
 									onCheckedChange={(checked) => toggle(index, checked)}
 								/>
-								<span className={cn("transition-colors duration-quick", isDone(index) ? "text-ink-2" : "text-ink")}>
+								<span
+									className={cn("transition-colors duration-quick", ticked.includes(index) ? "text-ink-2" : "text-ink")}
+								>
 									{label}
 								</span>
 							</label>
@@ -644,7 +638,7 @@ function Checklist({
 					),
 				)}
 			</ul>
-			{!canSubmit && !readOnly && (
+			{!submitted && !canSubmit && !readOnly && (
 				<p role="alert" className="text-xs text-danger-text">
 					<Trans>
 						Shorten questions to 2,000 characters and answers to 6,000 characters before marking this applied.
@@ -672,7 +666,13 @@ function Checklist({
 				</DropdownMenu>
 			</div>
 			<p className="text-xs leading-[17px] text-ink-3">
-				<Trans>You submit on the employer's site yourself. Marking it applied keeps the exact versions you sent.</Trans>
+				{submitted ? (
+					<Trans>Submission is recorded. Review checks only reflect what you checked yourself.</Trans>
+				) : (
+					<Trans>
+						You submit on the employer's site yourself. Marking it applied keeps the exact versions you sent.
+					</Trans>
+				)}
 			</p>
 		</aside>
 	);

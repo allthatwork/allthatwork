@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 const envMock = vi.hoisted(() => ({
 	ENCRYPTION_SECRET: "test-secret-with-enough-entropy",

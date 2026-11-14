@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { render } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { FontWeightCombobox } from "./combobox";
 import { getNextWeights } from "./get-next-weights";
 
