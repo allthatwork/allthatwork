@@ -1,0 +1,1 @@
+-- Joins upstream v6.0.9 migrations (custom stages, username reservations, custom domains) with the fork's. Both sides added a foreign key on "application", so drizzle-kit needs one snapshot after both. Every change is already in the migrations before this one.
