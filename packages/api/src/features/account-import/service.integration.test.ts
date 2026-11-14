@@ -590,7 +590,7 @@ describe.skipIf(!databaseUrl)("account import", () => {
 		});
 		expect(result.added.applications).toBe(2);
 		// The list goes through the same output check the API runs.
-		const list = applicationDto.list.output.parse(await applicationService.list({ userId: longId }));
+		const list = applicationDto.list.output.parse((await applicationService.list({ userId: longId })).items);
 		const postings = list.map((application) => application.jobDescription);
 		expect(postings).toContain("Short.");
 		expect(postings).toContain(posting.slice(0, 20_000));
