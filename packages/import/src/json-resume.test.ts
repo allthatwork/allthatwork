@@ -1,5 +1,5 @@
 // oxlint-disable typescript/no-non-null-assertion -- These tests assert imported section lengths before inspecting the first item.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { parseJSONResume } from "./json-resume";
 

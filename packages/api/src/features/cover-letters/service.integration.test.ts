@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { ORPCError } from "@orpc/client";
 import { createRouterClient } from "@orpc/server";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -245,6 +245,21 @@ describe.skipIf(!process.env.COVER_LETTER_TEST_DATABASE_URL)("cover-letter owned
 				data: input,
 			});
 
+		const oversized = structuredClone(data);
+		oversized.picture.url = `https://example.test/${"x".repeat(100_000)}`;
+		const section = oversized.customSections[0];
+		if (!section) throw new Error("Missing section");
+		section.items = Array.from({ length: 60 }, (_, index) => ({
+			id: `item-${index}`,
+			hidden: false,
+			recipient: "",
+			content: "<p>Letter</p>",
+		}));
+		const original = JSON.stringify(oversized);
+		await expect(adopt(oversized)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		expect(JSON.stringify(oversized)).toBe(original);
+		expect((await service.list({ userId: "alice", limit: 20, offset: 0 })).items).toHaveLength(0);
+
 		const again = structuredClone(data);
 		await adopt(data);
 		expect(data.customSections).toEqual([]);
@@ -447,6 +462,121 @@ describe.skipIf(!process.env.COVER_LETTER_TEST_DATABASE_URL)("cover-letter owned
 		expect(
 			(await service.update({ userId: "alice", id: created.id, expectedRevision: 4, name: "Still editable" })).name,
 		).toBe("Still editable");
+	});
+
+	it.each([false, true])("refreshes design while respecting sender linking (%s)", async (senderLinked) => {
+		const { coverLettersRouter } = await import("./router");
+		const client = createRouterClient(coverLettersRouter, { context: { user: { id: "alice" } } as never });
+		const source = structuredClone(defaultResumeData);
+		source.basics.name = "Original sender";
+		source.picture.url = "https://example.test/original.png";
+		await getPool().query("UPDATE resume SET data=$1 WHERE id='alice-resume'", [source]);
+		const created = await client.create({
+			name: "Refresh design",
+			resumeId: "alice-resume",
+			template: "pikachu",
+			content: "<p>Keep this letter</p>",
+		});
+		const letter = senderLinked
+			? created
+			: await client.update({
+					id: created.id,
+					expectedRevision: created.revision,
+					senderLinked: false,
+					sender: {
+						name: "Independent sender",
+						email: "own@example.test",
+						phone: "+49 30 5550100",
+						location: "Berlin",
+					},
+				});
+		source.basics.name = "Current resume sender";
+		source.basics.email = "resume@example.test";
+		source.picture.url = "https://example.test/current.png";
+		source.metadata.page.marginX = 22;
+		await getPool().query("UPDATE resume SET data=$1 WHERE id='alice-resume'", [source]);
+
+		const refreshed = await client.refreshStyle({
+			id: letter.id,
+			expectedRevision: letter.revision,
+			resumeId: "alice-resume",
+		});
+		const basics = senderLinked ? source.basics : letter.style.basics;
+		const picture = senderLinked ? source.picture : letter.style.picture;
+		expect(refreshed).toMatchObject({
+			content: "<p>Keep this letter</p>",
+			senderLinked,
+			style: { basics, picture, metadata: { template: "pikachu", page: { marginX: 22 } } },
+		});
+		expect((await client.getById({ id: letter.id })).style).toMatchObject({ basics, picture });
+		expect((await client.export({ id: letter.id })).style).toMatchObject({ basics, picture });
+		await getPool().query("DELETE FROM resume WHERE id='alice-resume'");
+		expect((await client.getById({ id: letter.id })).style).toMatchObject({ basics, picture });
+	});
+
+	it("edits standalone sender details and isolates copies, links and account ownership", async () => {
+		const { coverLettersRouter } = await import("./router");
+		const client = createRouterClient(coverLettersRouter, { context: { user: { id: "alice" } } as never });
+		const created = await client.create({ name: "Standalone" });
+		const sender = { name: "Jordan Reyes", email: "jordan@example.test", phone: "+49 30 5550100", location: "Berlin" };
+		const saved = await client.update({ id: created.id, expectedRevision: 1, sender });
+		expect(saved.style.basics).toEqual({ ...created.style.basics, ...sender });
+		expect(saved.style.metadata).toEqual(created.style.metadata);
+		expect((await client.getById({ id: created.id })).style.basics).toMatchObject(sender);
+		const document = await client.export({ id: created.id });
+		expect(document.style.basics).toMatchObject(sender);
+		expect((await client.import({ document })).style.basics).toMatchObject(sender);
+		expect((await client.duplicate({ id: created.id })).style.basics).toMatchObject(sender);
+		await expect(
+			client.update({ id: created.id, expectedRevision: 2, sender: { name: 123 } } as never),
+		).rejects.toMatchObject({ code: "BAD_REQUEST" });
+		await expect(service.update({ userId: "bob", id: created.id, expectedRevision: 2, sender })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		await expect(client.update({ id: created.id, expectedRevision: 1, sender })).rejects.toMatchObject({
+			code: "CONFLICT",
+		});
+
+		const linked = await client.update({
+			id: created.id,
+			expectedRevision: 2,
+			resumeId: "alice-resume",
+			senderLinked: true,
+		});
+		expect(linked.style.basics).toEqual(defaultResumeData.basics);
+		await expect(client.update({ id: created.id, expectedRevision: 3, sender })).rejects.toMatchObject({
+			code: "BAD_REQUEST",
+		});
+		await expect(client.update({ id: created.id, expectedRevision: 3, resumeId: "bob-resume" })).rejects.toMatchObject({
+			code: "NOT_FOUND",
+		});
+		const own = await client.update({
+			id: created.id,
+			expectedRevision: 3,
+			senderLinked: false,
+			sender: { email: sender.email },
+		});
+		expect(own.style.basics).toEqual({ ...defaultResumeData.basics, email: sender.email });
+		expect((await getPool().query("SELECT data FROM resume WHERE id='alice-resume'")).rows[0].data).toEqual(
+			defaultResumeData,
+		);
+		const copied = await client.duplicate({ id: created.id });
+		expect(copied.style.basics).toEqual(own.style.basics);
+		const detached = await client.update({ id: created.id, expectedRevision: 4, resumeId: null });
+		expect(detached.style.basics).toEqual(own.style.basics);
+		const relinked = await client.update({
+			id: created.id,
+			expectedRevision: 5,
+			resumeId: "alice-resume",
+			senderLinked: true,
+		});
+		expect(relinked.style.basics).toEqual(defaultResumeData.basics);
+		const snapshot = await client.update({ id: created.id, expectedRevision: 6, resumeId: null });
+		expect(snapshot.style.basics).toEqual(relinked.style.basics);
+		await getPool().query("UPDATE cover_letter SET is_locked=true WHERE id=$1", [created.id]);
+		await expect(client.update({ id: created.id, expectedRevision: 7, sender })).rejects.toMatchObject({
+			code: "DOCUMENT_LOCKED",
+		});
 	});
 
 	it("keeps History: one version per session, named and sent versions, and restores with a way back", async () => {

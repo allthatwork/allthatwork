@@ -44,14 +44,14 @@ async function fileResponse(
 			else {
 				const blob =
 					format === "odt"
-						? await (await import("@reactive-resume/odt")).buildOdt(data, resolveTitle)
-						: await (await import("@reactive-resume/docx")).buildDocx(data, resolveTitle);
+						? await (await import("@reactive-resume/odt")).buildOdt(data, resolveTitle, { includeCoverLetterHeader })
+						: await (await import("@reactive-resume/docx")).buildDocx(data, resolveTitle, { includeCoverLetterHeader });
 				body = new File([blob], filename, { type: blob.type });
 			}
 		}
 	} catch (error) {
 		console.error("[document export] Rendering failed", error);
-		throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Could not generate the document." });
+		throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Couldn't generate the document. Try again." });
 	}
 	return { headers: { "content-disposition": `attachment; filename="${filename}"` }, body };
 }
@@ -109,7 +109,7 @@ export const documentExports = {
 			};
 			const composed = composeCoverLetter(letter, {
 				...words,
-				greeting: (name) => words.greeting.replace("{name}", name),
+				greeting: (name) => words.greeting.replace("{name}", () => name),
 				formatDate: (date) =>
 					new Date(`${date}T12:00:00Z`).toLocaleDateString(letter.style.metadata.page.locale, {
 						day: "numeric",

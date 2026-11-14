@@ -14,17 +14,20 @@ const licenseUrl = `${githubUrl}/blob/main/LICENSE`;
 const upstreamUrl = "https://github.com/reactive-resume/reactive-resume";
 const linkClass = "text-ink transition-colors hover:text-accent-text";
 
-type FooterLink = { label: string; href: string } | { label: string; to: "/ats-checker" | "/dashboard" };
+type FooterLink =
+	| { label: string; href: string }
+	| { label: string; to: "/ats-checker" | "/auth/login" | "/auth/register" | "/resume-templates" };
 
 const getColumns = (): { id: string; title: string; links: FooterLink[] }[] => [
 	{
 		id: "product",
 		title: t`Product`,
 		links: [
-			{ label: t`Templates`, href: "#design" },
+			{ label: t`Templates`, to: "/resume-templates" },
 			{ label: t`Features`, href: "#write" },
 			{ label: t`ATS checker`, to: "/ats-checker" },
-			{ label: t`Get started`, to: "/dashboard" },
+			{ label: t`Get started`, to: "/auth/register" },
+			{ label: t`Sign in`, to: "/auth/login" },
 		],
 	},
 	{

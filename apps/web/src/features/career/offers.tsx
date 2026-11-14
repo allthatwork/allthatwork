@@ -19,9 +19,11 @@ import {
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Skeleton } from "@reactive-resume/ui/components/skeleton";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { formatList } from "@reactive-resume/utils/locale";
 import { cn } from "@reactive-resume/utils/style";
 import { CareerLoadError } from "./load-state";
 import { defaultPair, formatMoney, matchingPlace, meetsMinimum, moneyDifference, sameTerms } from "./offer-compare";
+import { OfferEntry } from "./offer-entry";
 import { useCareerTime, useNow } from "./shared";
 import { orpc } from "@/libs/orpc/client";
 
@@ -104,8 +106,9 @@ export function OffersPage({ a, b }: OffersPageProps) {
 					<Trans>No offers to compare yet</Trans>
 				</h2>
 				<p className="max-w-[340px] text-sm text-ink-2">
-					<Trans>Paste an offer into an application's Messages tab.</Trans>
+					<Trans>Add offer terms manually, or use optional AI extraction in Messages.</Trans>
 				</p>
+				<OfferEntry primary />
 			</div>
 		);
 
@@ -115,6 +118,7 @@ export function OffersPage({ a, b }: OffersPageProps) {
 
 	return (
 		<div className="grid gap-5">
+			<OfferEntry />
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<p className="text-sm text-ink-2">
 					<Trans>
@@ -216,7 +220,7 @@ function ComparisonTable({ offers, left, right, onChoose }: ComparisonTableProps
 										<Trans>Save another offer to compare</Trans>
 									</p>
 									<p className="text-[13px] text-ink-3">
-										<Trans>Paste an offer into an application's Messages tab.</Trans>
+										<Trans>Add offer terms manually, or use optional AI extraction in Messages.</Trans>
 									</p>
 									{offers.length > 1 && (
 										<OfferHeader
@@ -523,7 +527,7 @@ type OpenQuestionsProps = { offers: Offer[] };
 function OpenQuestions({ offers }: OpenQuestionsProps) {
 	const { locale } = useCareerTime();
 	const { data: profile } = useQuery(orpc.career.profile.queryOptions());
-	const names = (list: Offer[]) => new Intl.ListFormat(locale, { type: "conjunction" }).format(list.map(companyOf));
+	const names = (list: Offer[]) => formatList(locale, list.map(companyOf));
 
 	const checks: [string, (terms: Offer["data"]) => boolean][] = [
 		[t`What is the base salary, and is it negotiable?`, (terms) => terms.base === null],

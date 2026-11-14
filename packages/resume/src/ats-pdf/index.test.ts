@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { buildResumeSemantics } from "./analyze/semantics";
 import { PDF_ATS_RULE_CODES } from "./catalog";
 import { buildExtractedDocument } from "./extract";

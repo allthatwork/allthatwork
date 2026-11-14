@@ -7,6 +7,7 @@ import { cn } from "@reactive-resume/utils/style";
 import { DocumentRow } from "./document-card";
 import { LibraryError } from "./library-error";
 import { PAGE_CLASS } from "@/components/layout/page";
+import { PageHeader } from "@/components/layout/page-header";
 import { orpc } from "@/libs/orpc/client";
 
 const noop = () => undefined;
@@ -23,21 +24,19 @@ export function TrashPage() {
 
 	return (
 		<div className={cn(PAGE_CLASS, "grid content-start gap-5")}>
-			<Link
-				to="/dashboard"
-				className={buttonVariants({ variant: "ghost", size: "sm", className: "-ms-2.5 w-fit gap-1.5 text-ink-2" })}
-			>
-				<Icon name="arrow-left" size={18} />
-				<Trans>Back to documents</Trans>
-			</Link>
-			<div className="grid gap-1">
-				<h1 className="font-display text-[30px] leading-9 font-medium">
-					<Trans>Trash</Trans>
-				</h1>
-				<p className="text-sm text-ink-2">
-					<Trans>Items are deleted permanently after 30 days.</Trans>
-				</p>
-			</div>
+			<PageHeader
+				back={
+					<Link
+						to="/dashboard"
+						className={buttonVariants({ variant: "ghost", size: "sm", className: "-ms-2.5 w-fit gap-1.5 text-ink-2" })}
+					>
+						<Icon name="arrow-left" size={18} />
+						<Trans>Back to documents</Trans>
+					</Link>
+				}
+				title={<Trans>Trash</Trans>}
+				description={<Trans>Documents are deleted permanently after 30 days.</Trans>}
+			/>
 
 			{isError && <LibraryError retrying={isFetching} onRetry={() => void refetch()} />}
 
@@ -48,7 +47,7 @@ export function TrashPage() {
 						<Trans>Trash is empty</Trans>
 					</p>
 					<p className="text-sm text-ink-2">
-						<Trans>Items you move here stay for 30 days.</Trans>
+						<Trans>Documents you move here stay for 30 days.</Trans>
 					</p>
 				</div>
 			) : (

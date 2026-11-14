@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ApplicationTimelineEntry } from "@reactive-resume/schema/applications/data";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { createDefaultOwnedApplicationLanes } from "@reactive-resume/db/application-lanes";
+import * as testSchema from "@reactive-resume/db/schema";
 
 // Mock the DB layer; the logic under test is the activity-timeline bookkeeping, not SQL.
 const dbMock = vi.hoisted(() => ({
@@ -16,6 +19,8 @@ const uploadFileMock = vi.hoisted(() => vi.fn());
 vi.mock("@reactive-resume/db/client", () => ({ db: dbMock }));
 vi.mock("@reactive-resume/db/schema", () => ({
 	user: { id: "owner_id" },
+	applicationPipeline: { userId: "pipeline_user_id" },
+	applicationLane: { userId: "lane_user_id", position: "lane_position", id: "lane_id" },
 	resume: { id: "resume_id", userId: "user_id", trashedAt: "trashed_at" },
 	application: {
 		id: "id",
@@ -79,6 +84,9 @@ const existing = {
 	company: "Stripe",
 	role: "Engineer",
 	status: "saved" as const,
+	laneId: "application-lane:user-1:saved",
+	closedReason: null,
+	tags: [],
 	activity: [{ id: "e0", type: "stage" as const, stage: "saved" as const, at: new Date("2026-07-01T12:00:00.000Z") }],
 	appliedAt: new Date("2026-07-01T12:00:00.000Z"),
 	createdAt: new Date("2026-07-01T12:00:00.000Z"),
@@ -113,7 +121,23 @@ beforeEach(() => {
 	});
 	dbMock.delete.mockReset();
 	dbMock.transaction.mockReset();
-	dbMock.transaction.mockImplementation((callback) => callback(dbMock));
+	dbMock.transaction.mockImplementation((callback) =>
+		callback({
+			...dbMock,
+			insert: (table: unknown) =>
+				table === testSchema.applicationLane || table === testSchema.applicationPipeline
+					? { values: () => ({ onConflictDoNothing: () => Promise.resolve() }) }
+					: dbMock.insert(table),
+			select: (...args: unknown[]) => ({
+				from: (table: unknown) => {
+					if (table === testSchema.applicationPipeline) return { where: () => Promise.resolve([{ revision: 0 }]) };
+					if (table === testSchema.applicationLane)
+						return { where: () => ({ orderBy: () => Promise.resolve(createDefaultOwnedApplicationLanes("user-1")) }) };
+					return dbMock.select(...args).from(table);
+				},
+			}),
+		}),
+	);
 	resumeGetByIdMock.mockReset();
 	writeVersionMock.mockReset();
 	writeVersionMock.mockResolvedValue({ id: "version-1" });
@@ -238,7 +262,9 @@ describe("applicationService.list", () => {
 		dbMock.select.mockReset();
 		dbMock.select.mockReturnValueOnce({ from: () => ({ where: () => ({ orderBy: () => Promise.resolve([row]) }) }) });
 
-		const [listed] = await applicationService.list({ userId: "user-1" });
+		const {
+			items: [listed],
+		} = await applicationService.list({ userId: "user-1" });
 
 		expect(listed).toMatchObject({ targetingNotes: null, targetingFit: 72, searchFit: 88 });
 		expect(listed).not.toHaveProperty("userId");
@@ -273,17 +299,12 @@ describe("applicationService.update", () => {
 		return set;
 	};
 
-	const appendedEvent = (activity: { values: unknown[] }) => {
-		const value = activity.values.find((item) => typeof item === "string" && item.includes('"type":"stage"'));
-		return JSON.parse(String(value))[0] as { type: string; stage: string };
-	};
-
 	it("appends a typed stage timeline entry when the status changes", async () => {
 		const set = captureSet();
 		await applicationService.update({ id: "app-1", userId: "user-1", status: "applied" });
 
-		const [[arg]] = set.mock.calls as unknown as [[{ activity: { values: unknown[] } }]];
-		expect(appendedEvent(arg.activity)).toMatchObject({ type: "stage", stage: "applied" });
+		const [[arg]] = set.mock.calls as unknown as [[{ activity: ApplicationTimelineEntry[] }]];
+		expect(arg.activity.at(-1)).toMatchObject({ type: "stage", stage: "applied" });
 	});
 
 	it("checks linked resume ownership before updating", async () => {
@@ -310,7 +331,13 @@ describe("applicationService.update", () => {
 
 describe("applicationService sent resume", () => {
 	beforeEach(() => setSelectResults([existing], [{ id: "user-1" }], [existing]));
-	const sentRow = { ...existing, status: "applied" as const, resumeId: "resume-1", sentResumeVersionId: null };
+	const sentRow = {
+		...existing,
+		status: "applied" as const,
+		laneId: "application-lane:user-1:applied",
+		resumeId: "resume-1",
+		sentResumeVersionId: null,
+	};
 
 	it.each(["resume", "coverLetter"] as const)(
 		"retains recorded submitted %s linkage when preparing another document",
@@ -359,6 +386,34 @@ describe("applicationService sent resume", () => {
 			expect(setSent).toHaveBeenCalledWith({ sentResumeVersionId: "version-1", sentCheckScore: expect.any(Number) });
 		},
 	);
+
+	it.each([{ notes: "Private interview note" }, { role: "Senior Engineer" }])(
+		"does not record linked drafts as submitted during metadata edits: %j",
+		async (fields) => {
+			const data = structuredClone((await import("@reactive-resume/schema/resume/default")).defaultResumeData);
+			setSelectResults([sentRow], [{ id: "user-1" }], [sentRow], [{ id: "resume-1", data }]);
+			dbMock.update.mockReturnValue({
+				set: () => ({ where: () => ({ returning: () => Promise.resolve([sentRow]) }) }),
+			});
+
+			const result = await applicationService.update({ id: sentRow.id, userId: sentRow.userId, ...fields });
+
+			expect(writeVersionMock).not.toHaveBeenCalled();
+			expect(result.sentResumeVersionId).toBeNull();
+		},
+	);
+
+	it("does not record linked drafts as submitted when bulk-adding tags", async () => {
+		const data = structuredClone((await import("@reactive-resume/schema/resume/default")).defaultResumeData);
+		setSelectResults([{ id: "user-1" }], [{ ...sentRow, tags: [] }], [{ id: "resume-1", data }]);
+		dbMock.update.mockReturnValue({
+			set: () => ({ where: () => ({ returning: () => Promise.resolve([sentRow]) }) }),
+		});
+
+		await applicationService.bulkUpdate({ userId: sentRow.userId, ids: [sentRow.id], addTags: ["priority"] });
+
+		expect(writeVersionMock).not.toHaveBeenCalled();
+	});
 
 	it("saves it once, and not before the application is sent", async () => {
 		setSelectResults([existing], [{ id: "user-1" }], [existing], [existing], [{ id: "user-1" }], [existing]);
@@ -507,6 +562,7 @@ describe("applicationService.attachDocument", () => {
 	it("rejects non-PDF documents before upload", async () => {
 		await expect(
 			applicationService.attachDocument({
+				canDeleteAttachments: true,
 				id: "app-1",
 				userId: "user-1",
 				kind: "cover-letter",
@@ -536,6 +592,7 @@ describe("applicationService.attachDocument", () => {
 		dbMock.update.mockReturnValue({ set });
 
 		await applicationService.attachDocument({
+			canDeleteAttachments: true,
 			id: "app-1",
 			userId: "user-1",
 			kind: "resume",
@@ -573,6 +630,29 @@ describe("applicationService.bulkDelete", () => {
 		expect(storageDeleteMock).toHaveBeenCalledWith("uploads/user-1/pictures/cover.pdf");
 		expect(storageDeleteMock).toHaveBeenCalledWith("uploads/user-1/agent/coach-1");
 		expect(storageDeleteMock).not.toHaveBeenCalledWith("uploads/user-2/pictures/ignored.pdf");
+	});
+
+	it("never deletes a folder or non-PDF that an edited document URL points at", async () => {
+		setSelectResults(
+			[
+				{ ...existing, resumeFileUrl: "/api/uploads/user-1", coverLetterUrl: "/api/uploads/user-1/agent/coach-1" },
+				{ ...existing, id: "app-2", resumeFileUrl: "/uploads/user-1/pictures", coverLetterUrl: null },
+				{ ...existing, id: "app-3", resumeFileUrl: "/api/uploads/user-1/pictures/a/b.pdf", coverLetterUrl: null },
+				{ ...existing, id: "app-4", resumeFileUrl: "/api/uploads/user-1/pictures/photo.jpeg", coverLetterUrl: null },
+			],
+			[],
+			[{ id: "user-1" }],
+			[],
+		);
+		dbMock.delete.mockReturnValue({
+			where: () => ({
+				returning: () => Promise.resolve([{ id: "app-1" }, { id: "app-2" }, { id: "app-3" }, { id: "app-4" }]),
+			}),
+		});
+
+		await applicationService.bulkDelete({ userId: "user-1", ids: ["app-1", "app-2", "app-3", "app-4"] });
+
+		expect(storageDeleteMock).not.toHaveBeenCalled();
 	});
 });
 
@@ -654,6 +734,7 @@ describe("application attachment lifecycle", () => {
 				company: "Stripe",
 				role: "Engineer",
 				resumeFile: pdf("new.pdf"),
+				...(operation === "update" ? { canDeleteAttachments: true } : {}),
 			}),
 		).rejects.toThrow("save failed");
 		expect(uploadFileMock).toHaveBeenCalledOnce();
@@ -690,7 +771,12 @@ describe("application attachment lifecycle", () => {
 				expect(key).toBe("uploads/user-1/pictures/resume.pdf");
 				return true;
 			});
-			await applicationService.update({ id: "app-1", userId: "user-1", resumeFile: pdf("new.pdf") });
+			await applicationService.update({
+				id: "app-1",
+				userId: "user-1",
+				resumeFile: pdf("new.pdf"),
+				canDeleteAttachments: true,
+			});
 			expect(row().resumeFileUrl).toBe(newUrl);
 			expect(row().resumeFileName).toBe("new.pdf");
 			expect(row()).not.toHaveProperty("resumeFile");
@@ -707,11 +793,29 @@ describe("application attachment lifecycle", () => {
 				userId: "user-1",
 				status: "applied",
 				resumeId: "resume-1",
+				canDeleteAttachments: true,
 				resumeFile: pdf("new.pdf"),
 			}),
 		).rejects.toThrow("snapshot failed");
 		expect(row().resumeFileUrl).toBe(newUrl);
 		expect(storageDeleteMock).not.toHaveBeenCalledWith(newKey);
+	});
+
+	it.each([
+		{ resumeFileUrl: null },
+		{ coverLetterUrl: null },
+		{ resumeFile: pdf("replacement.pdf") },
+		{ coverLetterFile: pdf("replacement.pdf") },
+	])("requires delete permission before replacing or clearing an attachment: %s", async (fields) => {
+		const row = storedApplication();
+		await expect(applicationService.update({ id: "app-1", userId: "user-1", ...fields })).rejects.toMatchObject({
+			code: "FORBIDDEN",
+		});
+		expect(row().resumeFileUrl).toBe(existing.resumeFileUrl);
+		expect(row().coverLetterUrl).toBe(existing.coverLetterUrl);
+		expect(uploadFileMock).not.toHaveBeenCalled();
+		expect(storageDeleteMock).not.toHaveBeenCalled();
+		expect(dbMock.update).not.toHaveBeenCalled();
 	});
 
 	it("removal commits before deleting the old file", async () => {
@@ -723,5 +827,42 @@ describe("application attachment lifecycle", () => {
 		await applicationService.removeDocument({ id: "app-1", userId: "user-1", kind: "resume" });
 		expect(row().resumeFileUrl).toBeNull();
 		expect(storageDeleteMock).toHaveBeenCalledExactlyOnceWith("uploads/user-1/pictures/resume.pdf");
+	});
+});
+
+describe("applicationService.importMany", () => {
+	it("rejects another account's cover letter before inserting anything", async () => {
+		const { coverLetterService } = await import("../cover-letters/service");
+		vi.mocked(coverLetterService.getById).mockRejectedValueOnce(new Error("NOT_FOUND"));
+		await expect(
+			applicationService.importMany({
+				userId: "user-1",
+				items: [{ company: "Stripe", role: "Engineer", coverLetterId: "someone-elses-letter" }],
+			}),
+		).rejects.toThrow("NOT_FOUND");
+		expect(coverLetterService.getById).toHaveBeenCalledWith({ id: "someone-elses-letter", userId: "user-1" });
+		expect(dbMock.insert).not.toHaveBeenCalled();
+	});
+
+	it("saves the sent version for rows imported at Applied or later", async () => {
+		const data = structuredClone((await import("@reactive-resume/schema/resume/default")).defaultResumeData);
+		const imported = { ...existing, status: "applied" as const, resumeId: "resume-1", sentResumeVersionId: null };
+		setSelectResults([{ id: "user-1" }], [{ id: "resume-1", data }]);
+		dbMock.insert.mockReturnValue({ values: () => ({ returning: () => Promise.resolve([imported]) }) });
+		const set = vi.fn(() => ({ where: () => ({ returning: () => Promise.resolve([imported]) }) }));
+		dbMock.update.mockReturnValue({ set });
+
+		await expect(
+			applicationService.importMany({
+				userId: "user-1",
+				items: [{ company: "Stripe", role: "Engineer", status: "applied", resumeId: "resume-1" }],
+			}),
+		).resolves.toEqual({ imported: 1 });
+
+		expect(writeVersionMock).toHaveBeenCalledWith(
+			expect.anything(),
+			expect.objectContaining({ resumeId: "resume-1", kind: "sent", data }),
+		);
+		expect(set).toHaveBeenCalledWith({ sentResumeVersionId: "version-1", sentCheckScore: expect.any(Number) });
 	});
 });

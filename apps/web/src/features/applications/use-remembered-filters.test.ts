@@ -3,7 +3,7 @@
 import type { FilterSearch } from "./filter-search";
 import type { ApplicationView } from "@reactive-resume/schema/applications/views";
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { DEFAULT_APPLICATION_VIEW_FILTERS } from "@reactive-resume/schema/applications/views";
 import { REMEMBERED_FILTERS_KEY, readTabState, useRememberedFilters } from "./use-remembered-filters";
 

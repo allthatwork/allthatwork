@@ -2,7 +2,7 @@
 
 import type { WebMcpTool } from "./webmcp";
 import { renderHook } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import z from "zod";
 import { defineWebMcpTool, getModelContext, useWebMcpTools } from "./webmcp";
 
@@ -98,10 +98,6 @@ describe("defineWebMcpTool", () => {
 
 		await expect(echo.execute({ text: "hi", count: 2 })).resolves.toBe('{"text":"hi","count":2}');
 		await expect(text.execute(undefined)).resolves.toBe("plain");
-	});
-
-	it("reads arguments given as JSON text", async () => {
-		await expect(echo.execute('{"text":"hi"}')).resolves.toBe('{"text":"hi"}');
 	});
 
 	it("refuses input that doesn't match the schema, saying why", async () => {

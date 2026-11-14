@@ -81,14 +81,12 @@ export async function exportFile({ directory, id, name, format, data, letter }: 
 		if (letter && format !== "json") {
 			const document = await client.coverLetters.getById({ id });
 			const words = await letterWords(document.style.metadata.page.locale);
-			query = `?words=${encodeURIComponent(
-				JSON.stringify({
-					greeting: words.greeting("{name}"),
-					teamGreeting: words.teamGreeting,
-					hiringTeam: words.hiringTeam,
-					signOff: words.signOff,
-				}),
-			)}`;
+			query = `?${new URLSearchParams({
+				"words[greeting]": words.greeting("{name}"),
+				"words[teamGreeting]": words.teamGreeting,
+				"words[hiringTeam]": words.hiringTeam,
+				"words[signOff]": words.signOff,
+			})}`;
 		}
 		const response = await rest(
 			`/${letter ? "cover-letters" : "resumes"}/${encodeURIComponent(id)}/exports/${format}${query}`,

@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import { EnrichedTextInput } from "react-native-enriched-html";
+import { isValidSlug, MAX_SLUG_LENGTH, normalizeSlug } from "@reactive-resume/resume/sharing";
 import { client } from "@/api/client";
 import { resumeFieldFocus, useResumeStore } from "@/draft";
 import { resume as draftResume } from "@/draft/runtime";
@@ -11,7 +12,6 @@ import { useNewDocuments } from "@/features/documents/new-documents";
 import { useDocumentOperations } from "@/features/documents/queries";
 import { flushResume } from "@/features/share/document";
 import { printResume } from "@/features/share/files";
-import { normalizeSlug, validSlug } from "@/features/share/model";
 import { routes } from "@/routes";
 import { useBuilderChrome } from "@/shell/builder-chrome";
 import { useKeyCommands } from "@/shell/key-commands";
@@ -64,7 +64,7 @@ export function DocumentMenu({ id, inChrome = false }: DocumentMenuProps) {
 	const titles = {
 		menu: t`Document options`,
 		rename: t`Rename`,
-		duplicate: t`Duplicate Resume`,
+		duplicate: t`Duplicate resume`,
 		notes: t`Notes`,
 		details: t`Resume details`,
 	};
@@ -194,17 +194,22 @@ export function DocumentMenu({ id, inChrome = false }: DocumentMenuProps) {
 									label={t`Slug`}
 									value={slug}
 									onChangeText={(value) => setSlug(normalizeSlug(value))}
-									maxLength={64}
 									editable={!operations.busy}
 									autoCapitalize="none"
 									autoCorrect={false}
 									helper={t`Leave empty to generate an available address from the name.`}
-									error={slug && !validSlug(slug) ? t`Use lowercase letters, numbers and single dashes.` : undefined}
+									error={
+										slug.length > MAX_SLUG_LENGTH
+											? t`Use at most 64 characters.`
+											: slug && !isValidSlug(slug)
+												? t`Use lowercase letters, numbers and single dashes.`
+												: undefined
+									}
 								/>
 								<Button
 									label={t`Duplicate`}
 									loading={operations.busy}
-									disabled={!name.trim() || (!!slug && !validSlug(slug))}
+									disabled={!name.trim() || (!!slug && !isValidSlug(slug))}
 									onPress={() =>
 										void run(async () => {
 											const current = await flushResume(id);
@@ -251,7 +256,14 @@ export function DocumentMenu({ id, inChrome = false }: DocumentMenuProps) {
 								</Text>
 							</>
 						)}
-						<Button label={t`Close`} variant="ghost" disabled={operations.busy || printing} onPress={close} />
+						{panel !== "menu" ? (
+							<Button
+								label={t`Back`}
+								variant="ghost"
+								disabled={operations.busy || printing}
+								onPress={() => setPanel("menu")}
+							/>
+						) : null}
 					</View>
 				)}
 			</Sheet>
@@ -266,6 +278,8 @@ function NotesEditor({ id, value, locked }: NotesEditorProps) {
 	const editor = useRef<EnrichedTextInputInstance>(null);
 	const last = useRef(value);
 	const focused = useRef(false);
+	const [isFocused, setIsFocused] = useState(false);
+	const border = isFocused ? 2 : 1;
 	useEffect(
 		() => () => {
 			if (focused.current) {
@@ -282,42 +296,50 @@ function NotesEditor({ id, value, locked }: NotesEditorProps) {
 		}
 	}, [value]);
 	return (
-		<EnrichedTextInput
-			key={id}
-			ref={editor}
-			accessibilityLabel={t`Notes`}
-			defaultValue={value}
-			editable={!locked}
-			onFocus={() => {
-				focused.current = true;
-				resumeFieldFocus.onFocus();
-			}}
-			onBlur={() => {
-				focused.current = false;
-				resumeFieldFocus.onBlur();
-			}}
+		<View
 			style={{
-				minHeight: space.s12 * 3,
-				color: colors.ink,
-				backgroundColor: colors.raised,
-				borderColor: colors.lineStrong,
-				borderWidth: 1,
+				borderWidth: border,
 				borderRadius: radius.rMd,
-				padding: space.s3,
-				fontFamily: type.body.fontFamily,
-				fontSize: type.body.fontSize,
+				borderColor: isFocused ? colors.accent : colors.lineStrong,
+				backgroundColor: locked ? colors.sunken : colors.raised,
+				overflow: "hidden",
 			}}
-			onChangeHtml={(event) => {
-				if (!focused.current) return;
-				const html = event.nativeEvent.value;
-				last.current = html;
-				useResumeStore.getState().update(
-					(data) => {
-						data.metadata.notes = html;
-					},
-					{ coalesceKey: "metadata.notes" },
-				);
-			}}
-		/>
+		>
+			<EnrichedTextInput
+				key={id}
+				ref={editor}
+				accessibilityLabel={t`Notes`}
+				defaultValue={value}
+				editable={!locked}
+				onFocus={() => {
+					focused.current = true;
+					setIsFocused(true);
+					resumeFieldFocus.onFocus();
+				}}
+				onBlur={() => {
+					focused.current = false;
+					setIsFocused(false);
+					resumeFieldFocus.onBlur();
+				}}
+				style={{
+					minHeight: space.s12 * 3 - border * 2,
+					color: colors.ink,
+					padding: space.s3 - (border - 1),
+					fontFamily: type.body.fontFamily,
+					fontSize: type.body.fontSize,
+				}}
+				onChangeHtml={(event) => {
+					if (!focused.current) return;
+					const html = event.nativeEvent.value;
+					last.current = html;
+					useResumeStore.getState().update(
+						(data) => {
+							data.metadata.notes = html;
+						},
+						{ coalesceKey: "metadata.notes" },
+					);
+				}}
+			/>
+		</View>
 	);
 }

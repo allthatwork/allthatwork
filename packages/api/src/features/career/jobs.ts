@@ -1,7 +1,7 @@
 import type { CareerNotice, careerScheduleInputSchema } from "@reactive-resume/schema/career";
 import type z from "zod";
 import { ORPCError } from "@orpc/client";
-import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, notInArray, or, sql } from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as tables from "@reactive-resume/db/schema";
 import { sendCareerNotification } from "@reactive-resume/email/transport";
@@ -14,12 +14,21 @@ import { aiProvidersService } from "../ai-providers/service";
 import { readOpenPosting, searchJobPostings } from "../applications/posting";
 import { hasExcludedWord, passesScreen } from "../boards/screen";
 import { checkBoards, saveFoundRoles } from "../boards/service";
+import { lockUser } from "../documents/ownership";
+import { documentsService } from "../documents/service";
 import { webAccessService } from "../web-access/credentials";
+import { searchScope } from "../web-access/regions";
 import { generateCareer } from "./generate";
 import { matchPosting } from "./matching";
 import { noticeText } from "./notices";
 import { isCareerSchedulingEnabled } from "./runner";
-import { canonicalOpportunityUrl, nextCareerRun, parseListingTitle, plainSnippet, prepareRunAt } from "./scheduling";
+import {
+	canonicalOpportunityUrl,
+	nextFutureCareerRun,
+	parseListingTitle,
+	plainSnippet,
+	prepareRunAt,
+} from "./scheduling";
 import { careerService, requireCareerApplication } from "./service";
 
 const CAREER_URL = "/dashboard/career";
@@ -30,9 +39,15 @@ const workspaceUrl = (applicationId: string | null, tab?: string) =>
 function assertRunner() {
 	if (!isCareerSchedulingEnabled())
 		throw new ORPCError("PRECONDITION_FAILED", {
-			message: "Configure CRON_SECRET on Vercel before enabling schedules.",
+			message: "Schedules aren't available on this server. Ask the server administrator to set CRON_SECRET.",
 		});
 }
+
+// Enough for a discovery search per field plus briefings and follow-ups for a busy search.
+const MAX_SCHEDULES_PER_USER = 100;
+const READ_NOTIFICATION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
+// Due jobs inspected per claim; owners that are busy or locked are skipped, not waited on.
+const CLAIM_CANDIDATES = 20;
 
 export const careerJobs = {
 	list: (userId: string) =>
@@ -51,7 +66,7 @@ export const careerJobs = {
 		if (input.kind === "prepare" && interview?.type === "interview")
 			input.nextRunAt = prepareRunAt(new Date(interview.at), input.lead ?? "24h", input.timezone);
 		if (input.kind === "discovery" && !input.query)
-			throw new ORPCError("BAD_REQUEST", { message: "Supply a public job-search query." });
+			throw new ORPCError("BAD_REQUEST", { message: "Enter a job search query." });
 		// Board checks cover every watched board, so one schedule is enough.
 		if (input.kind === "boards") {
 			Object.assign(input, { query: "", applicationId: null, interviewId: null, lead: null, aiProviderId: null });
@@ -68,8 +83,16 @@ export const careerJobs = {
 			throw new ORPCError("BAD_REQUEST", { message: "Choose an interview round." });
 		if (input.kind === "prepare" && input.enabled) {
 			if (!input.aiProviderId)
-				throw new ORPCError("BAD_REQUEST", { message: "Choose a tested AI connection for scheduled preparation." });
+				throw new ORPCError("BAD_REQUEST", { message: "Choose a tested AI provider for scheduled preparation." });
 			await aiProvidersService.getRunnableById({ userId, id: input.aiProviderId });
+		} else if (input.aiProviderId) {
+			// Any other schedule may name a connection too; it still has to be one of the account's own.
+			const [provider] = await db
+				.select({ id: tables.aiProvider.id })
+				.from(tables.aiProvider)
+				.where(and(eq(tables.aiProvider.id, input.aiProviderId), eq(tables.aiProvider.userId, userId)));
+			if (!provider)
+				throw new ORPCError("NOT_FOUND", { message: "That AI provider no longer exists. Choose another provider." });
 		}
 		if (input.email) {
 			const [owner] = await db
@@ -78,7 +101,8 @@ export const careerJobs = {
 				.where(eq(tables.user.id, userId));
 			if (!owner?.verified || !env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.SMTP_FROM)
 				throw new ORPCError("PRECONDITION_FAILED", {
-					message: "Owner email reminders require a verified account email and configured SMTP.",
+					message:
+						"Email reminders need a verified email address and email delivery on this server. Verify your email, or turn off email reminders.",
 				});
 		}
 		const { id, ...values } = input;
@@ -103,6 +127,18 @@ export const careerJobs = {
 					.update(tables.careerJob)
 					.set({ status: "canceled", lease: null, leaseUntil: null })
 					.where(and(eq(tables.careerJob.scheduleId, id), sql`${tables.careerJob.status} in ('queued', 'running')`));
+			}
+			if (!id) {
+				// Serialize this user's creates so the cap holds under concurrent requests.
+				await lockUser(tx, userId);
+				const [count] = await tx
+					.select({ total: sql<number>`count(*)::int` })
+					.from(tables.careerSchedule)
+					.where(eq(tables.careerSchedule.userId, userId));
+				if ((count?.total ?? 0) >= MAX_SCHEDULES_PER_USER)
+					throw new ORPCError("BAD_REQUEST", {
+						message: `You can keep up to ${MAX_SCHEDULES_PER_USER} schedules. Delete one you no longer need first.`,
+					});
 			}
 			const [row] = id
 				? await tx
@@ -239,9 +275,14 @@ type Posting = Awaited<ReturnType<typeof readOpenPosting>>;
  * never read again. Untracked roles are rechecked weekly so saved descriptions do not remain stale forever.
  */
 async function discover(userId: string, query: string) {
-	const [connection, limits] = await Promise.all([webAccessService.resolve(userId), careerService.aiLimits(userId)]);
+	const [connection, limits, scope] = await Promise.all([
+		webAccessService.resolve(userId),
+		careerService.aiLimits(userId),
+		searchScope(userId),
+	]);
 	const signal = AbortSignal.timeout(limits.discoveryTimeoutSeconds * 1000);
-	const hits = await searchJobPostings(query, { userId, connection, signal });
+	// A background run has no request locale, so the place is named in English.
+	const hits = await searchJobPostings(query, { userId, connection, signal, ...scope });
 	const found = new Map<string, (typeof hits)[number]>();
 	for (const hit of hits) {
 		const url = canonicalOpportunityUrl(hit.url);
@@ -280,6 +321,7 @@ async function discover(userId: string, query: string) {
 }
 
 async function enqueue() {
+	const now = new Date();
 	await db.transaction(async (tx) => {
 		const due = await tx
 			.select()
@@ -287,7 +329,8 @@ async function enqueue() {
 			.where(
 				and(
 					eq(tables.careerSchedule.enabled, true),
-					lte(tables.careerSchedule.nextRunAt, new Date()),
+					sql`(${tables.careerSchedule.applicationId} is null or exists (select 1 from application a where a.id = ${tables.careerSchedule.applicationId} and a.user_id = ${tables.careerSchedule.userId} and a.status <> 'closed'))`,
+					lte(tables.careerSchedule.nextRunAt, now),
 					or(
 						isNull(tables.careerSchedule.lastQueuedAt),
 						sql`${tables.careerSchedule.nextRunAt} > ${tables.careerSchedule.lastQueuedAt}`,
@@ -313,10 +356,9 @@ async function enqueue() {
 				.values({ userId: schedule.userId, scheduleId: schedule.id, dueAt: schedule.nextRunAt })
 				.onConflictDoNothing();
 			// Coalesce missed ticks into one job, rather than charging for an outage's backlog, keeping the wall time.
-			let nextRunAt = schedule.nextRunAt;
-			if (schedule.intervalDays)
-				for (let i = 0; i < 400 && nextRunAt <= new Date(); i++)
-					nextRunAt = nextCareerRun(nextRunAt, schedule.intervalDays, schedule.timezone);
+			const nextRunAt = schedule.intervalDays
+				? nextFutureCareerRun(schedule.nextRunAt, schedule.intervalDays, schedule.timezone, now)
+				: schedule.nextRunAt;
 			await tx
 				.update(tables.careerSchedule)
 				.set({ lastQueuedAt: schedule.nextRunAt, nextRunAt })
@@ -325,10 +367,14 @@ async function enqueue() {
 	});
 }
 
-function claim() {
+/**
+ * Claims the oldest due job whose owner has no other job running and hasn't been served this tick, so one account's
+ * backlog can't hold up everyone else's schedules. Jobs of banned accounts are canceled.
+ */
+function claim(servedUsers: ReadonlySet<string>) {
 	return db.transaction(async (tx) => {
 		const now = new Date();
-		const [job] = await tx
+		const candidates = await tx
 			.select()
 			.from(tables.careerJob)
 			.where(
@@ -342,43 +388,55 @@ function claim() {
 						),
 						and(eq(tables.careerJob.status, "running"), lte(tables.careerJob.leaseUntil, now)),
 					),
+					servedUsers.size ? notInArray(tables.careerJob.userId, [...servedUsers]) : undefined,
+					sql`not exists (select 1 from career_job as running_job where running_job.user_id = ${tables.careerJob.userId} and running_job.status = 'running' and running_job.id <> ${tables.careerJob.id} and running_job.lease_until > ${now})`,
 				),
 			)
 			.orderBy(asc(tables.careerJob.dueAt))
-			.limit(1)
+			.limit(CLAIM_CANDIDATES)
 			.for("update", { skipLocked: true });
-		if (!job) return null;
-		// Publication takes the user mutex before its job lock; never wait for that mutex in reverse order.
-		const [owner] = await tx
-			.select({ id: tables.user.id })
-			.from(tables.user)
-			.where(eq(tables.user.id, job.userId))
-			.for("no key update", { skipLocked: true });
-		if (!owner) return null;
-		const [running] = await tx
-			.select({ id: tables.careerJob.id })
-			.from(tables.careerJob)
-			.where(
-				and(
-					eq(tables.careerJob.userId, job.userId),
-					eq(tables.careerJob.status, "running"),
-					sql`${tables.careerJob.id} <> ${job.id}`,
-					sql`${tables.careerJob.leaseUntil} > ${now}`,
-				),
-			)
-			.limit(1);
-		if (running) return null;
-		const [claimed] = await tx
-			.update(tables.careerJob)
-			.set({
-				status: "running",
-				attempts: job.attempts + 1,
-				lease: generateId(),
-				leaseUntil: new Date(Date.now() + STALE_AGENT_RUN_TTL_MS + 60_000),
-			})
-			.where(eq(tables.careerJob.id, job.id))
-			.returning();
-		return claimed ?? null;
+		for (const job of candidates) {
+			// Publication takes the user mutex before its job lock; never wait for that mutex in reverse order.
+			const [owner] = await tx
+				.select({ id: tables.user.id, banned: tables.user.banned, banExpires: tables.user.banExpires })
+				.from(tables.user)
+				.where(eq(tables.user.id, job.userId))
+				.for("no key update", { skipLocked: true });
+			if (!owner) continue;
+			if (owner.banned && (!owner.banExpires || owner.banExpires > now)) {
+				await tx
+					.update(tables.careerJob)
+					.set({ status: "canceled", lease: null, leaseUntil: null })
+					.where(eq(tables.careerJob.id, job.id));
+				continue;
+			}
+			// Checked again under the owner's lock: another worker may have claimed this owner's job since the select.
+			const [running] = await tx
+				.select({ id: tables.careerJob.id })
+				.from(tables.careerJob)
+				.where(
+					and(
+						eq(tables.careerJob.userId, job.userId),
+						eq(tables.careerJob.status, "running"),
+						sql`${tables.careerJob.id} <> ${job.id}`,
+						sql`${tables.careerJob.leaseUntil} > ${now}`,
+					),
+				)
+				.limit(1);
+			if (running) continue;
+			const [claimed] = await tx
+				.update(tables.careerJob)
+				.set({
+					status: "running",
+					attempts: job.attempts + 1,
+					lease: generateId(),
+					leaseUntil: new Date(Date.now() + STALE_AGENT_RUN_TTL_MS + 60_000),
+				})
+				.where(eq(tables.careerJob.id, job.id))
+				.returning();
+			if (claimed) return claimed;
+		}
+		return null;
 	});
 }
 
@@ -405,6 +463,19 @@ async function execute(job: typeof tables.careerJob.$inferSelect) {
 		applicationId: schedule.applicationId,
 		interviewId: schedule.interviewId,
 	});
+	if (application?.status === "closed") {
+		await db
+			.update(tables.careerJob)
+			.set({ status: "canceled", lease: null, leaseUntil: null })
+			.where(
+				and(
+					eq(tables.careerJob.id, job.id),
+					eq(tables.careerJob.lease, job.lease ?? ""),
+					eq(tables.careerJob.status, "running"),
+				),
+			);
+		return;
+	}
 	const results = schedule.kind === "discovery" ? await discover(job.userId, schedule.query) : [];
 	const boards = schedule.kind === "boards" ? await checkBoards(job.userId) : null;
 	if (schedule.kind === "prepare") {
@@ -426,14 +497,27 @@ async function execute(job: typeof tables.careerJob.$inferSelect) {
 			});
 	}
 	await db.transaction(async (tx) => {
+		await lockUser(tx, job.userId);
 		// Interview edits/deletion lock the application before touching its jobs.
 		if (schedule.applicationId) {
 			const [owned] = await tx
-				.select({ id: tables.application.id })
+				.select({ id: tables.application.id, status: tables.application.status })
 				.from(tables.application)
 				.where(and(eq(tables.application.id, schedule.applicationId), eq(tables.application.userId, job.userId)))
 				.for("update");
-			if (!owned) return;
+			if (!owned || owned.status === "closed") {
+				await tx
+					.update(tables.careerJob)
+					.set({ status: "canceled", lease: null, leaseUntil: null })
+					.where(
+						and(
+							eq(tables.careerJob.id, job.id),
+							eq(tables.careerJob.lease, job.lease ?? ""),
+							eq(tables.careerJob.status, "running"),
+						),
+					);
+				return;
+			}
 		}
 		const [current] = await tx
 			.select()
@@ -565,6 +649,7 @@ async function sendPendingEmail() {
 					and(
 						eq(tables.careerJob.status, "completed"),
 						eq(tables.careerSchedule.email, true),
+						sql`(${tables.careerNotification.applicationId} is null or exists (select 1 from application a where a.id = ${tables.careerNotification.applicationId} and a.user_id = ${tables.careerNotification.userId} and a.status <> 'closed'))`,
 						eq(tables.careerSchedule.enabled, true),
 						isNull(tables.careerNotification.emailedAt),
 						or(
@@ -585,35 +670,61 @@ async function sendPendingEmail() {
 			return row.notification;
 		});
 		if (!notification) break;
-		const [owner] = await db
-			.select({ email: tables.user.email, verified: tables.user.emailVerified })
-			.from(tables.user)
-			.where(eq(tables.user.id, notification.userId));
-		if (notification && owner?.verified) {
-			try {
-				const sent = await sendCareerNotification({
-					to: owner.email,
-					subject: noticeText(notification.notice).title,
-					text: `You have a career update in ${APP_NAME}.`,
-					url: new URL(notification.url ?? CAREER_URL, env.APP_URL).toString(),
-					key: notification.key,
-				});
-				if (!sent) throw new Error("SMTP unavailable");
-				await db
-					.update(tables.careerNotification)
-					.set({ emailedAt: new Date() })
-					.where(eq(tables.careerNotification.id, notification.id));
-			} catch {
-				await db
-					.insert(tables.careerNotification)
-					.values({
-						userId: notification.userId,
-						key: `email-failed:${notification.key}`,
-						notice: { type: "email-failed" },
-						url: CAREER_URL,
-					})
-					.onConflictDoNothing();
+		const owner = await db.transaction(async (tx) => {
+			const [owner] = await tx
+				.select({
+					email: tables.user.email,
+					verified: tables.user.emailVerified,
+					banned: tables.user.banned,
+					banExpires: tables.user.banExpires,
+				})
+				.from(tables.user)
+				.where(eq(tables.user.id, notification.userId))
+				.for("no key update");
+			if (!owner) return null;
+			if (notification.applicationId) {
+				const [application] = await tx
+					.select({ status: tables.application.status })
+					.from(tables.application)
+					.where(
+						and(
+							eq(tables.application.id, notification.applicationId),
+							eq(tables.application.userId, notification.userId),
+						),
+					)
+					.for("update");
+				if (!application || application.status === "closed") return null;
 			}
+
+			const banned = owner.banned && (!owner.banExpires || owner.banExpires > new Date());
+			return owner.verified && !banned ? owner : null;
+		});
+		if (!owner) continue;
+		// The short claim/check transactions are committed before external I/O. Closing an application must
+		// never wait for SMTP; a delivery already handed to the mail transport cannot be recalled.
+		try {
+			const sent = await sendCareerNotification({
+				to: owner.email,
+				subject: noticeText(notification.notice).title,
+				text: `You have a career update in ${APP_NAME}.`,
+				url: new URL(notification.url ?? CAREER_URL, env.APP_URL).toString(),
+				key: notification.key,
+			});
+			if (!sent) throw new Error("SMTP unavailable");
+			await db
+				.update(tables.careerNotification)
+				.set({ emailedAt: new Date() })
+				.where(eq(tables.careerNotification.id, notification.id));
+		} catch {
+			await db
+				.insert(tables.careerNotification)
+				.values({
+					userId: notification.userId,
+					key: `email-failed:${notification.key}`,
+					notice: { type: "email-failed" },
+					url: CAREER_URL,
+				})
+				.onConflictDoNothing();
 		}
 	}
 }
@@ -648,9 +759,11 @@ export async function runCareerJobs() {
 			.onConflictDoNothing();
 	await enqueue();
 	let processed = 0;
+	const servedUsers = new Set<string>();
 	for (let i = 0; i < 2; i++) {
-		const job = await claim();
+		const job = await claim(servedUsers);
 		if (!job) break;
+		servedUsers.add(job.userId);
 		try {
 			await execute(job);
 		} catch {
@@ -660,7 +773,7 @@ export async function runCareerJobs() {
 					status: job.attempts >= 3 ? "failed" : "queued",
 					lease: null,
 					leaseUntil: new Date(Date.now() + 300_000),
-					error: "Career work failed. Check the selected provider and application, then review this schedule.",
+					error: "This schedule failed. Check the selected provider and application, then review the schedule.",
 				})
 				.where(
 					and(
@@ -684,5 +797,19 @@ export async function runCareerJobs() {
 		processed++;
 	}
 	await sendPendingEmail();
+	// The scheduler tick is the one periodic job every platform runs; Trash expiry rides on it.
+	await documentsService
+		.purgeExpiredTrash()
+		.catch((error: unknown) => console.error("[documents] Expired Trash purge failed", error));
+	// Released usernames are reserved for 30 days; older rows no longer matter.
+	await db
+		.delete(tables.releasedUsername)
+		.where(lte(tables.releasedUsername.releasedAt, new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)))
+		.catch((error: unknown) => console.error("[auth] Released username cleanup failed", error));
+	// Read notifications go after 90 days, so the list every dashboard page loads stops growing. Unread ones stay.
+	await db
+		.delete(tables.careerNotification)
+		.where(lte(tables.careerNotification.readAt, new Date(Date.now() - READ_NOTIFICATION_TTL_MS)))
+		.catch((error: unknown) => console.error("[career] Read notification cleanup failed", error));
 	return { processed };
 }

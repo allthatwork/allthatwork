@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { findImportDuplicates, type ImportKnownFact } from "./import-duplicates";
 
 const draft = (id: string, text: string) => ({ text, source: { id } });

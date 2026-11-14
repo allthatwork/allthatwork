@@ -5,6 +5,7 @@
 	"private": true,
 	"exports": {
 		"./boards": "./src/boards.ts",
+		"./career-offer": "./src/career-offer.ts",
 		"./directory-import": "./src/directory-import.ts",
 		"./directory": "./src/directory.ts",
 		"./directory-names": "./src/directory-names.ts",
@@ -17,11 +18,10 @@
 		"./templates": "./src/templates.ts"
 	},
 	"scripts": {
-		"typecheck": "tsgo --noEmit",
-		"test": "vitest run --passWithNoTests",
-		"test:coverage": "vitest run --coverage --passWithNoTests",
-		"test:ci": "vitest run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests",
-		"test:agent": "vitest run --reporter=agent --reporter=json --outputFile.json=reports/vitest-results.json --passWithNoTests"
+		"typecheck": "tsrs --noEmit",
+		"test": "vp test run --passWithNoTests",
+		"test:coverage": "vp test run --coverage --passWithNoTests",
+		"test:ci": "vp test run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests"
 	},
 	"dependencies": {
 		"@reactive-resume/utils": "workspace:*",
@@ -29,7 +29,8 @@
 	},
 	"devDependencies": {
 		"@reactive-resume/config": "workspace:*",
-		"@typescript/native-preview": "catalog:",
-		"typescript": "catalog:"
+		"tsrs": "catalog:",
+		"typescript": "catalog:",
+		"vite-plus": "catalog:"
 	}
 }

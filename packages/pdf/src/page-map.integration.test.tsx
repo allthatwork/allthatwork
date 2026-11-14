@@ -1,21 +1,18 @@
 import type { PageMap } from "./page-map";
-import type { SectionTitleResolver } from "./section-title";
 import type { ElementInfo, LayoutInfo } from "@formepdf/core";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { Template } from "@reactive-resume/schema/templates";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import * as forme from "@formepdf/core";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
 import { renderResume } from "./forme/render";
 import { extractPageMap, parseResumeNodeKey } from "./page-map";
 
-const resolveSectionTitle: SectionTitleResolver = (input) => input.defaultEnglishTitle ?? input.sectionId;
-
 // The sample's picture points at a web path that doesn't exist in Node; hide it so renders stay quiet.
 const data: ResumeData = { ...sampleResumeData, picture: { ...sampleResumeData.picture, hidden: true } };
 
 const renderPageMap = async (template: Template): Promise<PageMap> =>
-	(await renderResume(forme, { data, template, resolveSectionTitle })).pageMap;
+	(await renderResume(forme, { data, template })).pageMap;
 
 describe("parseResumeNodeKey", () => {
 	it("reads headers, sections and items, and ignores deeper nodes", () => {

@@ -1,4 +1,4 @@
-import type { Application } from "./types";
+import type { ApplicationSummary } from "./types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ApplicationFilters } from "@reactive-resume/schema/applications/filters";
 import { t } from "@lingui/core/macro";
@@ -52,12 +52,13 @@ const sameSet = (a: readonly string[], b: readonly string[]) => {
 	return left.size === right.size && [...left].every((value) => right.has(value));
 };
 
-export const resumeLinked = (application: Application) => Boolean(application.resumeId || application.resumeFileUrl);
-export const letterLinked = (application: Application) =>
+export const resumeLinked = (application: ApplicationSummary) =>
+	Boolean(application.resumeId || application.resumeFileUrl);
+export const letterLinked = (application: ApplicationSummary) =>
 	Boolean(application.coverLetterId || application.coverLetterUrl);
 
 /** What needs the user on this application: a reply that's late, a follow-up that's due, an interview, open questions. */
-export function attentionOf(application: Application, { now, noReplyDays }: FilterContext): AttentionKind[] {
+export function attentionOf(application: ApplicationSummary, { now, noReplyDays }: FilterContext): AttentionKind[] {
 	const kinds: AttentionKind[] = [];
 	const step = getNextStep(application, { now, noReplyDays });
 	if (step.kind === "no-reply") kinds.push("no-reply");
@@ -68,7 +69,12 @@ export function attentionOf(application: Application, { now, noReplyDays }: Filt
 }
 
 /** The values an application holds for a list facet; "none" stands for not set. */
-function valuesOf(application: Application, facet: ListFacet, filters: ApplicationFilters, context: FilterContext) {
+function valuesOf(
+	application: ApplicationSummary,
+	facet: ListFacet,
+	filters: ApplicationFilters,
+	context: FilterContext,
+) {
 	switch (facet) {
 		case "stage":
 			return [application.status];
@@ -96,7 +102,7 @@ function valuesOf(application: Application, facet: ListFacet, filters: Applicati
 const fitOk = (fit: number | null, wanted: string) => wanted === "any" || (fit !== null && fit >= Number(wanted));
 
 /** A reviewer's fit in the application's latest review round, or null when it didn't run there or gave none. */
-export function reviewerFitOf(application: Pick<Application, "targetingReviews">, slot: string): number | null {
+export function reviewerFitOf(application: Pick<ApplicationSummary, "targetingReviews">, slot: string): number | null {
 	const reviews = application.targetingReviews;
 	if (reviews.length === 0) return null;
 	const latest = Math.max(...reviews.map((review) => review.round));
@@ -155,7 +161,7 @@ export type ReviewerSlot = { slot: string; model: string };
  * The reviewer slots in the applications' latest review rounds, A to Z, each with the model it used most recently (by
  * when the application was targeted). A new slot shows up as soon as one application has it.
  */
-export function reviewerSlots(applications: readonly Application[]): ReviewerSlot[] {
+export function reviewerSlots(applications: readonly ApplicationSummary[]): ReviewerSlot[] {
 	const newest = new Map<string, { slot: string; model: string; at: number }>();
 	for (const application of applications) {
 		const reviews = application.targetingReviews;
@@ -183,7 +189,7 @@ const withinDays = (date: Date | string, days: string, now: Date) =>
 	days === "any" || now.getTime() - new Date(date).getTime() <= Number(days) * DAY_MS;
 
 /** Search reads role, company, location, contacts and tags. */
-export function matchesSearch(application: Application, query: string) {
+export function matchesSearch(application: ApplicationSummary, query: string) {
 	const text = query.trim().toLocaleLowerCase();
 	if (!text) return true;
 	const haystack = [
@@ -198,7 +204,7 @@ export function matchesSearch(application: Application, query: string) {
 	return haystack.includes(text);
 }
 
-function matchesTags(application: Application, filters: ApplicationFilters) {
+function matchesTags(application: ApplicationSummary, filters: ApplicationFilters) {
 	const tags = keySet(application.tags);
 	// Exclusion wins.
 	if (filters.notTag.some((tag) => tags.has(keyOf(tag)))) return false;
@@ -209,7 +215,7 @@ function matchesTags(application: Application, filters: ApplicationFilters) {
 }
 
 export function matchesFacet(
-	application: Application,
+	application: ApplicationSummary,
 	filters: ApplicationFilters,
 	facet: FilterFacet,
 	context: FilterContext,
@@ -249,7 +255,7 @@ export function matchesFacet(
 
 /** Whether an application passes every filter, the search included; `skip` leaves one facet out (for its counts). */
 export function matchesFilters(
-	application: Application,
+	application: ApplicationSummary,
 	filters: ApplicationFilters,
 	context: FilterContext,
 	skip?: FilterFacet,
@@ -259,7 +265,7 @@ export function matchesFilters(
 }
 
 export const filterApplications = (
-	applications: readonly Application[],
+	applications: readonly ApplicationSummary[],
 	filters: ApplicationFilters,
 	context: FilterContext,
 ) => applications.filter((application) => matchesFilters(application, filters, context));
@@ -269,7 +275,7 @@ export const filterApplications = (
  * (the search included) applied. Look a value up with the returned function; unknown values count 0.
  */
 export function optionCounts(
-	applications: readonly Application[],
+	applications: readonly ApplicationSummary[],
 	filters: ApplicationFilters,
 	facet: ListFacet,
 	context: FilterContext,
@@ -287,15 +293,15 @@ export function optionCounts(
 
 type InUseField = "foundBy" | "source" | "tags";
 
-const pickField = (field: InUseField) => (application: Application) =>
+const pickField = (field: InUseField) => (application: ApplicationSummary) =>
 	field === "tags" ? application.tags : [application[field]];
 
 /** The values in use for Found by, Found on or tags: most used first, then by name (case-insensitive, as first spelled). */
-export const valuesInUse = (applications: readonly Application[], field: InUseField) =>
+export const valuesInUse = (applications: readonly ApplicationSummary[], field: InUseField) =>
 	suggestValues([...applications], pickField(field));
 
 /** Whether any application has no value for Found by or Found on, so "Not set" is worth listing. */
-export const anyUnset = (applications: readonly Application[], field: "foundBy" | "source") =>
+export const anyUnset = (applications: readonly ApplicationSummary[], field: "foundBy" | "source") =>
 	applications.some((application) => !application[field]?.trim());
 
 /** Values the filters hold that aren't in `values` (say, from an old link), so they can still be unticked. */
@@ -529,14 +535,14 @@ export function steppedNumberValue(value: string, kind: NumberFilterKind, delta:
 /** Where each application showed at the last filter change: its id and the stage it was under. */
 export type ShownSnapshot = ReadonlyMap<string, ApplicationStatus>;
 
-export const snapshotOf = (applications: readonly Application[]): ShownSnapshot =>
+export const snapshotOf = (applications: readonly ApplicationSummary[]): ShownSnapshot =>
 	new Map(applications.map((application) => [application.id, application.status]));
 
 type HeldResult = {
 	/** What the filters match: the count and Export use these. */
-	matching: Application[];
+	matching: ApplicationSummary[];
 	/** What's on screen: the matching ones plus those shown at the last filter change that stopped matching. */
-	shown: Application[];
+	shown: ApplicationSummary[];
 	/** The shown ones that no longer match, with the stage they showed under. */
 	stale: Map<string, ApplicationStatus>;
 };
@@ -546,12 +552,12 @@ type HeldResult = {
  * stays on screen, marked, even when it no longer matches.
  */
 export function withHeld(
-	applications: readonly Application[],
-	isMatch: (application: Application) => boolean,
+	applications: readonly ApplicationSummary[],
+	isMatch: (application: ApplicationSummary) => boolean,
 	snapshot: ShownSnapshot,
 ): HeldResult {
-	const matching: Application[] = [];
-	const shown: Application[] = [];
+	const matching: ApplicationSummary[] = [];
+	const shown: ApplicationSummary[] = [];
 	const stale = new Map<string, ApplicationStatus>();
 	for (const application of applications) {
 		if (isMatch(application)) {
@@ -576,7 +582,7 @@ export function withHeld(
 export type FilterOption = { value: string; label: string; count: number };
 
 /** Lanes from Preferences first, then lanes in use that aren't there (most used first). */
-function laneValues(applications: readonly Application[], preferenceLanes: readonly string[]) {
+function laneValues(applications: readonly ApplicationSummary[], preferenceLanes: readonly string[]) {
 	const used = suggestValues([...applications], (application) => [
 		application.targetingPrimaryLane,
 		application.targetingSecondaryLane,
@@ -585,7 +591,7 @@ function laneValues(applications: readonly Application[], preferenceLanes: reado
 }
 
 type FacetOptionsInput = {
-	applications: readonly Application[];
+	applications: readonly ApplicationSummary[];
 	filters: ApplicationFilters;
 	context: FilterContext;
 	/** The lanes from Preferences. */
@@ -633,7 +639,7 @@ export function facetOptions(facet: ListFacet, { applications, filters, context,
  * it go first, as the newest; the rest keep their place, so one that stops matching later stays where it was, under
  * the stage it last matched in.
  */
-export function mergeSnapshot(snapshot: ShownSnapshot, matching: readonly Application[]): ShownSnapshot | null {
+export function mergeSnapshot(snapshot: ShownSnapshot, matching: readonly ApplicationSummary[]): ShownSnapshot | null {
 	if (matching.every((application) => snapshot.get(application.id) === application.status)) return null;
 	const added = matching.filter((application) => !snapshot.has(application.id));
 	const next = new Map<string, ApplicationStatus>(added.map((application) => [application.id, application.status]));

@@ -1,10 +1,39 @@
+import type { RequestAuthentication } from "../../context";
+import { ORPCError } from "@orpc/server";
 import z from "zod";
 import { protectedProcedure, publicProcedure } from "../../context";
 import { resumeDto } from "../../dto/resume";
-import { resumeMutationRateLimit, resumePasswordRateLimit } from "../../middleware/rate-limit";
+import { resumeMutationRateLimit } from "../../middleware/rate-limit";
 import { resumeService } from "./service";
+import { webPagePreviewUrl } from "./web-page";
+
+/** Only a credential that may read the owner's resumes sees the owner's view: private, unredacted, no password. */
+export function ownerViewer(context: { user?: { id: string } | null; authentication?: RequestAuthentication | null }) {
+	return context.user?.id && context.authentication?.permissions.includes("read")
+		? { currentUserId: context.user.id }
+		: {};
+}
 
 export const sharingRouter = {
+	previewUrl: protectedProcedure
+		.route({
+			method: "GET",
+			path: "/resumes/{id}/web-page/preview",
+			tags: ["Resume Sharing"],
+			operationId: "getResumeWebPagePreviewUrl",
+			summary: "Get a preview link for the web page",
+			description:
+				"Returns a link, valid for 15 minutes, that shows the resume's web page as visitors will see it, even before it's published. The page isn't counted or listed in search engines. Requires authentication and resume ownership.",
+			successDescription: "The preview link.",
+		})
+		.input(z.object({ id: z.string().describe("The ID of the resume.") }))
+		.output(z.string().describe("The preview link."))
+		.handler(async ({ context, input }) => {
+			const url = await webPagePreviewUrl(input.id, context.user.id);
+			if (!url) throw new ORPCError("NOT_FOUND");
+			return url;
+		}),
+
 	getBySlug: publicProcedure
 		.route({
 			method: "GET",
@@ -23,9 +52,7 @@ export const sharingRouter = {
 				...input,
 				requestHeaders: context.reqHeaders,
 				...(context.trustedClient ? { trustedClient: context.trustedClient } : {}),
-				...(context.user?.id && context.authentication?.permissions.includes("read")
-					? { currentUserId: context.user.id }
-					: {}),
+				...ownerViewer(context),
 			}),
 		),
 
@@ -85,13 +112,13 @@ export const sharingRouter = {
 				password: z.string().min(1).max(64).describe("The password to verify."),
 			}),
 		)
-		.use(resumePasswordRateLimit)
 		.output(z.boolean())
 		.handler(({ context, input }): Promise<boolean> =>
 			resumeService.verifyPassword({
 				username: input.username,
 				slug: input.slug,
 				password: input.password,
+				trustedClient: context.trustedClient,
 				...(context.resHeaders ? { responseHeaders: context.resHeaders } : {}),
 			}),
 		),

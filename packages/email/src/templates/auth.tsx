@@ -123,10 +123,10 @@ export function ResetPasswordEmail({ url }: ResetPasswordEmailProps) {
 	return (
 		<AuthEmailLayout
 			preview={`Reset your ${APP_NAME} password`}
-			heading="Password Reset"
+			heading="Reset your password"
 			intro={`We received a request to reset your ${APP_NAME} password.`}
 			details="If this was not you, you can ignore this message and your password will remain unchanged."
-			actionLabel="Create New Password"
+			actionLabel="Create new password"
 			actionUrl={url}
 			outro={`For security, only use links from emails sent by ${APP_NAME}.`}
 		/>
@@ -141,10 +141,10 @@ export function VerifyEmail({ url }: VerifyEmailProps) {
 	return (
 		<AuthEmailLayout
 			preview={`Verify your email for ${APP_NAME}`}
-			heading="Verify Email"
-			intro={`Thanks for signing up for ${APP_NAME}. Please verify your email address to continue.`}
+			heading="Verify your email"
+			intro={`Thanks for signing up for ${APP_NAME}. Verify your email address to continue.`}
 			details="This confirms the address belongs to you, which keeps your account secure."
-			actionLabel="Verify Email"
+			actionLabel="Verify email"
 			actionUrl={url}
 			outro="If you did not create this account, you can safely ignore this email."
 		/>
@@ -160,13 +160,13 @@ interface VerifyEmailChangeProps {
 export function VerifyEmailChange({ url, previousEmail, newEmail }: VerifyEmailChangeProps) {
 	return (
 		<AuthEmailLayout
-			preview={`Confirm your new ${APP_NAME} email address`}
-			heading="Confirm Email Change"
-			intro={`You asked to change your ${APP_NAME} email from ${previousEmail} to ${newEmail}.`}
-			details="The change takes effect once you confirm it here."
-			actionLabel="Verify New Email"
+			preview={`Approve changing your ${APP_NAME} email address`}
+			heading="Approve email change"
+			intro={`Someone asked to change your ${APP_NAME} email from ${previousEmail} to ${newEmail}.`}
+			details={`If you approve, we'll send a link to ${newEmail} to finish the change.`}
+			actionLabel="Approve change"
 			actionUrl={url}
-			outro="If you did not request this change, ignore this email. The address on the account will not change unless it is confirmed here."
+			outro="If you did not request this change, ignore this email and change your password. The address on the account will not change without your approval."
 		/>
 	);
 }

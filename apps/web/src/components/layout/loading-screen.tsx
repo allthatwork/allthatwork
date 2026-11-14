@@ -1,3 +1,4 @@
+import { t } from "@lingui/core/macro";
 import { useRouter } from "@tanstack/react-router";
 import { Spinner } from "@reactive-resume/ui/components/spinner";
 import { cn } from "@reactive-resume/utils/style";
@@ -15,7 +16,7 @@ export function LoadingScreen() {
 				hasNavigated && "transition-opacity duration-standard ease-enter starting:opacity-0",
 			)}
 		>
-			<Spinner className="size-6" />
+			<Spinner aria-label={t`Loading`} className="size-6" />
 		</div>
 	);
 }

@@ -35,8 +35,8 @@ const bulletBody = (line: TextLine) => line.text.replace(BULLET_PREFIX, "").trim
 
 function isQuantified(text: string): boolean {
 	// A bare year is not an achievement metric; a percentage, a currency figure or a real
-	// magnitude is.
-	if (/\d+\s*%|[$€£¥]\s*\d|\d+\s*x\b/i.test(text)) return true;
+	// magnitude is. The lookbehinds start each number at its first digit, so a digit run is scanned once.
+	if (/(?<!\d)\d+\s*%|[$€£¥]\s*\d|(?<!\d)\d+\s*x\b/i.test(text)) return true;
 	return (text.match(/\b\d[\d,.]*\b/g) ?? []).some((value) => {
 		const numeric = Number(value.replaceAll(",", ""));
 		return Number.isFinite(numeric) && (numeric >= 1000 || (numeric >= 3 && !/^(?:19|20)\d{2}$/.test(value)));
@@ -125,7 +125,6 @@ function findRepeatedOpenings(bullets: readonly string[]): string[] {
 }
 
 export type SemanticsOptions = {
-	locale?: string;
 	now: Date;
 };
 
@@ -135,7 +134,8 @@ export function buildResumeSemantics(
 	document: ExtractedDocument,
 	options: SemanticsOptions,
 ): ResumeSemantics {
-	const locale = options.locale ?? (raw.metadata.language || "en-US");
+	// Dates parse in the document's own declared language.
+	const locale = raw.metadata.language || "en-US";
 
 	const headings = detectHeadings(document);
 	const contact = analyzeContact(raw, document);

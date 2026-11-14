@@ -1,7 +1,6 @@
 import type { ColumnId, Drop, DropZone, Location } from "./layout";
 import type { GroupProps } from "./style-groups";
 import { useLingui } from "@lingui/react/macro";
-import * as Haptics from "expo-haptics";
 import { useRef, useState } from "react";
 import { View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -20,7 +19,7 @@ import {
 	setFullWidth,
 	toggleBreak,
 } from "./layout";
-import { Button, Icon, IconButton, ListRow, Sheet, Text, useTheme } from "@/ui";
+import { Button, Icon, IconButton, ListRow, Sheet, Text, haptics, useTheme } from "@/ui";
 
 type Measurable = {
 	measureInWindow: (callback: (x: number, y: number, width: number, height: number) => void) => void;
@@ -89,7 +88,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 			write("layout.move", (draft) => void moveSection(draft.metadata.layout, id, target, visible), true);
 	};
 	const lift = (id: string) => {
-		void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+		haptics.medium();
 		onDragChange(true);
 		update({ id, dy: 0, zones: [], target: null });
 		void begin(id);
@@ -99,7 +98,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 		if (current?.id !== id) return;
 		const target = dropAt(current.zones, y);
 		if (target && (target.page !== current.target?.page || target.column !== current.target?.column))
-			void Haptics.selectionAsync();
+			haptics.selection();
 		update({ ...current, dy, target });
 	};
 
@@ -149,7 +148,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 		const shown = sections.filter(visible);
 		const target = dragging?.target?.page === page && dragging.target.column === id ? dragging.target : null;
 		const marker = (
-			<View key="marker" style={{ height: space.s0, borderRadius: radius.rPill, backgroundColor: colors.accent }} />
+			<View key="marker" style={{ height: space.s0, borderRadius: radius.rLg, backgroundColor: colors.accent }} />
 		);
 		const items = shown.map((item) => sectionRow(item, { page, column: id }));
 		if (target) {
@@ -200,7 +199,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 					style={{
 						gap: space.s3,
 						padding: space.s3,
-						borderRadius: radius.rXl,
+						borderRadius: radius.rLg,
 						borderWidth: 1,
 						borderColor: colors.line,
 					}}
@@ -211,7 +210,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 						</Text>
 						{layout.pages.length > 1 ? (
 							<Button
-								label={t`Delete Page`}
+								label={t`Delete page`}
 								icon="trash"
 								variant="ghost"
 								size="sm"
@@ -221,7 +220,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 						) : null}
 					</View>
 					<SwitchRow
-						label={t({ message: "Full Width", comment: "Layout editor toggle label that makes a page single-column" })}
+						label={t({ message: "Full width", comment: "Layout editor toggle label that makes a page single-column" })}
 						value={page.fullWidth}
 						disabled={disabled}
 						onChange={(value) =>
@@ -234,7 +233,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 			))}
 			<View style={{ alignSelf: "flex-start" }}>
 				<Button
-					label={t`Add Page`}
+					label={t`Add page`}
 					icon="plus"
 					variant="secondary"
 					disabled={disabled}
@@ -242,7 +241,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 				/>
 			</View>
 			<Stepper
-				label={t`Sidebar Width`}
+				label={t`Sidebar width`}
 				value={layout.sidebarWidth}
 				unit="%"
 				min={10}
@@ -285,7 +284,7 @@ export function LayoutScreen({ data, write, disabled, onDragChange }: LayoutScre
 							)),
 						)}
 						<ListRow
-							title={t`New Page`}
+							title={t`New page`}
 							leading="plus-circle"
 							disabled={disabled}
 							onPress={() => {

@@ -2,7 +2,7 @@
 import type { Application } from "../types";
 import type { ReactNode } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,7 +14,7 @@ vi.mock("@/libs/orpc/client", () => {
 		queryKey: (options?: unknown) => [name, options],
 		queryOptions: (options?: unknown) => ({
 			queryKey: [name, options],
-			queryFn: async () => (name === "getById" ? api.current : name === "list" ? [] : null),
+			queryFn: async () => (name === "getById" ? api.current : name === "list" || name === "listSummary" ? [] : null),
 		}),
 		mutationOptions: () => ({ mutationFn: mutation }),
 	});
@@ -23,6 +23,9 @@ vi.mock("@/libs/orpc/client", () => {
 			applications: {
 				getById: endpoint("getById"),
 				list: endpoint("list"),
+				listSummary: endpoint("listSummary"),
+				// No lanes saved: the six standard stages, written as `status`.
+				lanes: { get: endpoint("lanes") },
 				stats: endpoint("stats"),
 				tags: endpoint("tags"),
 				update: endpoint("update", api.update),

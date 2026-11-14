@@ -6,9 +6,11 @@ import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ScrollView, View } from "react-native";
 import { EnrichedTextInput } from "react-native-enriched-html";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { letterFieldFocus } from "@/draft";
 import { createRichTextSession } from "@/features/write/rich-text";
 import { Button, IconButton, Text, useTheme } from "@/ui";
+import { useKeyboardVisible } from "@/ui/keyboard";
 
 /** The focused editor, for the toolbar docked above the keyboard (one per screen). */
 type ActiveEditor = {
@@ -62,6 +64,7 @@ export function LetterRichText({ label, value, onChange, disabled, autoFocus, mi
 	const ref = useRef<EnrichedTextInputInstance>(null);
 	const [session] = useState(() => createRichTextSession(value));
 	const [focused, setFocused] = useState(false);
+	const border = focused ? 2 : 1;
 
 	// Undo, a kept draft and remote updates change the text from outside; load them while the field isn't focused.
 	useEffect(() => {
@@ -81,55 +84,61 @@ export function LetterRichText({ label, value, onChange, disabled, autoFocus, mi
 	return (
 		<View style={{ gap: space.s1 }}>
 			<Text variant="label">{label}</Text>
-			<EnrichedTextInput
-				ref={ref}
-				accessibilityLabel={label}
-				// The initial markup only: changing defaultValue reloads the editor and moves the caret.
-				defaultValue={session.markup}
-				editable={!disabled}
-				autoFocus={autoFocus ?? false}
-				placeholderTextColor={colors.ink3}
-				cursorColor={colors.accent}
-				selectionColor={colors.accentSoft}
-				linkRegex={null}
+			<View
 				style={{
-					minHeight: type.bodyLarge.lineHeight * minLines + space.s3 * 2,
-					paddingHorizontal: space.s3,
-					paddingVertical: space.s3,
-					borderWidth: 1,
+					borderWidth: border,
 					borderRadius: radius.rLg,
 					borderColor: focused ? colors.accent : colors.lineStrong,
 					backgroundColor: disabled ? colors.sunken : colors.raised,
-					color: colors.ink,
-					fontFamily: fonts.ui[400],
-					fontSize: type.bodyLarge.fontSize,
+					overflow: "hidden",
 				}}
-				htmlStyle={{
-					a: { color: colors.accentText, textDecorationLine: "underline" },
-					ul: { bulletColor: colors.ink2 },
-					ol: { markerColor: colors.ink2 },
-				}}
-				onFocus={() => {
-					session.focus();
-					letterFieldFocus.onFocus();
-					setFocused(true);
-					loadBaseline(ref, session, onChange);
-					setActive({ ref, state: active?.ref === ref ? active.state : null, command: session.command });
-				}}
-				onBlur={() => {
-					session.blur();
-					letterFieldFocus.onBlur();
-					setFocused(false);
-					if (active?.ref === ref) setActive(null);
-				}}
-				onChangeHtml={(event) => {
-					const html = session.change(event.nativeEvent.value);
-					if (html !== null) onChange(html);
-				}}
-				onChangeState={(event) => {
-					if (active?.ref === ref) setActive({ ...active, state: event.nativeEvent });
-				}}
-			/>
+			>
+				<EnrichedTextInput
+					ref={ref}
+					accessibilityLabel={label}
+					// The initial markup only: changing defaultValue reloads the editor and moves the caret.
+					defaultValue={session.markup}
+					editable={!disabled}
+					autoFocus={autoFocus ?? false}
+					placeholderTextColor={colors.ink3}
+					cursorColor={colors.accent}
+					selectionColor={colors.accentSoft}
+					linkRegex={null}
+					style={{
+						minHeight: type.bodyLarge.lineHeight * minLines + space.s3 * 2 - border * 2,
+						paddingHorizontal: space.s3 - (border - 1),
+						paddingVertical: space.s3 - (border - 1),
+						color: colors.ink,
+						fontFamily: fonts.ui[400],
+						fontSize: type.bodyLarge.fontSize,
+					}}
+					htmlStyle={{
+						a: { color: colors.accentText, textDecorationLine: "underline" },
+						ul: { bulletColor: colors.ink2 },
+						ol: { markerColor: colors.ink2 },
+					}}
+					onFocus={() => {
+						session.focus();
+						letterFieldFocus.onFocus();
+						setFocused(true);
+						loadBaseline(ref, session, onChange);
+						setActive({ ref, state: active?.ref === ref ? active.state : null, command: session.command });
+					}}
+					onBlur={() => {
+						session.blur();
+						letterFieldFocus.onBlur();
+						setFocused(false);
+						if (active?.ref === ref) setActive(null);
+					}}
+					onChangeHtml={(event) => {
+						const html = session.change(event.nativeEvent.value);
+						if (html !== null) onChange(html);
+					}}
+					onChangeState={(event) => {
+						if (active?.ref === ref) setActive({ ...active, state: event.nativeEvent });
+					}}
+				/>
+			</View>
 		</View>
 	);
 }
@@ -141,6 +150,8 @@ export function LetterRichText({ label, value, onChange, disabled, autoFocus, mi
 export function LetterRichTextToolbar() {
 	const { t } = useLingui();
 	const { colors, size, space } = useTheme();
+	const insets = useSafeAreaInsets();
+	const keyboardVisible = useKeyboardVisible();
 	const editor = useSyncExternalStore(subscribe, () => active);
 	if (!editor) return null;
 	const input = () => {
@@ -183,7 +194,8 @@ export function LetterRichTextToolbar() {
 			style={{
 				flexDirection: "row",
 				alignItems: "center",
-				minHeight: size.hit + 2,
+				minHeight: size.hit + space.s1 * 2 + (keyboardVisible ? 0 : insets.bottom),
+				paddingBottom: keyboardVisible ? 0 : insets.bottom,
 				borderTopWidth: 1,
 				borderTopColor: colors.line,
 				backgroundColor: colors.raised,

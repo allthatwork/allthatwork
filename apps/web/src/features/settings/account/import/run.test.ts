@@ -1,5 +1,5 @@
 import type { AccountArchive } from "./archive";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const importData = vi.hoisted(() => vi.fn());
 vi.mock("@/libs/orpc/client", () => ({ client: { auth: { importData } } }));

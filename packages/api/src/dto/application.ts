@@ -23,14 +23,14 @@ export const MAX_APPLICATION_TARGETING_NOTES_CHARS = 200_000;
 const MAX_APPLICATION_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
 const applicationDocumentKindSchema = z.enum(["resume", "cover-letter"]);
-const timelineDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must use YYYY-MM-DD format.");
+const timelineDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter the date as YYYY-MM-DD.");
 // Interviews carry a full timestamp (with offset) so the scheduled time survives timezones.
 const interviewAtSchema = z.iso.datetime({ offset: true }).describe("Scheduled start, as an ISO 8601 date-time.");
 
 const applicationDocumentFileSchema = z
 	.file()
 	.max(MAX_APPLICATION_DOCUMENT_BYTES, "File size must be less than 10MB")
-	.mime(["application/pdf"], "Application documents must be PDF files.");
+	.mime(["application/pdf"], "Attach a PDF file.");
 
 const documentFilesShape = {
 	resumeFile: applicationDocumentFileSchema.optional(),
@@ -48,6 +48,7 @@ const applicationSchema = createSelectSchema(schema.application, {
 	role: z.string().trim().min(1).describe("The role / job title."),
 	location: z.string().trim().nullable(),
 	salary: z.string().trim().nullable(),
+	laneId: z.string().nullable().optional().describe("The owner-defined pipeline lane, when supported."),
 	status: applicationStatusSchema.describe("The current pipeline stage. `closed` ends it, with a reason."),
 	closedReason: applicationClosedReasonSchema
 		.nullable()
@@ -134,7 +135,7 @@ const applicationSchema = createSelectSchema(schema.application, {
 	postingSource: postingSourceSchema.nullable(),
 	matchScore: z.number().int().min(0).max(100).nullable(),
 	aiMetadata: aiMetadataSchema.nullable(),
-	notes: z.string().nullable(),
+	notes: z.string().nullable().describe("The user's own notes. Search and targeting output has its own fields."),
 	// Rendered as an <a href>; only same-origin storage URLs are ever stored. Constrain to
 	// http(s)/relative so a hand-crafted `update` can't smuggle a `javascript:` href.
 	resumeFileUrl: z
@@ -155,6 +156,49 @@ const applicationSchema = createSelectSchema(schema.application, {
 	appliedAt: z.date(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
+});
+
+const applicationSummarySchema = applicationSchema.pick({
+	id: true,
+	company: true,
+	role: true,
+	location: true,
+	salary: true,
+	status: true,
+	laneId: true,
+	closedReason: true,
+	resumeId: true,
+	coverLetterId: true,
+	source: true,
+	tags: true,
+	sourceUrl: true,
+	matchScore: true,
+	followUpAt: true,
+	followUpNote: true,
+	contacts: true,
+	activity: true,
+	appliedAt: true,
+	createdAt: true,
+	updatedAt: true,
+	// The fork's filters, sort, columns, cards and saved views read these from the list.
+	companyId: true,
+	resumeFileUrl: true,
+	coverLetterUrl: true,
+	foundBy: true,
+	searchFit: true,
+	searchAt: true,
+	targetingBuildStatus: true,
+	targetingFit: true,
+	targetingReviews: true,
+	targetingPrimaryLane: true,
+	targetingSecondaryLane: true,
+	targetingAt: true,
+	targetingQuestions: true,
+});
+
+const applicationSummaryWithInitialDetailSchema = applicationSummarySchema.extend({
+	/** A small number of full rows can be attached to the initial list response for eager detail rendering. */
+	initialDetail: applicationSchema.omit({ userId: true }).optional(),
 });
 
 // Fields a client is allowed to set/change. `status`, `activity` and AI-owned fields are
@@ -195,10 +239,14 @@ const editableSchema = applicationSchema.pick({
 	tags: true,
 });
 
+/** The editable fields, each optional; create and update share them. */
+export type EditableFields = z.infer<ReturnType<typeof editableSchema.partial>>;
+
 const createInputSchema = editableSchema.partial().extend({
 	company: applicationSchema.shape.company,
 	role: applicationSchema.shape.role,
 	status: applicationStatusSchema.optional(),
+	laneId: z.string().min(1).optional(),
 	closedReason: applicationClosedReasonSchema.nullable().optional(),
 	stageEnteredAt: timelineDateSchema.optional(),
 });
@@ -209,11 +257,26 @@ export const applicationDto = {
 			.object({
 				...paginationShape,
 				status: applicationStatusSchema.optional(),
+				laneId: z.string().min(1).optional(),
 				tags: z.array(z.string()).optional(),
 			})
 			.optional()
 			.default({}),
 		output: z.array(applicationSchema.omit({ userId: true })),
+	},
+
+	listSummary: {
+		input: z
+			.object({
+				...paginationShape,
+				status: applicationStatusSchema.optional(),
+				laneId: z.string().min(1).optional(),
+				tags: z.array(z.string()).optional(),
+				includeInitialDetails: z.number().int().min(0).max(6).optional(),
+			})
+			.optional()
+			.default({}),
+		output: z.array(applicationSummaryWithInitialDetailSchema),
 	},
 
 	getById: {
@@ -237,6 +300,7 @@ export const applicationDto = {
 			...documentFilesShape,
 			id: z.string(),
 			status: applicationStatusSchema.optional(),
+			laneId: z.string().min(1).optional(),
 			stageEnteredAt: timelineDateSchema.optional(),
 			closedReason: applicationClosedReasonSchema
 				.nullable()
@@ -340,6 +404,7 @@ export const applicationDto = {
 		input: z.object({
 			ids: z.array(z.string()).min(1).max(200, "Too many items in a single bulk operation"),
 			status: applicationStatusSchema.optional(),
+			laneId: z.string().min(1).optional(),
 			closedReason: applicationClosedReasonSchema.nullable().optional(),
 			addTags: z.array(z.string()).optional(),
 		}),

@@ -1,6 +1,6 @@
 import type { RouterClient } from "@orpc/server";
 import type { RequestAuthentication } from "@reactive-resume/api/context";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -21,12 +21,17 @@ let client: Client;
 let server: McpServer;
 const calls = {
 	career: { importFacts: vi.fn() },
-	applications: { updateQuestion: vi.fn() },
 	directory: { companies: vi.fn() },
 	auth: { deleteAccount: vi.fn() },
 	resume: { listVersions: vi.fn(), getById: vi.fn() },
 	rest: { fileUpload: vi.fn(), documentExports: { resume: vi.fn() } },
 	coverLetters: { draft: vi.fn() },
+	applications: {
+		list: vi.fn(),
+		updateQuestion: vi.fn(),
+		lanes: { get: vi.fn(), create: vi.fn() },
+		priorNoResponse: vi.fn(),
+	},
 };
 
 beforeEach(async () => {
@@ -151,9 +156,11 @@ it("hands account deletion to browser settings without invoking the API", async 
 it("discovers API-derived contracts and exchanges native files and dates through the SDK", async () => {
 	const { tools } = await client.listTools();
 	const cardTools = new Map(buildMcpServerCard("1.0.0").tools.map((tool) => [tool.name, tool]));
+	expect(tools.map((tool) => tool.name).sort()).toEqual([...cardTools.keys()].sort());
 	for (const tool of tools) {
 		expect(tool.inputSchema, tool.name).toEqual(cardTools.get(tool.name)?.inputSchema);
 		expect(tool.outputSchema, tool.name).toEqual(cardTools.get(tool.name)?.outputSchema);
+		expect(tool.annotations, tool.name).toEqual(cardTools.get(tool.name)?.annotations);
 	}
 	expect(tools.find((tool) => tool.name === "api_resume_list_versions")?.outputSchema).toBeDefined();
 	expect(tools.find((tool) => tool.name === "update_resume")?.inputSchema.properties?.data).toBeDefined();
@@ -221,6 +228,47 @@ it("rejects foreign and traversing file references before reading storage or inv
 	}
 	expect(storage.read).not.toHaveBeenCalled();
 	expect(calls.rest.fileUpload).not.toHaveBeenCalled();
+});
+
+it("exchanges custom application lane contracts and dates through the SDK", async () => {
+	const lane = {
+		id: "lane-take-home",
+		category: "interview",
+		label: "Take-home assignment",
+		color: "#336699",
+		position: 6,
+		systemKey: null,
+		closedReason: null,
+		retiredAt: new Date("2026-10-29T12:00:00Z"),
+	};
+	calls.applications.lanes.get.mockResolvedValueOnce({ revision: 3, lanes: [lane] });
+	const pipeline = await client.callTool({ name: "api_applications_lanes_get", arguments: {} });
+	expect(pipeline.isError).not.toBe(true);
+	expect(pipeline.structuredContent).toMatchObject({
+		revision: 3,
+		lanes: [{ id: "lane-take-home", category: "interview", retiredAt: "2026-10-29T12:00:00.000Z" }],
+	});
+
+	const invalidColor = await client.callTool({
+		name: "api_applications_lanes_create",
+		arguments: { expectedRevision: 3, label: "Assessment", category: "interview", color: "url(unsafe)" },
+	});
+	expect(invalidColor.isError).toBe(true);
+	expect(calls.applications.lanes.create).not.toHaveBeenCalled();
+
+	calls.applications.list.mockResolvedValueOnce([]);
+	await client.callTool({ name: "list_applications", arguments: { laneId: "lane-take-home" } });
+	expect(calls.applications.list).toHaveBeenCalledWith(expect.objectContaining({ laneId: "lane-take-home" }));
+
+	calls.applications.priorNoResponse.mockResolvedValueOnce([
+		{ id: "application-old", company: "Fictional Labs", role: "Engineer", at: new Date("2026-09-01T12:00:00Z") },
+	]);
+	const prior = await client.callTool({
+		name: "api_applications_prior_no_response",
+		arguments: { company: "Fictional Labs" },
+	});
+	expect(prior.isError).not.toBe(true);
+	expect(prior.structuredContent).toMatchObject({ items: [{ at: "2026-09-01T12:00:00.000Z" }] });
 });
 
 it("collects streaming drafts within the documented bound and closes the producer when truncated", async () => {

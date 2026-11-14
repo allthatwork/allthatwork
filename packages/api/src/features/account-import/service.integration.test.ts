@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
@@ -590,7 +590,7 @@ describe.skipIf(!databaseUrl)("account import", () => {
 		});
 		expect(result.added.applications).toBe(2);
 		// The list goes through the same output check the API runs.
-		const list = applicationDto.list.output.parse(await applicationService.list({ userId: longId }));
+		const list = applicationDto.list.output.parse((await applicationService.list({ userId: longId })).items);
 		const postings = list.map((application) => application.jobDescription);
 		expect(postings).toContain("Short.");
 		expect(postings).toContain(posting.slice(0, 20_000));

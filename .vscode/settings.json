@@ -17,7 +17,6 @@
 		"**/routeTree.gen.ts": true,
 		"pnpm-lock.yaml": true
 	},
-	"js/ts.experimental.useTsgo": true,
 	"search.exclude": {
 		"**/locales/**.po": true,
 		"**/routeTree.gen.ts": true,
@@ -29,5 +28,20 @@
 		["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
 		["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
 	],
-	"tailwindCSS.experimental.configFile": "packages/ui/src/styles/globals.css"
+	"tailwindCSS.experimental.configFile": "packages/ui/src/styles/globals.css",
+	"oxc.disableNestedConfig": true,
+	"oxc.fmt.disableNestedConfig": true,
+	"editor.formatOnSaveMode": "file",
+	"[javascript]": {
+		"editor.defaultFormatter": "oxc.oxc-vscode"
+	},
+	"[javascriptreact]": {
+		"editor.defaultFormatter": "oxc.oxc-vscode"
+	},
+	"[typescript]": {
+		"editor.defaultFormatter": "oxc.oxc-vscode"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "oxc.oxc-vscode"
+	}
 }

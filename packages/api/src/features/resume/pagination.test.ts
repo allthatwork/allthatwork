@@ -1,4 +1,4 @@
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { call } from "@orpc/server";
 const list = vi.hoisted(() => vi.fn());
 vi.mock("./service", () => ({ resumeService: { list } }));
@@ -20,6 +20,9 @@ it("paginates the owner's filtered list without changing legacy array responses"
 		isPublic: false,
 		isLocked: false,
 		showDownloadButtons: false,
+		showInSearchEngines: false,
+		hideContactDetails: false,
+		isPrimary: false,
 		createdAt: new Date(),
 		updatedAt: new Date(),
 	}));

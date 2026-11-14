@@ -6,13 +6,23 @@ import { Icon, IconButton, Text, useTheme } from "@/ui";
 
 type CollectionHeaderProps = {
 	title: string;
-	searchLabel: string;
-	placeholder: string;
-	value: string;
-	onChangeText: (value: string) => void;
 	actions?: ReactNode;
-	disabled?: boolean;
-};
+} & (
+	| {
+			searchLabel?: never;
+			placeholder?: never;
+			value?: never;
+			onChangeText?: never;
+			disabled?: never;
+	  }
+	| {
+			searchLabel: string;
+			placeholder: string;
+			value: string;
+			onChangeText: (value: string) => void;
+			disabled?: boolean;
+	  }
+);
 
 /** Search replaces the header in place, keeping the collection's vertical space. */
 export function CollectionHeader({
@@ -26,7 +36,7 @@ export function CollectionHeader({
 }: CollectionHeaderProps) {
 	const { t } = useLingui();
 	const { colors, radius, size, space, type } = useTheme();
-	const [searching, setSearching] = useState(false);
+	const [searching, setSearching] = useState(Boolean(value));
 	const { fontScale } = useWindowDimensions();
 	const stacked = fontScale > 1.3;
 	return (
@@ -48,7 +58,7 @@ export function CollectionHeader({
 						paddingStart: space.s3,
 						borderWidth: 1,
 						borderColor: colors.accent,
-						borderRadius: radius.rPill,
+						borderRadius: radius.rLg,
 						backgroundColor: colors.raised,
 					}}
 				>
@@ -61,7 +71,7 @@ export function CollectionHeader({
 						value={value}
 						onChangeText={onChangeText}
 						editable={!disabled}
-						autoFocus
+						autoFocus={!value}
 						autoCorrect={false}
 						autoCapitalize="none"
 						returnKeyType="search"
@@ -80,7 +90,7 @@ export function CollectionHeader({
 						label={t`Close search`}
 						disabled={disabled}
 						onPress={() => {
-							onChangeText("");
+							onChangeText?.("");
 							setSearching(false);
 							Keyboard.dismiss();
 						}}
@@ -88,11 +98,7 @@ export function CollectionHeader({
 				</View>
 			) : (
 				<>
-					<Text
-						variant={stacked ? "title" : "display"}
-						accessibilityRole="header"
-						style={{ flex: stacked ? undefined : 1 }}
-					>
+					<Text variant="display" accessibilityRole="header" style={{ flex: stacked ? undefined : 1 }}>
 						{title}
 					</Text>
 					<View
@@ -104,12 +110,14 @@ export function CollectionHeader({
 							alignSelf: stacked ? "flex-end" : undefined,
 						}}
 					>
-						<IconButton
-							icon="magnifying-glass"
-							label={searchLabel}
-							disabled={disabled}
-							onPress={() => setSearching(true)}
-						/>
+						{searchLabel ? (
+							<IconButton
+								icon="magnifying-glass"
+								label={searchLabel}
+								disabled={disabled}
+								onPress={() => setSearching(true)}
+							/>
+						) : null}
 						{actions}
 					</View>
 				</>

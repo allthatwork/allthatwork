@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { careerProfileDataSchema } from "@reactive-resume/schema/career";
 import { hasExcludedWord, officeDaysStated, passesScreen, passesTitleAndPlace, payReaches } from "./screen";
 

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -28,7 +28,7 @@ it("opens the deletion deep link at confirmation, never deletes on navigation, a
 			</QueryClientProvider>
 		</I18nProvider>,
 	);
-	const confirm = await screen.findByRole("button", { name: /^Delete$/ });
+	const confirm = await screen.findByRole("button", { name: /^Delete account$/ });
 	expect(confirm).toBeDisabled();
 	fireEvent.change(screen.getByRole("textbox"), { target: { value: "delete" } });
 	expect(confirm).toBeEnabled();

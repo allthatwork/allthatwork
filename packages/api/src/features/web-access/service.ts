@@ -7,12 +7,14 @@ import type {
 } from "./contracts";
 import { env } from "@reactive-resume/env/server";
 import { rateLimitConfig } from "@reactive-resume/utils/rate-limit";
+import { abortable } from "@reactive-resume/utils/url-security.node";
 import { createRateLimiter } from "../../redis";
-import { abortable, assertPublicTarget, htmlToText, readBuiltinPage } from "./builtin";
-import { WebAccessError } from "./contracts";
+import { assertPublicTarget, htmlToText, readBuiltinPage } from "./builtin";
+import { MAX_SEARCH_QUERY_CHARS, WebAccessError } from "./contracts";
 import { readExa, searchExa } from "./exa";
 import { readFirecrawl, searchFirecrawl } from "./firecrawl";
 import { webLimits } from "./limits";
+import { searchSearxng } from "./searxng";
 import { readTavily, searchTavily } from "./tavily";
 import { pageContent, safeFailure } from "./transport";
 
@@ -70,25 +72,90 @@ function log(operation: "search" | "read", provider: string, started: number, ou
 	});
 }
 
-export async function searchWeb(query: string, context: WebAccessContext) {
-	const { timeoutMs, pageChars, searchResults } = await webLimits(context.userId);
-	const signal = deadline(timeoutMs, context.signal);
+function searchInput(query: string) {
+	const input = query.trim();
+	if (!input || input.length > MAX_SEARCH_QUERY_CHARS) throw new WebAccessError("malformed");
+	return input;
+}
+
+/**
+ * Deduplicates by URL and takes results round-robin in region order, so each region that returned anything shows.
+ * Keeps the first `maxResults` ("Results from one search").
+ */
+function interleave<T extends { url: string }>(lists: T[][], maxResults: number) {
+	const seen = new Set<string>();
+	const merged: T[] = [];
+	const longest = Math.max(...lists.map((list) => list.length));
+	for (let index = 0; index < longest; index++) {
+		for (const list of lists) {
+			const item = list[index];
+			if (!item || seen.has(item.url)) continue;
+			seen.add(item.url);
+			merged.push(item);
+		}
+	}
+	return merged.slice(0, maxResults);
+}
+
+type SearchResults = Awaited<ReturnType<typeof externalSearch>>;
+type WebLimits = Awaited<ReturnType<typeof webLimits>>;
+
+/** Where searches go: the operator's SearXNG when set, otherwise the web connection's provider. */
+function searchBackend(context: WebAccessContext, signal: AbortSignal, limits: WebLimits) {
+	const maxResults = limits.searchResults;
+	const baseUrl = env.WEB_SEARCH_SEARXNG_URL;
+	if (baseUrl)
+		return {
+			name: "searxng",
+			search: (query: string, region?: string): Promise<SearchResults> =>
+				searchSearxng(query, { baseUrl, region, signal, maxResults }),
+		};
+	const connection = context.connection;
+	if (!connection) return null;
+	const request = {
+		connection,
+		signal,
+		serviceTimeoutMs: serviceTimeout(limits.timeoutMs),
+		maxResults,
+		maxChars: limits.pageChars,
+	};
+	return {
+		name: connection.provider,
+		search: (query: string, region?: string) => externalSearch(query, region ? { ...request, region } : request),
+	};
+}
+
+/**
+ * One rate-limited search. Each region gets its own search call, with `queryFor(region)` as its query when given,
+ * in parallel under one deadline. A failed region drops out unless every region fails.
+ */
+export async function searchWeb(query: string, context: WebAccessContext, queryFor?: (region: string) => string) {
+	const limits = await webLimits(context.userId);
+	const signal = deadline(limits.timeoutMs, context.signal);
 	const started = Date.now();
-	const provider = context.connection?.provider ?? "builtin";
+	const backend = searchBackend(context, signal, limits);
+	const provider = backend?.name ?? "builtin";
 	try {
 		await consume(context.userId, signal);
-		if (!context.connection) throw new WebAccessError("unavailable");
-		const input = query.trim();
-		if (!input || input.length > 512) throw new WebAccessError("malformed");
-		const results = await externalSearch(input, {
-			connection: context.connection,
-			signal,
-			serviceTimeoutMs: serviceTimeout(timeoutMs),
-			maxResults: searchResults,
-			maxChars: pageChars,
-		});
+		if (!backend) throw new WebAccessError("unavailable");
+		const input = searchInput(query);
+		const searches = (context.regions ?? []).map((region) => ({
+			region,
+			query: queryFor ? searchInput(queryFor(region)) : input,
+		}));
+		let results: SearchResults;
+		let partial: string | undefined;
+		if (searches.length === 0) results = await backend.search(input);
+		else {
+			const settled = await Promise.allSettled(searches.map((search) => backend.search(search.query, search.region)));
+			const lists = settled.flatMap((outcome) => (outcome.status === "fulfilled" ? [outcome.value] : []));
+			if (lists.length === 0) throw (settled[0] as PromiseRejectedResult).reason;
+			const failed = settled.length - lists.length;
+			if (failed) partial = `${failed}/${settled.length}-regions-failed`;
+			results = interleave(lists, limits.searchResults);
+		}
 		signal.throwIfAborted();
-		log("search", provider, started, "success");
+		log("search", provider, started, "success", partial);
 		return results;
 	} catch (error) {
 		log(
@@ -167,37 +234,51 @@ export async function readPage(input: string, context: WebAccessContext): Promis
 	}
 }
 
-/** Explicit settings test. Provider operations are independent and never use the built-in fallback. */
+/**
+ * Explicit settings test. Provider operations are independent and never use the built-in fallback. Search is tested
+ * against SearXNG when the server sends searches there, and the log names which service each operation tested.
+ * Without a connection, reading is not tested and reports `unavailable`: only the built-in reader serves it.
+ */
 export async function probeWebAccess(
-	connection: WebAccessConnection,
-	context: { userId: string; signal?: AbortSignal | undefined },
+	connection: WebAccessConnection | null,
+	context: { userId: string; signal?: AbortSignal | undefined; region?: string | undefined },
 ) {
 	const { timeoutMs, pageChars, searchResults } = await webLimits(context.userId);
 	const signal = deadline(timeoutMs, context.signal);
 	const request = {
-		connection,
 		signal,
 		serviceTimeoutMs: serviceTimeout(timeoutMs),
 		maxResults: searchResults,
 		maxChars: pageChars,
 	};
 	await consume(context.userId, signal);
+	const searxng = env.WEB_SEARCH_SEARXNG_URL;
 	const probe = async (operation: "search" | "read") => {
 		const started = Date.now();
+		const provider = operation === "search" && searxng ? "searxng" : (connection?.provider ?? "builtin");
 		try {
-			if (operation === "search") await externalSearch("example domain", request);
+			if (operation === "search" && searxng)
+				await searchSearxng("example domain", {
+					baseUrl: searxng,
+					region: context.region,
+					signal,
+					maxResults: searchResults,
+				});
+			else if (!connection) throw new WebAccessError("unavailable");
+			else if (operation === "search")
+				await externalSearch("example domain", { ...request, connection, region: context.region });
 			else {
 				const url = await assertPublicTarget("https://example.com/", signal);
-				const page = await externalRead(url.toString(), request);
+				const page = await externalRead(url.toString(), { ...request, connection });
 				pageContent(page.content, pageChars);
 				if (page.resolvedUrl) await assertPublicTarget(page.resolvedUrl, signal);
 			}
 			signal.throwIfAborted();
-			log(operation, connection.provider, started, "success");
+			log(operation, provider, started, "success");
 			return { success: true };
 		} catch (error) {
 			const failure = safeFailure(error, signal);
-			log(operation, connection.provider, started, failure.reason);
+			log(operation, provider, started, failure.reason);
 			return { success: false, error: failure.reason };
 		}
 	};

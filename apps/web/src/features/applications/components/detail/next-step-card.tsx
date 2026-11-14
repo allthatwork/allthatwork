@@ -1,7 +1,6 @@
 import type { Application } from "../../types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import { t } from "@lingui/core/macro";
-import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useMutation } from "@tanstack/react-query";
 import { useId, useState } from "react";
@@ -30,6 +29,7 @@ import { buildIcs } from "../../ics";
 import { dayKey } from "../../interviews";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../../next-step";
 import { useInvalidateApplications } from "../../use-application-actions";
+import { useCareerTime } from "@/features/career/shared";
 import { orpc } from "@/libs/orpc/client";
 
 type NextStepCardProps = {
@@ -42,11 +42,11 @@ type NextStepCardProps = {
  * to a calendar as an .ics file. Overdue steps are in warn.
  */
 export function NextStepCard({ application, onScheduleInterview }: NextStepCardProps) {
-	const { i18n } = useLingui();
+	const { locale, timeZone } = useCareerTime();
 	const [followUpOpen, setFollowUpOpen] = useState(false);
 	const noReplyDays = useNoReplyDays();
 	const step = getNextStep(application, { noReplyDays });
-	const text = describeNextStep(step, application, i18n.locale);
+	const text = describeNextStep(step, application, locale, timeZone);
 
 	const addToCalendar = () => {
 		if (step.kind !== "interview" && step.kind !== "follow-up") return;
@@ -61,12 +61,13 @@ export function NextStepCard({ application, onScheduleInterview }: NextStepCardP
 			...(step.kind === "interview" && step.interview.notes ? { description: step.interview.notes } : {}),
 		});
 		const blob = new Blob([ics], { type: "text/calendar" });
-		downloadWithAnchor(blob, `${application.company}-${dayKey(start)}.ics`.replace(/[^\w.-]+/g, "-"));
+		const date = dayKey(start, step.kind === "interview" ? timeZone : undefined);
+		downloadWithAnchor(blob, `${application.company}-${date}.ics`.replace(/[^\w.-]+/g, "-"));
 	};
 
 	return (
 		<section aria-labelledby="application-next-step" className="grid gap-2">
-			<h3 id="application-next-step" className="text-xs font-semibold text-ink-3 uppercase">
+			<h3 id="application-next-step" className="text-xs font-semibold text-ink-3">
 				<Trans>Next step</Trans>
 			</h3>
 			<div
@@ -140,7 +141,7 @@ function FollowUpDialog({ application, open, onOpenChange }: FollowUpDialogProps
 			invalidate(application.id);
 			onOpenChange(false);
 		},
-		onError: () => toast.add({ type: "error", description: t`Couldn't save the follow-up.` }),
+		onError: () => toast.add({ type: "error", description: t`Couldn't save the follow-up. Try again.` }),
 	});
 
 	return (

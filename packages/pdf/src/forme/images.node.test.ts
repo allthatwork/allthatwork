@@ -1,6 +1,6 @@
 import { once } from "node:events";
 import { createServer } from "node:http";
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { MAX_IMAGE_BYTES } from "./images";
 import { readServerImage } from "./images.node";
 

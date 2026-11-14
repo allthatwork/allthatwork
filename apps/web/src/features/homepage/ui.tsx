@@ -6,8 +6,7 @@ import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
 
 /** A UI label: section kickers, scene numbers, small caps metadata. */
-export const labelClass =
-	"font-martian font-medium text-[11px] uppercase leading-[1.4] tracking-[.08em] font-stretch-[87.5%]";
+export const labelClass = "font-martian font-medium text-[13px] leading-[1.4]";
 
 type CtaLinkProps = { size: "header" | "hero" | "closing"; className?: string };
 
@@ -15,9 +14,9 @@ type CtaLinkProps = { size: "header" | "hero" | "closing"; className?: string };
 export function CtaLink({ size, className }: CtaLinkProps) {
 	return (
 		<Link
-			to="/dashboard"
+			to="/auth/register"
 			className={cn(
-				"inline-flex shrink-0 items-center rounded-full bg-accent font-ui font-semibold text-on-accent transition-[background-color,transform] duration-[160ms] ease-out-strong hover:bg-accent-hover motion-safe:active:[transform:scale(.97)]",
+				"inline-flex shrink-0 items-center rounded-sm bg-accent font-ui font-semibold text-on-accent transition-[background-color,transform] duration-[160ms] ease-out-strong hover:bg-accent-hover motion-safe:active:[transform:scale(.97)]",
 				size === "header" && "h-[38px] px-4 text-sm",
 				size === "hero" && "h-[54px] gap-2.5 px-6 text-base shadow-e2",
 				size === "closing" && "h-14 gap-2.5 px-7 text-[17px] shadow-e2",
@@ -55,15 +54,15 @@ export function SceneCaption({ number, title, children, action, className }: Sce
 }
 
 const doodleSizes = {
-	curve: [394, 312],
-	eraser: [346, 283],
-	globe: [301, 374],
-	magnifier: [403, 390],
-	note: [400, 380],
-	paperclip: [335, 299],
-	pencil: [363, 378],
-	plane: [369, 344],
-	scissors: [403, 400],
+	curve: [800, 634],
+	eraser: [800, 665],
+	globe: [575, 800],
+	magnifier: [800, 800],
+	note: [800, 746],
+	paperclip: [800, 717],
+	pencil: [755, 800],
+	plane: [800, 754],
+	scissors: [800, 791],
 } as const;
 
 type DoodleProps = {
@@ -73,21 +72,32 @@ type DoodleProps = {
 	className?: string;
 	style?: CSSProperties;
 	eager?: boolean;
+	/** The width it's drawn at, for picking a file (`img` sizes). Below 900px most doodles hide; a hidden eager one says 1px. */
+	sizes?: string;
 };
 
-/** A graphite doodle. Decorative, so it's hidden from assistive tech and never takes the pointer. */
-export function Doodle({ name, wipe, className, style, eager = false }: DoodleProps) {
+/** A watercolour doodle. Decorative, so it's hidden from assistive tech and never takes the pointer. */
+export function Doodle({
+	name,
+	wipe,
+	className,
+	style,
+	eager = false,
+	sizes = "(min-width: 900px) 10vw, 30vw",
+}: DoodleProps) {
 	const [width, height] = doodleSizes[name];
 	return (
 		<img
 			src={`/doodles/${name}.webp`}
-			srcSet={`/doodles/${name}-small.webp ${Math.round(width / 2)}w, /doodles/${name}.webp ${width}w`}
-			sizes="(min-width: 900px) 16vw, 30vw"
+			srcSet={`/doodles/${name}-tiny.webp ${Math.round(width / 4)}w, /doodles/${name}-small.webp ${Math.round(width / 2)}w, /doodles/${name}.webp ${width}w`}
+			sizes={sizes}
 			alt=""
 			aria-hidden="true"
 			width={width}
 			height={height}
 			loading={eager ? "eager" : "lazy"}
+			// Eager doodles sit on the first screen; the pencil is the largest paint on desktop.
+			fetchPriority={eager ? "high" : "auto"}
 			decoding="async"
 			draggable={false}
 			className={cn("doodle", className)}
@@ -159,7 +169,7 @@ export function Stamp({ tone, children, stamp, className }: StampProps) {
 	return (
 		<span
 			className={cn(
-				"font-martian inline-flex h-[2em] shrink-0 [transform:scale(calc(1.7-var(--s)*.7))_rotate(calc(-5deg-(1-var(--s))*10deg))] items-center rounded-[.3em] border-2 border-current px-[.6em] text-[.72em] font-bold tracking-[.1em] whitespace-nowrap uppercase opacity-[calc(var(--s)*.88)] mix-blend-multiply [filter:url(#landing-pencil)] [transition:transform_.2s_var(--ease-out-strong)] dark:mix-blend-normal",
+				"font-martian inline-flex h-[2em] shrink-0 [transform:scale(calc(1.7-var(--s)*.7))_rotate(calc(-5deg-(1-var(--s))*10deg))] items-center rounded-sm border-2 border-current px-[.6em] text-[.72em] font-bold whitespace-nowrap opacity-[calc(var(--s)*.88)] mix-blend-multiply [filter:url(#landing-pencil)] [transition:transform_.2s_var(--ease-out-strong)] dark:mix-blend-normal",
 				tone === "supported" && "text-[oklch(0.48_0.176_258)]",
 				tone === "partial" && "text-[oklch(0.55_0.12_70)]",
 				tone === "missing" && "text-[oklch(0.5_0.01_95)]",

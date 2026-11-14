@@ -1,5 +1,5 @@
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 
 vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() } }));

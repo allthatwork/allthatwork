@@ -2,11 +2,45 @@ import type { ResumeData } from "./data";
 import z from "zod";
 import { resumeDataSchema } from "./data";
 import { createResumeDataJsonSchema } from "./json-schema";
+import { assertResumeRenderBudget } from "./limits";
 
 const publishedInputSchema = z.fromJSONSchema(createResumeDataJsonSchema());
 
+// Write-only caps, so stored resumes over them still load. The document cap matches the JSON Patch copy budget in
+// `@reactive-resume/resume/patch`. The text cap is far beyond any real field and above the 128 KiB stylesheet limit;
+// `url` values are exempt because a picture may be a data URL, which the document cap still bounds.
+const MAX_DOCUMENT_CHARS = 10_000_000;
+const MAX_TEXT_CHARS = 200_000;
+
+function findOversizedText(
+	value: unknown,
+	path: PropertyKey[] = [],
+): { path: PropertyKey[]; message: string } | undefined {
+	if (path.length > 64) return { path, message: "Resume content is nested too deeply." };
+	if (typeof value === "string")
+		return value.length > MAX_TEXT_CHARS
+			? { path, message: `Shorten this text to ${MAX_TEXT_CHARS} characters or fewer.` }
+			: undefined;
+	if (typeof value !== "object" || value === null) return undefined;
+
+	for (const [key, child] of Object.entries(value)) {
+		if (key === "url" && typeof child === "string") continue;
+		path.push(Array.isArray(value) ? Number(key) : key);
+		const found = findOversizedText(child, path);
+		if (found) return found;
+		path.pop();
+	}
+
+	return undefined;
+}
+
 /** Validate submitted values before tolerant read-time fallbacks can replace them. */
 export const writableResumeDataSchema = z.transform<z.input<typeof resumeDataSchema>, ResumeData>((input, ctx) => {
+	const oversized = findOversizedText(input);
+	if (oversized) {
+		ctx.addIssue({ code: "custom", ...oversized, input });
+		return z.NEVER;
+	}
 	// Keep canonical diagnostics and migrations, including historical stylesheet metadata.
 	const canonical = resumeDataSchema.safeParse(input);
 	if (!canonical.success) {
@@ -27,6 +61,26 @@ export const writableResumeDataSchema = z.transform<z.input<typeof resumeDataSch
 	});
 	if (!submitted.success) {
 		for (const issue of submitted.error.issues) ctx.addIssue({ ...issue });
+		return z.NEVER;
+	}
+
+	if (JSON.stringify(canonical.data).length > MAX_DOCUMENT_CHARS) {
+		ctx.addIssue({
+			code: "custom",
+			message: `Shorten the resume to ${MAX_DOCUMENT_CHARS} characters or fewer.`,
+			input,
+		});
+		return z.NEVER;
+	}
+
+	try {
+		assertResumeRenderBudget(canonical.data);
+	} catch (error) {
+		ctx.addIssue({
+			code: "custom",
+			message: error instanceof Error ? error.message : "Resume is too complex to render.",
+			input,
+		});
 		return z.NEVER;
 	}
 

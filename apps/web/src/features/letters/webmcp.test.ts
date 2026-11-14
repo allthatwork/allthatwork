@@ -3,7 +3,7 @@
 import type { WebMcpTool } from "@/libs/webmcp";
 import type { CoverLetter } from "@reactive-resume/schema/cover-letter/data";
 import { renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { ORPCError } from "@orpc/client";
 import { copyCoverLetterStyle } from "@reactive-resume/resume/cover-letter";

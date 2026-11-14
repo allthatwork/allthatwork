@@ -10,21 +10,17 @@ import { useId, useRef, useState } from "react";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { SegmentedControl, SegmentedControlItem } from "@reactive-resume/ui/components/segmented-control";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
-import { toast } from "@reactive-resume/ui/components/toast";
+import { parseAmount } from "@reactive-resume/utils/amount";
 import { cn } from "@reactive-resume/utils/style";
 import { useDebouncedSave } from "../hooks";
 import { CareerLoadError, CareerLoading } from "../load-state";
 import { useCareerTime, useNow } from "../shared";
-import { parseAmount } from "./amount";
-import { getOrpcErrorMessage } from "@/libs/error-message";
+import { SearchRegionsField } from "./search-regions-field";
+import { toastError } from "@/libs/error-message";
 import { D2, EASE } from "@/libs/motion";
 import { client, orpc } from "@/libs/orpc/client";
 
-const saveFailed = (error: unknown) =>
-	toast.add({
-		type: "error",
-		description: getOrpcErrorMessage(error, { fallback: t`Couldn't save your preferences.` }),
-	});
+const saveFailed = (error: unknown) => toastError(error, t`Couldn't save your preferences. Try again.`);
 
 /** The Preferences profile, saved whole. The cache updates at once; a failed save puts the server copy back. */
 export function useProfile() {
@@ -142,6 +138,13 @@ function PreferencesForm({ initial }: PreferencesFormProps) {
 					value={draft.locations}
 					onChange={(locations) => change({ locations })}
 				/>
+				<div className="sm:col-start-2">
+					<SearchRegionsField
+						value={draft.searchRegions}
+						accountTimeZone={timeZone}
+						onChange={(searchRegions) => change({ searchRegions })}
+					/>
+				</div>
 			</div>
 
 			<div className="grid gap-1.5">
@@ -330,7 +333,7 @@ function ChipField({ label, placeholder, value, max = 20, onChange }: ChipFieldP
 							type="button"
 							aria-label={t`Remove ${chip}`}
 							onClick={() => onChange(value.filter((item) => item !== chip))}
-							className="touch-target relative flex size-[22px] items-center justify-center rounded-[5px] text-ink-3 transition-colors duration-quick hover:bg-hover hover:text-ink"
+							className="touch-target relative flex size-[22px] items-center justify-center rounded-md text-ink-3 transition-colors duration-quick hover:bg-hover hover:text-ink"
 						>
 							<Icon name="x" size={16} />
 						</button>

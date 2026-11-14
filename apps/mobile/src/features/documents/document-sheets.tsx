@@ -33,7 +33,7 @@ export function DocumentSheets({ value, onClose, onChange, onSelect }: DocumentS
 	const [name, setName] = useState(first?.name ?? "");
 	const shared = sharedTags(value.documents);
 	const [tags, setTags] = useState(shared);
-	const options = orpc.applications.list.queryOptions({ input: {} });
+	const options = orpc.applications.listSummary.queryOptions({ input: {} });
 	const applications = useQuery({
 		...options,
 		queryKey: [...options.queryKey, session.server],
@@ -144,7 +144,7 @@ export function DocumentSheets({ value, onClose, onChange, onSelect }: DocumentS
 								disabled={operations.busy}
 								onPress={() => {
 									onClose();
-									router.push(routes.share(first.id));
+									router.push(routes.builder(first.id, "share"));
 								}}
 							/>
 						)}

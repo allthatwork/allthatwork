@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { escapeCssComment, escapeCssString, serializeGeneratedStylesheet } from "./serialize";
 
 describe("generated Semantic CSS serialization", () => {

@@ -1,5 +1,5 @@
 import type { HostElement } from "../../forme/reconciler";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { HOST } from "../../forme/primitives";
 import { renderHostTree } from "../../forme/reconciler";
 import { Html } from "../../text";
@@ -92,6 +92,16 @@ describe("normalizeRichTextHtml", () => {
 		expect(run.children[0]).toEqual({ type: "#text", text: "before " });
 		expect(run.children[1]).toMatchObject({ type: HOST.text, children: [{ type: "#text", text: "highlighted" }] });
 		expect(run.children[2]).toEqual({ type: "#text", text: " after" });
+	});
+
+	it("draws a tag named like an Object.prototype member as plain markup", () => {
+		const [root] = renderHostTree(<Html>{"<constructor>a</constructor>"}</Html>);
+
+		expect((root as HostElement).children[0]).toMatchObject({
+			type: HOST.view,
+			props: { style: [] },
+			children: [{ type: HOST.text, children: [{ text: "a" }] }],
+		});
 	});
 
 	it("preserves authored Unicode spaces around bare rich text", () => {

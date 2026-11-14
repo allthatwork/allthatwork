@@ -5,18 +5,20 @@ import { useLingui } from "@lingui/react/macro";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import { useRef, useState } from "react";
-import { I18nManager, ScrollView, View } from "react-native";
+import { RefreshControl, I18nManager, ScrollView, View } from "react-native";
 import Svg, { Circle, Defs, G, LinearGradient, Path, Rect, Stop, Text as SvgText } from "react-native-svg";
 import { weekStartsOn } from "./calendar";
 import { computeOutcomes, computePipeline, computeTimeline, countSources } from "./insights";
+import { useApplicationSearch } from "./search";
 import { ApplicationsViewFrame } from "./views";
 import { useDocuments, useNow, useUserTime } from "@/features/application-detail/hooks";
-import { ApplicationsCsvSheet } from "@/features/applications/csv-sheet";
 import { applicationError } from "@/features/applications/error";
+import { filterApplications } from "@/features/applications/list";
 import { useApplications } from "@/features/applications/queries";
 import { getStageColor, getStageLabel } from "@/features/applications/stages";
 import { useIsTablet } from "@/shell/use-is-tablet";
 import { Banner, Button, Card, Skeleton, Text, showToast, useTheme } from "@/ui";
+import { usePullRefresh } from "@/ui/use-pull-refresh";
 
 const BAR_HEIGHT = 18;
 const WEEK_CHART_HEIGHT = 112;
@@ -32,13 +34,14 @@ export function InsightsScreen() {
 /** How far applications get, replies, tailored resumes, sending pace and sources (web Insights view). */
 function ApplicationInsights() {
 	const { t, i18n } = useLingui();
-	const { space } = useTheme();
+	const { colors, space } = useTheme();
 	const tablet = useIsTablet();
 	const query = useApplications();
+	const pull = usePullRefresh(query.refetch);
+	const { search } = useApplicationSearch();
 	const documents = useDocuments();
 	const { timeZone } = useUserTime();
 	const now = useNow();
-	const [csv, setCsv] = useState(false);
 
 	if (query.isError) {
 		return (
@@ -57,7 +60,7 @@ function ApplicationInsights() {
 		);
 	}
 
-	const applications = query.data;
+	const applications = filterApplications(query.data, { search, tag: "", showClosed: true });
 	// A resume is tailored for an application when it was made for it (Copy for a job).
 	const madeFor = new Map(
 		(documents.data ?? []).flatMap((document) =>
@@ -86,7 +89,11 @@ function ApplicationInsights() {
 
 	return (
 		<>
-			<ScrollView contentContainerStyle={{ padding: space.s4, gap: space.s4 }}>
+			<ScrollView
+				alwaysBounceVertical
+				refreshControl={<RefreshControl {...pull} tintColor={colors.accent} colors={[colors.accent]} />}
+				contentContainerStyle={{ padding: space.s4, gap: space.s4 }}
+			>
 				<Section
 					title={t`How far applications get`}
 					note={t`Counts every application that reached each stage, including ones now closed.`}
@@ -155,12 +162,7 @@ function ApplicationInsights() {
 				</View>
 
 				<PipelineFlow active={pipeline.active} closed={pipeline.closed} steps={pipeline.steps} />
-
-				<Button variant="secondary" icon="download-simple" label={t`Export CSV`} onPress={() => setCsv(true)} />
 			</ScrollView>
-			{csv ? (
-				<ApplicationsCsvSheet applications={applications} filtered={applications} onClose={() => setCsv(false)} />
-			) : null}
 		</>
 	);
 }
@@ -211,7 +213,7 @@ function HorizontalBar({ label, value, fraction, colorOf, dot }: HorizontalBarPr
 			<View style={{ width: space.s12 * 2, flexDirection: "row", alignItems: "center", gap: space.s1 }}>
 				{dot ? (
 					<View
-						style={{ width: space.s2, height: space.s2, borderRadius: radius.rPill, backgroundColor: colorOf(colors) }}
+						style={{ width: space.s2, height: space.s2, borderRadius: radius.rLg, backgroundColor: colorOf(colors) }}
 					/>
 				) : null}
 				<Text variant="callout" color="ink2" numberOfLines={1} style={{ flexShrink: 1 }}>

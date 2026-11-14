@@ -4,7 +4,7 @@ import { lookup as socketLookup } from "node:dns";
 import { lookup } from "node:dns/promises";
 import { EventEmitter } from "node:events";
 import { createServer } from "node:http";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { searchJobPostings } from "../applications/posting";
 import { probeWebAccess, readPage, searchWeb } from "./service";
 
@@ -18,13 +18,15 @@ const fixtures = vi.hoisted(() => ({
 	directLocation: "",
 	directDelay: 0,
 	directContentType: "text/html",
+	env: { FLAG_DISABLE_API_RATE_LIMIT: false } as {
+		FLAG_DISABLE_API_RATE_LIMIT: boolean;
+		WEB_SEARCH_SEARXNG_URL?: string;
+	},
 }));
 vi.mock("../../redis", () => ({
 	createRateLimiter: () => ({ limit: fixtures.limit }),
 }));
-vi.mock("@reactive-resume/env/server", () => ({
-	env: { FLAG_DISABLE_API_RATE_LIMIT: false },
-}));
+vi.mock("@reactive-resume/env/server", () => ({ env: fixtures.env }));
 vi.mock("./limits", () => ({
 	webLimits: async () => ({
 		timeoutMs: fixtures.webCallTimeoutMs,
@@ -34,10 +36,11 @@ vi.mock("./limits", () => ({
 }));
 vi.mock("node:dns/promises", () => ({ lookup: vi.fn() }));
 vi.mock("node:dns", () => ({ lookup: vi.fn() }));
-vi.mock("node:https", () => ({
+vi.mock("node:https", async (original) => ({
+	...(await original<typeof import("node:https")>()),
 	request: (
 		url: URL,
-		options: { signal: AbortSignal; lookup: LookupFunction },
+		options: { signal: AbortSignal; agent: { options: { lookup: LookupFunction } } },
 		callback: (response: EventEmitter) => void,
 	) => {
 		fixtures.direct(url.toString());
@@ -48,7 +51,7 @@ vi.mock("node:https", () => ({
 			destroy: (error: Error) => request.emit("error", error),
 			end: () => {
 				options.signal.addEventListener("abort", aborted, { once: true });
-				options.lookup(url.hostname, { all: true }, (error) => {
+				options.agent.options.lookup(url.hostname, { all: true }, (error) => {
 					if (error) return req.destroy(error);
 					const send = () => {
 						const response = Object.assign(new EventEmitter(), {
@@ -87,10 +90,16 @@ let responseOverride: unknown;
 let delay = 0;
 let searchStatus: number | undefined;
 let onRequest: (() => void) | undefined;
+let respond:
+	| ((request: { provider: string; body: Record<string, unknown> }) => { status?: number; body?: unknown } | undefined)
+	| undefined;
 const requests: {
 	provider: string;
 	operation: string;
+	method: string | undefined;
+	url: string;
 	body: Record<string, unknown>;
+	raw: string;
 	auth: string | undefined;
 }[] = [];
 
@@ -134,25 +143,61 @@ const readResponse = (provider: WebAccessProvider, content = "# Designer\nAccess
 const server = createServer(async (request, result) => {
 	const chunks: Buffer[] = [];
 	for await (const chunk of request) chunks.push(chunk);
-	const parts = (request.url ?? "").split("/");
+	const parts = (request.url ?? "").split("?", 1)[0]?.split("/") ?? [];
 	const provider = (parts[1] === "v2" ? "firecrawl" : parts[1]) as WebAccessProvider;
 	const operation = parts[2] === "search" ? "search" : "read";
+	const raw = Buffer.concat(chunks).toString();
+	const body = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>;
 	requests.push({
 		provider,
 		operation,
-		body: JSON.parse(Buffer.concat(chunks).toString()),
+		method: request.method,
+		url: request.url ?? "",
+		body,
+		raw,
 		auth: request.headers.authorization ?? (request.headers["x-api-key"] as string | undefined),
 	});
 	onRequest?.();
 	if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
 	if (result.destroyed) return;
-	result.writeHead(operation === "search" && searchStatus !== undefined ? searchStatus : status, {
+	const custom = respond?.({ provider, body });
+	result.writeHead(custom?.status ?? (operation === "search" && searchStatus !== undefined ? searchStatus : status), {
 		"content-type": "application/json",
 	});
 	result.end(
-		JSON.stringify(responseOverride ?? (operation === "search" ? searchResponse(provider) : readResponse(provider))),
+		JSON.stringify(
+			custom?.body ?? responseOverride ?? (operation === "search" ? searchResponse(provider) : readResponse(provider)),
+		),
 	);
 });
+
+/** Today's search body for "designer", which a search with no regions must send byte for byte. */
+const plainSearchBody = (provider: WebAccessProvider) =>
+	provider === "firecrawl"
+		? { query: "designer", sources: ["web"], limit: 5, timeout: 14_000 }
+		: provider === "tavily"
+			? {
+					query: "designer",
+					max_results: 5,
+					search_depth: "basic",
+					include_answer: false,
+					include_raw_content: false,
+				}
+			: { query: "designer", numResults: 5, type: "auto" };
+const TAVILY_COUNTRIES: Record<string, string> = { AU: "australia", DE: "germany", FR: "france" };
+/** The provider's location field and the value it carries for a country code. */
+const regionField = (provider: WebAccessProvider, code: string): [string, string] =>
+	provider === "exa"
+		? ["userLocation", code]
+		: ["country", provider === "tavily" ? (TAVILY_COUNTRIES[code] ?? "") : code];
+const regionOf = (provider: WebAccessProvider, body: Record<string, unknown>) =>
+	Object.keys(TAVILY_COUNTRIES).find((code) => {
+		const [field, value] = regionField(provider, code);
+		return body[field] === value;
+	});
+const resultsFor = (provider: WebAccessProvider, items: { url: string; title: string }[]) =>
+	provider === "firecrawl" ? { success: true, data: { web: items } } : { results: items };
+const job = (path: string) => ({ url: `https://jobs.example.com/${path}`, title: path });
 
 const connection = (provider: WebAccessProvider): WebAccessConnection => ({
 	provider,
@@ -196,6 +241,7 @@ beforeEach(() => {
 	status = 200;
 	searchStatus = undefined;
 	onRequest = undefined;
+	respond = undefined;
 	responseOverride = undefined;
 	delay = 0;
 	fixtures.limit.mockClear();
@@ -205,6 +251,7 @@ beforeEach(() => {
 	fixtures.directLocation = "";
 	fixtures.directDelay = 0;
 	fixtures.directContentType = "text/html";
+	delete fixtures.env.WEB_SEARCH_SEARXNG_URL;
 });
 afterEach(() => {
 	vi.restoreAllMocks();
@@ -401,6 +448,84 @@ describe.each(PROVIDERS)("%s adapter at shared boundary", (provider) => {
 		expect(fixtures.direct).not.toHaveBeenCalled();
 	});
 
+	it("sends the region in the provider's location field", async () => {
+		await searchWeb("designer", { ...context(provider), regions: ["AU"] });
+		expect(requests).toHaveLength(1);
+		const [field, value] = regionField(provider, "AU");
+		expect(requests[0]?.body).toEqual({ ...plainSearchBody(provider), [field]: value });
+	});
+
+	it.each<[string[] | undefined]>([[[]], [undefined]])("sends today's exact body with regions %j", async (regions) => {
+		await searchWeb(
+			"designer",
+			{
+				...context(provider),
+				...(regions ? { regions } : {}),
+			},
+			(region) => `designer in ${region}`,
+		);
+		expect(requests).toHaveLength(1);
+		expect(requests[0]?.raw).toBe(JSON.stringify(plainSearchBody(provider)));
+	});
+
+	it("searches each region and interleaves deduplicated results in region order, capped at five", async () => {
+		respond = ({ body }) => {
+			const region = regionOf(provider, body);
+			if (region === "DE") return { body: resultsFor(provider, [job("DE1"), job("DE2"), job("shared"), job("DE3")]) };
+			if (region === "FR") return { body: resultsFor(provider, [job("FR1"), job("shared"), job("FR2"), job("FR3")]) };
+			return { status: 400 };
+		};
+		const results = await searchWeb("designer", { ...context(provider), regions: ["DE", "FR"] });
+		expect(requests).toHaveLength(2);
+		expect(results.map((result) => result.title)).toEqual(["DE1", "FR1", "DE2", "shared", "FR2"]);
+		expect(console.info).toHaveBeenCalledWith("[web-access]", {
+			provider,
+			operation: "search",
+			durationMs: expect.any(Number),
+			outcome: "success",
+		});
+	});
+
+	it.each<[string[], string]>([
+		[["DE", "FR"], "1/2-regions-failed"],
+		[["DE", "FR", "AU"], "2/3-regions-failed"],
+	])("keeps available results and logs regional failures for %j", async (regions, fallback) => {
+		respond = ({ body }) =>
+			regionOf(provider, body) === "FR" ? { body: resultsFor(provider, [job("FR1"), job("FR2")]) } : { status: 500 };
+		const results = await searchWeb("designer", { ...context(provider), regions });
+		expect(requests).toHaveLength(regions.length);
+		expect(results.map((result) => result.title)).toEqual(["FR1", "FR2"]);
+		expect(console.info).toHaveBeenCalledWith("[web-access]", {
+			provider,
+			operation: "search",
+			durationMs: expect.any(Number),
+			outcome: "success",
+			fallback,
+		});
+	});
+
+	it("throws the existing failure when every region's request fails", async () => {
+		status = 429;
+		await expect(searchWeb("designer", { ...context(provider), regions: ["DE", "FR"] })).rejects.toMatchObject({
+			reason: "quota",
+		});
+		expect(requests).toHaveLength(2);
+	});
+
+	it("rate-limits a multi-region search once", async () => {
+		vi.stubEnv("NODE_ENV", "production");
+		await searchWeb("designer", { ...context(provider), regions: ["DE", "FR", "AU"] });
+		expect(requests).toHaveLength(3);
+		expect(fixtures.limit).toHaveBeenCalledTimes(1);
+	});
+
+	it("sends each region the query built for it", async () => {
+		await searchWeb("designer", { ...context(provider), regions: ["DE", "FR"] }, (region) => `designer in ${region}`);
+		expect(
+			Object.fromEntries(requests.map((request) => [regionOf(provider, request.body), request.body.query])),
+		).toEqual({ DE: "designer in DE", FR: "designer in FR" });
+	});
+
 	it("probes provider operations independently and never validates through fallback", async () => {
 		searchStatus = 429;
 		const result = await probeWebAccess(connection(provider), {
@@ -410,6 +535,187 @@ describe.each(PROVIDERS)("%s adapter at shared boundary", (provider) => {
 			search: { success: false, error: "quota" },
 			read: { success: true },
 		});
+		expect(fixtures.direct).not.toHaveBeenCalled();
+	});
+});
+
+describe("Tavily country names", () => {
+	it.each([
+		["CZ", "czech republic"],
+		["SG", "singapore"],
+		["HK", undefined],
+	])("sends %s as Tavily's listed name %j, or no country when Tavily lists none", async (code, country) => {
+		await searchWeb("designer", { ...context("tavily"), regions: [code] });
+		expect(requests[0]?.body.country).toBe(country);
+		if (!country) expect(requests[0]?.body).not.toHaveProperty("country");
+	});
+});
+
+describe("posting search names the user's country", () => {
+	const postingQuery = async (
+		query: string,
+		scope: { regions: string[]; locale?: string; locations?: string[] },
+	): Promise<unknown> => {
+		await searchJobPostings(query, { ...context("tavily"), ...scope });
+		expect(requests).toHaveLength(Math.max(scope.regions.length, 1));
+		return requests[0]?.body.query;
+	};
+
+	it("adds the region's country in the user's locale", async () => {
+		expect(await postingQuery("designer", { regions: ["AU"], locale: "en-US", locations: [] })).toBe(
+			"designer in Australia job posting",
+		);
+	});
+	it("writes the country in the user's UI language", async () => {
+		expect(await postingQuery("designer", { regions: ["FR"], locale: "de-DE" })).toBe(
+			"designer in Frankreich job posting",
+		);
+	});
+	it("names the country in English when there is no locale", async () => {
+		expect(await postingQuery("designer", { regions: ["DE"] })).toBe("designer in Germany job posting");
+	});
+	it("names each region's own country", async () => {
+		await searchJobPostings("designer", { ...context("tavily"), regions: ["DE", "FR"], locale: "en" });
+		expect(
+			Object.fromEntries(requests.map((request) => [regionOf("tavily", request.body), request.body.query])),
+		).toEqual({ DE: "designer in Germany job posting", FR: "designer in France job posting" });
+	});
+	it.each<[string, { regions: string[]; locale?: string; locations?: string[] }]>([
+		["designer berlin", { regions: ["DE"], locations: ["Berlin"] }],
+		["designer Frankreich", { regions: ["FR"], locale: "de-DE" }],
+		["designer in france", { regions: ["FR"], locale: "de-DE" }],
+		["remote designer", { regions: ["AU"] }],
+		["designer REMOTE", { regions: ["AU"] }],
+		["designer", { regions: ["AU"], locations: ["Remote"] }],
+	])("adds nothing to %j when it names a place or remote work", async (query, scope) => {
+		expect(await postingQuery(query, scope)).toBe(`${query} job posting`);
+	});
+	it("sends the query unchanged when the country would pass the length limit", async () => {
+		const query = "x".repeat(500);
+		expect(await postingQuery(query, { regions: ["AU"], locale: "en" })).toBe(`${query} job posting`);
+	});
+	it("keeps today's query with no regions", async () => {
+		expect(await postingQuery("designer", { regions: [], locale: "en", locations: ["Berlin"] })).toBe(
+			"designer job posting",
+		);
+		expect(requests[0]?.body).not.toHaveProperty("country");
+	});
+});
+
+describe("connection test region", () => {
+	it("probes search in the given region", async () => {
+		await probeWebAccess(connection("tavily"), { userId: "user", region: "AU" });
+		const search = requests.find((request) => request.operation === "search");
+		expect(search?.body.country).toBe("australia");
+	});
+	it("probes search with no region when none is given", async () => {
+		await probeWebAccess(connection("tavily"), { userId: "user" });
+		const search = requests.find((request) => request.operation === "search");
+		expect(search?.body).not.toHaveProperty("country");
+	});
+});
+
+describe("search through a self-hosted SearXNG", () => {
+	const searxngResults = { results: [{ url: `${URL}#apply`, title: "Designer", content: "Berlin" }], answers: [] };
+	const searxng = () => requests.filter((request) => request.provider === ("searxng" as WebAccessProvider));
+	const language = (request: { url: string }) => new globalThis.URL(request.url, endpoint).searchParams.get("language");
+	beforeEach(() => {
+		fixtures.env.WEB_SEARCH_SEARXNG_URL = `${endpoint}/searxng`;
+		respond = ({ provider }) => (provider === ("searxng" as WebAccessProvider) ? { body: searxngResults } : undefined);
+	});
+
+	it("searches SearXNG without a web connection", async () => {
+		expect(await searchWeb("designer", { userId: "user", connection: null })).toEqual([
+			{ url: URL, title: "Designer", snippet: "Berlin" },
+		]);
+		expect(requests).toHaveLength(1);
+		expect(requests[0]).toMatchObject({ provider: "searxng", operation: "search", method: "GET" });
+		expect(requests[0]?.url).toBe("/searxng/search?q=designer&format=json");
+	});
+
+	it.each(PROVIDERS)("searches SearXNG instead of a saved %s connection", async (provider) => {
+		await searchWeb("designer", context(provider));
+		expect(requests.map((request) => request.provider)).toEqual(["searxng"]);
+		expect(requests[0]?.auth).toBeUndefined();
+	});
+
+	it("keeps country targeting independent of the UI language through the same fan-out", async () => {
+		respond = ({ provider }) =>
+			provider === ("searxng" as WebAccessProvider) ? { body: searxngResults } : { status: 500 };
+		const results = await searchWeb(
+			"designer",
+			{ userId: "user", connection: null, regions: ["AU", "SG"], locale: "de-DE" },
+			(region) => `designer in ${region}`,
+		);
+		expect(results).toEqual([{ url: URL, title: "Designer", snippet: "Berlin" }]);
+		expect(Object.fromEntries(searxng().map((request) => [language(request), request.url]))).toEqual({
+			"en-AU": "/searxng/search?q=designer+in+AU&format=json&language=en-AU",
+			"en-SG": "/searxng/search?q=designer+in+SG&format=json&language=en-SG",
+		});
+	});
+
+	it("reports a failed search probe when SearXNG's engines all fail", async () => {
+		respond = () => ({ body: { results: [], unresponsive_engines: [["google", "timeout"]] } });
+		expect(await probeWebAccess(null, { userId: "user", region: "AU" })).toEqual({
+			search: { success: false, error: "unreachable" },
+			read: { success: false, error: "unavailable" },
+		});
+	});
+
+	it("reports an unreachable SearXNG safely", async () => {
+		respond = () => ({ status: 502 });
+		await expect(searchWeb("designer", { userId: "user", connection: null })).rejects.toMatchObject({
+			reason: "unreachable",
+		});
+	});
+
+	it("rate-limits a SearXNG search once", async () => {
+		vi.stubEnv("NODE_ENV", "production");
+		await searchWeb("designer", { userId: "user", connection: null, regions: ["DE", "FR", "AU"] });
+		expect(searxng()).toHaveLength(3);
+		expect(fixtures.limit).toHaveBeenCalledTimes(1);
+	});
+
+	it("still reads through the saved connection, then the built-in reader", async () => {
+		expect(await readPage(URL, context("exa"))).toMatchObject({ method: "exa" });
+		expect(requests.map((request) => [request.provider, request.operation])).toEqual([["exa", "read"]]);
+		expect(fixtures.direct).not.toHaveBeenCalled();
+
+		requests.length = 0;
+		respond = () => ({ status: 500 });
+		expect(await readPage(URL, context("exa"))).toMatchObject({ method: "builtin", fallbackReason: "unreachable" });
+		expect(requests.map((request) => request.provider)).toEqual(["exa"]);
+		expect(fixtures.direct).toHaveBeenCalledTimes(1);
+	});
+
+	it("reads with the built-in reader when there is no connection", async () => {
+		expect(await readPage(URL, { userId: "user", connection: null })).toMatchObject({ method: "builtin" });
+		expect(requests).toHaveLength(0);
+	});
+
+	it("tests search against SearXNG and reading against the connection", async () => {
+		respond = ({ provider }) => (provider === ("searxng" as WebAccessProvider) ? { status: 503 } : undefined);
+		const result = await probeWebAccess(connection("exa"), { userId: "user", region: "AU" });
+		expect(result).toEqual({ search: { success: false, error: "unreachable" }, read: { success: true } });
+		expect(requests.map((request) => [request.provider, request.operation]).sort()).toEqual([
+			["exa", "read"],
+			["searxng", "search"],
+		]);
+		expect(language(searxng()[0] ?? { url: "" })).toBe("en-AU");
+		expect(console.info).toHaveBeenCalledWith(
+			"[web-access]",
+			expect.objectContaining({ provider: "searxng", operation: "search", outcome: "unreachable" }),
+		);
+		expect(console.info).toHaveBeenCalledWith(
+			"[web-access]",
+			expect.objectContaining({ provider: "exa", operation: "read", outcome: "success" }),
+		);
+	});
+
+	it("tests SearXNG search and reports reading as built-in only without a connection", async () => {
+		const result = await probeWebAccess(null, { userId: "user", region: "AU" });
+		expect(result).toEqual({ search: { success: true }, read: { success: false, error: "unavailable" } });
+		expect(requests.map((request) => [request.provider, request.operation])).toEqual([["searxng", "search"]]);
 		expect(fixtures.direct).not.toHaveBeenCalled();
 	});
 });

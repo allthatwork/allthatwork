@@ -119,6 +119,7 @@
 						"group": "Design",
 						"pages": [
 							"guides/choosing-a-template",
+							"guides/changing-how-entries-look",
 							"guides/customizing-typography",
 							"guides/choosing-colors",
 							"guides/selecting-page-format",
@@ -237,6 +238,7 @@
 						"group": "Server Configuration",
 						"pages": [
 							"self-hosting/environment-variables",
+							"self-hosting/sharing-domains",
 							"self-hosting/fonts",
 							"self-hosting/examples",
 							"self-hosting/job-search-and-ai",
@@ -302,14 +304,18 @@
 	"navbar": {
 		"links": [
 			{
+				"label": "Resume templates",
+				"href": "https://rxresu.me/resume-templates"
+			},
+			{
 				"label": "Support",
 				"href": "https://github.com/reactive-resume/reactive-resume/issues"
 			}
 		],
 		"primary": {
 			"type": "button",
-			"label": "Get Started",
-			"href": "https://rxresu.me"
+			"label": "Build your resume",
+			"href": "https://rxresu.me/auth/register"
 		}
 	},
 	"contextual": {

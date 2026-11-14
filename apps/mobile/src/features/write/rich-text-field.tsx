@@ -1,17 +1,19 @@
 import type { RichTextSession } from "./rich-text";
 import type { IconName } from "@/ui";
-import type { RefObject } from "react";
+import type { ComponentRef, RefObject } from "react";
 import type { EnrichedTextInputInstance, OnChangeStateEvent } from "react-native-enriched-html";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ScrollView, View } from "react-native";
 import { EnrichedTextInput } from "react-native-enriched-html";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ImprovePanel } from "./improve";
 import { PromptSheet } from "./pickers";
 import { createRichTextSession, fromEnrichedHtml, lineAtCaret, replaceLine } from "./rich-text";
 import { resumeFieldFocus } from "@/draft";
 import { Button, IconButton, ListRow, Sheet, Text, useTheme } from "@/ui";
+import { useKeyboardVisible } from "@/ui/keyboard";
 
 /** The focused editor, for the toolbar docked above the keyboard (one per screen). */
 type ActiveEditor = {
@@ -72,6 +74,7 @@ export function RichTextField({ label, value, onChange, hint, disabled = false, 
 	const ref = useRef<EnrichedTextInputInstance>(null);
 	const [session] = useState(() => createRichTextSession(value));
 	const [focused, setFocused] = useState(false);
+	const border = focused ? 2 : 1;
 	const [text, setText] = useState("");
 	const [improving, setImproving] = useState<{ index: number; text: string } | null>(null);
 	const plain = useRef("");
@@ -116,76 +119,82 @@ export function RichTextField({ label, value, onChange, hint, disabled = false, 
 					{t`Original table formatting is preserved. This content is read-only because it cannot be edited safely.`}
 				</Text>
 			) : null}
-			<EnrichedTextInput
-				ref={ref}
-				accessibilityLabel={label}
-				// The initial markup only: changing defaultValue reloads the editor and moves the caret.
-				defaultValue={session.markup}
-				editable={editable}
-				autoFocus={autoFocus ?? false}
-				placeholderTextColor={colors.ink3}
-				cursorColor={colors.accent}
-				selectionColor={colors.accentSoft}
-				linkRegex={null}
+			<View
 				style={{
-					minHeight: type.bodyLarge.lineHeight * 4 + space.s3 * 2,
-					maxHeight: 360,
-					paddingHorizontal: space.s3,
-					paddingVertical: space.s3,
-					borderWidth: 1,
+					borderWidth: border,
 					borderRadius: radius.rLg,
 					borderColor: focused ? colors.accent : colors.lineStrong,
 					backgroundColor: editable ? colors.raised : colors.sunken,
-					color: colors.ink,
-					fontFamily: fonts.ui[400],
-					fontSize: type.bodyLarge.fontSize,
+					overflow: "hidden",
 				}}
-				htmlStyle={{
-					a: { color: colors.accentText, textDecorationLine: "underline" },
-					code: { color: colors.ink, backgroundColor: colors.sunken },
-					ul: { bulletColor: colors.ink2 },
-					ol: { markerColor: colors.ink2 },
-				}}
-				onFocus={() => {
-					session.focus();
-					resumeFieldFocus.onFocus();
-					setFocused(true);
-					readBaseline();
-					editor.current = {
-						ref,
-						focused: true,
-						state: editor.current?.state ?? null,
-						selection: editor.current?.selection ?? { start: 0, end: 0, text: "" },
-						canImprove: false,
-						improve: startImprove,
-						command: session.command,
-					};
-					setActive(editor.current);
-				}}
-				onBlur={() => {
-					session.blur();
-					resumeFieldFocus.onBlur();
-					setFocused(false);
-					publish({ focused: false });
-				}}
-				onChangeHtml={(event) => {
-					const html = session.change(event.nativeEvent.value);
-					if (html !== null) onChange(html);
-				}}
-				onChangeText={(event) => {
-					plain.current = event.nativeEvent.value;
-					setText(event.nativeEvent.value);
-				}}
-				onChangeState={(event) => publish({ state: event.nativeEvent })}
-				onChangeSelection={(event) => {
-					const selection = event.nativeEvent;
-					publish({
-						selection,
-						canImprove: lineAtCaret(plain.current, selection.start) !== null,
-						improve: startImprove,
-					});
-				}}
-			/>
+			>
+				<EnrichedTextInput
+					ref={ref}
+					accessibilityLabel={label}
+					// The initial markup only: changing defaultValue reloads the editor and moves the caret.
+					defaultValue={session.markup}
+					editable={editable}
+					autoFocus={autoFocus ?? false}
+					placeholderTextColor={colors.ink3}
+					cursorColor={colors.accent}
+					selectionColor={colors.accentSoft}
+					linkRegex={null}
+					style={{
+						minHeight: type.bodyLarge.lineHeight * 4 + space.s3 * 2 - border * 2,
+						maxHeight: 360 - border * 2,
+						paddingHorizontal: space.s3 - (border - 1),
+						paddingVertical: space.s3 - (border - 1),
+						color: colors.ink,
+						fontFamily: fonts.ui[400],
+						fontSize: type.bodyLarge.fontSize,
+					}}
+					htmlStyle={{
+						a: { color: colors.accentText, textDecorationLine: "underline" },
+						code: { color: colors.ink, backgroundColor: colors.sunken },
+						ul: { bulletColor: colors.ink2 },
+						ol: { markerColor: colors.ink2 },
+					}}
+					onFocus={() => {
+						session.focus();
+						resumeFieldFocus.onFocus();
+						setFocused(true);
+						readBaseline();
+						editor.current = {
+							ref,
+							focused: true,
+							state: editor.current?.state ?? null,
+							selection: editor.current?.selection ?? { start: 0, end: 0, text: "" },
+							canImprove: lineAtCaret(plain.current, editor.current?.selection.start ?? 0) !== null,
+							improve: startImprove,
+							command: session.command,
+						};
+						setActive(editor.current);
+					}}
+					onBlur={() => {
+						session.blur();
+						resumeFieldFocus.onBlur();
+						setFocused(false);
+						publish({ focused: false });
+					}}
+					onChangeHtml={(event) => {
+						const html = session.change(event.nativeEvent.value);
+						if (html !== null) onChange(html);
+					}}
+					onChangeText={(event) => {
+						plain.current = event.nativeEvent.value;
+						setText(event.nativeEvent.value);
+					}}
+					onChangeState={(event) => publish({ state: event.nativeEvent })}
+					onChangeSelection={(event) => {
+						const selection = event.nativeEvent;
+						publish({
+							selection,
+							canImprove: lineAtCaret(plain.current, selection.start) !== null,
+							improve: startImprove,
+						});
+					}}
+				/>
+			</View>
 			{focused || improving ? (
 				<View style={{ flexDirection: "row", justifyContent: "space-between", gap: space.s3 }}>
 					<Text variant="caption" color="ink3" style={{ flex: 1 }}>
@@ -227,9 +236,12 @@ type ToolbarButton = { key: string; icon: IconName; label: string; isActive: boo
 export function RichTextToolbar() {
 	const { t } = useLingui();
 	const { colors, size, space } = useTheme();
+	const insets = useSafeAreaInsets();
+	const keyboardVisible = useKeyboardVisible();
 	const editor = useActiveEditor();
 	const [linkOpen, setLinkOpen] = useState(false);
 	const [styleOpen, setStyleOpen] = useState(false);
+	const formattingScroll = useRef<ComponentRef<typeof ScrollView>>(null);
 	// The last focused editor stays active after blur, so sheets keep working on it after taking focus.
 	const target = () => {
 		editor?.command();
@@ -246,20 +258,6 @@ export function RichTextToolbar() {
 			label: t`Italic`,
 			isActive: state?.italic.isActive,
 			run: () => target()?.toggleItalic(),
-		},
-		{
-			key: "u",
-			icon: "text-underline",
-			label: t`Underline`,
-			isActive: state?.underline.isActive,
-			run: () => target()?.toggleUnderline(),
-		},
-		{
-			key: "s",
-			icon: "text-strikethrough",
-			label: t`Strikethrough`,
-			isActive: state?.strikeThrough.isActive,
-			run: () => target()?.toggleStrikeThrough(),
 		},
 		{
 			key: "ul",
@@ -290,6 +288,22 @@ export function RichTextToolbar() {
 			run: () => setStyleOpen(true),
 		},
 	];
+	const marks: ToolbarButton[] = [
+		{
+			key: "u",
+			icon: "text-underline",
+			label: t`Underline`,
+			isActive: state?.underline.isActive,
+			run: () => target()?.toggleUnderline(),
+		},
+		{
+			key: "s",
+			icon: "text-strikethrough",
+			label: t`Strikethrough`,
+			isActive: state?.strikeThrough.isActive,
+			run: () => target()?.toggleStrikeThrough(),
+		},
+	];
 
 	const setHeading = (level: number) => {
 		const input = target();
@@ -317,13 +331,20 @@ export function RichTextToolbar() {
 					style={{
 						flexDirection: "row",
 						alignItems: "center",
-						minHeight: size.hit + 2,
+						minHeight: size.hit + space.s1 * 2 + (keyboardVisible ? 0 : insets.bottom),
+						paddingBottom: keyboardVisible ? 0 : insets.bottom,
 						borderTopWidth: 1,
 						borderTopColor: colors.line,
 						backgroundColor: colors.raised,
 					}}
 				>
-					<ScrollView horizontal keyboardShouldPersistTaps="always" showsHorizontalScrollIndicator={false}>
+					<ScrollView
+						ref={formattingScroll}
+						horizontal
+						keyboardShouldPersistTaps="always"
+						persistentScrollbar
+						onLayout={() => formattingScroll.current?.flashScrollIndicators()}
+					>
 						<View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: space.s1 }}>
 							{buttons.map((button) => (
 								<IconButton
@@ -334,14 +355,16 @@ export function RichTextToolbar() {
 									onPress={button.run}
 								/>
 							))}
-							<IconButton
-								icon="sparkle"
-								label={t`Improve selected line`}
-								disabled={!editor.canImprove}
-								onPress={editor.improve}
-							/>
 						</View>
 					</ScrollView>
+					<View style={{ borderStartWidth: 1, borderStartColor: colors.line }}>
+						<IconButton
+							icon="sparkle"
+							label={t`Improve selected line`}
+							disabled={!editor.canImprove}
+							onPress={editor.improve}
+						/>
+					</View>
 					<Button variant="link" label={t`Done`} onPress={() => editor?.ref.current?.blur()} />
 					<View style={{ width: space.s3 }} />
 				</View>
@@ -365,6 +388,19 @@ export function RichTextToolbar() {
 				}}
 			/>
 			<Sheet open={styleOpen} onClose={() => setStyleOpen(false)} title={t`Text style`}>
+				{marks.map((mark) => (
+					<ListRow
+						key={mark.key}
+						title={mark.label}
+						leading={mark.icon}
+						selected={mark.isActive ?? false}
+						onPress={() => {
+							mark.run();
+							setStyleOpen(false);
+							editor?.ref.current?.focus();
+						}}
+					/>
+				))}
 				{[
 					{ level: 0, icon: "paragraph" as const, label: t`Paragraph` },
 					{ level: 1, icon: "text-h-one" as const, label: t`Heading 1` },

@@ -4,6 +4,7 @@ import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { StylesheetSource } from "@reactive-resume/schema/resume/stylesheet";
 import type { Template } from "@reactive-resume/schema/templates";
 import { compileStylesheet, isFatalStylesheetDiagnostic, resolveStylesheet } from "@reactive-resume/resume/stylesheet";
+import { assertResumeRenderBudget } from "@reactive-resume/schema/resume/limits";
 import { EMPTY_SEMANTIC_CSS_SOURCE } from "@reactive-resume/schema/resume/stylesheet";
 import { shouldShowResumeHeader } from "../templates/shared/cover-letter";
 import { getTemplatePageSize } from "../templates/shared/page-size";
@@ -82,6 +83,7 @@ export function resolveResumeRuntime({
 	template,
 	source,
 }: ResolveResumePresentationInput): ResolvedResumeRuntime {
+	assertResumeRenderBudget(data);
 	const sourceTree = mergeAuthoredPageTrees(data, template);
 
 	const stylesheetSource = source ??
@@ -129,8 +131,4 @@ export function resolveResumeRuntime({
 		renderTree: resolved.renderTree,
 		diagnostics: [...compiled.diagnostics, ...resolved.diagnostics],
 	};
-}
-
-export function resolveResumePresentation(input: ResolveResumePresentationInput): ResolvedResumePresentation {
-	return resolveResumeRuntime(input).presentation;
 }

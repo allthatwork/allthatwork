@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({ generate: vi.fn() }));
 vi.mock("./generate-json", () => ({ generateJson: mocks.generate }));

@@ -47,7 +47,7 @@ const DesignSourceContext = createContext<DesignSource | null>(null);
 /** Points the Type, Color and Page groups at another design than the open resume's (a letter's own). */
 export const DesignSourceProvider = DesignSourceContext.Provider;
 
-function useDesign(): DesignSource {
+export function useDesign(): DesignSource {
 	const source = useContext(DesignSourceContext);
 	const data = useResumeData();
 	const updateResumeData = useUpdateResumeData();
@@ -191,7 +191,7 @@ export function ColorGroup() {
 	return (
 		<div className="grid gap-3">
 			<RadioGroup
-				aria-label={t`Accent colour`}
+				aria-label={t`Accent color`}
 				value={ACCENTS.some((accent) => accent.hex === current) ? current : null}
 				onValueChange={(value) => {
 					setTyped(null);
@@ -206,7 +206,7 @@ export function ColorGroup() {
 						value={accent.hex}
 						aria-label={accent.label}
 						title={accent.label}
-						className="aspect-square cursor-pointer rounded-full transition-[box-shadow,scale] duration-quick ease-enter active:scale-[0.97] data-checked:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--swatch)]"
+						className="aspect-square cursor-pointer rounded-sm transition-[box-shadow,scale] duration-quick ease-enter active:scale-[0.97] data-checked:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--swatch)]"
 						style={{ backgroundColor: accent.hex, "--swatch": accent.hex } as CSSProperties}
 					/>
 				))}
@@ -215,10 +215,10 @@ export function ColorGroup() {
 			<div className="flex items-center gap-2">
 				<span className="size-9 shrink-0 rounded-lg border border-line-2" style={{ backgroundColor: normalized }} />
 				<Input
-					aria-label={t`Custom colour (hex)`}
+					aria-label={t`Custom color (hex)`}
 					value={hex}
 					spellCheck={false}
-					className="font-mono uppercase"
+					className="font-mono"
 					onChange={(event) => {
 						setTyped(event.target.value);
 						if (isValidHex(event.target.value)) setAccent(`#${event.target.value.replace("#", "")}`, false);

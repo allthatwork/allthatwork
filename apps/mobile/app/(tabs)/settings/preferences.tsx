@@ -3,24 +3,29 @@ import type { Locale } from "@reactive-resume/utils/locale";
 import { useLingui } from "@lingui/react/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { DevSettings, View } from "react-native";
-import { localeSchema } from "@reactive-resume/utils/locale";
+import { DevSettings, View, useWindowDimensions } from "react-native";
 import { timezoneSchema } from "@reactive-resume/utils/timezone";
 import { client, orpc } from "@/api/client";
 import { SettingsGroup, SettingsPage } from "@/features/settings/layout";
 import { localeMap } from "@/features/settings/locale-names";
 import { useProfile } from "@/features/settings/queries";
-import { getDeviceLocale, getLocalePreference, setLocalePreference } from "@/i18n";
+import { getDeviceLocale, getLocalePreference, selectableLocales, setLocalePreference } from "@/i18n";
+import { timeZones } from "@/lib/timezones";
 import {
 	Banner,
+	Button,
 	ConfirmDialog,
 	ListRow,
 	Segmented,
 	Sheet,
+	Switch,
 	Text,
 	TextField,
+	haptics,
+	setHapticsEnabled,
 	setThemePreference,
 	showToast,
+	useHapticsEnabled,
 	useTheme,
 	useThemePreference,
 } from "@/ui";
@@ -28,12 +33,19 @@ import {
 export default function PreferencesScreen() {
 	const { t, i18n } = useLingui();
 	const theme = useThemePreference();
+	const hapticsOn = useHapticsEnabled();
+	const toggleHaptics = (value: boolean) => {
+		setHapticsEnabled(value);
+		haptics.selection();
+	};
 	const { space } = useTheme();
+	const { fontScale } = useWindowDimensions();
 	const profile = useProfile();
 	const queryClient = useQueryClient();
 	const [locale, setLocale] = useState(getLocalePreference);
 	const [picker, setPicker] = useState<"language" | "timezone" | null>(null);
 	const [search, setSearch] = useState("");
+	const [zoneLimit, setZoneLimit] = useState(40);
 	const [changingLanguage, setChangingLanguage] = useState(false);
 	const [restart, setRestart] = useState(false);
 	const deviceTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -47,21 +59,15 @@ export default function PreferencesScreen() {
 			setPicker(null);
 			await queryClient.invalidateQueries({ queryKey: orpc.auth.getProfile.key() });
 		},
-		onError: () => showToast({ message: t`Couldn't save the timezone.` }),
+		onError: () => showToast({ message: t`Couldn't save the timezone. Try again.` }),
 	});
 	const languageName = (value: Locale) => i18n._(localeMap[value]);
-	const languages = localeSchema.options.map((value) => ({ value, label: languageName(value) }));
+	const languages = selectableLocales.map((value) => ({ value, label: languageName(value) }));
 	const matchingLanguages = languages.filter(({ value, label }) =>
 		`${value} ${label}`.toLowerCase().includes(search.trim().toLowerCase()),
 	);
-	// shortcut: Hermes without timezone enumeration offers device/saved zones plus validated IANA text entry.
 	const zones = [
-		...new Set([
-			"UTC",
-			deviceTimezone,
-			...(profile.data ? [profile.data.timezone] : []),
-			...(typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : []),
-		]),
+		...new Set(["UTC", deviceTimezone, ...(profile.data ? [profile.data.timezone] : []), ...timeZones]),
 	].sort();
 	const matches = zones.filter((zone) => zone.toLowerCase().includes(search.trim().toLowerCase()));
 	const enteredZone = search.trim();
@@ -80,13 +86,15 @@ export default function PreferencesScreen() {
 	};
 	const openPicker = (value: "language" | "timezone") => {
 		setSearch("");
+		setZoneLimit(40);
 		setPicker(value);
 	};
 	return (
-		<SettingsPage title={t`Preferences`}>
+		<SettingsPage onRefresh={profile.refetch} title={t`Preferences`}>
 			<Text variant="caption" color="ink2">{t`Appearance`}</Text>
 			<Segmented<ThemePreference>
 				label={t`Theme`}
+				orientation={fontScale > 1.3 ? "vertical" : "horizontal"}
 				value={theme}
 				onChange={(value) => {
 					try {
@@ -102,6 +110,14 @@ export default function PreferencesScreen() {
 				]}
 			/>
 			<Text variant="callout" color="ink3">{t`Resumes always render on white paper, whatever the theme.`}</Text>
+			<SettingsGroup title={t`Feedback`} note={t`Applies to this device only.`}>
+				<ListRow
+					title={t`Haptic feedback`}
+					leading="vibrate"
+					onPress={() => toggleHaptics(!hapticsOn)}
+					trailing={<Switch label={t`Haptic feedback`} value={hapticsOn} onValueChange={toggleHaptics} />}
+				/>
+			</SettingsGroup>
 			<SettingsGroup title={t`Language`} note={t`Interface only. Each resume sets its own language in Design.`}>
 				<ListRow
 					title={t`Language`}
@@ -138,7 +154,10 @@ export default function PreferencesScreen() {
 					<TextField
 						label={picker === "language" ? t`Search languages` : t`Search timezones`}
 						value={search}
-						onChangeText={setSearch}
+						onChangeText={(value) => {
+							setSearch(value);
+							setZoneLimit(40);
+						}}
 						autoCapitalize="none"
 						autoCorrect={false}
 						returnKeyType="search"
@@ -174,7 +193,7 @@ export default function PreferencesScreen() {
 								onPress={() => timezone.mutate(deviceTimezone)}
 							/>
 						) : null}
-						{matches.map((zone) => (
+						{matches.slice(0, zoneLimit).map((zone) => (
 							<ListRow
 								key={zone}
 								title={zone}
@@ -183,6 +202,9 @@ export default function PreferencesScreen() {
 								onPress={() => timezone.mutate(zone)}
 							/>
 						))}
+						{matches.length > zoneLimit ? (
+							<Button variant="ghost" label={t`Show more`} onPress={() => setZoneLimit((limit) => limit + 40)} />
+						) : null}
 						{!zones.includes(enteredZone) && timezoneSchema.safeParse(enteredZone).success ? (
 							<ListRow title={enteredZone} disabled={timezone.isPending} onPress={() => timezone.mutate(enteredZone)} />
 						) : null}
@@ -196,7 +218,7 @@ export default function PreferencesScreen() {
 				open={restart}
 				title={t`Restart to change text direction`}
 				message={t`Your language is saved. Restart Reactive Resume to apply the new left-to-right or right-to-left layout.`}
-				confirmLabel={__DEV__ ? t`Reload now` : t`OK`}
+				confirmLabel={__DEV__ ? t`Reload now` : t`Done`}
 				cancelLabel={t`Later`}
 				onCancel={() => setRestart(false)}
 				onConfirm={() => {

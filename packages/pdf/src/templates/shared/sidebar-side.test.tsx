@@ -1,5 +1,5 @@
 import type { Template } from "@reactive-resume/schema/templates";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import * as forme from "@formepdf/core";
 import { parseResumeData } from "@reactive-resume/schema/resume/data";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";

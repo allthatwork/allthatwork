@@ -1,5 +1,5 @@
 import type { PdfDocumentLike, PdfPageLike } from "./harvest";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { harvestPdfDocument } from "./harvest";
 import { PDF_OPS } from "./pdf-ops";
 

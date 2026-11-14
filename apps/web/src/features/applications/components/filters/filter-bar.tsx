@@ -1,5 +1,5 @@
 import type { FilterContext, FilterFacet, FiltersChange } from "../../filter";
-import type { Application } from "../../types";
+import type { ApplicationSummary } from "../../types";
 import type { ApplicationFilters } from "@reactive-resume/schema/applications/filters";
 import type { IconName } from "@reactive-resume/ui/components/icon";
 import type { Ref } from "react";
@@ -30,7 +30,7 @@ import { FilterPanel } from "./filter-panel";
 
 export type FilterBarProps = {
 	/** Every application, for the options and their counts. */
-	applications: readonly Application[];
+	applications: readonly ApplicationSummary[];
 	filters: ApplicationFilters;
 	onChange: FiltersChange;
 	context: FilterContext;

@@ -3,6 +3,7 @@ import z from "zod";
 import * as schema from "@reactive-resume/db/schema";
 import { jsonPatchOperationSchema } from "@reactive-resume/resume/patch";
 import { resumeDataSchema } from "@reactive-resume/schema/resume/data";
+import { slugSchema } from "@reactive-resume/schema/resume/slug";
 import { writableResumeDataSchema } from "@reactive-resume/schema/resume/write";
 import { paginationShape } from "../pagination";
 
@@ -13,6 +14,17 @@ const resumeSchema = createSelectSchema(schema.resume, {
 	tags: z.array(z.string()).describe("The tags of the resume."),
 	isPublic: z.boolean().describe("Whether the resume is public."),
 	showDownloadButtons: z.boolean().describe("Whether download buttons are shown on the public resume page."),
+	showInSearchEngines: z
+		.boolean()
+		.describe("Whether search engines may list the resume's public web page. Off unless the owner turns it on."),
+	hideContactDetails: z
+		.boolean()
+		.describe(
+			"Whether the public web page, its PDF and this API leave out the email, phone, location, custom header fields and references' phone numbers.",
+		),
+	isPrimary: z
+		.boolean()
+		.describe("Whether this is the account's primary resume, opened by its short link and custom domain."),
 	isLocked: z.boolean().describe("Whether the resume is locked."),
 	password: z.string().trim().min(6).max(64).nullable().describe("The password of the resume, if any."),
 	data: resumeDataSchema,
@@ -78,9 +90,7 @@ export const resumeDto = {
 				.boolean()
 				.optional()
 				.describe("While true, the resume's name follows its headline until someone renames it."),
-			slug: resumeSchema.shape.slug
-				.optional()
-				.describe("The slug of the resume. A random, unique address when omitted."),
+			slug: slugSchema.optional().describe("The slug of the resume. A random, unique address when omitted."),
 			withSampleData: z.boolean().default(false),
 		}),
 		output: z.string().describe("The ID of the created resume."),
@@ -93,10 +103,21 @@ export const resumeDto = {
 
 	update: {
 		input: resumeSchema
-			.pick({ name: true, slug: true, tags: true, data: true, isPublic: true, showDownloadButtons: true })
+			.pick({
+				name: true,
+				slug: true,
+				tags: true,
+				data: true,
+				isPublic: true,
+				showDownloadButtons: true,
+				showInSearchEngines: true,
+				hideContactDetails: true,
+				isPrimary: true,
+			})
 			.partial()
 			.extend({
 				id: z.string(),
+				slug: slugSchema.optional(),
 				data: writableResumeDataSchema.optional(),
 				randomSlug: z
 					.boolean()
@@ -122,7 +143,7 @@ export const resumeDto = {
 	checkSlug: {
 		input: z.object({
 			resumeId: z.string().describe("The ID of the resume the slug is for."),
-			slug: z.string().max(64).describe("The slug to check."),
+			slug: z.string().describe("The slug to check."),
 		}),
 		output: z.object({
 			status: z
@@ -169,7 +190,7 @@ export const resumeDto = {
 		input: resumeSchema.pick({ id: true }).extend({
 			name: resumeSchema.shape.name.optional(),
 			tags: resumeSchema.shape.tags.optional(),
-			slug: resumeSchema.shape.slug.optional().describe("The slug of the copy. A random, unique address when omitted."),
+			slug: slugSchema.optional().describe("The slug of the copy. A random, unique address when omitted."),
 		}),
 		output: z.string().describe("The ID of the duplicated resume."),
 	},

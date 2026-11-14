@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import type { ResumeDates } from "@reactive-resume/schema/resume/dates";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { DatesField } from "./dates-field";
@@ -22,7 +22,7 @@ describe("DatesField", () => {
 
 	it("saves and clears readable dates without committing invalid input or the review note", () => {
 		const onChange = renderField({ start: "2016-06", end: "2018", present: false, raw: "Summer 2016 - 2018" });
-		expect(screen.getByText(/We read "Summer 2016 - 2018"/)).toBeInTheDocument();
+		expect(screen.getByText(/Read as “Summer 2016 - 2018”/)).toBeInTheDocument();
 
 		fireEvent.change(screen.getByRole("textbox", { name: "Start" }), { target: { value: "Jul 2016" } });
 

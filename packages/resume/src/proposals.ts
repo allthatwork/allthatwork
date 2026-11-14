@@ -1,5 +1,5 @@
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
-import { escapeHtml } from "@reactive-resume/utils/string";
+import { escapeHtml, fnv1a } from "@reactive-resume/utils/string";
 
 /**
  * Suggested edits to a document's text, shared by Check, the assistant and Improve. A proposal replaces one passage
@@ -146,14 +146,18 @@ const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"'
 
 const decodeEntities = (text: string) =>
 	text.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, name: string) => {
-		if (name.startsWith("#x") || name.startsWith("#X")) return String.fromCodePoint(Number.parseInt(name.slice(2), 16));
-		if (name.startsWith("#")) return String.fromCodePoint(Number.parseInt(name.slice(1), 10));
+		if (name.startsWith("#")) {
+			const code = /^#x/i.test(name) ? Number.parseInt(name.slice(2), 16) : Number.parseInt(name.slice(1), 10);
+			// Out of range (`&#99999999;`) stays as written instead of throwing.
+			return code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+		}
 		return ENTITIES[name.toLowerCase()] ?? entity;
 	});
 
 /** The visible text of some HTML, on one line. */
 export const blockText = (html: string) =>
-	decodeEntities(html.replace(/<[^>]*>/g, ""))
+	// `[^<>]` stops a run of unclosed `<` from rescanning to the end once per bracket.
+	decodeEntities(html.replace(/<[^<>]*>/g, ""))
 		.replace(/\s+/g, " ")
 		.trim();
 
@@ -162,16 +166,20 @@ export type Block = { html: string; text: string; bullet: boolean };
 /** The leaf paragraphs and list items of rich text, in order, skipping empty ones. */
 export function splitBlocks(html: string): Block[] {
 	const blocks: Block[] = [];
+	let scannedTo = 0;
+	let listDepth = 0;
 
 	for (const match of html.matchAll(LEAF_BLOCK)) {
 		const text = blockText(match[2] ?? "");
 		if (!text) continue;
 
 		// Inside a list when more <li> have opened than closed before this block.
-		const preceding = html.slice(0, match.index);
+		const preceding = html.slice(scannedTo, match.index);
 		const opened = preceding.match(/<li[\s>]/gi)?.length ?? 0;
 		const closed = preceding.match(/<\/li>/gi)?.length ?? 0;
-		blocks.push({ html: match[0], text, bullet: match[1]?.toLowerCase() === "li" || opened > closed });
+		listDepth += opened - closed;
+		scannedTo = match.index;
+		blocks.push({ html: match[0], text, bullet: match[1]?.toLowerCase() === "li" || listDepth > 0 });
 	}
 
 	return blocks;
@@ -201,14 +209,7 @@ export type PassageLabels = {
 };
 
 // FNV-1a: short and stable. The text is part of the key, so ids never outlive the words they name.
-function hash(value: string) {
-	let h = 0x811c9dc5;
-	for (let index = 0; index < value.length; index++) {
-		h ^= value.charCodeAt(index);
-		h = Math.imul(h, 0x01000193);
-	}
-	return (h >>> 0).toString(36);
-}
+const hash = (value: string) => fnv1a(value).toString(36);
 
 function passagesOf(
 	html: string,

@@ -1,15 +1,15 @@
 import type { IconName } from "./icon";
-import type { ComponentRef, ReactNode } from "react";
+import type { ComponentRef, ReactNode, Ref } from "react";
 import type { TextInputProps } from "react-native";
-import { BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { useLingui } from "@lingui/react/macro";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { I18nManager, Platform, Pressable, TextInput, View } from "react-native";
-import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { filterOptions } from "@reactive-resume/utils/string";
 import { Icon } from "./icon";
 import { ListRow } from "./layout";
-import { haptics, useReducedMotion } from "./motion";
-import { InSheetContext, Sheet } from "./overlays";
+import { haptics } from "./motion";
+import { Sheet } from "./overlays";
 import { Text } from "./text";
 import { useTheme } from "./theme";
 
@@ -17,6 +17,7 @@ const android = Platform.OS === "android";
 
 export type TextFieldProps = Omit<TextInputProps, "style" | "value" | "onChangeText" | "placeholderTextColor"> & {
 	label: string;
+	ref?: Ref<ComponentRef<typeof TextInput> | null> | undefined;
 	value: string;
 	onChangeText: (value: string) => void;
 	/** Helper text under the field. Replaced by `error` when there is one. */
@@ -72,6 +73,7 @@ type InputBoxProps = Omit<TextFieldProps, "label" | "helper"> & {
 /** The bordered box: 1 pt `lineStrong`, 2 pt `accent` while focused, 2 pt `dangerText` with an error. */
 function InputBox({
 	accessibilityLabel,
+	ref: inputRef,
 	hint,
 	error,
 	trailing,
@@ -84,12 +86,9 @@ function InputBox({
 	...input
 }: InputBoxProps) {
 	const { colors, radius, size, space, type } = useTheme();
-	const inSheet = useContext(InSheetContext);
 	const ref = useRef<ComponentRef<typeof TextInput>>(null);
 	const [focused, setFocused] = useState(false);
 	const border = error ? 2 : focused ? 2 : 1;
-	// Bottom sheets need their own input to move above the keyboard.
-	const Input = inSheet ? BottomSheetTextInput : TextInput;
 
 	return (
 		<Pressable
@@ -114,9 +113,12 @@ function InputBox({
 					{prefix}
 				</Text>
 			) : null}
-			<Input
-				// @ts-expect-error BottomSheetTextInput forwards a TextInput ref; its declared ref type is narrower.
-				ref={ref}
+			<TextInput
+				ref={(node) => {
+					ref.current = node;
+					if (typeof inputRef === "function") return inputRef(node);
+					if (inputRef) inputRef.current = node;
+				}}
 				accessibilityLabel={accessibilityLabel}
 				accessibilityHint={hint}
 				placeholderTextColor={colors.ink3}
@@ -199,6 +201,8 @@ export type SelectSheetProps<T extends string> = {
 	disabled?: boolean | undefined;
 	/** `field` (default) looks like a text field with a caret; `row` is a settings row with the value at its end. */
 	appearance?: "field" | "row" | undefined;
+	/** Adds a field above the options that filters them by label, for long lists such as countries. */
+	searchable?: boolean | undefined;
 };
 
 /** A field that opens a sheet of options; picking one closes it. */
@@ -210,11 +214,19 @@ export function SelectSheet<T extends string>({
 	placeholder,
 	disabled,
 	appearance = "field",
+	searchable,
 }: SelectSheetProps<T>) {
+	const { t } = useLingui();
 	const { colors, radius, size, space } = useTheme();
 	const [open, setOpen] = useState(false);
+	const [query, setQuery] = useState("");
 	const selected = options.find((option) => option.value === value);
 	const shown = selected?.label ?? placeholder;
+	const listed = searchable ? filterOptions(options, query) : options;
+	const close = () => {
+		setOpen(false);
+		setQuery("");
+	};
 
 	return (
 		<>
@@ -254,14 +266,32 @@ export function SelectSheet<T extends string>({
 			)}
 			<Sheet
 				open={open}
-				onClose={() => setOpen(false)}
+				onClose={close}
 				title={label}
 				padded={false}
 				// A long list (languages, countries) scrolls in a half-height sheet that can rise to full.
 				detents={options.length > 6 ? [0.5, 0.9] : ["content"]}
 			>
+				{searchable ? (
+					<View style={{ paddingHorizontal: space.s4, paddingBottom: space.s2 }}>
+						<InputBox
+							accessibilityLabel={t`Search`}
+							placeholder={t`Search…`}
+							value={query}
+							onChangeText={setQuery}
+							autoCapitalize="none"
+							autoCorrect={false}
+							returnKeyType="search"
+						/>
+					</View>
+				) : null}
+				{searchable && listed.length === 0 ? (
+					<Text color="ink3" style={{ paddingHorizontal: space.s4, paddingVertical: space.s3 }}>
+						{t`No matches`}
+					</Text>
+				) : null}
 				<View accessibilityRole="radiogroup">
-					{options.map((option) => (
+					{listed.map((option) => (
 						<ListRow
 							key={option.value}
 							title={option.label}
@@ -271,7 +301,7 @@ export function SelectSheet<T extends string>({
 							onPress={() => {
 								haptics.selection();
 								onChange(option.value);
-								setOpen(false);
+								close();
 							}}
 						/>
 					))}
@@ -281,76 +311,7 @@ export function SelectSheet<T extends string>({
 	);
 }
 
-export type SwitchProps = {
-	value: boolean;
-	onValueChange: (value: boolean) => void;
-	/** The accessible name when the switch has no visible label next to it. */
-	label?: string | undefined;
-	disabled?: boolean | undefined;
-};
-
-// tokens.md §7: iOS 51×31 pill with a 27 pt thumb; Android Material 3 52×32 with a 16 pt thumb off, 24 pt on.
-const track = android ? { width: 52, height: 32 } : { width: 51, height: 31 };
-
-export function Switch({ value, onValueChange, label, disabled }: SwitchProps) {
-	const { colors, motion, shadows, size } = useTheme();
-	const reduced = useReducedMotion();
-	const progress = useSharedValue(value ? 1 : 0);
-
-	useEffect(() => {
-		progress.set(withTiming(value ? 1 : 0, { duration: reduced ? 0 : motion.d1 }));
-	}, [value, progress, motion.d1, reduced]);
-
-	const off = android ? colors.sunken : colors.lineStrong;
-	const direction = I18nManager.isRTL ? -1 : 1;
-	const trackStyle = useAnimatedStyle(() => ({
-		backgroundColor: interpolateColor(progress.get(), [0, 1], [off, colors.accent]),
-		borderColor: interpolateColor(progress.get(), [0, 1], [colors.lineStrong, colors.accent]),
-	}));
-	const thumbStyle = useAnimatedStyle(() => {
-		if (!android) return { transform: [{ translateX: progress.get() * 20 * direction }] };
-		return {
-			transform: [{ translateX: (2 + progress.get() * 20) * direction }, { scale: (16 + progress.get() * 8) / 24 }],
-			backgroundColor: interpolateColor(progress.get(), [0, 1], [colors.lineStrong, colors.onAccent]),
-		};
-	});
-	const slop = (size.hit - track.height) / 2;
-
-	return (
-		<Pressable
-			accessibilityRole="switch"
-			accessibilityLabel={label}
-			accessibilityState={{ checked: value, disabled: !!disabled }}
-			disabled={disabled}
-			hitSlop={{ top: slop, bottom: slop }}
-			onPress={() => {
-				haptics.selection();
-				onValueChange(!value);
-			}}
-			style={{ opacity: disabled ? 0.45 : 1 }}
-		>
-			<Animated.View
-				style={[
-					{ ...track, borderRadius: track.height / 2, borderWidth: android ? 2 : 0, padding: android ? 0 : 2 },
-					trackStyle,
-				]}
-			>
-				<Animated.View
-					style={[
-						{
-							width: android ? 24 : 27,
-							height: android ? 24 : 27,
-							borderRadius: 999,
-							backgroundColor: colors.raised,
-						},
-						android ? { marginTop: 2 } : { boxShadow: shadows.e1.boxShadow },
-						thumbStyle,
-					]}
-				/>
-			</Animated.View>
-		</Pressable>
-	);
-}
+export { Switch, type SwitchProps } from "./switch";
 
 export type SegmentedProps<T extends string> = {
 	value: T;
@@ -359,6 +320,8 @@ export type SegmentedProps<T extends string> = {
 	/** The accessible name of the group. */
 	label?: string | undefined;
 	orientation?: "horizontal" | "vertical";
+	/** Size horizontal choices to their content instead of filling the row. */
+	compact?: boolean;
 };
 
 type SegmentProps = {
@@ -367,9 +330,10 @@ type SegmentProps = {
 	active: boolean;
 	onPress: () => void;
 	stacked: boolean;
+	compact: boolean;
 };
 
-function Segment({ label, icon, active, onPress, stacked }: SegmentProps) {
+function Segment({ label, icon, active, onPress, stacked, compact }: SegmentProps) {
 	const { colors, motion, radius, shadows, size, space } = useTheme();
 	const shown = useSharedValue(active ? 1 : 0);
 
@@ -388,7 +352,7 @@ function Segment({ label, icon, active, onPress, stacked }: SegmentProps) {
 			// 40 pt inside the track's 2 pt padding; the slop brings the target to 44.
 			hitSlop={{ top: space.s0, bottom: space.s0 }}
 			style={{
-				flex: stacked ? undefined : 1,
+				flex: stacked || compact ? undefined : 1,
 				minHeight: size.hit - space.s0 * 2,
 				flexDirection: "row",
 				alignItems: "center",
@@ -427,6 +391,7 @@ export function Segmented<T extends string>({
 	onChange,
 	label,
 	orientation = "horizontal",
+	compact = false,
 }: SegmentedProps<T>) {
 	const { colors, radius, space } = useTheme();
 	const stacked = orientation === "vertical";
@@ -450,6 +415,7 @@ export function Segmented<T extends string>({
 					icon={option.icon}
 					active={option.value === value}
 					stacked={stacked}
+					compact={compact}
 					onPress={() => {
 						if (option.value === value) return;
 						haptics.selection();
@@ -498,7 +464,7 @@ export function Chip({ label, selected, onPress, icon, onRemove }: ChipProps) {
 				gap: space.s1,
 				paddingStart: space.s3,
 				paddingEnd: onRemove ? space.s1 + space.s0 : space.s3,
-				borderRadius: radius.rPill,
+				borderRadius: radius.rLg,
 				borderWidth: 1,
 				borderColor: selected ? colors.accent : colors.line2,
 				backgroundColor: pressed && onPress && !android ? colors.sunken : selected ? colors.accentSoft : colors.raised,

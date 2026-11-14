@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({
 	getSession: vi.fn(),
 	consent: vi.fn(),
 	continueOAuth: vi.fn(),
 	handler: vi.fn(),
+	accountLinkHook: undefined as ((params: { fromUserId: string; toUserId: string }) => Promise<unknown>) | undefined,
+	migrateUserStorage: vi.fn(),
 	env: {
 		SERVER_PORT: 3001,
 		APP_URL: "http://localhost:3000",
@@ -21,6 +23,14 @@ vi.mock("@reactive-resume/auth/config", () => ({
 		},
 		handler: mocks.handler,
 	},
+	setAccountLinkHook: (hook: typeof mocks.accountLinkHook) => {
+		mocks.accountLinkHook = hook;
+	},
+	setUserDeleteHook: () => {},
+}));
+
+vi.mock("@reactive-resume/api/features/storage", () => ({
+	migrateUserStorage: mocks.migrateUserStorage,
 }));
 
 vi.mock("@reactive-resume/db/client", () => ({ db: {} }));
@@ -88,6 +98,24 @@ describe("handleAuth", () => {
 			error: "invalid_redirect_uri",
 			error_description: "redirect_uri is not allowed",
 		});
+		expect(mocks.handler).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["create-client", { post_logout_redirect_uris: ["https://10.0.0.1/logout"] }, "invalid_redirect_uri"],
+		["create-client", { backchannel_logout_uri: "https://example.com/logout" }, "invalid_client_metadata"],
+		["update-client", { client_id: "c", update: { redirect_uris: ["https://[::1]/cb"] } }, "invalid_redirect_uri"],
+	])("rejects unsafe client metadata on %s: %j", async (endpoint, body, error) => {
+		const { handleAuth } = await import("./auth");
+		const response = await handleAuth(
+			new Request(`http://localhost:3000/api/auth/oauth2/${endpoint}`, {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			}),
+		);
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({ error });
 		expect(mocks.handler).not.toHaveBeenCalled();
 	});
 
@@ -223,4 +251,15 @@ describe("OAuth provider response validation", () => {
 			expect(mocks.consent).not.toHaveBeenCalled();
 		},
 	);
+});
+
+describe("account link storage migration", () => {
+	it("sets an account link hook that delegates to migrateUserStorage", async () => {
+		await import("./auth");
+		const cleanup = vi.fn();
+		mocks.migrateUserStorage.mockResolvedValueOnce(cleanup);
+		expect(await mocks.accountLinkHook?.({ fromUserId: "guest-old", toUserId: "user-new" })).toBe(cleanup);
+		expect(cleanup).not.toHaveBeenCalled();
+		expect(mocks.migrateUserStorage).toHaveBeenCalledWith("guest-old", "user-new");
+	});
 });

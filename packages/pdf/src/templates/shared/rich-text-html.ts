@@ -1,5 +1,6 @@
 import type { HTMLElement, Node } from "node-html-parser";
 import { NodeType, parse } from "node-html-parser";
+import { assertRichTextComplexity } from "@reactive-resume/schema/resume/limits";
 import { isDarkColor } from "@reactive-resume/utils/color";
 import { getRichTextSemanticKind, getRichTextSemanticNodeKey } from "../../semantic/rich-text-keys";
 
@@ -64,8 +65,9 @@ const normalizeMarkElements = (root: ReturnType<typeof parse>) => {
 	}
 };
 
-// Match HTML document whitespace, not Unicode spaces authored as visible content.
-const trimHtmlWhitespace = (text: string): string => text.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "");
+// Match HTML document whitespace, not Unicode spaces authored as visible content. The lookbehind
+// tries the trailing pattern only at the start of a run, so inner runs are scanned once.
+const trimHtmlWhitespace = (text: string): string => text.replace(/^[\t\n\f\r ]+|(?<![\t\n\f\r ])[\t\n\f\r ]+$/g, "");
 
 const isMeaningfulNode = (node: Node): boolean =>
 	node.nodeType !== NodeType.TEXT_NODE || trimHtmlWhitespace(node.toString()).length > 0;
@@ -73,7 +75,9 @@ const isMeaningfulNode = (node: Node): boolean =>
 const isElement = (node: Node): node is HTMLElement => node.nodeType === NodeType.ELEMENT_NODE;
 
 const LEADING_BOLD_BOUNDARY_WHITESPACE = /^(?:[\u0020\u00a0]|&nbsp;|&#160;|&#xA0;)+/i;
-const TRAILING_BOLD_BOUNDARY_WHITESPACE = /(?:[\u0020\u00a0]|&nbsp;|&#160;|&#xA0;)+$/i;
+// Starts only where the previous text is not boundary whitespace, keeping a long inner run linear.
+const TRAILING_BOLD_BOUNDARY_WHITESPACE =
+	/(?<![\u0020\u00a0]|&nbsp;|&#160;|&#xA0;)(?:[\u0020\u00a0]|&nbsp;|&#160;|&#xA0;)+$/i;
 
 const normalizeBoldBoundaryWhitespace = (root: ReturnType<typeof parse>) => {
 	for (const bold of root.querySelectorAll("strong,b").reverse()) {
@@ -209,6 +213,7 @@ export const normalizeRichTextHtml = (
 	html: string,
 	{ direction = "ltr", softHyphens = false }: NormalizeRichTextHtmlOptions = {},
 ): string => {
+	assertRichTextComplexity(html);
 	const root = parse(trimHtmlWhitespace(html), { comment: false });
 	const normalized: string[] = [];
 	let inlineNodes: string[] = [];

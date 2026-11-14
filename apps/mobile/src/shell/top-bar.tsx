@@ -86,10 +86,20 @@ export function TopBar({ backLabel, onBack, title, onTitlePress, titleLabel, sub
 					)}
 					{subtitle}
 				</View>
-				{tablet ? <View style={{ flex: 1, alignItems: "center" }}>{stackedModes ? null : center}</View> : null}
+				{tablet ? (
+					<View
+						style={{
+							flexGrow: 1,
+							alignItems: "center",
+							paddingHorizontal: center && !stackedModes ? space.s4 : 0,
+						}}
+					>
+						{stackedModes ? null : center}
+					</View>
+				) : null}
 				<View style={{ flexDirection: "row", alignItems: "center", gap: tablet ? space.s2 : 0 }}>{actions}</View>
 			</View>
-			{stackedModes ? <View style={{ paddingBottom: space.s2 }}>{center}</View> : null}
+			{stackedModes ? <View style={{ alignItems: "center", paddingVertical: space.s2 }}>{center}</View> : null}
 		</View>
 	);
 }

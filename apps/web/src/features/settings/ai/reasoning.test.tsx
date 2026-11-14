@@ -3,7 +3,7 @@
 import type { AiReasoning } from "@reactive-resume/ai/reasoning";
 import type { AIProvider } from "@reactive-resume/ai/types";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { useState } from "react";

@@ -28,7 +28,7 @@ export const name = "reactive-resume";
  * its own dependency on the tools service, so the bridge still gets what it
  * needs without this plugin waiting on it.
  */
-export const inject = ["systemPrompt"];
+export const inject: string[] = ["systemPrompt"];
 
 /**
  * Connect a Reactive Resume account to the session.

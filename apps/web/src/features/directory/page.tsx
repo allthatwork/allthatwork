@@ -30,7 +30,7 @@ import {
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
-import { useIsMobile } from "@reactive-resume/ui/hooks/use-mobile";
+import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
 import { CompanyBoards, WatchSuggestions } from "./boards";
 import {
@@ -202,7 +202,7 @@ type ToolbarProps = {
 };
 /** Search, the add button, the total, and (contacts) a ⋯ menu. Shorter labels on a phone. */
 function Toolbar({ search, onSearch, label, placeholder, add, onAdd, count, children }: ToolbarProps) {
-	const mobile = useIsMobile();
+	const mobile = useBreakpoint() === "mobile";
 	return (
 		<div className="flex items-center gap-2">
 			<Input

@@ -1,6 +1,10 @@
 import type { Application } from "./types";
-import { describe, expect, it } from "vitest";
-import { getNextStep } from "./next-step";
+import { describe, expect, it } from "vite-plus/test";
+import { i18n } from "@lingui/core";
+
+i18n.load("en", {});
+i18n.activate("en");
+import { daysInLane, describeNextStep, getNextStep } from "./next-step";
 
 const NOW = new Date("2026-09-28T12:00:00Z");
 const day = (offset: number) => new Date(NOW.getTime() + offset * 86_400_000);
@@ -54,4 +58,38 @@ describe("getNextStep", () => {
 		expect(getNextStep(quiet, { now: NOW, noReplyDays: 5 })).toEqual({ kind: "no-reply", days: 12 });
 		expect(getNextStep(quiet, { now: NOW, noReplyDays: 0 })).toEqual({ kind: "waiting", days: 12 });
 	});
+
+	it("keeps the no-reply clock running across a move between two Applied lanes, while time in lane restarts", () => {
+		const moved = {
+			...application({
+				activity: [
+					{ id: "s1", type: "stage", stage: "applied", laneId: "applied", at: day(-12) },
+					{ id: "s2", type: "stage", stage: "applied", laneId: "chased", canonicalTransition: false, at: day(-2) },
+				],
+			}),
+			laneId: "chased",
+		};
+		expect(getNextStep(moved, { now: NOW })).toEqual({ kind: "no-reply", days: 12 });
+		expect(daysInLane(moved, NOW)).toBe(2);
+	});
+});
+
+it.each([
+	["UTC", "09:00"],
+	["Europe/Berlin", "10:00"],
+])("describes interviews on the %s account clock", (timeZone, time) => {
+	const source = application({ activity: [interview(new Date("2026-10-30T09:00:00Z"))] });
+	const step = getNextStep(source, { now: NOW });
+	const text = describeNextStep(step, { status: "interview", closedReason: null }, "en-GB", timeZone);
+	expect(text.sub).toContain(time);
+	expect(source.activity[0]?.at).toEqual(new Date("2026-10-30T09:00:00Z"));
+});
+
+it("keeps a follow-up on the calendar date selected in its browser-local editor", () => {
+	const at = new Date(2026, 9, 30, 9);
+	const step = getNextStep(application({ followUpAt: at }), { now: NOW });
+	const expected = at.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+	for (const timeZone of ["Pacific/Honolulu", "Pacific/Kiritimati"]) {
+		expect(describeNextStep(step, { status: "applied", closedReason: null }, "en-GB", timeZone).sub).toBe(expected);
+	}
 });

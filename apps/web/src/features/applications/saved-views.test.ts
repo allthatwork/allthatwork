@@ -1,5 +1,5 @@
 import type { ApplicationView } from "@reactive-resume/schema/applications/views";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { DEFAULT_APPLICATION_FILTERS } from "@reactive-resume/schema/applications/filters";
 import { DEFAULT_APPLICATION_VIEW_FILTERS } from "@reactive-resume/schema/applications/views";
 import { filtersOfView, isViewEdited, openingFor, tabLabelsFit, viewFiltersOf } from "./saved-views";

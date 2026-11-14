@@ -76,6 +76,18 @@ export function ListRow({
 	// ink3 is too light on selectedFill (tokens.md §1); secondary text uses ink2 there.
 	const quiet: ColorToken = selected ? "ink2" : "ink3";
 	const pressable = !!onPress || !!onLongPress;
+	const Container = pressable ? Pressable : View;
+	const rowStyle = (pressed: boolean): ViewStyle => ({
+		minHeight: subtitle ? size.row + space.s3 : android ? size.row + space.s1 : size.row,
+		flexDirection: stacked ? "column" : "row",
+		alignItems: stacked ? "stretch" : "center",
+		gap: stacked ? space.s2 : android ? space.s4 : space.s3,
+		paddingVertical: space.s2,
+		paddingStart: space.s4,
+		paddingEnd: android ? space.s4 : space.s3,
+		backgroundColor: pressed && !android ? colors.press : selected ? colors.selectedFill : "transparent",
+		opacity: disabled ? 0.45 : 1,
+	});
 	const leadingGraphic =
 		typeof leading === "string" ? (
 			<Icon name={leading as IconName} size={size.icon.row} color={colors[tone === "ink" ? "ink2" : tone]} />
@@ -105,11 +117,12 @@ export function ListRow({
 	);
 
 	return (
-		<Pressable
+		<Container
+			accessible={pressable || trailing === undefined}
 			accessibilityRole={pressable ? "button" : undefined}
 			accessibilityState={{ disabled: !!disabled, selected: !!selected }}
 			accessibilityHint={accessibilityHint}
-			disabled={disabled || !pressable}
+			disabled={disabled}
 			onPress={onPress}
 			onLongPress={
 				onLongPress
@@ -120,17 +133,7 @@ export function ListRow({
 					: undefined
 			}
 			android_ripple={pressable ? { color: colors.press } : undefined}
-			style={({ pressed }) => ({
-				minHeight: subtitle ? size.row + space.s3 : android ? size.row + space.s1 : size.row,
-				flexDirection: stacked ? "column" : "row",
-				alignItems: stacked ? "stretch" : "center",
-				gap: stacked ? space.s2 : android ? space.s4 : space.s3,
-				paddingVertical: space.s2,
-				paddingStart: space.s4,
-				paddingEnd: android ? space.s4 : space.s3,
-				backgroundColor: pressed && !android ? colors.press : selected ? colors.selectedFill : "transparent",
-				opacity: disabled ? 0.45 : 1,
-			})}
+			style={pressable ? ({ pressed }) => rowStyle(pressed) : rowStyle(false)}
 		>
 			{divider && !android ? (
 				<View
@@ -174,7 +177,7 @@ export function ListRow({
 					{indicators}
 				</>
 			)}
-		</Pressable>
+		</Container>
 	);
 }
 
@@ -187,7 +190,7 @@ export type ListGroupProps = {
 };
 
 /**
- * Rows grouped like the platform's settings lists (tokens.md §7): iOS inset grouped (`raised`, `rXl`, hairlines
+ * Rows grouped like the platform's settings lists (tokens.md §7): iOS inset grouped (`raised`, `rLg`, hairlines
  * between rows); Android full-width rows on `bg`, so the group bleeds through the screen's `s4` side padding.
  */
 export function ListGroup({ title, footer, children }: ListGroupProps) {
@@ -209,7 +212,7 @@ export function ListGroup({ title, footer, children }: ListGroupProps) {
 					{title}
 				</Text>
 			) : null}
-			<View style={android ? null : { backgroundColor: colors.raised, borderRadius: radius.rXl, overflow: "hidden" }}>
+			<View style={android ? null : { backgroundColor: colors.raised, borderRadius: radius.rLg, overflow: "hidden" }}>
 				{rows.map((row, index) => (row.type === ListRow && index > 0 ? cloneElement(row, { divider: true }) : row))}
 			</View>
 			{footer ? (
@@ -235,7 +238,7 @@ export function Card({ children, onPress, onLongPress, selected, accessibilityLa
 	const { colors, radius, shadows, space } = useTheme();
 	const cardStyle = {
 		padding: space.s3,
-		borderRadius: radius.rXl,
+		borderRadius: radius.rLg,
 		borderWidth: 1,
 		borderColor: selected ? colors.accent : colors.line,
 		backgroundColor: selected ? colors.selectedFill : colors.surface,
@@ -295,7 +298,7 @@ export function EmptyState({ icon, title, message, action, secondaryAction }: Em
 						width: size.hit + space.s5,
 						height: size.hit + space.s5,
 						marginBottom: space.s1,
-						borderRadius: radius.r2xl,
+						borderRadius: radius.rLg,
 						alignItems: "center",
 						justifyContent: "center",
 						backgroundColor: colors.sunken,
@@ -304,7 +307,7 @@ export function EmptyState({ icon, title, message, action, secondaryAction }: Em
 					<Icon name={icon} size={size.icon.bar + space.s2} color={colors.ink2} />
 				</View>
 			) : null}
-			<Text accessibilityRole="header" variant="heading" align="center">
+			<Text accessibilityRole="header" variant="heading" align="center" style={{ alignSelf: "stretch" }}>
 				{title}
 			</Text>
 			{message ? (
@@ -383,7 +386,7 @@ export function Banner({ tone, variant, message, title, icon, action, actions, o
 				minHeight: strip ? size.hit - space.s2 : undefined,
 				paddingVertical: strip ? space.s1 + space.s0 : space.s3,
 				paddingHorizontal: strip ? space.s4 : space.s3,
-				borderRadius: strip ? 0 : radius.rXl,
+				borderRadius: strip ? 0 : radius.rLg,
 				backgroundColor: colors[palette.background],
 			}}
 		>
@@ -440,7 +443,7 @@ export type AvatarProps = {
 };
 
 export function Avatar({ name, uri, size = 40 }: AvatarProps) {
-	const { colors, fonts, motion } = useTheme();
+	const { colors, fonts, motion, radius } = useTheme();
 	// Array.from keeps surrogate pairs whole, so a name starting with an emoji or a supplementary-plane letter
 	// does not show half a character.
 	const initials = name
@@ -449,7 +452,7 @@ export function Avatar({ name, uri, size = 40 }: AvatarProps) {
 		.slice(0, 2)
 		.map((part) => Array.from(part)[0]?.toLocaleUpperCase())
 		.join("");
-	const circle = { width: size, height: size, borderRadius: size / 2 };
+	const circle = { width: size, height: size, borderRadius: radius.rLg };
 
 	if (uri)
 		return (

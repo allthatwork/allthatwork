@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 
@@ -249,7 +249,7 @@ describe("OAuth account creation", () => {
 		const form = container.querySelector("form");
 		if (!form) throw new Error("Missing registration form");
 		fireEvent.submit(form);
-		await waitFor(() => expect(screen.getByText(/>=8/)).toBeDefined());
+		await waitFor(() => expect(screen.getByText("Use at least 8 characters.")).toBeDefined());
 		expect(mocks.signup).not.toHaveBeenCalled();
 	});
 	it("continues a create prompt only after successful signup with a trimmed one-character name", async () => {

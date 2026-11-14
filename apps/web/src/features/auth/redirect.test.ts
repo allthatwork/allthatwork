@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { authSearchSchema, getAuthRedirectOptions, getOAuthPasskeyOptions, getOAuthSignInOptions } from "./redirect";
 
 describe("authentication callback", () => {

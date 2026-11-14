@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { dictate, recordingBitrate, writeNumbersAsDigits } from "./recorder";
 
 describe("recording length", () => {

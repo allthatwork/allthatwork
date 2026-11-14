@@ -3,20 +3,22 @@ import type { GenericOAuthConfig, GenericOAuthUserInfo } from "better-auth/plugi
 import type { JWTPayload } from "jose";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { apiKey } from "@better-auth/api-key";
-import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { dash } from "@better-auth/infra";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { passkey } from "@better-auth/passkey";
 import { compare, hash } from "bcryptjs";
 import { APIError, betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
+import { deleteSessionCookie, setSessionCookie } from "better-auth/cookies";
 import { admin, anonymous, jwt, openAPI } from "better-auth/plugins";
 import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { username } from "better-auth/plugins/username";
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, eq, gt, ne, sql } from "drizzle-orm";
 import { createLocalJWKSet, jwtVerify } from "jose";
 import { createElement } from "react";
+import { createDefaultOwnedApplicationLanes, MAX_APPLICATION_LANES } from "@reactive-resume/db/application-lanes";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { ResetPasswordEmail, VerifyEmail, VerifyEmailChange } from "@reactive-resume/email/templates/auth";
@@ -30,7 +32,7 @@ import { RESUME_PAGES, resumePagesSchema } from "@reactive-resume/utils/resume-p
 import { generateId, toUsername } from "@reactive-resume/utils/string";
 import { timezoneSchema } from "@reactive-resume/utils/timezone";
 import { isAllowedOAuthRedirectUri } from "@reactive-resume/utils/url-security.node";
-import { createGithubProfileMapper, createProfileMapper } from "./oauth-profile";
+import { createGithubProfileMapper, createProfileMapper, isUsernameReserved } from "./oauth-profile";
 import { authRateLimitStorage } from "./rate-limit";
 import { getTrustedOrigins } from "./trusted-origins";
 import { recordUsernameChange } from "./username-redirect";
@@ -83,7 +85,7 @@ export async function verifyOAuthToken(token: string): Promise<JWTPayload> {
 				),
 			)
 			.limit(1);
-		if (!session) throw new APIError("UNAUTHORIZED", { message: "OAuth session has ended." });
+		if (!session) throw new APIError("UNAUTHORIZED", { message: "OAuth session has ended. Sign in again." });
 	}
 	const [consent] = await db
 		.select()
@@ -152,6 +154,175 @@ type WithoutEndpointMetadata<TPlugin> = TPlugin extends { endpoints: infer TEndp
 		}
 	: TPlugin;
 
+/** Prepare external resources before commit; optional cleanup runs only after commit. */
+export type AccountLinkHook = (params: {
+	fromUserId: string;
+	toUserId: string;
+}) => Promise<(() => Promise<void>) | void>;
+
+let accountLinkHook: AccountLinkHook | undefined;
+
+/** Sets the one account-link hook; no argument clears it. */
+export function setAccountLinkHook(hook?: AccountLinkHook): void {
+	accountLinkHook = hook;
+}
+
+/** Cleans up outside the database after Better Auth deletes a user (guest cleanup after linking, admin removal). */
+export type UserDeleteHook = (userId: string) => Promise<void>;
+
+let userDeleteHook: UserDeleteHook | undefined;
+
+/** Sets the one user-delete hook; no argument clears it. */
+export function setUserDeleteHook(hook?: UserDeleteHook): void {
+	userDeleteHook = hook;
+}
+
+export async function linkAnonymousAccount({
+	fromUserId,
+	toUserId,
+}: {
+	fromUserId: string;
+	toUserId: string;
+}): Promise<void> {
+	if (fromUserId === toUserId) return;
+
+	const cleanup = await db.transaction(async (tx) => {
+		// Match document/application writers' owner-first order; stable order prevents opposing-link deadlocks.
+		for (const userId of [fromUserId, toUserId].sort()) {
+			const [owner] = await tx
+				.select({ id: schema.user.id })
+				.from(schema.user)
+				.where(eq(schema.user.id, userId))
+				.for("no key update");
+			if (!owner) throw new APIError("NOT_FOUND", { message: "The account is unavailable." });
+		}
+		const sourceLanes = await tx
+			.select()
+			.from(schema.applicationLane)
+			.where(eq(schema.applicationLane.userId, fromUserId));
+		const targetLanes = await tx
+			.select()
+			.from(schema.applicationLane)
+			.where(eq(schema.applicationLane.userId, toUserId));
+		const defaultLanes = createDefaultOwnedApplicationLanes(toUserId);
+		const targetActiveCount = targetLanes.length
+			? targetLanes.filter((lane) => !lane.retiredAt).length
+			: defaultLanes.length;
+		if (
+			targetActiveCount + sourceLanes.filter((lane) => !lane.systemKey && !lane.retiredAt).length >
+			MAX_APPLICATION_LANES
+		)
+			throw new APIError("CONFLICT", {
+				message:
+					"Retire unused application lanes before combining these accounts; the combined pipeline exceeds 40 active lanes.",
+			});
+		await tx.insert(schema.applicationPipeline).values({ userId: toUserId }).onConflictDoNothing();
+		await tx.insert(schema.applicationLane).values(defaultLanes).onConflictDoNothing();
+		const laneIds = new Map<string, string>();
+		let position = Math.max(5, ...targetLanes.map((lane) => lane.position)) + 1;
+		for (const lane of sourceLanes) {
+			const id = lane.systemKey
+				? (targetLanes.find((target) => target.systemKey === lane.systemKey)?.id ??
+					`application-lane:${toUserId}:${lane.systemKey}`)
+				: generateId();
+			laneIds.set(lane.id, id);
+			if (!lane.systemKey)
+				await tx.insert(schema.applicationLane).values({ ...lane, id, userId: toUserId, position: position++ });
+		}
+		await tx
+			.update(schema.applicationPipeline)
+			.set({ revision: sql`${schema.applicationPipeline.revision} + 1` })
+			.where(eq(schema.applicationPipeline.userId, toUserId));
+
+		const rewriteUploadsJson = (column: unknown) =>
+			sql`cast(replace(cast(${column} as text), 'uploads/' || ${fromUserId} || '/', 'uploads/' || ${toUserId} || '/') as jsonb)`;
+
+		const rewriteUploadsUrl = (column: unknown) =>
+			sql`case when ${column} is not null then replace(${column}, 'uploads/' || ${fromUserId} || '/', 'uploads/' || ${toUserId} || '/') else null end`;
+
+		// An existing account may already use a slug; suffix the guest's copy to keep (user, slug) unique.
+		await tx
+			.update(schema.resume)
+			.set({
+				userId: toUserId,
+				slug: sql`case when exists (select 1 from resume r where r.user_id = ${toUserId} and r.slug = resume.slug) then resume.slug || '-' || right(resume.id, 6) else resume.slug end`,
+				data: rewriteUploadsJson(schema.resume.data),
+			})
+			.where(eq(schema.resume.userId, fromUserId));
+
+		await tx
+			.update(schema.resumeVersion)
+			.set({
+				userId: toUserId,
+				data: rewriteUploadsJson(schema.resumeVersion.data),
+			})
+			.where(eq(schema.resumeVersion.userId, fromUserId));
+
+		await tx
+			.update(schema.coverLetter)
+			.set({
+				userId: toUserId,
+				style: rewriteUploadsJson(schema.coverLetter.style),
+			})
+			.where(eq(schema.coverLetter.userId, fromUserId));
+
+		await tx
+			.update(schema.coverLetterVersion)
+			.set({
+				userId: toUserId,
+				data: rewriteUploadsJson(schema.coverLetterVersion.data),
+			})
+			.where(eq(schema.coverLetterVersion.userId, fromUserId));
+
+		const applications = await tx
+			.select()
+			.from(schema.application)
+			.where(eq(schema.application.userId, fromUserId))
+			.for("update");
+		for (const application of applications) {
+			await tx
+				.update(schema.application)
+				.set({
+					userId: toUserId,
+					laneId: application.laneId
+						? (laneIds.get(application.laneId) ?? `application-lane:${toUserId}:${application.status}`)
+						: `application-lane:${toUserId}:${application.status}`,
+					activity: application.activity.map((entry) =>
+						entry.type === "stage" && entry.laneId && laneIds.has(entry.laneId)
+							? { ...entry, laneId: laneIds.get(entry.laneId) ?? entry.laneId }
+							: entry,
+					),
+					resumeFileUrl: rewriteUploadsUrl(schema.application.resumeFileUrl),
+					coverLetterUrl: rewriteUploadsUrl(schema.application.coverLetterUrl),
+				})
+				.where(and(eq(schema.application.id, application.id), eq(schema.application.userId, fromUserId)));
+		}
+
+		await tx
+			.delete(schema.resumeSlugRedirect)
+			.where(
+				and(
+					eq(schema.resumeSlugRedirect.userId, fromUserId),
+					sql`exists (select 1 from resume_slug_redirect rsr where rsr.user_id = ${toUserId} and rsr.slug = resume_slug_redirect.slug)`,
+				),
+			);
+
+		await tx
+			.update(schema.resumeSlugRedirect)
+			.set({ userId: toUserId })
+			.where(eq(schema.resumeSlugRedirect.userId, fromUserId));
+
+		// Ownership updates lock document rows, so guest saves cannot add uncopied references during copying.
+		return accountLinkHook?.({ fromUserId, toUserId });
+	});
+
+	try {
+		await cleanup?.();
+	} catch (error) {
+		console.warn("Failed to clean up linked account resources:", error);
+	}
+}
+
 const getAuthConfig = () => {
 	const authConfigs: GenericOAuthConfig[] = [];
 
@@ -215,12 +386,42 @@ const getAuthConfig = () => {
 						if (typeof user.username === "string" && id) await recordUsernameChange(id, toUsername(user.username));
 					},
 				},
+				delete: {
+					// The user row is already gone, so a failed cleanup is logged rather than failing the request.
+					after: async (user) => {
+						try {
+							await userDeleteHook?.(user.id);
+						} catch (error) {
+							console.error("Failed to clean up deleted user %s:", user.id, error);
+						}
+					},
+				},
 			},
 		},
+
+		// Unused endpoints: guest deletion skips the app's storage cleanup; the session JWT has no consumer.
+		disabledPaths: ["/delete-anonymous-user", "/token"],
 
 		hooks: {
 			before: createAuthMiddleware(async (ctx) => {
 				const user = accountUser.getStore();
+				// Sign-up copies displayUsername into username when username is missing, so either one claims the name.
+				const requestedUsername: unknown = ctx.body?.username ?? ctx.body?.displayUsername;
+				if (
+					typeof requestedUsername === "string" &&
+					["/sign-up/email", "/update-user", "/is-username-available"].includes(ctx.path)
+				) {
+					const claimant =
+						user?.id ??
+						(ctx.path === "/update-user"
+							? (await auth.api.getSession({ headers: ctx.headers ?? new Headers() }))?.user.id
+							: undefined);
+					if (await isUsernameReserved(toUsername(requestedUsername), claimant))
+						throw new APIError("UNPROCESSABLE_ENTITY", {
+							code: "USERNAME_IS_ALREADY_TAKEN",
+							message: "This username is already taken. Choose another.",
+						});
+				}
 				if (user && !ctx.request && ["/update-user", "/api-key/list", "/api-key/delete"].includes(ctx.path)) {
 					// Internal account calls reuse session-only hooks without creating a browser credential.
 					return {
@@ -242,7 +443,41 @@ const getAuthConfig = () => {
 					};
 				}
 				if (ctx.path === "/sign-in/anonymous" && (!env.FLAG_ENABLE_GUEST_LOGIN || env.FLAG_DISABLE_SIGNUPS)) {
-					throw new APIError("FORBIDDEN", { message: "Guest login is disabled." });
+					throw new APIError("FORBIDDEN", {
+						message: "Guest access is turned off on this server. Create an account or sign in.",
+					});
+				}
+				if (ctx.path === "/verify-email") {
+					// A verification link signs in as its account, and the anonymous plugin would then move the
+					// guest's documents into it, even when the link belongs to someone else.
+					const current = await auth.api.getSession({ headers: ctx.headers ?? new Headers() });
+					if (current?.user.isAnonymous) {
+						throw new APIError("FORBIDDEN", {
+							message: "Sign out of the guest session before verifying an email address.",
+						});
+					}
+					return;
+				}
+				if (ctx.path === "/sign-in/username" && env.FLAG_DISABLE_EMAIL_AUTH)
+					throw new APIError("FORBIDDEN", { message: "Password sign-in is turned off on this server." });
+				// Internal issuance is gated by the application's session-only, recent-sign-in procedure.
+				if (ctx.path === "/api-key/create" && !ctx.request) return;
+				if (
+					["/passkey/generate-register-options", "/passkey/verify-registration", "/api-key/create"].includes(ctx.path)
+				) {
+					// freshAge is 0 so old sessions can unlink providers; adding a passkey still needs a recent sign-in.
+					const current = await auth.api.getSession({
+						headers: ctx.headers ?? new Headers(),
+						query: { disableCookieCache: true },
+					});
+					if (!current) throw new APIError("UNAUTHORIZED");
+					if (ctx.path.startsWith("/passkey/") && !current.user.emailVerified)
+						throw new APIError("FORBIDDEN", { message: "Verify your email address before adding a passkey." });
+					const age = Date.now() - new Date(current.session.createdAt).getTime();
+					if (!Number.isFinite(age) || age < 0 || age > 24 * 60 * 60 * 1000) {
+						throw new APIError("FORBIDDEN", { message: "For your security, sign in again to add a credential." });
+					}
+					return;
 				}
 				if (ctx.path === "/oauth2/delete-consent") {
 					const origin = ctx.headers?.get("origin");
@@ -312,7 +547,7 @@ const getAuthConfig = () => {
 		onAPIError: { errorURL: "/auth/error" },
 
 		advanced: {
-			database: { generateId },
+			database: { generateId, joins: true },
 			useSecureCookies: authBaseUrl.startsWith("https://"),
 			ipAddress: { ipAddressHeaders: ["X-Real-IP"] },
 		},
@@ -329,6 +564,30 @@ const getAuthConfig = () => {
 					to: user.email,
 					subject: "Reset your password",
 					react: createElement(ResetPasswordEmail, { url }),
+				});
+			},
+			revokeSessionsOnPasswordReset: true,
+			// The reset link proved control of the inbox. Drop credentials someone else may hold, such as on an
+			// account registered with this address before its owner.
+			onPasswordReset: async ({ user }) => {
+				await db.transaction(async (tx) => {
+					await tx.delete(schema.apikey).where(eq(schema.apikey.referenceId, user.id));
+					await tx.delete(schema.oauthAccessToken).where(eq(schema.oauthAccessToken.userId, user.id));
+					await tx.delete(schema.oauthRefreshToken).where(eq(schema.oauthRefreshToken.userId, user.id));
+					await tx.delete(schema.oauthConsent).where(eq(schema.oauthConsent.userId, user.id));
+					// Historical passkeys may predate mailbox verification; recovery revokes all of them.
+					await tx.delete(schema.passkey).where(eq(schema.passkey.userId, user.id));
+					// Nobody had proved this address before: whoever signed up with it may have added other ways in.
+					if (!user.emailVerified) {
+						await tx.delete(schema.twoFactor).where(eq(schema.twoFactor.userId, user.id));
+						await tx
+							.delete(schema.account)
+							.where(and(eq(schema.account.userId, user.id), ne(schema.account.providerId, "credential")));
+					}
+					await tx
+						.update(schema.user)
+						.set({ emailVerified: true, ...(user.emailVerified ? {} : { twoFactorEnabled: false }) })
+						.where(eq(schema.user.id, user.id));
 				});
 			},
 			password: {
@@ -352,10 +611,13 @@ const getAuthConfig = () => {
 		user: {
 			changeEmail: {
 				enabled: true,
+				// Better Auth's two-step change: the current address approves first, then the new address gets its own
+				// verification link. Sending this step to the new address would let anyone holding a session move the
+				// account to an address they control without the owner's approval.
 				sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
 					await sendEmail({
-						to: newEmail,
-						subject: "Verify your new email",
+						to: user.email,
+						subject: "Approve your email change",
 						react: createElement(VerifyEmailChange, { url, previousEmail: user.email, newEmail }),
 					});
 				},
@@ -403,10 +665,9 @@ const getAuthConfig = () => {
 		session: { freshAge: 0 },
 
 		account: {
-			accountLinking: {
-				enabled: true,
-				trustedProviders: ["google", "github", "linkedin"],
-			},
+			// Linking by email needs the provider to report that email as verified.
+			accountLinking: { enabled: true },
+			encryptOAuthTokens: true,
 		},
 
 		socialProviders: {
@@ -455,8 +716,9 @@ const getAuthConfig = () => {
 		},
 
 		plugins: [
+			// JSON schema only; no reference-page inline scripts need a CSP nonce.
 			openAPI({ disableDefaultReference: true }),
-			jwt(),
+			jwt({ disableSettingJwtHeader: true }),
 			admin(),
 			passkey(),
 			genericOAuth({ config: authConfigs }),
@@ -511,27 +773,22 @@ const getAuthConfig = () => {
 				generateName: () => "Guest",
 				// Signing up or in from a guest session moves the guest's documents to that account; the plugin then
 				// deletes the guest account, along with anything not moved here (assistant threads, career data).
-				onLinkAccount: async ({ anonymousUser, newUser }) => {
-					const from = anonymousUser.user.id;
-					const to = newUser.user.id;
-					await db.transaction(async (tx) => {
-						// An existing account may already use a slug; suffix the guest's copy to keep (user, slug) unique.
-						await tx
-							.update(schema.resume)
-							.set({
-								userId: to,
-								slug: sql`case when exists (select 1 from resume r where r.user_id = ${to} and r.slug = resume.slug) then resume.slug || '-' || right(resume.id, 6) else resume.slug end`,
-							})
-							.where(eq(schema.resume.userId, from));
-						for (const table of [
-							schema.resumeVersion,
-							schema.coverLetter,
-							schema.coverLetterVersion,
-							schema.application,
-						]) {
-							await tx.update(table).set({ userId: to }).where(eq(table.userId, from));
-						}
-					});
+				onLinkAccount: async ({ anonymousUser, newUser, ctx }) => {
+					try {
+						await linkAnonymousAccount({
+							fromUserId: anonymousUser.user.id,
+							toUserId: newUser.user.id,
+						});
+					} catch (error) {
+						// Better Auth sets the new session cookie before this hook. A failed transfer must leave the
+						// guest accessible, and must not expose a usable credential-session cookie on the error reply.
+						deleteSessionCookie(ctx);
+						await setSessionCookie(ctx, anonymousUser, undefined, {
+							maxAge: Math.max(0, Math.floor((anonymousUser.session.expiresAt.getTime() - Date.now()) / 1000)),
+						});
+						await ctx.context.internalAdapter.deleteSession(newUser.session.token).catch(() => {});
+						throw error;
+					}
 				},
 			}),
 			...(env.BETTER_AUTH_API_KEY

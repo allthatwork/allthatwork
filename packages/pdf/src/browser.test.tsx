@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
 
 const rendererMock = vi.hoisted(() => ({

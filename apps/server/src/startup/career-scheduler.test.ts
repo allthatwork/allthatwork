@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { startCareerScheduler } from "./career-scheduler";
 
 const run = vi.hoisted(() => vi.fn<() => Promise<{ processed: number }>>());

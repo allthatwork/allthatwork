@@ -1,18 +1,22 @@
 import type { ApplicationSort } from "./list";
-import type { ApplicationClosedReason, ApplicationStatus } from "@reactive-resume/schema/applications/data";
+import type { ApplicationClosedReason } from "@reactive-resume/schema/applications/data";
+import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Pressable, SectionList, View } from "react-native";
+import { RefreshControl, Pressable, SectionList, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { AddApplicationSheet } from "./add-sheet";
-import { ApplicationsCsvSheet } from "./csv-sheet";
 import { applicationError } from "./error";
+import { useApplicationLanes } from "./lane-queries";
+import { getLaneLabel, laneInput, resolveLane } from "./lanes";
 import { filterApplications, groupApplications, visibleSelection } from "./list";
 import { describeNextStep, getNextStep } from "./next-step";
-import { useApplicationMutations, useApplications } from "./queries";
-import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel, PIPELINE } from "./stages";
+import { useApplicationDetailPrefetch, useApplicationMutations, useApplications } from "./queries";
+import { CLOSED_REASONS, getClosedReasonLabel } from "./stages";
 import { useSession } from "@/auth/session";
-import { useUserTime } from "@/features/application-detail/hooks";
+import { useNow, useUserTime } from "@/features/application-detail/hooks";
+import { useApplicationSearch } from "@/features/applications-board/search";
 import { ApplicationsViewFrame } from "@/features/applications-board/views";
 import { routes } from "@/routes";
 import {
@@ -29,8 +33,13 @@ import {
 	Switch,
 	Text,
 	TextField,
+	listItemMotion,
+	useFirstAppearance,
 	useTheme,
 } from "@/ui";
+import { usePullRefresh } from "@/ui/use-pull-refresh";
+
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 30 };
 
 export function ApplicationsListScreen() {
 	const session = useSession();
@@ -52,21 +61,27 @@ function ApplicationsList() {
 	const { t, i18n } = useLingui();
 	const { colors, space, radius, size } = useTheme();
 	const query = useApplications();
+	const now = useNow();
+	const lanes = useApplicationLanes();
+	const pull = usePullRefresh(query.refetch);
+	const firstAppearance = useFirstAppearance(!query.isPending);
 	const { timeZone } = useUserTime();
 	const { bulkUpdate, bulkDelete } = useApplicationMutations();
-	const [search, setSearch] = useState("");
+	const { search, setSearch } = useApplicationSearch();
 	const [tag, setTag] = useState("");
 	const [showClosed, setShowClosed] = useState(false);
 	const [sort, setSort] = useState<ApplicationSort>("updated");
 	const [direction, setDirection] = useState<"asc" | "desc">("desc");
-	const [collapsed, setCollapsed] = useState<Set<ApplicationStatus>>(new Set());
+	const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 	const [selected, setSelected] = useState<Set<string>>(new Set());
 	const [selecting, setSelecting] = useState(false);
 	const [adding, setAdding] = useState(false);
-	const [csv, setCsv] = useState(false);
 	const [filters, setFilters] = useState(false);
 	const [bulk, setBulk] = useState<"move" | "tag" | "close" | "delete" | null>(null);
-	const [moveStage, setMoveStage] = useState<ApplicationStatus>("applied");
+	const [moveLaneId, setMoveLaneId] = useState("");
+	const selectedLane = lanes.active.find((lane) => lane.id === moveLaneId);
+	const moveLane = selectedLane ?? resolveLane(lanes.lanes, { status: "applied" });
+	const laneAvailable = !moveLaneId || !!selectedLane;
 	const [reason, setReason] = useState<ApplicationClosedReason>("not-selected");
 	const [newTag, setNewTag] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -75,8 +90,10 @@ function ApplicationsList() {
 	const lock = useRef(false);
 	const applications = query.data ?? [];
 	const filtered = filterApplications(applications, { search, tag, showClosed });
-	const groups = groupApplications(filtered, sort, direction);
+	const filtersActive = Boolean(search.trim() || tag || showClosed);
+	const groups = groupApplications(filtered, sort, direction, now, lanes.supported ? lanes.lanes : undefined);
 	const selectedIds = visibleSelection(groups, collapsed, selected);
+	const onViewableItemsChanged = useApplicationDetailPrefetch();
 	const tags = [...new Set(applications.flatMap((item) => item.tags))].sort();
 	const changeFilters = (change: () => void) => {
 		change();
@@ -90,7 +107,15 @@ function ApplicationsList() {
 			return next;
 		});
 	const applyBulk = async () => {
-		if (!bulk || lock.current || !selectedIds.length || selectedIds.length > 200 || (bulk === "tag" && !newTag.trim()))
+		if (
+			!lanes.ready ||
+			(bulk === "move" && !laneAvailable) ||
+			!bulk ||
+			lock.current ||
+			!selectedIds.length ||
+			selectedIds.length > 200 ||
+			(bulk === "tag" && !newTag.trim())
+		)
 			return;
 		lock.current = true;
 		setBusy(true);
@@ -105,11 +130,17 @@ function ApplicationsList() {
 								ids,
 								...(bulk === "tag"
 									? { addTags: [newTag.trim()] }
-									: { status: bulk === "close" ? "closed" : moveStage }),
-								...(bulk === "close" ? { closedReason: reason } : {}),
+									: bulk === "close"
+										? { status: "closed" as const }
+										: laneInput(moveLane, lanes.supported)),
+								...(bulk === "close" || (bulk === "move" && moveLane.category === "closed" && !moveLane.closedReason)
+									? { closedReason: reason }
+									: {}),
 							})
 						).updated;
-			setResult(t`${count} of ${ids.length} applications changed.`);
+			setResult(
+				plural(ids.length, { one: `${count} of # application changed.`, other: `${count} of # applications changed.` }),
+			);
 			setBulk(null);
 			setSelected(new Set());
 			setSelecting(false);
@@ -142,13 +173,12 @@ function ApplicationsList() {
 						}}
 					/>
 				)}
-				<Button label={t`Import/Export`} variant="link" disabled={busy} onPress={() => setCsv(true)} />
 			</View>
 			{(search || tag || showClosed) && (
 				<Text color="ink2">
-					{t`${filtered.length} matches`}
+					{plural(filtered.length, { one: "# match", other: "# matches" })}
 					{tag ? ` · ${tag}` : ""}
-					{showClosed ? t` · Including closed` : ""}
+					{showClosed ? ` · ${t`Including closed`}` : ""}
 				</Text>
 			)}
 			{failure && bulk === null && <Banner tone="danger" message={failure} onDismiss={() => setFailure(null)} />}
@@ -188,7 +218,7 @@ function ApplicationsList() {
 						<Button
 							label={t`Move to…`}
 							variant="secondary"
-							disabled={busy || !selectedIds.length}
+							disabled={busy || !lanes.ready || !selectedIds.length}
 							onPress={() => {
 								setFailure(null);
 								setBulk("move");
@@ -197,7 +227,7 @@ function ApplicationsList() {
 						<Button
 							label={t`Add tag`}
 							variant="secondary"
-							disabled={busy || !selectedIds.length}
+							disabled={busy || !lanes.ready || !selectedIds.length}
 							onPress={() => {
 								setFailure(null);
 								setBulk("tag");
@@ -206,7 +236,7 @@ function ApplicationsList() {
 						<Button
 							label={t`Close…`}
 							variant="secondary"
-							disabled={busy || !selectedIds.length}
+							disabled={busy || !lanes.ready || !selectedIds.length}
 							onPress={() => {
 								setFailure(null);
 								setBulk("close");
@@ -215,7 +245,7 @@ function ApplicationsList() {
 						<Button
 							label={t`Delete…`}
 							variant="danger"
-							disabled={busy || !selectedIds.length}
+							disabled={busy || !lanes.ready || !selectedIds.length}
 							onPress={() => {
 								setFailure(null);
 								setBulk("delete");
@@ -247,9 +277,10 @@ function ApplicationsList() {
 								}))
 					}
 					keyExtractor={(item) => item.id}
+					onViewableItemsChanged={onViewableItemsChanged}
+					viewabilityConfig={VIEWABILITY_CONFIG}
 					keyboardShouldPersistTaps="handled"
-					refreshing={query.isRefetching}
-					onRefresh={() => void query.refetch()}
+					refreshControl={<RefreshControl {...pull} tintColor={colors.accent} colors={[colors.accent]} />}
 					stickySectionHeadersEnabled={false}
 					contentContainerStyle={{ padding: space.s4, gap: space.s2 }}
 					ListHeaderComponent={<View style={{ gap: space.s3, paddingBottom: space.s4 }}>{content}</View>}
@@ -257,21 +288,31 @@ function ApplicationsList() {
 						!query.isPending && !query.isError ? (
 							<EmptyState
 								icon="briefcase"
-								title={applications.length ? t`No matching applications` : t`Your job search starts here`}
+								title={
+									!applications.length
+										? t`Your job search starts here`
+										: filtersActive
+											? t`No matching applications`
+											: t`All your applications are closed`
+								}
 								message={
 									applications.length
-										? t`Try different words or clear your filters.`
+										? filtersActive
+											? t`Try different words or clear your filters.`
+											: t`Show closed applications to see your past job searches.`
 										: t`Save a job link, paste a posting, or fill in the details manually.`
 								}
 								action={{
-									label: applications.length ? t`Clear filters` : t`Save a job`,
+									label: !applications.length ? t`Save a job` : filtersActive ? t`Clear filters` : t`Show closed`,
 									onPress: () =>
 										applications.length
-											? changeFilters(() => {
-													setSearch("");
-													setTag("");
-													setShowClosed(false);
-												})
+											? !filtersActive
+												? setShowClosed(true)
+												: changeFilters(() => {
+														setSearch("");
+														setTag("");
+														setShowClosed(false);
+													})
 											: setAdding(true),
 								}}
 							/>
@@ -280,7 +321,10 @@ function ApplicationsList() {
 					renderSectionHeader={({ section }) => (
 						<Pressable
 							accessibilityRole="button"
-							accessibilityLabel={t`${getStageLabel(section.status)}, ${section.total} applications`}
+							accessibilityLabel={plural(section.total, {
+								one: `${getLaneLabel(section.lane)}, # application`,
+								other: `${getLaneLabel(section.lane)}, # applications`,
+							})}
 							accessibilityState={{ expanded: !collapsed.has(section.status) }}
 							disabled={busy}
 							onPress={() => {
@@ -304,12 +348,12 @@ function ApplicationsList() {
 								style={{
 									width: space.s2,
 									height: space.s2,
-									borderRadius: radius.rPill,
-									backgroundColor: getStageColor(section.status, colors),
+									borderRadius: radius.rLg,
+									backgroundColor: section.lane.color,
 								}}
 							/>
 							<Text variant="title" style={{ flex: 1 }}>
-								{getStageLabel(section.status)}
+								{getLaneLabel(section.lane)}
 							</Text>
 							<Text color="ink3">{section.total}</Text>
 							<Icon
@@ -319,10 +363,11 @@ function ApplicationsList() {
 							/>
 						</Pressable>
 					)}
-					renderItem={({ item }) => {
-						const next = describeNextStep(getNextStep(item), item, i18n.locale, timeZone);
+					renderItem={({ item, index }) => {
+						const next = describeNextStep(getNextStep(item, now, lanes.lanes), item, i18n.locale, timeZone);
 						return (
-							<View
+							<Animated.View
+								{...listItemMotion(index, firstAppearance)}
 								style={{
 									borderBottomWidth: 1,
 									borderBottomColor: colors.line,
@@ -336,13 +381,9 @@ function ApplicationsList() {
 										subtitle={`${item.company}${item.location ? ` · ${item.location}` : ""}\n${next.title}${next.sub ? ` · ${next.sub}` : ""}`}
 										selected={selectedIds.includes(item.id)}
 										leading={selecting ? (selectedIds.includes(item.id) ? "check-square" : "square") : undefined}
-										accessibilityHint={selecting ? t`Toggle selection` : t`Long press to select`}
+										accessibilityHint={selecting ? t`Toggle selection` : t`Open application`}
 										disabled={busy}
 										onPress={() => (selecting ? toggle(item.id) : router.push(routes.applicationDetails(item.id)))}
-										onLongPress={() => {
-											setSelecting(true);
-											toggle(item.id);
-										}}
 									/>
 								</View>
 								<IconButton
@@ -354,7 +395,7 @@ function ApplicationsList() {
 										setSelecting(true);
 									}}
 								/>
-							</View>
+							</Animated.View>
 						);
 					}}
 				/>
@@ -399,7 +440,7 @@ function ApplicationsList() {
 					onClose={() => setBulk(null)}
 					title={
 						bulk === "delete"
-							? t`Delete selected applications?`
+							? plural(selectedIds.length, { one: "Delete # application?", other: "Delete # applications?" })
 							: bulk === "close"
 								? t`Close selected applications`
 								: bulk === "tag"
@@ -408,22 +449,27 @@ function ApplicationsList() {
 					}
 				>
 					<View style={{ padding: space.s4, gap: space.s3 }}>
-						<Text>{t`${selectedIds.length} applications selected.`}</Text>
+						<Text>
+							{plural(selectedIds.length, { one: "# application selected.", other: "# applications selected." })}
+						</Text>
 						{busy && (
 							<Banner tone="info" message={t`Applying changes. Closing this sheet does not cancel the request.`} />
 						)}
 						{failure && <Banner tone="danger" message={failure} />}
+						{bulk === "move" && !laneAvailable && (
+							<Banner tone="warn" message={t`This lane is no longer available. Choose another lane.`} />
+						)}
 						{bulk === "move" && (
 							<SelectSheet
 								label={t`Move to…`}
-								value={moveStage}
-								options={PIPELINE.map((value) => ({ value, label: getStageLabel(value) }))}
-								onChange={setMoveStage}
+								value={moveLaneId || moveLane.id}
+								options={lanes.active.map((lane) => ({ value: lane.id, label: getLaneLabel(lane) }))}
+								onChange={setMoveLaneId}
 								disabled={busy}
 							/>
 						)}
 						{bulk === "tag" && <TextField label={t`Tag`} value={newTag} onChangeText={setNewTag} editable={!busy} />}
-						{bulk === "close" && (
+						{(bulk === "close" || (bulk === "move" && moveLane.category === "closed" && !moveLane.closedReason)) && (
 							<SelectSheet
 								label={t`Reason`}
 								value={reason}
@@ -435,13 +481,13 @@ function ApplicationsList() {
 						{bulk === "delete" && (
 							<Banner
 								tone="warn"
-								message={t`Applications and their attachments will be deleted permanently. This cannot be undone.`}
+								message={t`Applications and their attachments will be deleted permanently. This can't be undone.`}
 							/>
 						)}
 						<Button
 							label={
 								bulk === "delete"
-									? t`Delete`
+									? plural(selectedIds.length, { one: "Delete # application", other: "Delete # applications" })
 									: bulk === "close"
 										? t`Close applications`
 										: bulk === "tag"
@@ -450,14 +496,20 @@ function ApplicationsList() {
 							}
 							variant={bulk === "delete" ? "danger" : "primary"}
 							loading={busy}
-							disabled={busy || !selectedIds.length || selectedIds.length > 200 || (bulk === "tag" && !newTag.trim())}
+							disabled={
+								busy ||
+								!lanes.ready ||
+								(bulk === "move" && !laneAvailable) ||
+								!selectedIds.length ||
+								selectedIds.length > 200 ||
+								(bulk === "tag" && !newTag.trim())
+							}
 							onPress={() => void applyBulk()}
 						/>
 						<Button label={t`Cancel`} variant="ghost" disabled={busy} onPress={() => setBulk(null)} />
 					</View>
 				</Sheet>
 				{adding && <AddApplicationSheet onClose={() => setAdding(false)} />}
-				{csv && <ApplicationsCsvSheet applications={applications} filtered={filtered} onClose={() => setCsv(false)} />}
 			</Screen>
 		</ApplicationsViewFrame>
 	);

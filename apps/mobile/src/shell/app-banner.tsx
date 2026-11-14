@@ -22,6 +22,7 @@ export function useTabStackOptions(cleared = false) {
 	return {
 		animation: reduced ? ("fade" as const) : ("default" as const),
 		headerLargeTitle: !tablet,
+		headerTitleStyle: { fontFamily: type.display.fontFamily, color: colors.ink },
 		headerLargeTitleStyle: { fontFamily: type.largeIOS.fontFamily, color: colors.ink },
 		unstable_nativeProps: { headerConfig: { disableTopInsetApplication } },
 	};

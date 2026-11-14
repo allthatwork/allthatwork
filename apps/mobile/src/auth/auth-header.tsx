@@ -1,7 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
+import { Image } from "expo-image";
 import { openBrowserAsync } from "expo-web-browser";
 import { View } from "react-native";
-import { Button, Icon, Text, showToast, useTheme } from "@/ui";
+import { Button, Text, showToast, useTheme } from "@/ui";
 
 type AuthHeaderProps = {
 	subtitle?: string | undefined;
@@ -10,26 +11,36 @@ type AuthHeaderProps = {
 /** The app mark and name at the top of the sign-in screens. */
 export function AuthHeader({ subtitle }: AuthHeaderProps) {
 	const { t } = useLingui();
-	const { colors, radius, space } = useTheme();
+	const { radius, space } = useTheme();
 
 	return (
-		<View style={{ gap: space.s3, paddingTop: space.s6, paddingHorizontal: space.s2 }}>
-			<View
+		<View style={{ alignItems: "center", gap: space.s4, paddingHorizontal: space.s2 }}>
+			<Image
+				source={require("../../assets/icon.png")}
+				accessible={false}
 				style={{
-					width: 52,
-					height: 52,
-					borderRadius: radius.r2xl,
-					alignItems: "center",
-					justifyContent: "center",
-					backgroundColor: colors.accent,
+					width: space.s12 * 2,
+					height: space.s12 * 2,
+					borderRadius: radius.rLg,
+					marginBottom: space.s2,
 				}}
-			>
-				<Icon name="file-text" filled size={28} color={colors.onAccent} />
-			</View>
-			<Text variant="display" accessibilityRole="header">
+			/>
+			<Text variant="display" align="center" accessibilityRole="header">
 				{t`Reactive Resume`}
 			</Text>
-			{subtitle ? <Text color="ink2">{subtitle}</Text> : null}
+			{subtitle ? (
+				<Text color="ink2" align="center">
+					{subtitle}
+				</Text>
+			) : null}
+		</View>
+	);
+}
+
+export function PrivacyPolicyLink() {
+	const { t } = useLingui();
+	return (
+		<View style={{ alignSelf: "center" }}>
 			<Button
 				label={t`Privacy policy`}
 				variant="link"

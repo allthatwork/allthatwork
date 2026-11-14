@@ -1,4 +1,5 @@
-import { generateId, generateRandomName } from "@reactive-resume/utils/string";
+import { generateRandomName } from "@reactive-resume/utils/slug";
+import { generateId } from "@reactive-resume/utils/string";
 import { protectedProcedure } from "../../context";
 import { resumeDto } from "../../dto/resume";
 import { resumeMutationRateLimit } from "../../middleware/rate-limit";
@@ -7,6 +8,18 @@ import { documentsService } from "../documents/service";
 import { createResumeData } from "./initial-data";
 import { parseStoredResumeData } from "./resume-data-validation";
 import { resumeService } from "./service";
+
+const slugErrors = {
+	RESUME_SLUG_ALREADY_EXISTS: {
+		message: "A resume with this slug already exists.",
+		status: 400,
+	},
+	INVALID_SLUG: {
+		message:
+			"The slug must be at most 64 characters and contain only lowercase letters and numbers, separated by single dashes.",
+		status: 400,
+	},
+} as const;
 
 export const crudRouter = {
 	list: protectedProcedure
@@ -64,10 +77,7 @@ export const crudRouter = {
 		.use(resumeMutationRateLimit)
 		.output(resumeDto.create.output)
 		.errors({
-			RESUME_SLUG_ALREADY_EXISTS: {
-				message: "A resume with this slug already exists.",
-				status: 400,
-			},
+			...slugErrors,
 		})
 		.handler(({ context, input }) =>
 			resumeService.create({
@@ -100,10 +110,7 @@ export const crudRouter = {
 		.use(resumeMutationRateLimit)
 		.output(resumeDto.import.output)
 		.errors({
-			RESUME_SLUG_ALREADY_EXISTS: {
-				message: "A resume with this slug already exists.",
-				status: 400,
-			},
+			RESUME_SLUG_ALREADY_EXISTS: slugErrors.RESUME_SLUG_ALREADY_EXISTS,
 		})
 		.handler(async ({ context, input }) => {
 			const id = generateId();
@@ -139,14 +146,12 @@ export const crudRouter = {
 		.output(resumeDto.update.output)
 		.errors({
 			RESUME_VERSION_CONFLICT: {
-				message: "The resume changed after this patch was generated.",
+				message: "The resume changed after this patch was generated. Read the resume again and regenerate the patch.",
 				status: 409,
 			},
 			RESUME_LOCKED: { status: 403, message: "Unlock the resume first." },
-			RESUME_SLUG_ALREADY_EXISTS: {
-				message: "A resume with this slug already exists.",
-				status: 400,
-			},
+			...slugErrors,
+			RESUME_NOT_PUBLIC: { status: 400, message: "Publish the resume before making it primary." },
 		})
 		.handler(({ context, input }) =>
 			resumeService.update({
@@ -161,6 +166,9 @@ export const crudRouter = {
 				...(input.isPublic !== undefined ? { isPublic: input.isPublic } : {}),
 				...(input.randomSlug !== undefined ? { randomSlug: input.randomSlug } : {}),
 				...(input.showDownloadButtons !== undefined ? { showDownloadButtons: input.showDownloadButtons } : {}),
+				...(input.showInSearchEngines !== undefined ? { showInSearchEngines: input.showInSearchEngines } : {}),
+				...(input.hideContactDetails !== undefined ? { hideContactDetails: input.hideContactDetails } : {}),
+				...(input.isPrimary !== undefined ? { isPrimary: input.isPrimary } : {}),
 			}),
 		),
 
@@ -181,11 +189,12 @@ export const crudRouter = {
 		.errors({
 			RESUME_LOCKED: { status: 403, message: "Unlock the resume first." },
 			INVALID_PATCH_OPERATIONS: {
-				message: "The patch operations are invalid or produced an invalid resume.",
+				message:
+					"The patch operations are invalid or would produce an invalid resume. Fix the operations and try again.",
 				status: 400,
 			},
 			RESUME_VERSION_CONFLICT: {
-				message: "The resume changed after this patch was generated.",
+				message: "The resume changed after this patch was generated. Read the resume again and regenerate the patch.",
 				status: 409,
 			},
 		})
@@ -234,6 +243,10 @@ export const crudRouter = {
 		.input(resumeDto.duplicate.input)
 		.use(resumeMutationRateLimit)
 		.output(resumeDto.duplicate.output)
+		.errors({
+			NOT_FOUND: { message: "The resume does not exist.", status: 404 },
+			...slugErrors,
+		})
 		.handler(async ({ context, input }) => {
 			const original = await resumeService.getById({ id: input.id, userId: context.user.id });
 			const data = parseStoredResumeData(original.data);

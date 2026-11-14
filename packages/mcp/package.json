@@ -9,14 +9,13 @@
 		"./tool-names": "./src/mcp-tool-names.ts"
 	},
 	"scripts": {
-		"typecheck": "tsgo --noEmit",
-		"test": "vitest run --passWithNoTests",
-		"test:coverage": "vitest run --coverage --passWithNoTests",
-		"test:ci": "vitest run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests",
-		"test:agent": "vitest run --reporter=agent --reporter=json --outputFile.json=reports/vitest-results.json --passWithNoTests"
+		"typecheck": "tsrs --noEmit",
+		"test": "vp test run --passWithNoTests",
+		"test:coverage": "vp test run --coverage --passWithNoTests",
+		"test:ci": "vp test run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests"
 	},
 	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.32.1",
+		"@modelcontextprotocol/sdk": "^1.32.2",
 		"@orpc/server": "catalog:",
 		"@reactive-resume/ai": "workspace:*",
 		"@reactive-resume/api": "workspace:*",
@@ -27,8 +26,8 @@
 	},
 	"devDependencies": {
 		"@reactive-resume/config": "workspace:*",
-		"@typescript/native-preview": "catalog:",
+		"tsrs": "catalog:",
 		"typescript": "catalog:",
-		"vitest": "catalog:"
+		"vite-plus": "catalog:"
 	}
 }

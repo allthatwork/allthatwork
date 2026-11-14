@@ -6,7 +6,6 @@ import z from "zod";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { APP_NAME } from "@reactive-resume/utils/brand";
 import { LetterShell } from "./-components/letter-shell";
-import { letterWordsQueryOptions } from "@/features/letters/compose";
 import { useLetterEditorStore } from "@/features/letters/store";
 import { orpc } from "@/libs/orpc/client";
 import { createNoindexFollowMeta } from "@/libs/seo";
@@ -16,8 +15,9 @@ const searchSchema = z.object({
 	mode: z.enum(["write", "design"]).optional().catch(undefined),
 	// Opens History on this version, read-only; Applications' "Open" on what was sent links here.
 	version: z.string().optional().catch(undefined),
-	// Opens the assistant on a conversation ("new" for a fresh one), or on a question to send (⌘K Ask).
+	// Opens the assistant on a conversation ("new" for a fresh one).
 	assistant: z.string().optional().catch(undefined),
+	// Fills the assistant's composer. Never sent without the user pressing Send: anyone can make a link.
 	ask: z.string().max(2_000).optional().catch(undefined),
 	applicationId: z.string().optional().catch(undefined),
 });
@@ -30,11 +30,18 @@ export const Route = createFileRoute("/builder/letter/$coverLetterId")({
 		return { session: context.session };
 	},
 	loader: async ({ params, context }) => {
+		// The preview is a chunk of its own, otherwise fetched only once the page has rendered: start it with the letter.
+		void import("@/features/resume/preview/preview.browser");
+
+		// Letter wording pulls in the composer; loaded here so every other page's startup skips it.
+		const compose = import("@/features/letters/compose");
+
 		// Always fetched fresh: linked details come from the resume as it reads now.
 		const letter = await context.queryClient.fetchQuery({
 			...orpc.coverLetters.getById.queryOptions({ input: { id: params.coverLetterId } }),
 			staleTime: 0,
 		});
+		const { letterWordsQueryOptions } = await compose;
 		await context.queryClient.ensureQueryData(letterWordsQueryOptions(letter.style.metadata.page.locale));
 		return { name: letter.name };
 	},
@@ -50,6 +57,13 @@ function RouteComponent() {
 	const queryClient = useQueryClient();
 	const { data: letter } = useSuspenseQuery(orpc.coverLetters.getById.queryOptions({ input: { id: coverLetterId } }));
 	const loaded = useLetterEditorStore((state) => state.letter?.id === coverLetterId);
+	const name = useLetterEditorStore((state) =>
+		state.letter?.id === coverLetterId ? (state.savedName ?? letter.name) : letter.name,
+	);
+	useEffect(() => {
+		document.title = `${name} - ${APP_NAME}`;
+	}, [name]);
+
 	useBlocker({
 		shouldBlockFn: async ({ next }) => {
 			if ("coverLetterId" in next.params && next.params.coverLetterId === coverLetterId) return false;

@@ -1,8 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
+import { ObserveInteractiveMarker } from "expo-observe";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ActivityIndicator, ScrollView, View } from "react-native";
-import { AuthHeader, hostOf } from "@/auth/auth-header";
+import { AuthHeader, PrivacyPolicyLink, hostOf } from "@/auth/auth-header";
 import { getFlags, isAllowedServer, toOrigin } from "@/auth/oauth";
 import { useSession } from "@/auth/session";
 import { useSignIn } from "@/auth/use-sign-in";
@@ -21,7 +22,7 @@ function useTargetServer(): string {
 export default function SignInScreen() {
 	const router = useRouter();
 	const { t } = useLingui();
-	const { space } = useTheme();
+	const { size, space } = useTheme();
 	const server = useTargetServer();
 	const host = hostOf(server);
 	const { attempt, start, cancel, reset } = useSignIn();
@@ -30,11 +31,16 @@ export default function SignInScreen() {
 	const changeServer = () => router.push(routes.server());
 
 	return (
-		<Screen scroll={false} edges={["top", "bottom"]}>
+		<Screen
+			scroll={false}
+			edges={["top", "bottom"]}
+			contentStyle={{ width: "100%", maxWidth: size.panel, alignSelf: "center" }}
+		>
+			<ObserveInteractiveMarker />
 			<ScrollView
 				style={{ flex: 1 }}
 				contentInsetAdjustmentBehavior="automatic"
-				contentContainerStyle={{ gap: space.s6 }}
+				contentContainerStyle={{ flexGrow: 1, justifyContent: "center", gap: space.s8, paddingVertical: space.s8 }}
 			>
 				{attempt.state === "waiting" ? (
 					<Waiting onCancel={cancel} />
@@ -112,6 +118,7 @@ export default function SignInScreen() {
 					/>
 				</Card>
 			) : null}
+			<PrivacyPolicyLink />
 		</Screen>
 	);
 }
@@ -127,11 +134,13 @@ function Waiting({ onCancel }: WaitingProps) {
 	return (
 		<>
 			<AuthHeader />
-			<View style={{ gap: space.s3, alignItems: "flex-start", paddingHorizontal: space.s2 }}>
+			<View style={{ gap: space.s4, alignItems: "center", paddingHorizontal: space.s2 }}>
 				<ActivityIndicator size="large" color={colors.accent} />
-				<Text variant="heading">{t`Finish signing in in the browser`}</Text>
-				<Text color="ink2">{t`When you're done, the browser closes and you come back here.`}</Text>
-				<Button label={t`Cancel`} variant="secondary" onPress={onCancel} />
+				<Text variant="heading" align="center">{t`Finish signing in in the browser`}</Text>
+				<Text color="ink2" align="center">{t`When you're done, the browser closes and you come back here.`}</Text>
+				<View style={{ alignSelf: "center" }}>
+					<Button label={t`Cancel`} variant="secondary" onPress={onCancel} />
+				</View>
 			</View>
 		</>
 	);

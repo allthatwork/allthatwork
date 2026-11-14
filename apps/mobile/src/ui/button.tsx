@@ -85,7 +85,7 @@ export function Button({
 			style={({ pressed }) => ({
 				minHeight: height,
 				paddingHorizontal: variant === "link" ? 0 : size === "sm" ? space.s3 : space.s4,
-				borderRadius: android ? radius.rPill : size === "sm" ? radius.rMd : radius.rXl,
+				borderRadius: size === "sm" ? radius.rSm : size === "lg" ? radius.rLg : radius.rMd,
 				borderWidth: variant === "secondary" || variant === "dangerOutline" ? 1 : 0,
 				borderColor: variant === "dangerOutline" ? colors.dangerText : colors.line2,
 				backgroundColor: pressed && !android ? pressedBackground : background,
@@ -157,7 +157,7 @@ export function IconButton({
 			style={({ pressed }) => ({
 				width: sizes.hit,
 				height: sizes.hit,
-				borderRadius: android ? radius.rPill : radius.rMd,
+				borderRadius: radius.rMd,
 				alignItems: "center",
 				justifyContent: "center",
 				borderWidth: variant === "secondary" ? 1 : 0,

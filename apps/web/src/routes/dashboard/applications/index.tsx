@@ -1,13 +1,13 @@
 import type { FiltersChange, ShownSnapshot } from "@/features/applications/filter";
-import type { Application } from "@/features/applications/types";
+import type { Application, ApplicationSummary } from "@/features/applications/types";
 import type { ApplicationFilters, ApplicationSort } from "@reactive-resume/schema/applications/filters";
 import type { ListColumn, ListColumnId } from "@reactive-resume/schema/applications/layout";
 import type { ApplicationView } from "@reactive-resume/schema/applications/views";
 import { t } from "@lingui/core/macro";
-import { Trans } from "@lingui/react/macro";
-import { useQuery } from "@tanstack/react-query";
+import { Plural, Trans } from "@lingui/react/macro";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, stripSearchParams, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import z from "zod";
 import { DEFAULT_APPLICATION_SORT } from "@reactive-resume/schema/applications/filters";
 import {
@@ -54,13 +54,20 @@ import {
 	sortFromSearch,
 } from "@/features/applications/filter-search";
 import { getNextStep, useNoReplyDays } from "@/features/applications/next-step";
-import { applicationsListQueryOptions } from "@/features/applications/queries";
+import {
+	applicationDetailQueryOptions,
+	applicationsFullListQueryOptions,
+	applicationsListQueryOptions,
+	hydrateApplicationDetail,
+} from "@/features/applications/queries";
 import { filtersOfView, isViewEdited, viewFiltersOf } from "@/features/applications/saved-views";
+import { useApplicationLanes } from "@/features/applications/use-application-lanes";
 import { resizeColumnChange, useApplicationsLayout } from "@/features/applications/use-applications-layout";
 import { useRememberedFilters } from "@/features/applications/use-remembered-filters";
 import { isNameTaken, useSavedViews } from "@/features/applications/use-saved-views";
 import { useTabLabels } from "@/features/applications/use-tab-labels";
 import { useToolbarLines } from "@/features/applications/use-toolbar-lines";
+import { toastError } from "@/libs/error-message";
 import { ENTER_CLASS } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
@@ -127,6 +134,8 @@ function RouteComponent() {
 	const [adding, setAdding] = useState(false);
 	const [importing, setImporting] = useState(false);
 	const [exporting, setExporting] = useState(false);
+	const [exportLoading, setExportLoading] = useState(false);
+	const lanes = useApplicationLanes();
 	const [editing, setEditing] = useState<Application | null>(null);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	// Views animate in only after a switch, never on the page's first render.
@@ -200,6 +209,69 @@ function RouteComponent() {
 		});
 	}, [viewGone, setTabView, navigate]);
 
+	const queryClient = useQueryClient();
+	const { data: fullApplications } = useQuery({ ...applicationsFullListQueryOptions(), enabled: exporting });
+
+	const PREFETCH_LIMIT = 12;
+	const prefetchInFlight = useRef(new Set<string>());
+	const prefetch = useCallback(
+		(id: string) => {
+			const options = applicationDetailQueryOptions(id);
+			if (
+				prefetchInFlight.current.has(id) ||
+				prefetchInFlight.current.size >= PREFETCH_LIMIT ||
+				queryClient.getQueryData(options.queryKey) ||
+				queryClient.getQueryState(options.queryKey)?.fetchStatus === "fetching"
+			)
+				return;
+			prefetchInFlight.current.add(id);
+			void queryClient
+				.fetchQuery(options)
+				.catch(() => {})
+				.finally(() => prefetchInFlight.current.delete(id));
+		},
+		[queryClient],
+	);
+
+	useEffect(() => {
+		if (!applications) return;
+		for (const application of applications) hydrateApplicationDetail(queryClient, application);
+	}, [applications, queryClient]);
+
+	useEffect(() => {
+		let timer: number | undefined;
+		const openControl = (target: EventTarget | null) =>
+			target instanceof Element ? target.closest<HTMLElement>("[data-application-open]") : null;
+		const onPointerOver = (event: PointerEvent) => {
+			const open = openControl(event.target);
+			if (!open || open.contains(event.relatedTarget as Node | null)) return;
+			const id = open.closest<HTMLElement>("[data-application-id]")?.dataset.applicationId;
+			if (!id) return;
+			window.clearTimeout(timer);
+			timer = window.setTimeout(() => prefetch(id), 120);
+		};
+		const onPointerOut = (event: PointerEvent) => {
+			const open = openControl(event.target);
+			if (open && !open.contains(event.relatedTarget as Node | null)) window.clearTimeout(timer);
+		};
+		const onFocusIn = (event: FocusEvent) => {
+			const id = openControl(event.target)?.closest<HTMLElement>("[data-application-id]")?.dataset.applicationId;
+			if (id) {
+				window.clearTimeout(timer);
+				prefetch(id);
+			}
+		};
+		document.addEventListener("pointerover", onPointerOver);
+		document.addEventListener("pointerout", onPointerOut);
+		document.addEventListener("focusin", onFocusIn);
+		return () => {
+			document.removeEventListener("pointerover", onPointerOver);
+			document.removeEventListener("pointerout", onPointerOut);
+			document.removeEventListener("focusin", onFocusIn);
+			window.clearTimeout(timer);
+		};
+	}, [prefetch]);
+
 	useEffect(() => {
 		if (!create) return;
 		// oxlint-disable-next-line react/set-state-in-effect -- takes the one-shot ?create flag from the address, then clears it
@@ -221,7 +293,7 @@ function RouteComponent() {
 	// A card changed while filtered stays on screen, marked, until the filters change: the snapshot holds what was shown
 	// since the last filter change, and starts again whenever they change.
 	const filtersKey = JSON.stringify(filters);
-	const isMatch = (application: Application) => matchesFilters(application, filters, context);
+	const isMatch = (application: ApplicationSummary) => matchesFilters(application, filters, context);
 	const [snapshot, setSnapshot] = useState<{ key: string; shown: ShownSnapshot } | null>(null);
 	const current = snapshot?.key === filtersKey ? snapshot.shown : NO_SNAPSHOT;
 	const { matching, shown: visible, stale } = withHeld(applications ?? [], isMatch, current);
@@ -346,8 +418,28 @@ function RouteComponent() {
 
 	const selected = applications?.find((application) => application.id === selectedId) ?? null;
 	// The board needs room to drag: phones get the list instead.
-	const shown: View = phone && (view === "board" || view === "calendar") ? "list" : view;
+	const shown: View = phone && view === "board" ? "list" : view;
 	const empty = !!applications && applications.length === 0;
+	// Hoisted so the compiler keeps one function; inline, it changes with every keystroke and re-renders each row.
+	const openApplication = (application: ApplicationSummary) => {
+		hydrateApplicationDetail(queryClient, application);
+		setSelectedId(application.id);
+	};
+	// Export reads the full rows (posting, notes, timeline); the list only has summaries.
+	const matchingIds = new Set(matching.map((application) => application.id));
+	const matchingFullApplications = fullApplications?.filter((application) => matchingIds.has(application.id)) ?? [];
+	const openExport = async () => {
+		if (exportLoading) return;
+		setExportLoading(true);
+		try {
+			await queryClient.fetchQuery({ ...applicationsFullListQueryOptions(), staleTime: 0 });
+			setExporting(true);
+		} catch (error) {
+			toastError(error, t`Couldn't load this. Your saved data hasn't changed.`);
+		} finally {
+			setExportLoading(false);
+		}
+	};
 	const noMatches = !!applications && !empty && visible.length === 0;
 	// In Board view the page is the window's height and the board takes what's left below the header, the nudge and the
 	// toolbar; each column scrolls on its own. The other views scroll the page.
@@ -399,14 +491,12 @@ function RouteComponent() {
 						<Trans>Insights</Trans>
 					</span>
 				</TabsTrigger>
-				{!phone && (
-					<TabsTrigger value="calendar" title={tabLabels ? undefined : t`Calendar`}>
-						<Icon name="calendar-dots" size={18} />
-						<span className={cn(!tabLabels && "sr-only")}>
-							<Trans>Calendar</Trans>
-						</span>
-					</TabsTrigger>
-				)}
+				<TabsTrigger value="calendar" title={tabLabels ? undefined : t`Calendar`}>
+					<Icon name="calendar-dots" size={18} />
+					<span className={cn(!tabLabels && "sr-only")}>
+						<Trans>Calendar</Trans>
+					</span>
+				</TabsTrigger>
 			</TabsList>
 		</Tabs>
 	);
@@ -442,7 +532,7 @@ function RouteComponent() {
 							<DropdownMenuItem onClick={() => setImporting(true)}>
 								<Trans>Import from CSV…</Trans>
 							</DropdownMenuItem>
-							<DropdownMenuItem disabled={empty || !applications} onClick={() => setExporting(true)}>
+							<DropdownMenuItem disabled={empty || !applications || exportLoading} onClick={() => void openExport()}>
 								<Trans>Export to CSV…</Trans>
 							</DropdownMenuItem>
 						</DropdownMenuContent>
@@ -465,6 +555,20 @@ function RouteComponent() {
 						<Trans>Couldn't load applications. Try again.</Trans>
 					</p>
 					<Button variant="secondary" disabled={isFetching} onClick={() => void refetch()}>
+						<Trans>Retry</Trans>
+					</Button>
+				</div>
+			)}
+
+			{lanes.error && (
+				<div
+					role="alert"
+					className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line p-4"
+				>
+					<p className="text-sm text-danger-text">
+						<Trans>Couldn't load your stages, so the standard ones are shown. Try again.</Trans>
+					</p>
+					<Button variant="secondary" onClick={() => void lanes.refetch()}>
 						<Trans>Retry</Trans>
 					</Button>
 				</div>
@@ -574,7 +678,7 @@ function RouteComponent() {
 									columns={inView ? resolveColumnsWithWidths(layout, columnIds) : resolveListColumns(layout)}
 									onColumnResize={resizeColumn}
 									selectedId={selectedId}
-									onOpen={(application) => setSelectedId(application.id)}
+									onOpen={openApplication}
 								/>
 							)}
 							{shown === "board" && (
@@ -585,15 +689,16 @@ function RouteComponent() {
 									sort={sort}
 									columnWidth={layout.boardColumnWidth}
 									onColumnWidthChange={(width) => updateLayout({ boardColumnWidth: width })}
-									onOpen={(application) => setSelectedId(application.id)}
+									onOpen={openApplication}
 								/>
 							)}
 							{shown === "insights" && <ApplicationInsights applications={applications ?? []} />}
 							{shown === "calendar" && (
 								<ApplicationCalendar
+									compact={phone}
 									applications={matching}
 									allApplications={applications ?? []}
-									onOpen={(application) => setSelectedId(application.id)}
+									onOpen={openApplication}
 								/>
 							)}
 						</div>
@@ -634,8 +739,8 @@ function RouteComponent() {
 			<ExportApplicationsSheet
 				open={exporting}
 				onOpenChange={setExporting}
-				applications={applications ?? []}
-				filtered={matching}
+				applications={fullApplications ?? []}
+				filtered={matchingFullApplications}
 			/>
 			<ApplicationDetailSheet
 				application={selected}
@@ -659,12 +764,14 @@ function readDismissed(): string[] {
 	}
 }
 
+type FollowUpNudgeProps = { applications: ApplicationSummary[]; onOpen: (id: string) => void };
+
 /**
  * The follow-up nudge: the application waiting longest without a reply (by default 10+ days since applying; set or
  * turned off in Settings → Preferences). Dismissing it is remembered on this device; it doesn't come back for that
  * application.
  */
-function FollowUpNudge({ applications, onOpen }: { applications: Application[]; onOpen: (id: string) => void }) {
+function FollowUpNudge({ applications, onOpen }: FollowUpNudgeProps) {
 	const [dismissed, setDismissed] = useState(readDismissed);
 	const noReplyDays = useNoReplyDays();
 
@@ -694,6 +801,7 @@ function FollowUpNudge({ applications, onOpen }: { applications: Application[]; 
 	return (
 		<div
 			key={waiting.application.id}
+			data-application-id={waiting.application.id}
 			role="status"
 			className={cn(
 				ENTER_CLASS,
@@ -702,11 +810,13 @@ function FollowUpNudge({ applications, onOpen }: { applications: Application[]; 
 		>
 			<Icon name="clock" size={20} />
 			<span className="min-w-0 flex-1">
-				<Trans>
-					{company}: no reply for {days} days. A short follow-up is usually fine now.
-				</Trans>
+				<Plural
+					value={days}
+					one={`${company}: no reply for # day. A short follow-up is usually fine now.`}
+					other={`${company}: no reply for # days. A short follow-up is usually fine now.`}
+				/>
 			</span>
-			<Button size="sm" variant="secondary" onClick={() => onOpen(waiting.application.id)}>
+			<Button size="sm" variant="secondary" data-application-open onClick={() => onOpen(waiting.application.id)}>
 				<Trans>Open</Trans>
 			</Button>
 			<Button size="icon-sm" variant="ghost" aria-label={t`Dismiss`} onClick={dismiss} className="text-warn-text">

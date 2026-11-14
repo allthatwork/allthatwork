@@ -1,6 +1,7 @@
-import type { Application } from "./types";
+import type { ApplicationSummary } from "./types";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import { STAGES } from "@reactive-resume/schema/applications/data";
+import { isCanonicalStageEvent } from "./lanes";
 import { PIPELINE } from "./stages";
 
 export type StageCount = { status: ApplicationStatus; count: number };
@@ -85,14 +86,17 @@ export function computeTimeline(applications: readonly OutcomeSource[], weeks = 
 	return buckets.map(({ label, count }) => ({ label, count }));
 }
 
-type OutcomeSource = Pick<Application, "status" | "closedReason" | "activity" | "appliedAt" | "resumeId">;
+type OutcomeSource = Pick<ApplicationSummary, "status" | "closedReason" | "activity" | "appliedAt" | "resumeId">;
 
 const DAY_MS = 86_400_000;
 const REPLY_STAGES = new Set<ApplicationStatus>(["screening", "interview", "offer"]);
 
+// Moves between lanes of one stage aren't milestones: only canonical stage changes count.
 const stageEntries = (application: OutcomeSource) =>
 	application.activity
-		.flatMap((entry) => (entry.type === "stage" ? [{ stage: entry.stage, at: new Date(entry.at) }] : []))
+		.flatMap((entry) =>
+			entry.type === "stage" && isCanonicalStageEvent(entry) ? [{ stage: entry.stage, at: new Date(entry.at) }] : [],
+		)
 		.sort((a, b) => a.at.getTime() - b.at.getTime());
 
 /** How far along the pipeline an application ever got, from its stage history; closed ones keep their furthest stage. */
@@ -113,11 +117,16 @@ function sentAt(application: OutcomeSource) {
 /** The first reply after sending: moving on to screening or beyond, or being turned down. */
 function firstReply(application: OutcomeSource) {
 	const since = sentAt(application).getTime();
-	return stageEntries(application).find(
-		(entry) =>
-			entry.at.getTime() >= since &&
-			(REPLY_STAGES.has(entry.stage) || (entry.stage === "closed" && application.closedReason === "not-selected")),
-	)?.at;
+	return application.activity
+		.flatMap((entry) => (entry.type === "stage" ? [{ ...entry, at: new Date(entry.at) }] : []))
+		.sort((a, b) => a.at.getTime() - b.at.getTime())
+		.find(
+			(entry) =>
+				entry.at.getTime() >= since &&
+				((isCanonicalStageEvent(entry) && REPLY_STAGES.has(entry.stage)) ||
+					(entry.stage === "closed" &&
+						(entry.closedReason === undefined ? application.closedReason : entry.closedReason) === "not-selected")),
+		)?.at;
 }
 
 function median(values: number[]) {

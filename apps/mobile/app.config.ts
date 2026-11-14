@@ -7,13 +7,14 @@ const microphonePermission = "Reactive Resume records your answers when you prac
 const config: ExpoConfig = {
 	name: "Reactive Resume",
 	slug: "reactive-resume",
-	platforms: ["ios", "android"],
+	platforms: process.env.EXPO_MOBILE_WEB_PREVIEW === "1" ? ["ios", "android", "web"] : ["ios", "android"],
 	scheme: "me.rxresu",
 	owner: "reactive-resume",
 	version: "1.0.0",
 	runtimeVersion: { policy: "fingerprint" },
 	updates: {
 		url: "https://u.expo.dev/5830280e-e1ba-45b7-b9c9-ba048fa3bd4d",
+		requestHeaders: { "expo-channel-name": process.env.MOBILE_UPDATE_CHANNEL ?? "production" },
 		checkAutomatically: "ON_LOAD",
 		fallbackToCacheTimeout: 0,
 	},
@@ -21,6 +22,7 @@ const config: ExpoConfig = {
 	orientation: "default",
 	userInterfaceStyle: "automatic",
 	ios: {
+		buildNumber: process.env.MOBILE_BUILD_NUMBER ?? "1",
 		icon: {
 			light: "./assets/icon.png",
 			dark: "./assets/icon-dark.png",
@@ -57,6 +59,7 @@ const config: ExpoConfig = {
 		associatedDomains: [`applinks:${host}`, `webcredentials:${host}`],
 	},
 	android: {
+		versionCode: Number(process.env.MOBILE_BUILD_NUMBER ?? "1"),
 		package: "me.rxresu",
 		predictiveBackGestureEnabled: false,
 		adaptiveIcon: {

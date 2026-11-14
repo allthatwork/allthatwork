@@ -1,5 +1,5 @@
 import type { ModelMessage } from "ai";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { estimateTokens, pruneAgentModelContext, replyContextBudget } from "./context";
 
 const BIG_RESUME = { basics: { name: "Alice" }, sections: { summary: { content: "x".repeat(2_000) } } };

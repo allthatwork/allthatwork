@@ -1,4 +1,4 @@
-import { afterAll, expect, it, vi } from "vitest";
+import { afterAll, expect, it, vi } from "vite-plus/test";
 
 const render = vi.hoisted(() => vi.fn());
 const previousNodeEnv = vi.hoisted(() => {

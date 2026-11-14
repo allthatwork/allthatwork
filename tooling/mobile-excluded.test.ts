@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 
 // All That Work doesn't build or ship upstream's native app (FORK.md, "Mobile app excluded").
 it("keeps the native app out of the pnpm workspace", async () => {

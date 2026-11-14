@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { Dialog } from "@reactive-resume/ui/components/dialog";
@@ -44,6 +44,6 @@ it("shows recoverable backup codes before the TOTP verification that activates t
 	expect(mocks.verify).not.toHaveBeenCalled();
 	expect(mocks.close).not.toHaveBeenCalled();
 	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-	await waitFor(() => expect(screen.getByText(/6 digit code/)).toBeDefined());
+	await waitFor(() => expect(screen.getByText(/6-digit code/)).toBeDefined());
 	expect(mocks.verify).not.toHaveBeenCalled();
 });

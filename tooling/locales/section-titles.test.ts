@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { generatePresentLabels, generateSectionTitleCatalog } from "./section-titles";
 
 it("keeps PDF headings synchronized with the source Lingui catalogs", async () => {

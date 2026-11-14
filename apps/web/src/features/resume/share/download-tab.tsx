@@ -19,7 +19,12 @@ import { applicationsListQueryOptions } from "@/features/applications/queries";
 import { createLetterFile, letterFileName } from "@/features/letters/export";
 import { useCurrentResume } from "@/features/resume/builder/draft";
 import { useOpenIssueCount } from "@/features/resume/editor/check/use-check";
-import { createExportFile, getDefaultFileName, sanitizeFileName } from "@/features/resume/export/use-resume-export";
+import {
+	createExportFile,
+	getDefaultFileName,
+	preloadDocumentExport,
+	sanitizeFileName,
+} from "@/features/resume/export/use-resume-export";
 import { getReadableErrorMessage } from "@/libs/error-message";
 import { client } from "@/libs/orpc/client";
 
@@ -84,6 +89,9 @@ export function FormatRadioGroup<Id extends string>({ formats, value, onChange }
 			aria-label={t`Format`}
 			value={value}
 			onValueChange={(next) => onChange(next as Id)}
+			// Picking a format usually comes next: start loading the DOCX and ODT builders.
+			onPointerEnter={preloadDocumentExport}
+			onFocus={preloadDocumentExport}
 			className="grid gap-1.5"
 		>
 			{formats.map((option) => (
@@ -91,7 +99,7 @@ export function FormatRadioGroup<Id extends string>({ formats, value, onChange }
 					key={option.id}
 					value={option.id}
 					disabled={option.disabled}
-					className="group/format flex cursor-pointer items-start gap-3 rounded-[10px] border border-line p-3 text-start transition-colors duration-quick hover:border-line-2 data-checked:border-accent data-checked:bg-accent-soft data-disabled:cursor-not-allowed data-disabled:opacity-45"
+					className="group/format flex cursor-pointer items-start gap-3 rounded-lg border border-line p-3 text-start transition-colors duration-quick hover:border-line-2 data-checked:border-accent data-checked:bg-accent-soft data-disabled:cursor-not-allowed data-disabled:opacity-45"
 				>
 					<span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sunken text-ink-2">
 						<Icon name={option.icon} size={22} />
@@ -166,7 +174,7 @@ export function DownloadActions({ state, label, onDownload, onDownloadPdf }: Dow
 			{state === "error" && (
 				<div
 					role="alert"
-					className="flex flex-wrap items-start gap-2.5 rounded-[10px] bg-danger-soft px-3 py-2.5 text-[13px] leading-[19px] text-danger-text"
+					className="flex flex-wrap items-start gap-2.5 rounded-lg bg-danger-soft px-3 py-2.5 text-[13px] leading-[19px] text-danger-text"
 				>
 					<Icon name="warning-circle" size={20} />
 					<span className="min-w-0 flex-1">
@@ -258,7 +266,7 @@ export function DownloadTab({ onReview }: DownloadTabProps) {
 			setState("done");
 		} catch (error) {
 			setState("error");
-			toast.add({ type: "error", description: getReadableErrorMessage(error, t`Download failed.`) });
+			toast.add({ type: "error", description: getReadableErrorMessage(error, t`Download failed. Try again.`) });
 		}
 	};
 
@@ -294,7 +302,7 @@ export function DownloadTab({ onReview }: DownloadTabProps) {
 			)}
 
 			{issues > 0 && (
-				<div className="flex gap-2.5 rounded-[10px] bg-warn-soft px-3 py-2.5 text-[13px] leading-[19px] text-warn-text">
+				<div className="flex gap-2.5 rounded-lg bg-warn-soft px-3 py-2.5 text-[13px] leading-[19px] text-warn-text">
 					<Icon name="list-checks" size={20} />
 					<span>
 						<Plural

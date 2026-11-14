@@ -1,23 +1,40 @@
 import type { Schedule } from "./hooks";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { Stack, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { openBrowserAsync } from "expo-web-browser";
 import { type ComponentRef, useRef, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { RefreshControl, ScrollView, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { client, useCareerAction, useCareerTime, useNow, useTodayQueries, useUndoRows } from "./hooks";
 import { ScheduleSheet, scheduleTitle } from "./schedule-sheet";
 import { collectInterviews, rollForward } from "./scheduling";
 import { Actions, LoadState, Section, SwitchRow } from "./shared";
+import { useApplicationLanes } from "@/features/applications/lane-queries";
+import { getLaneLabel, resolveLane } from "@/features/applications/lanes";
 import { getNextStep } from "@/features/applications/next-step";
 import { useApplications } from "@/features/applications/queries";
-import { getStageLabel } from "@/features/applications/stages";
 import { routes } from "@/routes";
-import { Banner, Button, Card, Chip, EmptyState, Screen, Text, showToast, useTheme } from "@/ui";
+import {
+	Banner,
+	Button,
+	Card,
+	Chip,
+	EmptyState,
+	Screen,
+	Text,
+	listItemMotion,
+	listLayout,
+	showToast,
+	useFirstAppearance,
+	useTheme,
+} from "@/ui";
+import { usePullRefresh } from "@/ui/use-pull-refresh";
 
 export function TodayScreen() {
+	const lanes = useApplicationLanes();
 	const { t } = useLingui();
-	const { space, size } = useTheme();
+	const { colors, space, size } = useTheme();
 	const [width, setWidth] = useState(0);
 	const tablet = width >= size.panel * 2 + space.s6;
 	const router = useRouter();
@@ -26,6 +43,7 @@ export function TodayScreen() {
 	const queries = useTodayQueries();
 	const applications = useApplications();
 	const action = useCareerAction();
+	const pull = usePullRefresh(action.refresh, applications.refetch, time.profile.refetch);
 	const undo = useUndoRows();
 	const [sheet, setSheet] = useState<{ schedule: Schedule | null; kind: "discovery" | "prepare" | "follow-up" } | null>(
 		null,
@@ -51,6 +69,7 @@ export function TodayScreen() {
 	const notes = (queries.notifications.data ?? []).filter(
 		(row) => showRead || (!row.readAt && !undo.hidden.includes(row.id)),
 	);
+	const firstAppearance = useFirstAppearance(!queries.notifications.isPending);
 	const openSchedule = (schedule: Schedule) =>
 		setSheet({ schedule, kind: schedule.kind as "discovery" | "prepare" | "follow-up" });
 	const toggle = (row: Schedule, enabled: boolean) => {
@@ -77,8 +96,12 @@ export function TodayScreen() {
 	};
 	return (
 		<Screen scroll={false} contentStyle={{ padding: 0 }}>
-			<Stack.Screen options={{ title: t`Today` }} />
-			<ScrollView ref={scroll} contentContainerStyle={{ padding: space.s4, gap: space.s6 }}>
+			<ScrollView
+				alwaysBounceVertical
+				refreshControl={<RefreshControl {...pull} tintColor={colors.accent} colors={[colors.accent]} />}
+				ref={scroll}
+				contentContainerStyle={{ padding: space.s4, gap: space.s6 }}
+			>
 				<Text variant="heading">{t`Make room for the next step.`}</Text>
 				<LoadState query={time.profile} />
 				<Text variant="callout" color="ink3">
@@ -112,12 +135,12 @@ export function TodayScreen() {
 												: next.interview.kind === "behavioral"
 													? t`Behavioral interview`
 													: next.interview.kind === "onsite"
-														? t`On-site interview`
+														? t`Onsite interview`
 														: t`Interview`}
 									</Text>
 									<Text>{time.when(next.start)}</Text>
 									<Text color="ink3">
-										{getStageLabel(next.application.status)} ·{" "}
+										{getLaneLabel(resolveLane(lanes.lanes, next.application))} ·{" "}
 										{new Intl.NumberFormat(time.locale, { style: "unit", unit: "minute", unitDisplay: "short" }).format(
 											next.interview.durationMinutes,
 										)}
@@ -143,59 +166,61 @@ export function TodayScreen() {
 									message={t`New roles, reminders and finished briefings appear here.`}
 								/>
 							) : null}
-							{notes.map((row) => (
-								<Card key={row.id} style={{ gap: space.s3 }}>
-									<Text variant="title">{row.title}</Text>
-									<Text>{row.body}</Text>
-									<Text variant="caption" color="ink3">
-										{time.when(row.createdAt)}
-									</Text>
-									<Actions>
-										{row.notice.type === "opportunities" ? (
-											<Button
-												label={t`Review`}
-												variant="secondary"
-												onPress={() => {
-													setExpanded(true);
-													scroll.current?.scrollTo({
-														y: groupY.current + columnY.current + rolesY.current,
-														animated: false,
-													});
-												}}
-											/>
-										) : row.applicationId ? (
-											<Button
-												label={row.notice.type === "briefing" ? t`Open briefing` : t`Open workspace`}
-												variant="secondary"
-												onPress={() =>
-													router.push(
-														routes.application(
-															row.applicationId ?? "",
-															row.notice.type === "briefing" ? "prepare" : "messages",
-														),
-													)
-												}
-											/>
-										) : (
-											<Button
-												label={t`Open settings`}
-												variant="secondary"
-												onPress={() => router.push(routes.settings("ai"))}
-											/>
-										)}
-										{!row.readAt && !undo.hidden.includes(row.id) ? (
-											<Button
-												label={t`Mark as read`}
-												variant="ghost"
-												onPress={() =>
-													undo.remove(row.id, t`Marked as read`, () =>
-														client.career.markNotificationRead({ id: row.id }),
-													)
-												}
-											/>
-										) : null}
-									</Actions>
-								</Card>
+							{notes.map((row, index) => (
+								<Animated.View key={row.id} {...listItemMotion(index, firstAppearance)} layout={listLayout}>
+									<Card style={{ gap: space.s3 }}>
+										<Text variant="title">{row.title}</Text>
+										<Text>{row.body}</Text>
+										<Text variant="caption" color="ink3">
+											{time.when(row.createdAt)}
+										</Text>
+										<Actions>
+											{row.notice.type === "opportunities" ? (
+												<Button
+													label={t`Review`}
+													variant="secondary"
+													onPress={() => {
+														setExpanded(true);
+														scroll.current?.scrollTo({
+															y: groupY.current + columnY.current + rolesY.current,
+															animated: false,
+														});
+													}}
+												/>
+											) : row.applicationId ? (
+												<Button
+													label={row.notice.type === "briefing" ? t`Open briefing` : t`Open workspace`}
+													variant="secondary"
+													onPress={() =>
+														router.push(
+															routes.application(
+																row.applicationId ?? "",
+																row.notice.type === "briefing" ? "prepare" : "messages",
+															),
+														)
+													}
+												/>
+											) : (
+												<Button
+													label={t`Open settings`}
+													variant="secondary"
+													onPress={() => router.push(routes.settings("ai"))}
+												/>
+											)}
+											{!row.readAt && !undo.hidden.includes(row.id) ? (
+												<Button
+													label={t`Mark as read`}
+													variant="ghost"
+													onPress={() =>
+														undo.remove(row.id, t`Marked as read`, () =>
+															client.career.markNotificationRead({ id: row.id }),
+														)
+													}
+												/>
+											) : null}
+										</Actions>
+									</Card>
+								</Animated.View>
 							))}
 							<Button
 								variant="ghost"
@@ -277,7 +302,7 @@ export function TodayScreen() {
 												onPress={() => {
 													if (/^https?:\/\//i.test(row.url))
 														void openBrowserAsync(row.url).catch(() =>
-															showToast({ message: t`Couldn't open the posting.` }),
+															showToast({ message: t`Couldn't open the posting. Try again.` }),
 														);
 												}}
 											/>
@@ -342,15 +367,6 @@ export function TodayScreen() {
 						</Section>
 					</View>
 				</View>
-				<Button
-					variant="ghost"
-					label={t`Refresh`}
-					onPress={() => {
-						void action.refresh();
-						void applications.refetch();
-						void time.profile.refetch();
-					}}
-				/>
 			</ScrollView>
 			{sheet ? (
 				<ScheduleSheet

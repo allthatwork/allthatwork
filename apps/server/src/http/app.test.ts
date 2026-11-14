@@ -1,5 +1,5 @@
 import { gunzipSync } from "node:zlib";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const mocks = vi.hoisted(() => ({
 	trustedProxies: [] as string[],
@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
 	handleOAuthProtectedResource: vi.fn(),
 	handleOpenIdConfiguration: vi.fn(),
 	handleWellKnownFallback: vi.fn(),
+	handleAgentCatalog: vi.fn(),
 	handleRobots: vi.fn(),
 	handleSitemap: vi.fn(),
 	handleLlms: vi.fn(),
@@ -58,6 +59,7 @@ vi.mock("../openapi/metadata", () => ({
 	handleOAuthProtectedResource: mocks.handleOAuthProtectedResource,
 	handleOpenIdConfiguration: mocks.handleOpenIdConfiguration,
 	handleWellKnownFallback: mocks.handleWellKnownFallback,
+	handleAgentCatalog: mocks.handleAgentCatalog,
 }));
 
 vi.mock("../static/uploads", () => ({
@@ -73,6 +75,8 @@ vi.mock("../static/seo", () => ({
 vi.mock("../static/web", () => ({
 	serveWebDistStatic: mocks.serveWebDistStatic,
 	handleWebApp: mocks.handleWebApp,
+	isPublicResumePath: () => false,
+	isProfilePath: () => false,
 }));
 
 vi.mock("../mcp/handler", () => ({
@@ -112,6 +116,7 @@ beforeEach(() => {
 	mocks.handleOAuthProtectedResource.mockReturnValue(new Response("oauth-protected-resource"));
 	mocks.handleOpenIdConfiguration.mockReturnValue(new Response("openid-configuration"));
 	mocks.handleWellKnownFallback.mockReturnValue(new Response("well-known"));
+	mocks.handleAgentCatalog.mockImplementation(() => new Response("agent-catalog"));
 	mocks.handleRobots.mockReturnValue(new Response("robots"));
 	mocks.handleSitemap.mockReturnValue(new Response("sitemap"));
 	mocks.handleLlms.mockReturnValue(new Response("llms"));
@@ -121,6 +126,13 @@ beforeEach(() => {
 
 describe("createApp", () => {
 	// The first case pays for the cold import of the whole app, which takes seconds under a parallel run.
+	it("serves /index.html through the shared HTML response before static files", async () => {
+		const { createApp } = await import("./app");
+		const response = await createApp().request("/index.html");
+		expect(await response.text()).toBe("web");
+		expect(mocks.serveWebDistStatic).not.toHaveBeenCalled();
+	}, 15_000);
+
 	it.each([
 		["127.0.0.1", "127.0.0.1", "198.51.100.1", "198.51.100.1"],
 		["127.0.0.1", "::ffff:127.0.0.1", "198.51.100.1", "198.51.100.1"],
@@ -205,6 +217,8 @@ describe("createApp", () => {
 		["/.well-known/integrations.json", "integrations"],
 		["/.well-known/api-catalog", "api-catalog"],
 		["/.well-known/mcp/server-card.json", "server-card"],
+		["/.well-known/ard.json", "agent-catalog"],
+		["/.well-known/ai-catalog.json", "agent-catalog"],
 	])("routes discovery document %s before the well-known fallback", async (path, body) => {
 		const { createApp } = await import("./app");
 
@@ -267,15 +281,19 @@ it.each(["/auth/consent", "/auth/consent/", "/auth/login"])("prevents framing or
 	expect(response.headers.get("cache-control")).toBe("no-store");
 });
 
-it("rejects oversized REST requests before parsing multipart uploads", async () => {
+it.each([
+	{ path: "/api/openapi/files", limit: 40 * 1024 * 1024, handler: mocks.handleOpenApi },
+	{ path: "/api/rpc/resume/import", limit: 160 * 1024 * 1024, handler: mocks.handleRpc },
+	{ path: "/api/auth/oauth2/register", limit: 1024 * 1024, handler: mocks.handleAuth },
+])("rejects oversized bodies for $path before parsing them", async ({ path, limit, handler }) => {
 	const { createApp } = await import("./app");
-	const response = await createApp().request("http://localhost:3000/api/openapi/files", {
+	const response = await createApp().request(`http://localhost:3000${path}`, {
 		method: "POST",
-		headers: { "Content-Length": String(40 * 1024 * 1024 + 1) },
+		headers: { "Content-Length": String(limit + 1) },
 		body: "x",
 	});
 	expect(response.status).toBe(413);
 	expect(await response.json()).toMatchObject({ code: "PAYLOAD_TOO_LARGE", status: 413 });
 	expect(response.headers.get("cache-control")).toBe("no-store");
-	expect(mocks.handleOpenApi).not.toHaveBeenCalled();
+	expect(handler).not.toHaveBeenCalled();
 });

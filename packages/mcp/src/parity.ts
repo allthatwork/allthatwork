@@ -1,141 +1,159 @@
+import type { BehaviorAnnotations } from "./annotations";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import type { AnyProcedure, InferRouterInitialContext, RouterClient } from "@orpc/server";
 import type { RequestAuthentication } from "@reactive-resume/api/context";
 import { call, ORPCError } from "@orpc/server";
 import z from "zod";
+import { requiredPermission } from "@reactive-resume/api/context";
 import { restAliases } from "@reactive-resume/api/rest";
 import router from "@reactive-resume/api/routers";
 import { env } from "@reactive-resume/env/server";
+import {
+	READ_EXTERNAL,
+	READ_IDEMPOTENT,
+	WRITE_DESTRUCTIVE,
+	WRITE_DESTRUCTIVE_EXTERNAL,
+	WRITE_EXTERNAL,
+	WRITE_IDEMPOTENT,
+	WRITE_NON_IDEMPOTENT,
+} from "./annotations";
 import { fileInputSchema, toWireObjectSchema, wireJsonSchema } from "./contracts";
 import { readMcpFile } from "./files";
-import { json, withErrorHandling } from "./results";
+import { getClientCall, json, withErrorHandling } from "./results";
 import { PARITY_TOOL_DESCRIPTIONS } from "./tool-meta";
 
 export const MCP_ROUTER = { ...router, rest: restAliases };
 
 // Explicit allowlist: adding an API procedure never silently grants MCP access.
-const PARITY_PROCEDURES = {
-	"directory.importLinkedIn": router.directory.importLinkedIn,
-	"directory.companies": router.directory.companies,
-	"directory.company": router.directory.company,
-	"directory.createCompany": router.directory.createCompany,
-	"directory.updateCompany": router.directory.updateCompany,
-	"directory.deleteCompany": router.directory.deleteCompany,
-	"directory.contacts": router.directory.contacts,
-	"directory.contact": router.directory.contact,
-	"directory.createContact": router.directory.createContact,
-	"directory.updateContact": router.directory.updateContact,
-	"directory.deleteContact": router.directory.deleteContact,
-	"directory.deleteAllContacts": router.directory.deleteAllContacts,
-	"directory.addNote": router.directory.addNote,
-	"directory.deleteNote": router.directory.deleteNote,
+// Behavior is explicit: HTTP methods and names miss cleanup, publication and provider calls.
+// Per-tool justifications: .agents/docs/mcp-tool-annotations.md.
+const PARITY_PROCEDURES: Record<string, [AnyProcedure, BehaviorAnnotations]> = {
+	"directory.importLinkedIn": [router.directory.importLinkedIn, WRITE_DESTRUCTIVE],
+	"directory.companies": [router.directory.companies, READ_IDEMPOTENT],
+	"directory.company": [router.directory.company, READ_IDEMPOTENT],
+	"directory.createCompany": [router.directory.createCompany, WRITE_NON_IDEMPOTENT],
+	"directory.updateCompany": [router.directory.updateCompany, WRITE_DESTRUCTIVE],
+	"directory.deleteCompany": [router.directory.deleteCompany, WRITE_DESTRUCTIVE],
+	"directory.contacts": [router.directory.contacts, READ_IDEMPOTENT],
+	"directory.contact": [router.directory.contact, READ_IDEMPOTENT],
+	"directory.createContact": [router.directory.createContact, WRITE_NON_IDEMPOTENT],
+	"directory.updateContact": [router.directory.updateContact, WRITE_DESTRUCTIVE],
+	"directory.deleteContact": [router.directory.deleteContact, WRITE_DESTRUCTIVE],
+	"directory.deleteAllContacts": [router.directory.deleteAllContacts, WRITE_DESTRUCTIVE],
+	"directory.addNote": [router.directory.addNote, WRITE_NON_IDEMPOTENT],
+	"directory.deleteNote": [router.directory.deleteNote, WRITE_DESTRUCTIVE],
 
-	"resume.listVersions": router.resume.listVersions,
-	"resume.getVersion": router.resume.getVersion,
-	"resume.createVersion": router.resume.createVersion,
-	"resume.renameVersion": router.resume.renameVersion,
-	"resume.deleteVersion": router.resume.deleteVersion,
-	"resume.restoreVersion": router.resume.restoreVersion,
-	"resume.removePassword": router.resume.removePassword,
-	"resume.getBySlug": router.resume.getBySlug,
-	"resume.checkSlug": router.resume.checkSlug,
-	"resume.update": router.resume.update,
-	"resume.statistics.getDailyById": router.resume.statistics.getDailyById,
-	"resume.statistics.recordDownload": router.resume.statistics.recordDownload,
-	"coverLetters.listVersions": router.coverLetters.listVersions,
-	"coverLetters.getVersion": router.coverLetters.getVersion,
-	"coverLetters.createVersion": router.coverLetters.createVersion,
-	"coverLetters.renameVersion": router.coverLetters.renameVersion,
-	"coverLetters.deleteVersion": router.coverLetters.deleteVersion,
-	"coverLetters.restoreVersion": router.coverLetters.restoreVersion,
-	"coverLetters.draft": router.coverLetters.draft,
-	"documents.list": router.documents.list,
-	"documents.counts": router.documents.counts,
-	"documents.rename": router.documents.rename,
-	"documents.setTags": router.documents.setTags,
-	"documents.setLocked": router.documents.setLocked,
-	"documents.linkApplication": router.documents.linkApplication,
-	"documents.trash": router.documents.trash,
-	"documents.restore": router.documents.restore,
-	"documents.purge": router.documents.purge,
-	"documents.purgeExpired": router.documents.purgeExpired,
-	"documents.copyForJob": router.documents.copyForJob,
-	"applications.ai.searchPostings": router.applications.ai.searchPostings,
-	"applications.ai.parsePosting": router.applications.ai.parsePosting,
-	"applications.updateQuestion": router.applications.updateQuestion,
-	"ai.parsePdf": router.ai.parsePdf,
-	"ai.parseDocx": router.ai.parseDocx,
-	"ai.atsReview": router.ai.atsReview,
-	"ai.improve": router.ai.improve,
-	"aiProviders.list": router.aiProviders.list,
-	"aiProviders.delete": router.aiProviders.delete,
-	"aiProviders.test": router.aiProviders.test,
-	"aiProviders.setDefault": router.aiProviders.setDefault,
-	"webAccess.status": router.webAccess.status,
-	"webAccess.delete": router.webAccess.delete,
-	"webAccess.test": router.webAccess.test,
-	"agent.threads.list": router.agent.threads.list,
-	"agent.threads.start": router.agent.threads.start,
-	"agent.threads.get": router.agent.threads.get,
-	"agent.threads.update": router.agent.threads.update,
-	"agent.threads.delete": router.agent.threads.delete,
-	"agent.messages.send": router.agent.messages.send,
-	"agent.messages.stop": router.agent.messages.stop,
-	"agent.messages.resume": router.agent.messages.resume,
-	"agent.messages.setEditStatus": router.agent.messages.setEditStatus,
-	"agent.attachments.create": router.agent.attachments.create,
-	"agent.attachments.delete": router.agent.attachments.delete,
-	"career.profile": router.career.profile,
-	"career.saveProfile": router.career.saveProfile,
-	"career.facts": router.career.facts,
-	"career.saveFact": router.career.saveFact,
-	"career.importFacts": router.career.importFacts,
-	"career.updateFact": router.career.updateFact,
-	"career.updateFacts": router.career.updateFacts,
-	"career.factGroups": router.career.factGroups,
-	"career.setFactGroupStatus": router.career.setFactGroupStatus,
-	"career.saveFactGroup": router.career.saveFactGroup,
-	"career.duplicates": router.career.duplicates,
-	"career.cleanDuplicates": router.career.cleanDuplicates,
-	"career.mergeFact": router.career.mergeFact,
-	"career.review": router.career.review,
-	"career.runReview": router.career.runReview,
-	"career.resolveFinding": router.career.resolveFinding,
-	"career.overrides": router.career.overrides,
-	"career.saveOverride": router.career.saveOverride,
-	"career.deleteOverride": router.career.deleteOverride,
-	"career.forgetFact": router.career.forgetFact,
-	"career.stories": router.career.stories,
-	"career.saveStory": router.career.saveStory,
-	"career.deleteStory": router.career.deleteStory,
-	"career.savedItems": router.career.savedItems,
-	"career.deleteSavedItem": router.career.deleteSavedItem,
-	"career.applyReply": router.career.applyReply,
-	"career.workspace": router.career.workspace,
-	"career.saveWorkspace": router.career.saveWorkspace,
-	"career.schedules": router.career.schedules,
-	"career.saveSchedule": router.career.saveSchedule,
-	"career.deleteSchedule": router.career.deleteSchedule,
-	"career.opportunities": router.career.opportunities,
-	"career.dismissOpportunity": router.career.dismissOpportunity,
-	"career.trackOpportunity": router.career.trackOpportunity,
-	"career.notifications": router.career.notifications,
-	"career.markNotificationRead": router.career.markNotificationRead,
-	"auth.providers.list": router.auth.providers.list,
-	"auth.exportData": router.auth.exportData,
-	"flags.get": router.flags.get,
-	"statistics.getTotals": router.statistics.getTotals,
-	"statistics.github.getStarCount": router.statistics.github.getStarCount,
-	"storage.deleteFile": router.storage.deleteFile,
-	"rest.documentExports.resume": restAliases.documentExports.resume,
-	"rest.documentExports.letter": restAliases.documentExports.letter,
-	"rest.checkResume": restAliases.checkResume,
-	"rest.checkPdf": restAliases.checkPdf,
-	"rest.matchResume": restAliases.matchResume,
-	"rest.importResumeFile": restAliases.importResumeFile,
-	"rest.fileUpload": restAliases.fileUpload,
-} as const;
+	"resume.listVersions": [router.resume.listVersions, READ_IDEMPOTENT],
+	"resume.getVersion": [router.resume.getVersion, READ_IDEMPOTENT],
+	"resume.createVersion": [router.resume.createVersion, WRITE_NON_IDEMPOTENT],
+	"resume.renameVersion": [router.resume.renameVersion, WRITE_DESTRUCTIVE],
+	"resume.deleteVersion": [router.resume.deleteVersion, WRITE_DESTRUCTIVE],
+	"resume.restoreVersion": [router.resume.restoreVersion, WRITE_DESTRUCTIVE_EXTERNAL],
+	"resume.removePassword": [router.resume.removePassword, WRITE_DESTRUCTIVE_EXTERNAL],
+	"resume.getBySlug": [router.resume.getBySlug, WRITE_EXTERNAL],
+	"resume.checkSlug": [router.resume.checkSlug, READ_IDEMPOTENT],
+	"resume.update": [router.resume.update, WRITE_DESTRUCTIVE_EXTERNAL],
+	"resume.statistics.getDailyById": [router.resume.statistics.getDailyById, READ_IDEMPOTENT],
+	"resume.statistics.recordDownload": [router.resume.statistics.recordDownload, WRITE_NON_IDEMPOTENT],
+	"coverLetters.listVersions": [router.coverLetters.listVersions, READ_IDEMPOTENT],
+	"coverLetters.getVersion": [router.coverLetters.getVersion, READ_IDEMPOTENT],
+	"coverLetters.createVersion": [router.coverLetters.createVersion, WRITE_NON_IDEMPOTENT],
+	"coverLetters.renameVersion": [router.coverLetters.renameVersion, WRITE_DESTRUCTIVE],
+	"coverLetters.deleteVersion": [router.coverLetters.deleteVersion, WRITE_DESTRUCTIVE],
+	"coverLetters.restoreVersion": [router.coverLetters.restoreVersion, WRITE_DESTRUCTIVE],
+	"coverLetters.draft": [router.coverLetters.draft, WRITE_DESTRUCTIVE_EXTERNAL],
+	"documents.list": [router.documents.list, WRITE_DESTRUCTIVE],
+	"documents.counts": [router.documents.counts, READ_IDEMPOTENT],
+	"documents.rename": [router.documents.rename, WRITE_DESTRUCTIVE],
+	"documents.setTags": [router.documents.setTags, WRITE_DESTRUCTIVE],
+	"documents.setLocked": [router.documents.setLocked, WRITE_DESTRUCTIVE],
+	"documents.linkApplication": [router.documents.linkApplication, WRITE_DESTRUCTIVE],
+	"documents.trash": [router.documents.trash, WRITE_DESTRUCTIVE_EXTERNAL],
+	"documents.restore": [router.documents.restore, WRITE_DESTRUCTIVE_EXTERNAL],
+	"documents.purge": [router.documents.purge, WRITE_DESTRUCTIVE],
+	"documents.purgeExpired": [router.documents.purgeExpired, WRITE_DESTRUCTIVE],
+	"documents.copyForJob": [router.documents.copyForJob, WRITE_DESTRUCTIVE],
+	"applications.lanes.get": [router.applications.lanes.get, WRITE_IDEMPOTENT],
+	"applications.lanes.create": [router.applications.lanes.create, WRITE_NON_IDEMPOTENT],
+	"applications.lanes.update": [router.applications.lanes.update, WRITE_DESTRUCTIVE],
+	"applications.lanes.reorder": [router.applications.lanes.reorder, WRITE_DESTRUCTIVE],
+	"applications.lanes.retire": [router.applications.lanes.retire, WRITE_DESTRUCTIVE],
+	"applications.priorNoResponse": [router.applications.priorNoResponse, READ_IDEMPOTENT],
+	"applications.ai.searchPostings": [router.applications.ai.searchPostings, WRITE_DESTRUCTIVE_EXTERNAL],
+	"applications.ai.parsePosting": [router.applications.ai.parsePosting, WRITE_DESTRUCTIVE_EXTERNAL],
+	"applications.updateQuestion": [router.applications.updateQuestion, WRITE_DESTRUCTIVE],
+	"ai.parsePdf": [router.ai.parsePdf, WRITE_DESTRUCTIVE_EXTERNAL],
+	"ai.parseDocx": [router.ai.parseDocx, WRITE_DESTRUCTIVE_EXTERNAL],
+	"ai.atsReview": [router.ai.atsReview, WRITE_DESTRUCTIVE_EXTERNAL],
+	"ai.improve": [router.ai.improve, WRITE_DESTRUCTIVE_EXTERNAL],
+	"aiProviders.list": [router.aiProviders.list, WRITE_DESTRUCTIVE],
+	"aiProviders.delete": [router.aiProviders.delete, WRITE_DESTRUCTIVE],
+	"aiProviders.test": [router.aiProviders.test, WRITE_DESTRUCTIVE_EXTERNAL],
+	"aiProviders.setDefault": [router.aiProviders.setDefault, WRITE_DESTRUCTIVE],
+	"webAccess.status": [router.webAccess.status, READ_IDEMPOTENT],
+	"webAccess.delete": [router.webAccess.delete, WRITE_DESTRUCTIVE],
+	"webAccess.test": [router.webAccess.test, WRITE_DESTRUCTIVE_EXTERNAL],
+	"agent.threads.list": [router.agent.threads.list, READ_IDEMPOTENT],
+	"agent.threads.start": [router.agent.threads.start, WRITE_DESTRUCTIVE],
+	"agent.threads.get": [router.agent.threads.get, WRITE_DESTRUCTIVE],
+	"agent.threads.update": [router.agent.threads.update, WRITE_DESTRUCTIVE],
+	"agent.threads.delete": [router.agent.threads.delete, WRITE_DESTRUCTIVE],
+	"agent.messages.send": [router.agent.messages.send, WRITE_DESTRUCTIVE_EXTERNAL],
+	"agent.messages.stop": [router.agent.messages.stop, WRITE_DESTRUCTIVE],
+	"agent.messages.resume": [router.agent.messages.resume, READ_IDEMPOTENT],
+	"agent.messages.setEditStatus": [router.agent.messages.setEditStatus, WRITE_DESTRUCTIVE],
+	"agent.attachments.create": [router.agent.attachments.create, WRITE_NON_IDEMPOTENT],
+	"agent.attachments.delete": [router.agent.attachments.delete, WRITE_DESTRUCTIVE],
+	"career.profile": [router.career.profile, READ_IDEMPOTENT],
+	"career.saveProfile": [router.career.saveProfile, WRITE_DESTRUCTIVE],
+	"career.facts": [router.career.facts, READ_IDEMPOTENT],
+	"career.saveFact": [router.career.saveFact, WRITE_NON_IDEMPOTENT],
+	"career.importFacts": [router.career.importFacts, WRITE_IDEMPOTENT],
+	"career.updateFact": [router.career.updateFact, WRITE_DESTRUCTIVE],
+	"career.updateFacts": [router.career.updateFacts, WRITE_DESTRUCTIVE],
+	"career.factGroups": [router.career.factGroups, READ_IDEMPOTENT],
+	"career.setFactGroupStatus": [router.career.setFactGroupStatus, WRITE_DESTRUCTIVE],
+	"career.saveFactGroup": [router.career.saveFactGroup, WRITE_DESTRUCTIVE],
+	"career.duplicates": [router.career.duplicates, READ_IDEMPOTENT],
+	"career.cleanDuplicates": [router.career.cleanDuplicates, WRITE_DESTRUCTIVE],
+	"career.mergeFact": [router.career.mergeFact, WRITE_DESTRUCTIVE],
+	"career.review": [router.career.review, READ_IDEMPOTENT],
+	"career.runReview": [router.career.runReview, WRITE_DESTRUCTIVE_EXTERNAL],
+	"career.resolveFinding": [router.career.resolveFinding, WRITE_DESTRUCTIVE],
+	"career.overrides": [router.career.overrides, READ_IDEMPOTENT],
+	"career.saveOverride": [router.career.saveOverride, WRITE_DESTRUCTIVE],
+	"career.deleteOverride": [router.career.deleteOverride, WRITE_DESTRUCTIVE],
+	"career.forgetFact": [router.career.forgetFact, WRITE_DESTRUCTIVE],
+	"career.stories": [router.career.stories, READ_IDEMPOTENT],
+	"career.saveStory": [router.career.saveStory, WRITE_DESTRUCTIVE],
+	"career.deleteStory": [router.career.deleteStory, WRITE_DESTRUCTIVE],
+	"career.savedItems": [router.career.savedItems, READ_IDEMPOTENT],
+	"career.deleteSavedItem": [router.career.deleteSavedItem, WRITE_DESTRUCTIVE],
+	"career.applyReply": [router.career.applyReply, WRITE_DESTRUCTIVE],
+	"career.workspace": [router.career.workspace, READ_IDEMPOTENT],
+	"career.saveWorkspace": [router.career.saveWorkspace, WRITE_DESTRUCTIVE],
+	"career.schedules": [router.career.schedules, READ_IDEMPOTENT],
+	"career.saveSchedule": [router.career.saveSchedule, WRITE_DESTRUCTIVE_EXTERNAL],
+	"career.deleteSchedule": [router.career.deleteSchedule, WRITE_DESTRUCTIVE],
+	"career.opportunities": [router.career.opportunities, READ_IDEMPOTENT],
+	"career.dismissOpportunity": [router.career.dismissOpportunity, WRITE_DESTRUCTIVE],
+	"career.trackOpportunity": [router.career.trackOpportunity, WRITE_IDEMPOTENT],
+	"career.notifications": [router.career.notifications, READ_IDEMPOTENT],
+	"career.markNotificationRead": [router.career.markNotificationRead, WRITE_DESTRUCTIVE],
+	"auth.providers.list": [router.auth.providers.list, READ_IDEMPOTENT],
+	"auth.exportData": [router.auth.exportData, READ_IDEMPOTENT],
+	"flags.get": [router.flags.get, READ_IDEMPOTENT],
+	"statistics.getTotals": [router.statistics.getTotals, READ_IDEMPOTENT],
+	"statistics.github.getStarCount": [router.statistics.github.getStarCount, READ_EXTERNAL],
+	"storage.deleteFile": [router.storage.deleteFile, WRITE_DESTRUCTIVE_EXTERNAL],
+	"rest.documentExports.resume": [restAliases.documentExports.resume, READ_IDEMPOTENT],
+	"rest.documentExports.letter": [restAliases.documentExports.letter, READ_IDEMPOTENT],
+	"rest.checkResume": [restAliases.checkResume, READ_IDEMPOTENT],
+	"rest.checkPdf": [restAliases.checkPdf, READ_IDEMPOTENT],
+	"rest.matchResume": [restAliases.matchResume, READ_IDEMPOTENT],
+	"rest.importResumeFile": [restAliases.importResumeFile, WRITE_NON_IDEMPOTENT],
+	"rest.fileUpload": [restAliases.fileUpload, WRITE_EXTERNAL],
+};
 
 function parityToolName(path: string): string {
 	return `api_${path
@@ -145,116 +163,50 @@ function parityToolName(path: string): string {
 }
 
 const streamingPaths = new Set(["coverLetters.draft", "agent.messages.send", "agent.messages.resume"]);
-const readOnlyPosts = new Set([
-	"ai.parsePdf",
-	"ai.parseDocx",
-	"ai.atsReview",
-	"ai.improve",
-	"applications.ai.searchPostings",
-	"applications.ai.parsePosting",
-	"rest.checkResume",
-	"rest.checkPdf",
-	"rest.matchResume",
-	"coverLetters.draft",
-	"webAccess.test",
-]);
 const exportPaths = new Set(["rest.documentExports.resume", "rest.documentExports.letter"]);
-const destructiveWrites = new Set([
-	"directory.importLinkedIn",
-	"career.saveProfile",
-	"career.saveStory",
-	"career.saveSchedule",
-	"career.saveWorkspace",
-	"career.applyReply",
-	"agent.messages.stop",
-]);
-// Changes what a public resume link or uploaded file URL shows, or sends content to the user's AI provider.
-const openWorldPaths = new Set([
-	"resume.update",
-	"resume.restoreVersion",
-	"resume.removePassword",
-	"rest.fileUpload",
-	"coverLetters.draft",
-	"career.saveSchedule",
-	"agent.messages.send",
-	"statistics.github.getStarCount",
-]);
 
-/** These workflows require browser interaction so secrets and security ceremonies stay with the user. */
-const BROWSER_HANDOFFS = {
-	"aiProviders.create": "ai",
-	"aiProviders.update": "ai",
-	"webAccess.save": "ai",
-	"resume.getRoot": "",
-	"auth.createApiKey": "api-keys",
-	"auth.deleteAccount": "account",
-} as const;
-
-const HANDOFF_TITLES: Record<string, string> = {
-	"aiProviders.create": "Add an AI provider in the app",
-	"aiProviders.update": "Edit an AI provider in the app",
-	"webAccess.save": "Set up web search in the app",
-	"resume.getRoot": "Open the dashboard",
-	"auth.createApiKey": "Create an API key in the app",
-	"auth.deleteAccount": "Delete your account in the app",
-	"resume.setPassword": "Set a resume's share password in the app",
-	"resume.verifyPassword": "Open a password-protected resume",
+type Handoff = {
+	title: string;
+	description: string;
+	inputSchema: z.ZodObject;
+	url: (input: Record<string, string>) => string;
 };
-
-/** Resume share passwords are credentials too: owners set them and visitors enter them in the browser. */
-const RESUME_PASSWORD_HANDOFFS = {
+/** These workflows require browser interaction so secrets and security ceremonies stay with the user. */
+const settingsHandoff = (title: string, page: string): Handoff => ({
+	title,
+	description:
+		"Complete this workflow in the authenticated browser. Provider keys, passwords, passkeys and other account credentials stay out of tool arguments. No change is made by this tool.",
+	inputSchema: z.object({}),
+	url: () => (page ? `/dashboard/settings/${page}` : "/dashboard"),
+});
+const HANDOFFS: Record<string, Handoff> = {
+	"aiProviders.create": settingsHandoff("Add an AI provider in the app", "ai"),
+	"aiProviders.update": settingsHandoff("Edit an AI provider in the app", "ai"),
+	"webAccess.save": settingsHandoff("Set up web search in the app", "ai"),
+	"resume.getRoot": settingsHandoff("Open the dashboard", ""),
+	"auth.createApiKey": settingsHandoff("Create an API key in the app", "api-keys"),
+	"auth.deleteAccount": settingsHandoff("Delete your account in the app", "account"),
+	// Resume share passwords are credentials too: owners set them and visitors enter them in the browser.
 	"resume.setPassword": {
+		title: "Set a resume's share password in the app",
 		description:
 			"Open the resume in the editor to set, change or remove its share password under Share → Link → Require a password. Passwords stay out of tool arguments. No change is made by this tool.",
 		inputSchema: z.object({ id: z.string().min(1).describe("Resume ID. Use `list_resumes` to find valid IDs.") }),
-		url: ({ id }: Record<string, string>) => `/builder/${encodeURIComponent(id ?? "")}`,
+		url: ({ id }) => `/builder/${encodeURIComponent(id ?? "")}`,
 	},
 	"resume.verifyPassword": {
+		title: "Open a password-protected resume",
 		description:
 			"Open a password-protected public resume so the visitor can enter its password in the browser. Passwords stay out of tool arguments. No change is made by this tool.",
 		inputSchema: z.object({
 			username: z.string().min(1).describe("Username in the public resume address."),
 			slug: z.string().min(1).describe("Slug in the public resume address."),
 		}),
-		url: ({ username, slug }: Record<string, string>) =>
-			`/${encodeURIComponent(username ?? "")}/${encodeURIComponent(slug ?? "")}`,
+		url: ({ username, slug }) => `/${encodeURIComponent(username ?? "")}/${encodeURIComponent(slug ?? "")}`,
 	},
 };
-
-const handoffAnnotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 const handoffOutputSchema = z.object({ url: z.url(), action: z.string(), requiresBrowser: z.literal(true) });
-type HandoffToolMeta = {
-	title: string;
-	description: string;
-	inputSchema: z.ZodObject;
-	outputSchema: typeof handoffOutputSchema;
-	annotations: ToolAnnotations;
-};
-// Directories show annotations.title as the tool's name, so every tool repeats its title there.
-const handoffMeta = (path: string, description: string, inputSchema: z.ZodObject): HandoffToolMeta => {
-	const title = HANDOFF_TITLES[path] ?? `Open ${path} in the app`;
-	return {
-		title,
-		description,
-		inputSchema,
-		outputSchema: handoffOutputSchema,
-		annotations: { title, ...handoffAnnotations },
-	};
-};
-const browserToolMeta: Record<string, HandoffToolMeta> = Object.fromEntries([
-	...Object.keys(BROWSER_HANDOFFS).map((path) => [
-		parityToolName(path),
-		handoffMeta(
-			path,
-			"Complete this workflow in the authenticated browser. Provider keys, passwords, passkeys and other account credentials stay out of tool arguments. No change is made by this tool.",
-			z.object({}),
-		),
-	]),
-	...Object.entries(RESUME_PASSWORD_HANDOFFS).map(([path, { description, inputSchema }]) => [
-		parityToolName(path),
-		handoffMeta(path, description, inputSchema),
-	]),
-]);
+// Its output carries no `action`, so it is registered on its own.
 const accountToolMeta = {
 	title: "Open account settings",
 	description:
@@ -263,7 +215,7 @@ const accountToolMeta = {
 		page: z.enum(["profile", "authentication", "api-keys", "preferences", "account"]).default("profile"),
 	}),
 	outputSchema: z.object({ url: z.url(), requiresBrowser: z.literal(true) }),
-	annotations: { title: "Open account settings", ...handoffAnnotations },
+	annotations: { title: "Open account settings", ...READ_IDEMPOTENT },
 };
 
 type ParityToolContract = {
@@ -271,7 +223,6 @@ type ParityToolContract = {
 	inputSchema: z.ZodObject;
 	outputSchema: z.ZodObject;
 };
-const parityContracts = new WeakMap<AnyProcedure, Map<string, ParityToolContract>>();
 // The export's full contract repeats every document, application and career schema (~13k tokens);
 // the procedure still validates it, so discovery only names its parts.
 const accountExportOutputSchema = z
@@ -281,6 +232,10 @@ const accountExportOutputSchema = z
 		resumes: z.array(z.looseObject({})).describe("Every resume, as returned by read_resume."),
 		coverLetters: z.array(z.looseObject({})).describe("Every cover letter, as returned by read_cover_letter."),
 		applications: z.array(z.looseObject({})).describe("Every application, as returned by read_application."),
+		applicationPipeline: z
+			.looseObject({})
+			.optional()
+			.describe("Application stage revision and definitions, including retired stages referenced by history."),
 		career: z
 			.looseObject({})
 			.describe(
@@ -290,10 +245,7 @@ const accountExportOutputSchema = z
 	.describe("Everything in the account. Secrets such as password hashes, tokens and API keys are never included.");
 
 /** The live server and server card share static contracts, never request context or callbacks. */
-export function parityToolContract(path: string, procedure: AnyProcedure): ParityToolContract {
-	let contracts = parityContracts.get(procedure);
-	const cached = contracts?.get(path);
-	if (cached) return cached;
+function parityToolContract(path: string, procedure: AnyProcedure): ParityToolContract {
 	const definition = procedure["~orpc"];
 	const inputJson = definition.inputSchema
 		? wireJsonSchema(requireZod(definition.inputSchema), "input")
@@ -320,55 +272,53 @@ export function parityToolContract(path: string, procedure: AnyProcedure): Parit
 			: streamingPaths.has(path)
 				? z.object({ events: z.array(z.string()), truncated: z.boolean() })
 				: toWireObjectSchema(requireZod(definition.outputSchema));
-	const contract = { inputJson, inputSchema: boundedInput, outputSchema };
-	if (!contracts) {
-		contracts = new Map();
-		parityContracts.set(procedure, contracts);
-	}
-	contracts.set(path, contract);
-	return contract;
+	return { inputJson, inputSchema: boundedInput, outputSchema };
 }
+
+const PARITY_CONTRACTS = new Map(
+	Object.entries(PARITY_PROCEDURES).map(([path, [procedure, annotations]]) => [
+		path,
+		{ procedure, annotations, ...parityToolContract(path, procedure) },
+	]),
+);
 
 export const PARITY_TOOL_META: Record<
 	string,
-	Pick<ReturnType<typeof parityToolContract>, "inputSchema" | "outputSchema"> & {
+	Pick<ParityToolContract, "inputSchema" | "outputSchema"> & {
 		title: string;
 		description: string;
-		annotations: ToolAnnotations;
+		annotations: BehaviorAnnotations;
 	}
 > = {
 	...Object.fromEntries(
-		Object.entries(PARITY_PROCEDURES).map(([path, procedure]) => {
+		[...PARITY_CONTRACTS].map(([path, { procedure, annotations, inputSchema, outputSchema }]) => {
 			const route = procedure["~orpc"].route;
-			const readOnly =
-				(route.method === "GET" || readOnlyPosts.has(path)) && !["resume.getBySlug", "aiProviders.list"].includes(path);
-			const contract = parityToolContract(path, procedure);
 			const title = route.summary ?? path;
 			return [
 				parityToolName(path),
 				{
 					title,
 					description: `${sentence(PARITY_TOOL_DESCRIPTIONS[path] ?? route.description ?? route.summary ?? path)}${path.startsWith("agent.messages.") && streamingPaths.has(path) ? " Returns collected stream chunks, at most 500,000 characters; use the thread getter to retrieve persisted assistant replies." : ""}${exportPaths.has(path) ? " Returns a download link rather than the file. Opening it requires authentication as this account, so it suits API clients; the file is rendered when the link is opened." : ""}${path === "rest.documentExports.resume" ? " For a PDF link the user can open directly, use `download_resume_pdf`." : ""}`,
-					inputSchema: contract.inputSchema,
-					outputSchema: contract.outputSchema,
-					annotations: {
-						title,
-						readOnlyHint: readOnly,
-						destructiveHint:
-							!readOnly &&
-							(route.method === "DELETE" ||
-								destructiveWrites.has(path) ||
-								/update|delete|purge|remove|restore|password|trash|set/i.test(path)),
-						idempotentHint:
-							path === "career.importFacts" || (readOnly && !/draft|parse|test|search|improve|review/i.test(path)),
-						openWorldHint:
-							openWorldPaths.has(path) || /ai|webAccess|storage|attachments|Exports|importResumeFile/i.test(path),
-					},
+					inputSchema,
+					outputSchema,
+					annotations: { title, ...annotations },
 				},
 			];
 		}),
 	),
-	...browserToolMeta,
+	// Directories show annotations.title as the tool's name, so every tool repeats its title there.
+	...Object.fromEntries(
+		Object.entries(HANDOFFS).map(([path, { title, description, inputSchema }]) => [
+			parityToolName(path),
+			{
+				title,
+				description,
+				inputSchema,
+				outputSchema: handoffOutputSchema,
+				annotations: { title, ...READ_IDEMPOTENT },
+			},
+		]),
+	),
 	open_account_settings: accountToolMeta,
 };
 
@@ -431,17 +381,6 @@ function encodeOutput(value: unknown): unknown {
 	return value ?? null;
 }
 
-type DynamicClient = { [key: string]: DynamicClient | ((input: unknown) => Promise<unknown>) };
-function getClientCall(client: RouterClient<typeof MCP_ROUTER>, path: string) {
-	let value: DynamicClient | ((input: unknown) => Promise<unknown>) = client as unknown as DynamicClient;
-	for (const part of path.split(".")) {
-		if (typeof value === "function" || !value[part]) throw new Error(`Missing MCP client procedure: ${path}`);
-		value = value[part];
-	}
-	if (typeof value !== "function") throw new Error(`Invalid MCP client procedure: ${path}`);
-	return value;
-}
-
 export function registerParityTools(
 	server: McpServer,
 	client: RouterClient<typeof MCP_ROUTER>,
@@ -454,9 +393,8 @@ export function registerParityTools(
 		signal?: AbortSignal;
 	},
 ) {
-	for (const [path, procedure] of Object.entries(PARITY_PROCEDURES)) {
-		const definition = (procedure as AnyProcedure)["~orpc"];
-		const { inputJson } = parityToolContract(path, procedure);
+	for (const [path, { procedure, inputJson }] of PARITY_CONTRACTS) {
+		const definition = procedure["~orpc"];
 		const name = parityToolName(path);
 		const meta = PARITY_TOOL_META[name];
 		if (!meta) throw new Error(`Missing MCP tool contract: ${path}`);
@@ -465,15 +403,11 @@ export function registerParityTools(
 			meta,
 			withErrorHandling(path, async (params) => {
 				const userId = context.authentication.user.id;
-				const route = definition.route;
-				const permission =
-					route.method === "GET"
-						? "read"
-						: route.method === "DELETE" || /^(delete|bulkDelete|purge)/i.test(route.operationId ?? "")
-							? "delete"
-							: "write";
+				const permission = requiredPermission(definition.route);
 				if (!context.authentication.permissions.includes(permission))
-					throw new ORPCError("FORBIDDEN", { message: `This credential requires api:${permission} permission.` });
+					throw new ORPCError("FORBIDDEN", {
+						message: `This credential needs the api:${permission} permission. Use a credential that includes it.`,
+					});
 				const maxBytes =
 					path === "rest.checkPdf"
 						? 25_000_000
@@ -530,21 +464,11 @@ export function registerParityTools(
 			}),
 		);
 	}
-	for (const [path, destination] of Object.entries(BROWSER_HANDOFFS)) {
-		const meta = browserToolMeta[parityToolName(path)];
+	for (const [path, { url }] of Object.entries(HANDOFFS)) {
+		const name = parityToolName(path);
+		const meta = PARITY_TOOL_META[name];
 		if (!meta) throw new Error(`Missing browser workflow contract: ${path}`);
-		server.registerTool(parityToolName(path), meta, () =>
-			json({
-				url: new URL(destination ? `/dashboard/settings/${destination}` : "/dashboard", env.APP_URL).toString(),
-				action: path,
-				requiresBrowser: true,
-			}),
-		);
-	}
-	for (const [path, { url }] of Object.entries(RESUME_PASSWORD_HANDOFFS)) {
-		const meta = browserToolMeta[parityToolName(path)];
-		if (!meta) throw new Error(`Missing browser workflow contract: ${path}`);
-		server.registerTool(parityToolName(path), meta, (input) =>
+		server.registerTool(name, meta, (input) =>
 			json({
 				url: new URL(url(input as Record<string, string>), env.APP_URL).toString(),
 				action: path,

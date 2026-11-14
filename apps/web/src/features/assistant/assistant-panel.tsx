@@ -20,7 +20,6 @@ import {
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { IconButton } from "@reactive-resume/ui/components/icon-button";
 import { Spinner } from "@reactive-resume/ui/components/spinner";
-import { toast } from "@reactive-resume/ui/components/toast";
 import { cn } from "@reactive-resume/utils/style";
 import { useConversationConnection } from "./chat";
 import { Composer, Conversation } from "./conversation";
@@ -31,7 +30,7 @@ import { formatVersionTime } from "@/features/resume/share/format";
 import { AiProviderLoadState } from "@/features/settings/integrations/ai-provider-load-state";
 import { useHasUsableAiProvider } from "@/features/settings/integrations/hooks/use-has-usable-ai-provider";
 import { useConfirm } from "@/hooks/use-confirm";
-import { getOrpcErrorMessage } from "@/libs/error-message";
+import { toastError } from "@/libs/error-message";
 import { ENTER_CLASS, stagger } from "@/libs/motion";
 import { client, orpc } from "@/libs/orpc/client";
 
@@ -57,9 +56,8 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 	const providers = useHasUsableAiProvider();
 	const threads = useQuery(orpc.agent.threads.list.queryOptions());
 	const selected = useEditorStore((state) => state.assistantThread);
-	const setSelected = useEditorStore((state) => state.setAssistantThread);
 	const prompt = useEditorStore((state) => state.assistantPrompt);
-	const setPrompt = useEditorStore((state) => state.setAssistantPrompt);
+	const draft = useEditorStore((state) => state.assistantDraft);
 	const [view, setView] = useState<"thread" | "history">("thread");
 	const [providerId, setProviderId] = useState<string | null>(null);
 	const [modelMenuOpen, setModelMenuOpen] = useState(false);
@@ -85,7 +83,7 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 		if (draftThread.current) return draftThread.current;
 		if (creatingThread.current) return creatingThread.current;
 		// A list refetch must not auto-open this empty draft while its composer still holds unsent files.
-		setSelected("new");
+		useEditorStore.setState({ assistantThread: "new" });
 		const input = {
 			...(document.kind === "letter" ? { coverLetterId: document.id } : { resumeId: document.id }),
 			...(provider ? { aiProviderId: provider.id } : {}),
@@ -107,23 +105,20 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 		setStarting(true);
 		try {
 			const id = await ensureThread();
-			setPrompt(text);
+			useEditorStore.setState({ assistantPrompt: text, assistantDraft: null });
 			setPromptAttachments(attachments);
-			setSelected(id);
+			useEditorStore.setState({ assistantThread: id });
 			draftThread.current = null;
-			useEditorStore.getState().setAssistantSuggestions(null);
+			useEditorStore.setState({ assistantSuggestions: null });
 			setView("thread");
 			void queryClient.invalidateQueries({ queryKey: orpc.agent.threads.list.key() });
 		} catch (error) {
-			toast.add({
-				type: "error",
-				description: getOrpcErrorMessage(error, { fallback: t`Couldn't start the conversation. Try again.` }),
-			});
+			toastError(error, t`Couldn't start the conversation. Try again.`);
 		}
 		setStarting(false);
 	};
 
-	// A question from ⌘K (or Prepare for next step) starts a conversation as soon as the assistant can.
+	// A question from ⌘K or Job match starts a conversation as soon as the assistant can. A link's draft never does.
 	const autoStarted = useRef<string | null>(null);
 	useEffect(() => {
 		if (!prompt || selected !== "new" || !providers.hasUsableProvider || autoStarted.current === prompt) return;
@@ -139,7 +134,7 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 			await client.agent.threads.update({ id: targetThreadId, aiProviderId: id });
 			await queryClient.invalidateQueries({ queryKey: orpc.agent.threads.list.key() });
 		} catch (error) {
-			toast.add({ type: "error", description: getOrpcErrorMessage(error, { fallback: t`Couldn't switch models.` }) });
+			toastError(error, t`Couldn't switch models. Try again.`);
 		}
 	};
 
@@ -174,7 +169,7 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 						setDraftKey((key) => key + 1);
 						setContext({ document: true, posting: true });
 						setPromptAttachments([]);
-						setSelected("new");
+						useEditorStore.setState({ assistantDraft: null, assistantThread: "new" });
 						setView("thread");
 					}}
 				/>
@@ -219,7 +214,7 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 					document={document}
 					currentId={threadId}
 					onOpen={(id) => {
-						setSelected(id);
+						useEditorStore.setState({ assistantThread: id });
 						setView("thread");
 					}}
 				/>
@@ -233,7 +228,7 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 					promptAttachments={promptAttachments}
 					initialContext={{ ...context, ...(document.posting ? { applicationId: document.posting.id } : {}) }}
 					onPromptSent={() => {
-						setPrompt(null);
+						useEditorStore.setState({ assistantPrompt: null });
 						setPromptAttachments([]);
 					}}
 					onSwitchModel={() => setModelMenuOpen(true)}
@@ -242,7 +237,9 @@ export function AssistantPanel({ document, onClose }: AssistantPanelProps) {
 				<>
 					<EmptyState document={document} disabled={document.locked || starting} onPick={(text) => void start(text)} />
 					<Composer
-						key={draftKey}
+						// A draft arriving while the box is open replaces what's in it.
+						key={`${draftKey}:${draft ?? ""}`}
+						initialText={draft ?? undefined}
 						document={document}
 						context={context}
 						onContextChange={setContext}
@@ -282,7 +279,7 @@ function ConversationLoader({ threadId, document, ...props }: ConversationLoader
 	if (thread.error)
 		return (
 			<Notice>
-				<Trans>This conversation couldn't be opened.</Trans>
+				<Trans>This conversation couldn't be opened. Refresh the page to try again.</Trans>
 			</Notice>
 		);
 	if (!thread.data || !thread.isFetchedAfterMount)
@@ -492,22 +489,22 @@ function PastConversations({ threads, document, currentId, onOpen }: PastConvers
 	const remove = async (thread: ThreadSummary) => {
 		const confirmed = await confirm(t`Delete this conversation?`, {
 			description: t`Its messages and attachments are deleted. Edits you accepted stay in the document.`,
-			confirmText: t`Delete`,
+			confirmText: t`Delete conversation`,
 		});
 		if (!confirmed) return;
 		try {
 			await client.agent.threads.delete({ id: thread.id });
 			await queryClient.invalidateQueries({ queryKey: orpc.agent.threads.list.key() });
-			if (thread.id === currentId) useEditorStore.getState().setAssistantThread("new");
+			if (thread.id === currentId) useEditorStore.setState({ assistantThread: "new" });
 		} catch (error) {
-			toast.add({ type: "error", description: getOrpcErrorMessage(error, { fallback: t`Couldn't delete it.` }) });
+			toastError(error, t`Couldn't delete this conversation. Try again.`);
 		}
 	};
 
 	return (
 		<div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3">
 			<section aria-labelledby="assistant-this-document" className="grid gap-1">
-				<h3 id="assistant-this-document" className="px-3 text-xs font-semibold text-ink-3 uppercase">
+				<h3 id="assistant-this-document" className="px-3 text-xs font-semibold text-ink-3">
 					<Trans>This document</Trans>
 				</h3>
 				{mine.length > 0 ? (
@@ -532,7 +529,7 @@ function PastConversations({ threads, document, currentId, onOpen }: PastConvers
 			</section>
 			{others.length > 0 && (
 				<section aria-labelledby="assistant-other-documents" className="grid gap-1">
-					<h3 id="assistant-other-documents" className="px-3 text-xs font-semibold text-ink-3 uppercase">
+					<h3 id="assistant-other-documents" className="px-3 text-xs font-semibold text-ink-3">
 						<Trans>Other documents · {others.length}</Trans>
 					</h3>
 					<ul className="grid">

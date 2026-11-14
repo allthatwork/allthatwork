@@ -6,8 +6,9 @@ import { useRouter } from "expo-router";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AppState, View } from "react-native";
 import { careerProfileDataSchema } from "@reactive-resume/schema/career";
-import { parseAmount } from "./amount";
+import { parseAmount } from "@reactive-resume/utils/amount";
 import { useCareerTime } from "./hooks";
+import { SearchRegionsField } from "./search-regions-field";
 import { client, orpc } from "@/api/client";
 import { getServer, useSession } from "@/auth/session";
 import { routes } from "@/routes";
@@ -126,6 +127,14 @@ export function Preferences({ initial }: PreferencesProps) {
 				values={draft.locations}
 				onChange={(locations) => change({ locations })}
 			/>
+			{account.data ? (
+				// Waits for the account, so its time zone (not the UTC stand-in) decides the automatic country.
+				<SearchRegionsField
+					value={draft.searchRegions}
+					accountTimeZone={timeZone}
+					onChange={(searchRegions) => change({ searchRegions })}
+				/>
+			) : null}
 			<TextArea
 				label={t`What matters to you`}
 				value={draft.priorities}

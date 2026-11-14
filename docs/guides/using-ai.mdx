@@ -26,7 +26,7 @@ without entering your own key. The steps below apply when personal providers are
   <Step title="Choose the provider and fill in the fields">
     Pick your provider from the **Provider** list. Reactive Resume fills in that provider's **Base URL**. Paste your key into **API key**, then pick a **Model** from the list of models [models.dev](https://models.dev/) knows for that provider, or type any model ID. The box shows the newest one in grey as a suggestion (nothing if the list doesn't load).
 
-    <Frame caption="The Add provider dialog">
+    <Frame caption="The Add provider dialog with an example model. Current suggestions are listed below.">
       <img src="/images/guides/using-ai/add-provider-dialog.webp" alt="Add provider dialog with Provider set to OpenAI, a hidden API key, Model gpt-4.1, Name Personal OpenAI and the default OpenAI base URL" />
     </Frame>
 
@@ -46,7 +46,7 @@ If the test fails, the dialog shows the provider's own error message, such as an
 | **API key**   | The key from your provider's dashboard. Required except for Ollama, where you can leave it empty for a local server that doesn't require authentication. |
 | **Model**     | The model name exactly as your provider writes it. Required.                                                                                             |
 | **Name**      | A label you'll recognize, such as "Work OpenAI". If you leave it empty, the provider's name is used.                                                     |
-| **Base URL**  | The address requests go to. Leave the default unless you use a gateway, a proxy or an OpenAI-compatible service.                                         |
+| **Base URL**  | The address requests go to. Leave the default unless you use a gateway, a proxy or an OpenAI-compatible service. Changing it needs the API key again.    |
 | **Reasoning** | How much the model thinks before it answers. See [Choose how much the model thinks](#choose-how-much-the-model-thinks).                                  |
 
 ### Choose how much the model thinks
@@ -61,6 +61,8 @@ If the test fails, the dialog shows the provider's own error message, such as an
 Reactive Resume translates the setting for each provider: an effort for OpenAI, OpenRouter and OpenAI-compatible servers, a thinking budget or level for Anthropic and Gemini, and thinking on or off for Ollama, which has no effort levels. A model may not support every setting; saving tests the connection with it, so you find out straight away. The connection's row shows the setting, for example "Thinking: High". To use different settings for different work, add the same model twice, for example a fast connection with thinking off and a careful one with **High**.
 
 ### Supported providers
+
+The suggestion applies when adding a provider; saved models stay as selected. You can enter another model available to your account.
 
 | Provider          | Model suggested          | Default base URL                                   |
 | ----------------- | ------------------------ | -------------------------------------------------- |
@@ -80,6 +82,8 @@ Reactive Resume translates the setting for each provider: an effort for OpenAI, 
 | Perplexity        | newest `sonar-pro` model | `https://api.perplexity.ai`                        |
 | Ollama            | newest model             | `https://ollama.com/api`                           |
 | OpenAI-compatible | none, enter your own     | none, enter your own                               |
+
+For a local Ollama server, enter the name of a model installed on that server and change the base URL.
 
 Choose **OpenAI-compatible** for any other service that speaks the OpenAI API, such as a company gateway or LiteLLM. It needs both a model and a base URL.
 

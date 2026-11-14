@@ -1,7 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { generateText } from "ai";
 
 vi.mock("@reactive-resume/env/server", () => ({ env: { FLAG_ALLOW_UNSAFE_AI_BASE_URL: false } }));
+// Provider requests still reach the stubbed global fetch; fetchPublic's own network checks are tested in utils.
+vi.mock("@reactive-resume/utils/url-security.node", async (original) => ({
+	...(await original<typeof import("@reactive-resume/utils/url-security.node")>()),
+	fetchPublic: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, init),
+}));
 
 afterEach(() => {
 	vi.unstubAllGlobals();

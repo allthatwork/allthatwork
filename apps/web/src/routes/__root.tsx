@@ -7,18 +7,20 @@ import type { Locale } from "@reactive-resume/utils/locale";
 import type { QueryClient } from "@tanstack/react-query";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
 import { i18n } from "@lingui/core";
-import { I18nProvider } from "@lingui/react";
+import { t } from "@lingui/core/macro";
+import { I18nProvider, useLingui } from "@lingui/react";
 import { IconContext } from "@phosphor-icons/react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { createRootRouteWithContext, HeadContent, Outlet } from "@tanstack/react-router";
+import { createRootRouteWithContext, HeadContent, Outlet, redirect } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { domMax, LazyMotion, MotionConfig } from "motion/react";
+import { LazyMotion, MotionConfig } from "motion/react";
 import { useEffect } from "react";
 import { Toaster } from "@reactive-resume/ui/components/toast";
 import { TooltipProvider } from "@reactive-resume/ui/components/tooltip";
+import { isAppSectionPath } from "@reactive-resume/utils/app-paths";
 import { isRTL } from "@reactive-resume/utils/locale";
 import { BreakpointIndicator } from "@/components/layout/breakpoint-indicator";
 import { DialogManager } from "@/dialogs/manager";
@@ -41,6 +43,10 @@ type RouterContext = {
 
 const iconContextValue: IconProps = { size: 16, weight: "regular" };
 
+// Requested now, while the route loads, so animations are ready by the first render without blocking it.
+const motionFeatures = import("@/libs/motion-features").then((module) => module.default);
+const loadMotionFeatures = () => motionFeatures;
+
 export const Route = createRootRouteWithContext<RouterContext>()({
 	component: RootComponent,
 	// index.html carries the tags that never change (charset, viewport, icons, manifest); the server adds each page's
@@ -49,7 +55,15 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		const { title, description } = getHomepageMeta();
 		return { meta: [{ title }, { name: "description", content: description }] };
 	},
-	beforeLoad: ({ context }) => loadRootContext(context.queryClient),
+	beforeLoad: async ({ context, location, preload }) => {
+		const root = await loadRootContext(context.queryClient);
+		const { aliasUrl, appUrl } = root.flags;
+		// Sign-in and the editor live on APP_URL; the alias (APP_ALIAS_URL) only serves the public pages. The server
+		// redirects full page loads; this catches links followed inside the app.
+		if (!preload && appUrl && aliasUrl === window.location.origin && isAppSectionPath(location.pathname))
+			throw redirect({ href: `${appUrl}${location.href}` });
+		return root;
+	},
 });
 
 function RootComponent() {
@@ -71,7 +85,7 @@ function RootComponent() {
 
 			<QueryClientProvider client={queryClient}>
 				<MotionConfig reducedMotion="user">
-					<LazyMotion features={domMax}>
+					<LazyMotion features={loadMotionFeatures}>
 						<I18nProvider i18n={i18n}>
 							<IconContext.Provider value={iconContextValue}>
 								<ThemeProvider theme={theme} palette={palette}>
@@ -83,7 +97,7 @@ function RootComponent() {
 
 													<DialogManager />
 													<CommandPalette />
-													<Toaster />
+													<LocalizedToaster />
 
 													{import.meta.env.DEV && <BreakpointIndicator />}
 													{import.meta.env.DEV && (
@@ -113,4 +127,9 @@ function RootComponent() {
 			</QueryClientProvider>
 		</>
 	);
+}
+
+function LocalizedToaster() {
+	useLingui();
+	return <Toaster closeLabel={t`Close notification`} />;
 }

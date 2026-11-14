@@ -1,15 +1,20 @@
 import type { ReactNode } from "react";
 import { Stack } from "expo-router";
 import { View } from "react-native";
-import { useIsTablet } from "@/shell/use-is-tablet";
+import { CollectionHeader } from "@/components/collection-header";
 import { Card, Screen, Text, useTheme } from "@/ui";
 
-type SettingsPageProps = { title: string; children: ReactNode; root?: boolean };
-export function SettingsPage({ title, children, root = false }: SettingsPageProps) {
-	const tablet = useIsTablet();
+type SettingsPageProps = {
+	title: string;
+	children: ReactNode;
+	root?: boolean;
+	onRefresh?: (() => Promise<unknown>) | undefined;
+};
+export function SettingsPage({ title, children, root = false, onRefresh }: SettingsPageProps) {
 	return (
-		<Screen>
-			<Stack.Screen options={{ title, headerLargeTitle: root && !tablet }} />
+		<Screen edges={root ? ["top"] : []} onRefresh={onRefresh}>
+			<Stack.Screen options={{ title, headerShown: !root, headerLargeTitle: false }} />
+			{root ? <CollectionHeader title={title} /> : null}
 			{children}
 		</Screen>
 	);

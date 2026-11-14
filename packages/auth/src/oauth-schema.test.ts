@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { oauthProvider } from "@better-auth/oauth-provider";
 import { getColumns, is, Table } from "drizzle-orm";
 import * as dbSchema from "@reactive-resume/db/schema";

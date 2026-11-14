@@ -14,8 +14,9 @@ const searchSchema = z.object({
 	mode: z.enum(EDITOR_MODES).optional().catch(undefined),
 	// Opens History on this version, read-only; Applications' "Open" on what was sent links here.
 	version: z.string().optional().catch(undefined),
-	// Opens the assistant on a conversation ("new" for a fresh one), or on a question to send (⌘K Ask).
+	// Opens the assistant on a conversation ("new" for a fresh one).
 	assistant: z.string().optional().catch(undefined),
+	// Fills the assistant's composer. Never sent without the user pressing Send: anyone can make a link.
 	ask: z.string().max(2_000).optional().catch(undefined),
 	// Prepare for next step keeps the application clicked, even when a base resume serves several jobs.
 	applicationId: z.string().optional().catch(undefined),
@@ -31,6 +32,11 @@ export const Route = createFileRoute("/builder/$resumeId")({
 		return { session: context.session };
 	},
 	loader: async ({ params, context }) => {
+		// The page canvas and the preview are chunks of their own, otherwise fetched one after another only once the editor
+		// has rendered: start them with the resume, so the first page can draw as soon as its PDF is ready.
+		void import("./-components/page-canvas");
+		void import("@/features/resume/preview/preview.browser");
+
 		const resume = await context.queryClient.ensureQueryData(
 			orpc.resume.getById.queryOptions({ input: { id: params.resumeId } }),
 		);
@@ -52,9 +58,16 @@ function RouteComponent() {
 	const isReady = useResumeStore((state) => state.isReady);
 	const initializedResumeId = useResumeStore((state) => state.resumeId);
 	const isInitialized = isReady && initializedResumeId === resumeId;
+	const name = useResumeStore((state) =>
+		state.resume && state.resume.id === resumeId ? state.resume.name : resume.name,
+	);
 
 	useResumeCleanup();
 	useBuilderResumeUpdateSubscription();
+
+	useEffect(() => {
+		document.title = `${name} - ${APP_NAME}`;
+	}, [name]);
 
 	useEffect(() => {
 		if (isInitialized) return;

@@ -1,11 +1,9 @@
 import type { Application } from "../types";
 import type { FileAttachment } from "./file-attachment-field";
-import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
-import { STAGES } from "@reactive-resume/schema/applications/data";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@reactive-resume/ui/components/accordion";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
@@ -21,9 +19,12 @@ import {
 } from "@reactive-resume/ui/components/sheet";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { getCategoryLane, getDisplayLane, getLaneLabel, laneMoveInput } from "../lanes";
 import { applicationsListQueryKey, applicationsListQueryOptions } from "../queries";
 import { foundBySuggestions, foundOnSuggestions } from "../suggestions";
+import { useApplicationLanes } from "../use-application-lanes";
 import { FileAttachmentField } from "./file-attachment-field";
+import { PriorNoResponseNotice } from "./prior-no-response-notice";
 import { SuggestionCombobox } from "./suggestion-combobox";
 import { Combobox } from "@/components/ui/combobox";
 import { useClosingValue } from "@/hooks/use-closing-value";
@@ -44,7 +45,8 @@ const emptyForm = () => ({
 	source: "",
 	// Added by hand, so found by the user unless they say otherwise.
 	foundBy: "Me",
-	status: "saved" as ApplicationStatus,
+	/** A lane picked in this form; null keeps the current one (Saved for a new application). */
+	laneId: null as string | null,
 	resumeId: "",
 	tags: [] as string[],
 	sourceUrl: "",
@@ -70,7 +72,7 @@ function toForm(app: Application): FormState {
 		salary: app.salary ?? "",
 		source: app.source ?? "",
 		foundBy: app.foundBy ?? "",
-		status: app.status,
+		laneId: null,
 		resumeId: app.resumeId ?? "",
 		tags: app.tags,
 		sourceUrl: app.sourceUrl ?? "",
@@ -88,7 +90,6 @@ function toPayload(form: FormState) {
 	return {
 		company: form.company.trim(),
 		role: form.role.trim(),
-		status: form.status,
 		location: form.location.trim() || null,
 		salary: form.salary.trim() || null,
 		source: form.source.trim() || null,
@@ -131,7 +132,11 @@ function JobDescriptionAutofill({ value, onChange, onFill }: JobDescriptionAutof
 				onFill(result);
 				toast.add({ type: "success", description: t`Filled in what we could from the posting.` });
 			},
-			onError: (error) => toast.add({ type: "error", description: error.message || t`Auto-fill failed.` }),
+			onError: (error) =>
+				toast.add({
+					type: "error",
+					description: error.message || t`Couldn't fill in the fields. Try again, or fill them in yourself.`,
+				}),
 		}),
 	);
 
@@ -207,6 +212,9 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 	const isEditing = !!application;
 
 	const [form, setForm] = useState<FormState>(() => (application ? toForm(application) : emptyForm()));
+	const { lanes, active, mode } = useApplicationLanes();
+	const currentLane = application ? getDisplayLane(lanes, application) : getCategoryLane(lanes, "saved");
+	const pickedLane = active.find((lane) => lane.id === form.laneId);
 
 	// Re-sync the form when the sheet's target changes (a different app, or create ↔ edit).
 	const [syncedId, setSyncedId] = useState(application?.id ?? null);
@@ -243,10 +251,10 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 		orpc.applications.create.mutationOptions({
 			onSuccess: () => {
 				invalidate();
-				toast.add({ type: "success", description: t`Application added to your pipeline.` });
+				toast.add({ type: "success", description: t`Application added` });
 				onOpenChange(false);
 			},
-			onError: () => toast.add({ type: "error", description: t`Couldn't add the application. Please try again.` }),
+			onError: () => toast.add({ type: "error", description: t`Couldn't add the application. Try again.` }),
 		}),
 	);
 
@@ -254,10 +262,10 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 		orpc.applications.update.mutationOptions({
 			onSuccess: () => {
 				invalidate();
-				toast.add({ type: "success", description: t`Application updated.` });
+				toast.add({ type: "success", description: t`Application updated` });
 				onOpenChange(false);
 			},
-			onError: () => toast.add({ type: "error", description: t`Couldn't save your changes. Please try again.` }),
+			onError: () => toast.add({ type: "error", description: t`Couldn't save your changes. Try again.` }),
 		}),
 	);
 
@@ -266,8 +274,9 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 	const submit = () => {
 		if (!form.company.trim() || !form.role.trim()) return;
 		const payload = toPayload(form);
-		if (application) update.mutate({ id: application.id, ...payload });
-		else create.mutate({ ...payload, stageEnteredAt: form.stageEnteredAt || undefined });
+		const stage = pickedLane ? laneMoveInput(pickedLane, mode) : application ? {} : { status: "saved" as const };
+		if (application) update.mutate({ id: application.id, ...payload, ...stage });
+		else create.mutate({ ...payload, ...stage, stageEnteredAt: form.stageEnteredAt || undefined });
 	};
 
 	return (
@@ -331,6 +340,7 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 					<Field label={t`Company`} required>
 						{(id) => <Input id={id} value={form.company} onChange={(event) => set("company", event.target.value)} />}
 					</Field>
+					{!isEditing && <PriorNoResponseNotice company={form.company} />}
 					<Field label={t`Role / title`} required>
 						{(id) => <Input id={id} value={form.role} onChange={(event) => set("role", event.target.value)} />}
 					</Field>
@@ -390,9 +400,9 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 								<Combobox
 									id={id}
 									className="w-full"
-									value={form.status}
-									options={STAGES.map((s) => ({ value: s.value, label: s.label }))}
-									onValueChange={(value) => value && set("status", value)}
+									value={pickedLane?.id ?? currentLane.id}
+									options={active.map((lane) => ({ value: lane.id, label: getLaneLabel(lane) }))}
+									onValueChange={(value) => value && set("laneId", value)}
 								/>
 							)}
 						</Field>
@@ -582,7 +592,7 @@ function TagsField({ id, value, suggestions, onChange }: TagsFieldProps) {
 					{value.map((tag) => (
 						<span
 							key={tag}
-							className="inline-flex items-center gap-1 rounded-full bg-sunken px-2 py-0.5 text-xs text-ink-3"
+							className="inline-flex items-center gap-1 rounded-sm bg-sunken px-2 py-0.5 text-xs text-ink-3"
 						>
 							{tag}
 							<button

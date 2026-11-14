@@ -30,7 +30,7 @@ const router = { push: (href) => calls.push(href), back() {} };
 const theme = {
 	space: { s0: 2, s1: 4, s2: 8, s3: 12, s4: 16, s12: 48 },
 	size: { sheetShare: 440 },
-	radius: { rPill: 999 },
+	radius: { rLg: 4 },
 	colors: { ink: "#111", ink3: "#777", line: "#ddd" },
 };
 const ui = Object.fromEntries(
@@ -42,6 +42,7 @@ const ui = Object.fromEntries(
 		"ConfirmDialog",
 		"Icon",
 		"IconButton",
+		"ListGroup",
 		"ListRow",
 		"SelectSheet",
 		"Switch",
@@ -54,6 +55,9 @@ const ui = Object.fromEntries(
 );
 ui.useTheme = () => theme;
 ui.showToast = (value) => calls.push(value);
+ui.listItemMotion = () => ({});
+ui.listLayout = {};
+ui.useFirstAppearance = () => false;
 const mocks = {
 	react,
 	"react-native": { View: "View", Pressable: "Pressable", ScrollView: "ScrollView" },
@@ -62,6 +66,14 @@ const mocks = {
 	"@lingui/core/macro": { t: tag, plural: (value, forms) => forms.other.replace("#", String(value)) },
 	"@/routes": { routes },
 	"@/ui": ui,
+	"@/ui/use-pull-refresh": { usePullRefresh: () => ({ refreshing: false, onRefresh: () => undefined }) },
+	"react-native-reanimated": {
+		View: "Animated.View",
+		useSharedValue: (initial) => ({ get: () => initial, set() {} }),
+		useAnimatedStyle: () => ({}),
+		withTiming: (value) => value,
+		withSpring: (value) => value,
+	},
 };
 function load(path, extra = {}) {
 	const module = { exports: {} };
@@ -113,6 +125,55 @@ const draftBoundary = {
 };
 const document = load("features/share/document.ts", { "@/draft": draftBoundary });
 const { safeFileName } = load("features/share/model.ts");
+const exportedBytes = new Uint8Array([1, 2, 3]);
+const translatedLetterWords = {
+	greeting: (name) => `Liebe ${name},`,
+	teamGreeting: "Liebes Team & Personal,",
+	hiringTeam: "Personal + Team",
+	signOff: "Mit freundlichen Grüßen",
+};
+let exportPath;
+const { exportFile } = load("features/share/files.ts", {
+	"expo-file-system": {
+		Directory: class {},
+		File: class {
+			async write(bytes) {
+				assert.deepEqual(bytes, exportedBytes);
+			}
+		},
+		Paths: {},
+	},
+	"expo-print": {},
+	"expo-sharing": {},
+	"@reactive-resume/resume/export-sections": {},
+	"./letter": { letterWords: async () => translatedLetterWords },
+	"./messages": {},
+	"./model": { safeFileName },
+	"@/preview/pipeline": {},
+	"@/api/client": {
+		client: { coverLetters: { getById: async () => ({ style: { metadata: { page: { locale: "de-DE" } } } }) } },
+		rest: async (path) => {
+			exportPath = new URL(path, "https://example.test");
+			return { ok: true, arrayBuffer: async () => exportedBytes.buffer };
+		},
+	},
+});
+for (const format of ["docx", "odt", "md", "json"]) {
+	await exportFile({ directory: {}, id: "letter-a", name: "Letter", format, letter: true });
+	assert.equal(exportPath.pathname, `/cover-letters/letter-a/exports/${format}`);
+	assert.deepEqual(
+		Object.fromEntries(exportPath.searchParams),
+		format === "json"
+			? {}
+			: {
+					"words[greeting]": "Liebe {name},",
+					"words[teamGreeting]": translatedLetterWords.teamGreeting,
+					"words[hiringTeam]": translatedLetterWords.hiringTeam,
+					"words[signOff]": translatedLetterWords.signOff,
+				},
+		"Localized letter exports must use OpenAPI object query parameters",
+	);
+}
 let rejectExport = false;
 let releaseExport;
 let holdExport = false;
@@ -128,6 +189,7 @@ const exportBoundary = {
 	printResume: async () => calls.push("print"),
 };
 const { DownloadTab } = load("features/share/download.tsx", {
+	"expo-web-browser": { openBrowserAsync: async (url) => calls.push({ browser: url }) },
 	"@reactive-resume/resume/ats": { lintResumeForAts: () => ({ findings: [] }) },
 	"@reactive-resume/resume/cover-letter": {},
 	"./document": document,
@@ -138,37 +200,59 @@ const { DownloadTab } = load("features/share/download.tsx", {
 	"@/draft": draftBoundary,
 	"@/features/applications/queries": { useApplications: () => ({ data: [] }) },
 });
-const { ShareScreen } = load("features/share/screen.tsx", {
+const { ExportScreen } = load("features/share/export-screen.tsx", {
 	"expo-network": { useNetworkState: () => ({ isConnected: true }) },
 	"react-native-safe-area-context": { SafeAreaProvider: "SafeAreaProvider", SafeAreaView: "SafeAreaView" },
 	"./document": { useShareDocument: () => state },
 	"./download": { DownloadTab },
-	"./link": { LinkTab: "LinkTab" },
 	"@/auth/session": { useSession: () => ({ status: "signed-in" }) },
 	"@/features/document-menu": { DocumentMenu: "DocumentMenu" },
 	"@/features/history/history": { HistoryPanel: "HistoryPanel" },
 });
 reset();
-let tree = render(ShareScreen, { id: resume.id });
-assert.equal(control(tree, "Share sections").value, "download", "Ordinary sharing must start with the file action");
+let tree = render(ExportScreen, { id: resume.id });
+assert.equal(control(tree, "Download & history").value, "download", "Ordinary sharing must start with the file action");
 assert.ok(nodes(tree).some((node) => node.type === DownloadTab));
 reset();
-tree = render(ShareScreen, { id: resume.id, history: true });
-assert.equal(control(tree, "Share sections").value, "history", "Explicit version history keeps its destination");
+tree = render(ExportScreen, { id: resume.id, history: true });
+assert.equal(control(tree, "Download & history").value, "history", "Explicit version history keeps its destination");
 
 reset();
 tree = render(DownloadTab, { resume, offline: false });
 assert.equal(control(tree, "File name").value, "Alex Example-Resume");
+const communityInvite = (view) => nodes(view).find((node) => node.props.title === "Get resume feedback on Discord");
+assert.equal(communityInvite(tree), undefined, "No community invitation before an export");
 holdExport = true;
 control(tree, "Share PDF").onPress();
 control(tree, "Share PDF").onPress();
 await settle();
 assert.equal(calls.filter((call) => call?.export).length, 1, "Repeated taps must not duplicate generation");
+assert.equal(
+	communityInvite(render(DownloadTab, { resume, offline: false })),
+	undefined,
+	"No invitation while preparing",
+);
 releaseExport();
 await settle();
 holdExport = false;
 assert.equal(calls.filter((call) => call?.shared === "pdf").length, 1);
 assert.equal(calls.find((call) => call?.export).export.name, "Alex Example-Resume");
+tree = render(DownloadTab, { resume, offline: false });
+assert.ok(communityInvite(tree), "A prepared export offers optional peer feedback");
+assert.equal(
+	calls.some((call) => call?.browser),
+	false,
+	"Export never opens Discord automatically",
+);
+await communityInvite(tree).props.onPress();
+assert.equal(calls.at(-1).browser, "https://discord.gg/9kAqrGcwn5");
+control(tree, "Print").onPress();
+await settle();
+assert.equal(
+	communityInvite(render(DownloadTab, { resume, offline: false })),
+	undefined,
+	"Printing does not trigger an invitation",
+);
 
 reset();
 state = {
@@ -200,6 +284,7 @@ control(tree, "Download DOCX").onPress();
 await settle();
 tree = render(DownloadTab, { resume, offline: false });
 assert.ok(nodes(tree).some((node) => node.props.message === "Export unavailable"));
+assert.equal(communityInvite(tree), undefined, "Failed exports do not trigger an invitation");
 rejectExport = false;
 control(tree, "Share PDF instead").onPress();
 await settle();
@@ -210,9 +295,24 @@ assert.equal(
 );
 
 const stages = load("features/applications/stages.ts");
-const nextSteps = load("features/applications/next-step.ts", { "./stages": stages });
-const time = { locale: "en-US", timeZone: "UTC", when: String, time: String, day: String };
-const { StageStepper, NextStepCard } = load("features/application-detail/sections.tsx", {
+const history = load("features/applications/history.ts");
+const zod = createRequire(new URL("../../../packages/schema/package.json", import.meta.url))("zod");
+const applicationData = load("../../../packages/schema/src/applications/data.ts", {
+	zod,
+	"@reactive-resume/utils/timezone": { timezoneSchema: zod.z.string() },
+});
+const schemaLanes = load("../../../packages/schema/src/applications/lanes.ts", { zod, "./data": applicationData });
+const lanes = load("features/applications/lanes.ts", {
+	"@reactive-resume/schema/applications/lanes": schemaLanes,
+	"./stages": stages,
+});
+const defaultLanes = schemaLanes.createDefaultApplicationLanes();
+const laneQuery = {
+	useApplicationLanes: () => ({ lanes: defaultLanes, active: defaultLanes, supported: false, ready: true }),
+};
+const nextSteps = load("features/applications/next-step.ts", { "./stages": stages, "./history": history });
+const time = { locale: "en-US", timeZone: "UTC", when: String, time: String, day: String, utcDay: String };
+const { StageStepper, NextStepCard, WhatYouSent } = load("features/application-detail/sections.tsx", {
 	"@tanstack/react-query": {},
 	"expo-document-picker": {},
 	"expo-file-system": {},
@@ -221,6 +321,8 @@ const { StageStepper, NextStepCard } = load("features/application-detail/section
 	"./attachment": {},
 	"./notes-queue": { createNotesQueue: () => ({}) },
 	"./hooks": {
+		useDocuments: () => ({ data: [] }),
+		useDetailMutations: () => ({ createLetter: { isPending: false } }),
 		useNow: () => new Date(),
 		useUserTime: () => time,
 		followUpReminder: () => null,
@@ -231,6 +333,10 @@ const { StageStepper, NextStepCard } = load("features/application-detail/section
 	"@/auth/session": {},
 	"@/draft": {},
 	"@/features/applications/error": {},
+	"@/features/applications/history": history,
+	"@/features/applications/lane-notice": { LaneNotice: "LaneNotice" },
+	"@/features/applications/lane-queries": laneQuery,
+	"@/features/applications/lanes": lanes,
 	"@/features/applications/next-step": nextSteps,
 	"@/features/applications/stages": stages,
 	"@/features/applications/queries": {
@@ -258,10 +364,37 @@ assert.equal(
 	"Progress labels must not mutate records",
 );
 assert.deepEqual(calls, []);
-control(tree, "Change stage").onChange("applied");
+control(tree, "Change lane").onChange("applied");
 assert.deepEqual(calls, ["mark-applied"], "Explicit Saved → Applied still captures submission details");
-control(tree, "Change stage").onChange("interview");
+control(tree, "Change lane").onChange("interview");
 assert.deepEqual(calls.at(-1), { id: "job-a", status: "interview" });
+
+for (const [resumeId, coverLetterId] of [
+	[null, null],
+	["resume-a", null],
+	[null, "letter-a"],
+	["resume-a", "letter-a"],
+]) {
+	reset();
+	tree = render(WhatYouSent, { application: { ...application, resumeId, coverLetterId } });
+	assert.equal(
+		nodes(tree).filter((node) => node.type === "Card").length,
+		resumeId || coverLetterId ? 1 : 0,
+		"Only linked documents should create a card; an empty card leaves a stray border",
+	);
+	assert.equal(
+		nodes(tree).filter((node) => node.type === "ListRow").length,
+		Number(!!resumeId) + Number(!!coverLetterId),
+	);
+	assert.equal(
+		nodes(tree).some((node) => node.props.label === "Prepare a resume"),
+		!resumeId,
+	);
+	assert.equal(
+		nodes(tree).some((node) => node.props.label === "Write a letter"),
+		!coverLetterId,
+	);
+}
 
 for (const [overrides, label, destination] of [
 	[{}, "Prepare application", "fit"],
@@ -288,3 +421,379 @@ for (const [overrides, label, destination] of [
 console.log(
 	"PASS file-first sharing, single-flight/current-document/offline PDF export, fallback, explicit stage edits and state-aware next actions",
 );
+
+// Applications empty states must offer an action that changes the visible collection.
+let applications = [];
+let applicationSearch = "";
+const listLogic = load("features/applications/list.ts", {
+	"./next-step": { getNextStep: () => ({ kind: "none" }) },
+	"./stages": { LIST_ORDER: ["saved", "applied", "closed"] },
+	"./lanes": lanes,
+});
+const { ApplicationsListScreen } = load("features/applications/list-screen.tsx", {
+	"@lingui/react/macro": { useLingui: () => ({ t: tag, i18n: { locale: "en" } }) },
+	"./add-sheet": { AddApplicationSheet: "AddApplicationSheet" },
+	"./error": { applicationError: String },
+	"./lane-queries": laneQuery,
+	"./lanes": lanes,
+	"./list": listLogic,
+	"./next-step": { getNextStep: () => ({}), describeNextStep: () => ({ title: "Saved" }) },
+	"./queries": {
+		useApplications: () => ({ data: applications }),
+		useApplicationMutations: () => ({}),
+		useApplicationDetailPrefetch: () => () => {},
+	},
+	"./stages": { PIPELINE: [], CLOSED_REASONS: [], getStageColor: () => "gray", getStageLabel: (value) => value },
+	"@/auth/session": { useSession: () => ({ status: "signed-in", server: "fixture" }) },
+	"@/features/application-detail/hooks": { useNow: () => new Date(), useUserTime: () => ({ timeZone: "UTC" }) },
+	"@/features/applications-board/views": { ApplicationsViewFrame: "ApplicationsViewFrame" },
+	"@/features/applications-board/search": {
+		useApplicationSearch: () => ({
+			search: applicationSearch,
+			setSearch: (value) => {
+				applicationSearch = value;
+			},
+		}),
+	},
+	"@/routes": { routes: { ...routes, applicationDetails: (id) => `/applications/${id}` } },
+	"react-native": { View: "View", Pressable: "Pressable", SectionList: "SectionList" },
+	"@/ui": { ...ui, Screen: "Screen", EmptyState: "EmptyState", Sheet: "Sheet", SelectSheet: "SelectSheet" },
+});
+reset();
+const List = render(ApplicationsListScreen, {}).type;
+const listView = () => render(List, {});
+let listTree = listView();
+let sectionList = nodes(listTree).find((node) => node.type === "SectionList");
+assert.equal(
+	sectionList.props.ListEmptyComponent.props.action.label,
+	"Save a job",
+	"new collection has creation action",
+);
+const job = {
+	id: "closed-job",
+	role: "Engineer",
+	company: "Example",
+	status: "closed",
+	tags: [],
+	contacts: [],
+	updatedAt: "2026-10-19T10:00:00Z",
+};
+applications = [job];
+listTree = listView();
+sectionList = nodes(listTree).find((node) => node.type === "SectionList");
+assert.equal(sectionList.props.ListEmptyComponent.props.title, "All your applications are closed");
+assert.equal(sectionList.props.ListEmptyComponent.props.action.label, "Show closed");
+sectionList.props.ListEmptyComponent.props.action.onPress();
+listTree = listView();
+sectionList = nodes(listTree).find((node) => node.type === "SectionList");
+assert.equal(sectionList.props.sections[0].data[0].id, job.id, "Show closed reveals hidden records");
+applicationSearch = "missing company";
+listTree = listView();
+sectionList = nodes(listTree).find((node) => node.type === "SectionList");
+assert.equal(sectionList.props.ListEmptyComponent.props.action.label, "Clear filters");
+sectionList.props.ListEmptyComponent.props.action.onPress();
+assert.equal(applicationSearch, "");
+listTree = listView();
+sectionList = nodes(listTree).find((node) => node.type === "SectionList");
+assert.equal(sectionList.props.sections.length, 0, "Clear filters restores default closed visibility");
+applications = [{ ...job, status: "saved" }];
+listTree = listView();
+sectionList = nodes(listTree).find((node) => node.type === "SectionList");
+const rowTree = sectionList.props.renderItem({ item: applications[0] });
+const row = nodes(rowTree).find((node) => node.type === "ListRow");
+assert.equal(row.props.onLongPress, undefined, "list long press never enters bulk selection");
+row.props.onPress();
+assert.equal(calls.at(-1), "/applications/closed-job", "single press opens application");
+nodes(rowTree)
+	.find((node) => node.props.icon === "dots-three")
+	.props.onPress();
+listTree = listView();
+sectionList = nodes(listTree).find((node) => node.type === "SectionList");
+const selectedRow = nodes(sectionList.props.renderItem({ item: applications[0] })).find(
+	(node) => node.type === "ListRow",
+);
+assert.equal(selectedRow.props.leading, "check-square", "ellipsis keeps explicit bulk selection reachable");
+console.log(
+	"PASS Applications empty/create, closed-only reveal, filter reset, single press and explicit bulk selection entry",
+);
+
+// Opening earlier applications must preserve an unsaved job until explicit discard.
+let finishSave;
+const { AddApplicationSheet } = load("features/applications/add-sheet.tsx", {
+	react: { ...react, useEffect: () => {} },
+	"@orpc/client": { ORPCError: class extends Error {} },
+	"@tanstack/react-query": { useQuery: () => ({ data: [] }) },
+	"./date": { parseDateOnly: () => new Date() },
+	"./error": { applicationError: String },
+	"./lane-notice": { LaneNotice: "LaneNotice" },
+	"./lane-queries": laneQuery,
+	"./lanes": lanes,
+	"./prior-no-response": { PriorNoResponse: "PriorNoResponse" },
+	"./queries": {
+		useApplicationMutations: () => ({
+			create: {
+				mutateAsync: () =>
+					new Promise((resolve) => {
+						finishSave = resolve;
+					}),
+			},
+		}),
+	},
+	"./stages": stages,
+	"@/api/client": {
+		client: {},
+		orpc: {
+			documents: { list: { queryOptions: () => ({ queryKey: ["documents"] }) } },
+			webAccess: { status: { queryOptions: () => ({ queryKey: ["web"] }) } },
+		},
+	},
+	"@/auth/session": { getServer: () => "test", useSession: () => ({ server: "test" }) },
+	"@/features/ai/providers": {
+		AIProviderSetupSheet: "AIProviderSetupSheet",
+		useHasAIProvider: () => ({ hasAIProvider: false }),
+	},
+	"@/features/application-detail/date-field": { WallClockField: "WallClockField" },
+	"@/routes": { routes: { ...routes, applicationDetails: (id) => `/applications/${id}` } },
+	"@/ui": { ...ui, EditorSheet: "EditorSheet" },
+});
+reset();
+const addView = () => render(AddApplicationSheet, { onClose: () => calls.push("close-draft") });
+control(addView(), "Fill details manually").onPress();
+control(addView(), "Company").onChangeText("Fictional Labs");
+control(addView(), "Role / title").onChangeText("Engineer");
+const priorLink = () => nodes(addView()).find((node) => node.type === "PriorNoResponse").props;
+const discardPrior = () =>
+	nodes(addView()).find(
+		(node) => node.type === "ConfirmDialog" && node.props.message.includes("opening this application"),
+	).props;
+assert.equal(priorLink().onOpen("previous"), false);
+assert.deepEqual(calls, [], "opening the warning cannot discard or navigate yet");
+assert.equal(discardPrior().open, true);
+discardPrior().onCancel();
+assert.equal(control(addView(), "Company").value, "Fictional Labs", "Keep editing retains draft");
+// Footer is a separate prop in the host renderer.
+const footer = nodes(addView()).find((node) => node.type === "EditorSheet").props.footer;
+control(footer, "Save job").onPress();
+assert.equal(priorLink().disabled, true, "warning cannot interrupt an in-flight save");
+priorLink().onOpen("previous");
+assert.equal(discardPrior().open, false);
+finishSave("saved");
+await settle();
+assert.deepEqual(calls, ["close-draft", "/applications/saved"]);
+reset();
+control(addView(), "Fill details manually").onPress();
+control(addView(), "Company").onChangeText("Fictional Labs");
+priorLink().onOpen("previous");
+discardPrior().onConfirm();
+assert.deepEqual(calls, ["close-draft", "/applications/previous"], "explicit discard opens the prior application");
+console.log("PASS native prior-application draft confirmation and save lock");
+
+// Default calendar month/day follows the account clock; explicit navigation remains pinned.
+const calendarSchedule = load("features/reminders/schedule.ts", { "@reactive-resume/utils/timezone": {} });
+const nativeCalendar = load("features/applications-board/calendar.ts", {
+	"../reminders/schedule.ts": calendarSchedule,
+});
+const calendarTokens = load("ui/tokens.ts", { "react-native": { Easing: { bezier: () => null } } });
+let calendarNow = new Date("2026-10-31T22:59:30Z");
+const calendarRows = [
+	{
+		id: "calendar-application",
+		company: "Fictional Labs",
+		role: "Engineer",
+		status: "interview",
+		activity: ["2026-10-31T22:30:00Z", "2026-11-01T09:00:00Z", "2026-11-04T14:00:00Z"].map((at, index) => ({
+			id: `calendar-${index}`,
+			type: "interview",
+			at,
+			durationMinutes: 60,
+			kind: "technical",
+			timezone: "UTC",
+		})),
+	},
+];
+const { CalendarScreen } = load("features/applications-board/calendar-screen.tsx", {
+	"react-native": { View: "View", Pressable: "Pressable", ScrollView: "ScrollView", RefreshControl: "RefreshControl" },
+	"@lingui/react/macro": { useLingui: () => ({ t: tag, i18n: { locale: "en-GB" } }) },
+	"@lingui/core/macro": {
+		plural: (value, forms) => (forms[value] ?? forms[value === 1 ? "one" : "other"]).replace("#", String(value)),
+	},
+	"./calendar": nativeCalendar,
+	"./search": { useApplicationSearch: () => ({ search: "" }) },
+	"./views": { ApplicationsViewFrame: "ApplicationsViewFrame" },
+	"@/features/application-detail/hooks": {
+		useNow: () => calendarNow,
+		useUserTime: () => ({ timeZone: "Europe/Berlin", time: () => "" }),
+		interviewTypeLabel: (kind) => kind,
+	},
+	"@/features/application-detail/interview-sheet": { InterviewSheet: "InterviewSheet" },
+	"@/features/application-detail/sheets": { FollowUpSheet: "FollowUpSheet" },
+	"@/features/applications/error": { applicationError: () => "offline" },
+	"@/features/applications/list": { filterApplications: (rows) => rows },
+	"@/features/applications/queries": {
+		useApplications: () => ({ data: calendarRows, isError: false, isPending: false, refetch() {} }),
+	},
+	"@/shell/use-is-tablet": { useIsTablet: () => false },
+	"@/ui": {
+		...ui,
+		EmptyState: "EmptyState",
+		Sheet: "Sheet",
+		useTheme: () => ({ ...calendarTokens, colors: calendarTokens.colors.light }),
+	},
+});
+const calendarComponent = nodes(CalendarScreen()).find((node) => typeof node.type === "function").type;
+reset();
+const calendarView = () => render(calendarComponent);
+const calendarHeading = () => nodes(calendarView()).find((node) => node.props.variant === "heading").props.children[0];
+const calendarText = () =>
+	nodes(calendarView())
+		.flatMap((node) => node.props.children.flat(Infinity))
+		.filter((child) => typeof child === "string");
+assert.equal(calendarHeading(), "October 2026");
+assert.ok(calendarText().includes("1 interview"));
+calendarNow = new Date("2026-10-31T23:00:30Z");
+assert.equal(calendarHeading(), "November 2026");
+assert.ok(calendarText().includes("2 interviews"));
+assert.ok(calendarText().includes("Today"), "unselected day follows account-local midnight");
+control(calendarView(), "Previous month").onPress();
+calendarNow = new Date("2026-11-30T23:00:30Z");
+assert.equal(calendarHeading(), "October 2026", "explicit month survives account-month rollover");
+control(calendarView(), "This month").onPress();
+assert.equal(calendarHeading(), "December 2026");
+calendarNow = new Date("2026-12-31T23:00:30Z");
+assert.equal(calendarHeading(), "January 2027", "This month restores following the account clock");
+const selectedCalendarDay = new Intl.DateTimeFormat("en-GB", {
+	timeZone: "UTC",
+	weekday: "long",
+	day: "numeric",
+	month: "long",
+}).format(new Date("2027-01-04T00:00:00Z"));
+const dayChoice = nodes(calendarView()).find(
+	(node) => node.type === "Pressable" && node.props.accessibilityLabel === selectedCalendarDay,
+);
+assert.ok(dayChoice);
+dayChoice.props.onPress();
+calendarNow = new Date("2027-01-31T23:00:30Z");
+assert.equal(calendarHeading(), "January 2027", "choosing a day pins its displayed month");
+assert.ok(calendarText().includes(selectedCalendarDay), "chosen day survives account-local rollover");
+assert.equal(control(calendarView(), "This month").disabled, false);
+control(calendarView(), "This month").onPress();
+assert.equal(calendarHeading(), "February 2027");
+assert.ok(calendarText().includes("Today"));
+console.log("PASS native calendar follows account month/day and preserves explicit browsing");
+
+// Manual offers use the production parser; only native widgets, transport and profile loading are boundaries.
+const amountParser = load("../../../packages/utils/src/amount.ts");
+const timeParser = load("../../../packages/utils/src/timezone.ts", { zod });
+const careerSchema = load("../../../packages/schema/src/career.ts", {
+	zod,
+	"@reactive-resume/utils/region": { searchRegionsSchema: zod.z.array(zod.z.string()).nullable().optional() },
+	"@reactive-resume/utils/timezone": timeParser,
+});
+const offerParser = load("../../../packages/schema/src/career-offer.ts", {
+	"./career": careerSchema,
+	"@reactive-resume/utils/amount": amountParser,
+	"@reactive-resume/utils/timezone": timeParser,
+});
+let offerProfile = { isSuccess: false, isPending: true, isError: false };
+const { OfferEntry } = load("features/career/offer-entry.tsx", {
+	"@reactive-resume/schema/career": careerSchema,
+	"@reactive-resume/schema/career-offer": offerParser,
+	"./hooks": {
+		useCareerTime: () => ({ locale: "en-US", timeZone: "Europe/Berlin", profile: offerProfile }),
+		useCareerAction: () => ({
+			pending: false,
+			run: async (work, success) => {
+				await work();
+				success();
+			},
+		}),
+		client: { career: { createOffer: async (input) => calls.push(input) } },
+	},
+	"./shared": { EditorSheet: "EditorSheet", LoadState: "LoadState" },
+	"@/features/application-detail/date-field": { WallClockField: "WallClockField" },
+	"@/features/applications/queries": { useApplications: () => ({ data: [] }) },
+});
+reset();
+const entryView = () => render(OfferEntry, { application: { id: "job", company: "Fictional Labs", role: "Engineer" } });
+control(entryView(), "Add offer").onPress();
+const formElement = nodes(entryView()).find((node) => typeof node.type === "function");
+assert.ok(formElement);
+reset();
+const offerView = () => render(formElement.type, { ...formElement.props, onClose() {} });
+control(offerView(), "Currency").onChangeText("EUR");
+control(offerView(), "Learning budget").onChangeText("95k");
+assert.equal(control(offerView(), "Learning budget").error, undefined, "typing shows no premature error");
+control(offerView(), "Learning budget").onBlur();
+assert.match(control(offerView(), "Learning budget").error, /full amount/);
+control(offerView(), "Save offer").onPress();
+assert.deepEqual(calls, [], "invalid optional learning cannot save");
+assert.equal(control(offerView(), "Learning budget").value, "95k", "invalid draft remains editable");
+control(offerView(), "Learning budget").onChangeText("");
+control(offerView(), "Respond by").onChange("2027-03-28");
+for (const state of ["loading", "failure"]) {
+	offerProfile = { isSuccess: false, isPending: state === "loading", isError: state === "failure" };
+	control(offerView(), "Save offer").onPress();
+	assert.deepEqual(calls, [], `profile ${state} cannot silently discard deadline`);
+	assert.ok(nodes(offerView()).some((node) => node.type === "Banner" && /account timezone/.test(node.props.message)));
+	assert.equal(control(offerView(), "Respond by").value, "2027-03-28");
+}
+offerProfile = { isSuccess: true, isPending: false, isError: false };
+control(offerView(), "Time").onChange("02:30");
+control(offerView(), "Save offer").onPress();
+assert.deepEqual(calls, [], "nonexistent local time cannot save");
+control(offerView(), "Time").onChange("03:30");
+control(offerView(), "Save offer").onPress();
+await settle();
+assert.equal(calls[0].respondBy, "2027-03-28T01:30:00.000Z");
+assert.equal(calls[0].learning, null);
+assert.equal(calls[0].base, null);
+assert.equal(calls[0].currency, "EUR");
+assert.equal(calls[0].period, "year");
+calls.length = 0;
+offerProfile = { isSuccess: false, isPending: false, isError: true };
+control(offerView(), "Respond by").onChange("");
+control(offerView(), "Save offer").onPress();
+await settle();
+assert.equal(calls[0].respondBy, null, "a genuinely blank deadline needs no loaded profile");
+console.log("PASS native offer validation, draft preservation, profile loading/failure and blank deadline");
+
+// Native Save must stay reachable for validation, then focus the actual missing input.
+const { Stories } = load("features/career/stories.tsx", {
+	"@reactive-resume/schema/career": careerSchema,
+	"./hooks": {
+		useCareerQueries: () => ({ stories: { data: [] }, facts: { data: [] } }),
+		useUndoRows: () => ({ hidden: [] }),
+		useCareerAction: () => ({ pending: false, run: (save) => save() }),
+		client: { career: { saveStory: (payload) => calls.push({ story: payload }) } },
+	},
+	"./shared": { Actions: "Actions", EditorSheet: "EditorSheet", LoadState: "LoadState", SwitchRow: "SwitchRow" },
+});
+reset();
+control(render(Stories, {}), "Add a story").onPress();
+const storyEditor = nodes(render(Stories, {})).find(
+	(node) => typeof node.type === "function" && node.props.story === null,
+);
+assert.ok(storyEditor, "Add a story opens the editor");
+reset();
+const storyView = () => render(storyEditor.type, storyEditor.props);
+control(storyView(), "Title").onChangeText("Fictional setup repair");
+control(storyView(), "Situation (required)").onChangeText("Customers could not finish setup.");
+control(storyView(), "Action (required)").onChangeText("I repaired setup.");
+control(storyView(), "Task (required)").onChangeText(" ");
+const originalAnimationFrame = globalThis.requestAnimationFrame;
+try {
+	globalThis.requestAnimationFrame = (callback) => callback();
+	assert.equal(control(storyView(), "Save story").disabled, false, "Missing parts cannot silently disable Save");
+	control(storyView(), "Task (required)").ref({ focus: () => calls.push("focus-task") });
+	control(storyView(), "Save story").onPress();
+	assert.deepEqual(calls, ["focus-task"], "Invalid drafts focus Task without making a request");
+	assert.equal(control(storyView(), "Task (required)").error, "Complete Task before saving.");
+	assert.equal(control(storyView(), "Situation (required)").value, "Customers could not finish setup.");
+	control(storyView(), "Task (required)").onChangeText("Restore setup.");
+	control(storyView(), "Save story").onPress();
+	assert.equal(calls.at(-1).story.result, "");
+	assert.equal(calls.at(-1).story.reflection, "");
+} finally {
+	globalThis.requestAnimationFrame = originalAnimationFrame;
+}
+console.log("PASS native story validation focus, draft preservation and optional outcomes");

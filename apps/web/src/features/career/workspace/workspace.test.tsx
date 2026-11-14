@@ -5,11 +5,11 @@ import type { Application } from "@/features/applications/types";
 import type { CareerWorkspace } from "@reactive-resume/schema/career";
 import type { ReactNode } from "react";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { aiLimitsSchema, EMPTY_WORKSPACE } from "@reactive-resume/schema/career";
+import { aiLimitsSchema, EMPTY_WORKSPACE, offerTermsSchema } from "@reactive-resume/schema/career";
 import { useDebouncedSave } from "../hooks";
 import { ApplyTab } from "./apply";
 import { DebriefTab } from "./debrief";
@@ -251,14 +251,15 @@ it("submits the visible draft immediately and pauses autosave until submission f
 	});
 });
 
-it("shows the last checklist item done once the application is applied, however it was marked", async () => {
-	// Marked from the board or the details sheet: the stored ticks never included the last item.
+it("keeps only the content checks once the application is applied, however it was marked", async () => {
+	// Marked from the board or the details sheet: the stored ticks never included the submission items.
 	api.data.workspace = { ...EMPTY_WORKSPACE, checklist: [0] };
 	mount(<ApplyTab {...props} application={{ ...application, status: "applied" }} />);
 	expect(screen.queryByRole("button", { name: "Mark as applied" })).toBeNull();
-	const last = screen.getByText("Mark the application as applied to keep the versions you sent.").closest("label");
-	expect(within(last as HTMLElement).getByRole("checkbox")).toHaveAttribute("aria-checked", "true");
-	expect(screen.getByRole("progressbar", { name: "Checklist progress" })).toHaveAttribute("aria-valuenow", "2");
+	expect(screen.queryByText("Mark the application as applied to keep the versions you sent.")).toBeNull();
+	const progress = screen.getByRole("progressbar", { name: "Checklist progress" });
+	expect(progress).toHaveAttribute("aria-valuenow", "1");
+	expect(progress).toHaveAttribute("aria-valuemax", "3");
 });
 
 it("leaves the last checklist item undone while the application is saved, whatever is stored", async () => {
@@ -578,4 +579,18 @@ it("stops question playback and releases its audio when leaving Practise", async
 	view.unmount();
 	expect(pause).toHaveBeenCalledOnce();
 	expect(revoke).toHaveBeenCalledWith("blob:question");
+});
+
+it("keeps Saved offer provenance neutral for both manual and older offer shapes", async () => {
+	api.data.savedItems = [
+		item("Written offer", {
+			kind: "offer",
+			...offerTermsSchema.parse({ currency: "EUR", period: "year", base: 95000, variable: null }),
+		}),
+	];
+	mount(<SavedTab {...props} />);
+	expect(await screen.findByText("Saved items for Harbor, newest first.")).toBeTruthy();
+	expect(screen.queryByText(/coach wrote/)).toBeNull();
+	expect(screen.queryByText(/used the message/)).toBeNull();
+	expect(screen.getByRole("link", { name: "Open in Offers" })).toBeTruthy();
 });

@@ -1,4 +1,4 @@
-import type { Application } from "../types";
+import type { ApplicationSummary } from "../types";
 import type { InterviewKind, InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
@@ -97,9 +97,10 @@ type Draft = {
 };
 
 // New interviews default to the given day (or tomorrow) at 09:00 in the timezone, or the next full hour if that's past.
-function emptyDraft(applicationId: string, timezone: string, day?: Date | null): Draft {
+function emptyDraft(applicationId: string, timezone: string, day?: string | null): Draft {
 	const now = new Date();
-	const date = dayKey(day ?? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+	const today = new Date(`${dayKey(now, timezone)}T00:00:00Z`);
+	const date = day ?? dayKey(new Date(today.getTime() + 86_400_000), "UTC");
 	let at = fromZonedDateTime(date, "09:00", timezone) ?? now;
 	if (at <= now) at = new Date(Math.ceil(now.getTime() / 3_600_000) * 3_600_000);
 	return {
@@ -143,13 +144,13 @@ type InterviewDialogProps = {
 	onOpenChange: (open: boolean) => void;
 	// The application the interview belongs to. When omitted, an application picker is shown
 	// (used by the calendar, where no application is selected yet).
-	application?: Application | null;
+	application?: ApplicationSummary | null;
 	// Applications offered by the picker when `application` is omitted.
-	applications?: Application[];
+	applications?: ApplicationSummary[];
 	// Set when editing an existing interview.
 	interview?: InterviewTimelineEntry | null;
 	// Pre-selects this day when scheduling (e.g. a day clicked on the calendar).
-	day?: Date | null;
+	day?: string | null;
 };
 
 const FULL_SCREEN_ON_PHONES =
@@ -198,18 +199,18 @@ export function InterviewDialog({
 
 	const add = useMutation(
 		orpc.applications.addInterview.mutationOptions({
-			onError: () => toast.add({ type: "error", description: t`Couldn't schedule the interview.` }),
+			onError: () => toast.add({ type: "error", description: t`Couldn't schedule the interview. Try again.` }),
 		}),
 	);
 	const update = useMutation(
 		orpc.applications.updateInterview.mutationOptions({
-			onError: () => toast.add({ type: "error", description: t`Couldn't update the interview.` }),
+			onError: () => toast.add({ type: "error", description: t`Couldn't update the interview. Try again.` }),
 		}),
 	);
 	const remove = useMutation(
 		orpc.applications.deleteTimelineEntry.mutationOptions({
 			onSettled: (_data, _error, variables) => invalidate(variables.id),
-			onError: () => toast.add({ type: "error", description: t`Couldn't delete the interview.` }),
+			onError: () => toast.add({ type: "error", description: t`Couldn't delete the interview. Try again.` }),
 		}),
 	);
 
@@ -294,7 +295,7 @@ export function InterviewDialog({
 	const deleteInterview = () => {
 		if (!editing) return;
 		const applicationId = draft.applicationId;
-		const drop = (item: Application) =>
+		const drop = <T extends Pick<ApplicationSummary, "id" | "activity">>(item: T) =>
 			item.id === applicationId
 				? { ...item, activity: item.activity.filter((entry) => entry.id !== editing.id) }
 				: item;

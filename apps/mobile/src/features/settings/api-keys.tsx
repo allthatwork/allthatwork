@@ -1,11 +1,22 @@
 import { useLingui } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import Animated from "react-native-reanimated";
 import { openAccountSettings } from "./browser";
 import { SettingsGroup } from "./layout";
 import { client, orpc } from "@/api/client";
 import { useSession } from "@/auth/session";
-import { Banner, ConfirmDialog, EmptyState, ListRow, Text, showToast } from "@/ui";
+import {
+	Banner,
+	ConfirmDialog,
+	EmptyState,
+	ListRow,
+	Text,
+	listItemMotion,
+	listLayout,
+	showToast,
+	useFirstAppearance,
+} from "@/ui";
 
 type ApiKeysProps = { userId: string };
 export function ApiKeys({ userId }: ApiKeysProps) {
@@ -16,6 +27,7 @@ export function ApiKeys({ userId }: ApiKeysProps) {
 	const keys = useQuery(
 		orpc.auth.apiKeys.list.queryOptions({ queryKey: [...orpc.auth.apiKeys.list.key(), server, userId], retry: false }),
 	);
+	const firstAppearance = useFirstAppearance(!keys.isPending);
 	const revoke = useMutation({
 		mutationKey: ["settings", "revoke-key"],
 		mutationFn: async (keyId: string) => {
@@ -56,23 +68,24 @@ export function ApiKeys({ userId }: ApiKeysProps) {
 				/>
 			) : null}
 			{keys.data?.apiKeys.length === 0 ? <EmptyState title={t`No keys yet.`} /> : null}
-			{keys.data?.apiKeys.map((key) => (
-				<ListRow
-					key={key.id}
-					title={key.name ?? t`Unnamed key`}
-					subtitle={t`Created ${date(key.createdAt)} · Last used ${date(key.lastRequest)} · Expires ${date(key.expiresAt)}`}
-					leading="key"
-					trailing={<Text color="dangerText">{t`Revoke`}</Text>}
-					accessibilityHint={t`Revoke this API key`}
-					disabled={revoke.isPending}
-					onPress={() => setSelected({ id: key.id, name: key.name ?? t`Unnamed key` })}
-				/>
+			{keys.data?.apiKeys.map((key, index) => (
+				<Animated.View key={key.id} {...listItemMotion(index, firstAppearance)} layout={listLayout}>
+					<ListRow
+						title={key.name ?? t`Unnamed key`}
+						subtitle={t`Created ${date(key.createdAt)} · Last used ${date(key.lastRequest)} · Expires ${date(key.expiresAt)}`}
+						leading="key"
+						trailing={<Text color="dangerText">{t`Revoke`}</Text>}
+						accessibilityHint={t`Revoke this API key`}
+						disabled={revoke.isPending}
+						onPress={() => setSelected({ id: key.id, name: key.name ?? t`Unnamed key` })}
+					/>
+				</Animated.View>
 			))}
 			<ConfirmDialog
 				open={selected !== null}
 				title={t`Revoke API key?`}
-				message={t`Apps using “${selected?.name ?? ""}” will stop working. This cannot be undone.`}
-				confirmLabel={t`Revoke`}
+				message={t`Apps using “${selected?.name ?? ""}” will stop working. This can't be undone.`}
+				confirmLabel={t`Revoke key`}
 				destructive
 				onCancel={() => setSelected(null)}
 				onConfirm={() => {

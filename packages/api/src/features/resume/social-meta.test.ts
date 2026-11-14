@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
-import { getPublicResumeSocialMeta } from "./social-meta";
+import { getPublicResumeCardData } from "./social-meta";
 
 // The real lookup query, run against a stand-in `pg` client that records the SQL and returns `rows`.
 const pg = vi.hoisted(() => ({ queries: [] as { text: string; params: unknown[] }[], rows: [] as unknown[][] }));
@@ -15,20 +15,52 @@ vi.mock("@reactive-resume/db/client", async () => {
 	return { db: drizzle({ client: client as never }) };
 });
 
-describe("getPublicResumeSocialMeta", () => {
+describe("getPublicResumeCardData", () => {
+	beforeEach(() => {
+		pg.queries = [];
+		pg.rows = [];
+	});
+
 	it("cards only public, password-free resumes outside Trash, showing what an anonymous visitor sees", async () => {
 		const data = structuredClone(sampleResumeData);
 		data.basics.name = "";
 		data.summary.hidden = true;
-		pg.rows = [["Senior Eng @ Foo — final draft", data]];
+		// Columns in select order: data, hideContactDetails, isPrimary, customDomain.
+		pg.rows = [[data, false, false, null]];
 
-		const meta = await getPublicResumeSocialMeta({ username: "jane", slug: "resume" });
+		const card = await getPublicResumeCardData({ username: "jane", slug: "resume" });
 
 		const [query] = pg.queries;
-		expect(query?.text).toContain('"resume"."is_public" = $3');
-		expect(query?.params[2]).toBe(true);
+		// $3 to $5 are the username and its redirect lookup (the fork keeps old usernames working for 30 days).
+		expect(query?.text).toContain('"resume"."is_public" = $6');
+		expect(query?.params[5]).toBe(true);
 		expect(query?.text).toContain('"resume"."password" is null');
 		expect(query?.text).toContain('"resume"."trashed_at" is null');
-		expect(meta).toMatchObject({ name: "Resume", description: data.basics.headline });
+		expect(card?.data.summary.content).toBe("");
+		expect(card?.data.basics.headline).toBe(data.basics.headline);
+	});
+
+	it("matches renamed slugs via resumeSlugRedirect when redirect is active", async () => {
+		const data = structuredClone(sampleResumeData);
+		data.basics.name = "Jane Doe";
+		pg.rows = [[data, false, false, null]];
+
+		const card = await getPublicResumeCardData({ username: "jane", slug: "old-slug" });
+
+		const [query] = pg.queries;
+		expect(query?.text).toContain('"resume_slug_redirect"');
+		expect(query?.text).toContain('"resume_slug_redirect"."expires_at" > now()');
+		expect(query?.text).toContain('"resume_slug_redirect"."user_id" = "resume"."user_id"');
+		expect(query?.text).toContain('order by "user"."username" = $7 desc, "resume"."slug" = $8 desc');
+		expect(query?.params[0]).toBe("old-slug");
+		expect(query?.params[1]).toBe("old-slug");
+		expect(query?.params[2]).toBe("jane");
+		expect(query?.params[7]).toBe("old-slug");
+		expect(card?.data.basics.name).toBe("Jane Doe");
+	});
+
+	it("returns null when redirect or resume does not exist", async () => {
+		const card = await getPublicResumeCardData({ username: "jane", slug: "missing-slug" });
+		expect(card).toBeNull();
 	});
 });

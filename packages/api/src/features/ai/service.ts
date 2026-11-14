@@ -17,7 +17,6 @@ import { createPerplexity } from "@ai-sdk/perplexity";
 import { createTogetherAI } from "@ai-sdk/togetherai";
 import { createXai } from "@ai-sdk/xai";
 import { APICallError, createGateway, generateText, LoadAPIKeyError, NoSuchModelError, wrapLanguageModel } from "ai";
-import { strFromU8, unzipSync } from "fflate";
 import { createOllama } from "ollama-ai-provider-v2";
 import { match } from "ts-pattern";
 import { z } from "zod";
@@ -31,9 +30,12 @@ import { aiReasoningSchema } from "@reactive-resume/ai/reasoning";
 import { buildAiExtractionTemplate } from "@reactive-resume/ai/resume/extraction-template";
 import { sanitizeAndParseResumeJson } from "@reactive-resume/ai/resume/sanitize";
 import { AI_PROVIDER_DEFAULT_BASE_URLS, AI_PROVIDER_DISPLAY_NAMES, aiProviderSchema } from "@reactive-resume/ai/types";
+import { ZipEntryTooLargeError, unzipEntries } from "@reactive-resume/import/zip";
+import { decodeEntities } from "../web-access/builtin";
 import { isDirectOpenAIProvider } from "./capabilities";
+import { aiDeadline } from "./generate-json";
 import { sdkCallSettings } from "./request-limits";
-import { resolveAiBaseUrl } from "./url-policy";
+import { aiTransport, resolveAiBaseUrl } from "./url-policy";
 
 const aiExtractionTemplate = buildAiExtractionTemplate();
 
@@ -95,6 +97,8 @@ const TEST_CONNECTION_TIMEOUT_MS = z.coerce
 	.catch(30_000)
 	.parse(process.env.AI_TEST_TIMEOUT_MS?.trim() || undefined);
 const DOCX_DOCUMENT_XML_PATH = "word/document.xml";
+// Resume bodies are kilobytes; this leaves room for long documents without trusting the archive's declared size.
+const MAX_DOCX_DOCUMENT_XML_BYTES = 20 * 1024 * 1024;
 
 /**
  * Sends the connection's reasoning setting with every call: the AI SDK translates the standard levels for each
@@ -156,29 +160,31 @@ export function getModel(input: GetModelInput) {
 function createModel(input: GetModelInput) {
 	const { provider, model, apiKey } = input;
 	const baseURL = resolveAiBaseUrl(input);
+	const settings = { apiKey, baseURL, ...aiTransport() };
 
 	return match(provider)
-		.with("openai", () => createOpenAI({ apiKey, baseURL }).chat(model))
-		.with("anthropic", () => createAnthropic({ apiKey, baseURL }).languageModel(model))
-		.with("gemini", () => createGoogleGenerativeAI({ apiKey, baseURL }).languageModel(model))
-		.with("vercel-ai-gateway", () => createGateway({ apiKey, baseURL }).languageModel(model))
-		.with("openrouter", () => createOpenAICompatible({ name: "openrouter", apiKey, baseURL }).languageModel(model))
-		.with("mistral", () => createMistral({ apiKey, baseURL }).languageModel(model))
-		.with("cohere", () => createCohere({ apiKey, baseURL }).languageModel(model))
-		.with("xai", () => createXai({ apiKey, baseURL }).languageModel(model))
-		.with("groq", () => createGroq({ apiKey, baseURL }).languageModel(model))
-		.with("deepseek", () => createDeepSeek({ apiKey, baseURL }).languageModel(model))
-		.with("togetherai", () => createTogetherAI({ apiKey, baseURL }).languageModel(model))
-		.with("fireworks", () => createFireworks({ apiKey, baseURL }).languageModel(model))
-		.with("cerebras", () => createCerebras({ apiKey, baseURL }).languageModel(model))
-		.with("perplexity", () => createPerplexity({ apiKey, baseURL }).languageModel(model))
+		.with("openai", () => createOpenAI(settings).chat(model))
+		.with("anthropic", () => createAnthropic(settings).languageModel(model))
+		.with("gemini", () => createGoogleGenerativeAI(settings).languageModel(model))
+		.with("vercel-ai-gateway", () => createGateway(settings).languageModel(model))
+		.with("openrouter", () => createOpenAICompatible({ name: "openrouter", ...settings }).languageModel(model))
+		.with("mistral", () => createMistral(settings).languageModel(model))
+		.with("cohere", () => createCohere(settings).languageModel(model))
+		.with("xai", () => createXai(settings).languageModel(model))
+		.with("groq", () => createGroq(settings).languageModel(model))
+		.with("deepseek", () => createDeepSeek(settings).languageModel(model))
+		.with("togetherai", () => createTogetherAI(settings).languageModel(model))
+		.with("fireworks", () => createFireworks(settings).languageModel(model))
+		.with("cerebras", () => createCerebras(settings).languageModel(model))
+		.with("perplexity", () => createPerplexity(settings).languageModel(model))
 		.with("openai-compatible", () =>
-			createOpenAICompatible({ name: "openai-compatible", apiKey, baseURL }).languageModel(model),
+			createOpenAICompatible({ name: "openai-compatible", ...settings }).languageModel(model),
 		)
 		.with("ollama", () => {
 			const ollama = createOllama({
 				name: "ollama",
 				baseURL,
+				...aiTransport(),
 				...(apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {}),
 			});
 
@@ -193,7 +199,7 @@ export function getAgentModel(input: GetModelInput) {
 	// Direct OpenAI assistants use Responses for reasoning with function tools.
 	return withReasoning(
 		input,
-		createOpenAI({ apiKey: input.apiKey, baseURL: resolveAiBaseUrl(input) }).responses(input.model),
+		createOpenAI({ apiKey: input.apiKey, baseURL: resolveAiBaseUrl(input), ...aiTransport() }).responses(input.model),
 	);
 }
 
@@ -208,7 +214,8 @@ const aiCredentialsSchema = z.object({
 
 export const fileInputSchema = z.object({
 	name: z.string(),
-	data: z.string().max(MAX_AI_FILE_BASE64_CHARS, "File is too large. Maximum size is 10MB."),
+	// File bytes only: the AI SDK would download a URL here on the server.
+	data: z.base64().max(MAX_AI_FILE_BASE64_CHARS, "File is too large. Maximum size is 10MB."),
 });
 
 type TestConnectionInput = z.infer<typeof aiCredentialsSchema>;
@@ -273,7 +280,7 @@ function describeTestConnectionFailure(input: TestConnectionInput, error: unknow
 	const endpoint = input.baseURL.trim() || AI_PROVIDER_DEFAULT_BASE_URLS[input.provider];
 
 	if (isTimeout(error)) {
-		return `${provider} did not respond within ${TEST_CONNECTION_TIMEOUT_MS / 1000} seconds. The service may be unreachable, or the model may be too slow to load.`;
+		return `${provider} did not respond within ${TEST_CONNECTION_TIMEOUT_MS / 1000} seconds. The service may be unreachable, or the model may be too slow to load. Try again, or choose a faster model.`;
 	}
 
 	if (findNetworkErrorCode(error)) {
@@ -282,17 +289,20 @@ function describeTestConnectionFailure(input: TestConnectionInput, error: unknow
 			: `${provider} could not be reached. Check that the base URL is correct and the service is running.`;
 	}
 
-	if (LoadAPIKeyError.isInstance(error)) return `${provider} was configured without an API key.`;
-	if (NoSuchModelError.isInstance(error)) return `${provider} has no model named "${input.model}".`;
+	if (LoadAPIKeyError.isInstance(error))
+		return `${provider} was set up without an API key. Enter an API key and test again.`;
+	if (NoSuchModelError.isInstance(error))
+		return `${provider} has no model named "${input.model}". Check the model name and test again.`;
 
 	if (APICallError.isInstance(error)) {
 		const status = error.statusCode;
 
-		if (status === 401 || status === 403) return `${provider} rejected the API key.`;
-		if (status === 404) return `${provider} has no model named "${input.model}", or the base URL is wrong.`;
+		if (status === 401 || status === 403) return `${provider} rejected the API key. Check the key and test again.`;
+		if (status === 404)
+			return `${provider} has no model named "${input.model}", or the base URL is wrong. Check both and test again.`;
 		if (status === 429) return `${provider} rate-limited the test. Wait a moment and try again.`;
 		if (status !== undefined && status >= 500) {
-			return `${provider} reported a server error (${status}). This is a problem on the provider's side.`;
+			return `${provider} reported a server error (${status}). This is a problem on the provider's side. Try again later.`;
 		}
 
 		return `${provider} rejected the test request${status === undefined ? "" : ` (${status})`}: ${redactApiKey(error.message, input.apiKey)}`;
@@ -302,7 +312,7 @@ function describeTestConnectionFailure(input: TestConnectionInput, error: unknow
 		return `${provider} could not be tested: ${redactApiKey(error.message, input.apiKey)}`;
 	}
 
-	return `${provider} could not be tested, and reported no reason.`;
+	return `${provider} couldn't be tested and reported no reason. Try again.`;
 }
 
 export async function testConnection(input: TestConnectionInput): Promise<TestConnectionResult> {
@@ -343,7 +353,7 @@ export async function testConnection(input: TestConnectionInput): Promise<TestCo
 
 	return {
 		ok: false,
-		message: `${provider} is reachable, but the model replied with unexpected output instead of a simple confirmation.`,
+		message: `${provider} is reachable, but the model replied with unexpected output instead of a simple confirmation. Try another model.`,
 	};
 }
 
@@ -367,7 +377,7 @@ function buildResumeParsingMessages({ userPrompt, file, mediaType }: BuildResume
 			role: "user",
 			content: [
 				{ type: "text", text: userPrompt },
-				{ type: "file", data: file.data, mediaType, filename: file.name },
+				{ type: "file", data: Buffer.from(file.data, "base64"), mediaType, filename: file.name },
 			],
 		},
 	];
@@ -393,7 +403,8 @@ async function parsePdf(input: ParsePdfInput, options?: ModelCallOptions): Promi
 
 	const result = await generateText({
 		model,
-		...sdkCallSettings({ ...options, maxOutputTokens: null }),
+		// The user's time limit comes in the signal; the server-wide AI_REQUEST_TIMEOUT_MS only covers a call without one.
+		...sdkCallSettings({ ...options, signal: options?.signal ?? aiDeadline(), maxOutputTokens: null }),
 		system: buildResumeParsingSystemPrompt(pdfParserSystemPrompt),
 		messages: buildResumeParsingMessages({
 			userPrompt: pdfParserUserPrompt,
@@ -413,40 +424,35 @@ type ParseDocxInput = z.infer<typeof aiCredentialsSchema> & {
 function readDocumentXml(data: string): string {
 	let entries: Record<string, Uint8Array>;
 	try {
-		entries = unzipSync(Buffer.from(data, "base64"), { filter: (file) => file.name === DOCX_DOCUMENT_XML_PATH });
-	} catch {
+		entries = unzipEntries(
+			Buffer.from(data, "base64"),
+			(name) => name === DOCX_DOCUMENT_XML_PATH,
+			MAX_DOCX_DOCUMENT_XML_BYTES,
+		);
+	} catch (error) {
+		if (error instanceof ZipEntryTooLargeError) throw new Error("DOCX document content is too large.");
 		throw new Error("Invalid DOCX archive.");
 	}
 	const xml = entries[DOCX_DOCUMENT_XML_PATH];
 	if (!xml) throw new Error("DOCX document content not found.");
-	return strFromU8(xml);
-}
-
-function decodeXmlEntities(value: string): string {
-	return value.replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (entity, token: string) => {
-		if (token === "amp") return "&";
-		if (token === "lt") return "<";
-		if (token === "gt") return ">";
-		if (token === "quot") return '"';
-		if (token === "apos") return "'";
-		if (token.toLowerCase().startsWith("#x")) return String.fromCodePoint(Number.parseInt(token.slice(2), 16));
-		if (token.startsWith("#")) return String.fromCodePoint(Number.parseInt(token.slice(1), 10));
-		return entity;
-	});
+	return new TextDecoder().decode(xml);
 }
 
 function extractDocxText(file: z.infer<typeof fileInputSchema>): string {
 	const documentXml = readDocumentXml(file.data);
 	// ponytail: minimal OOXML body-text extraction; add a DOCX parser dependency if tracked changes matter.
-	const text = decodeXmlEntities(
+	const text = decodeEntities(
+		// `[^<>]` keeps each match from scanning past the next tag, so malformed markup costs linear time.
 		documentXml
-			.replace(/<w:tab\b[^>]*\/>/g, "\t")
-			.replace(/<w:br\b[^>]*\/>/g, "\n")
+			.replace(/<w:tab\b[^<>]*\/>/g, "\t")
+			.replace(/<w:br\b[^<>]*\/>/g, "\n")
 			.replace(/<\/w:p>/g, "\n")
-			.replace(/<[^>]+>/g, ""),
+			.replace(/<[^<>]*>/g, ""),
 	)
 		.replace(/\r/g, "")
-		.replace(/[ \t]+\n/g, "\n")
+		.split("\n")
+		.map((line) => line.trimEnd())
+		.join("\n")
 		.replace(/\n{3,}/g, "\n\n")
 		.trim();
 
@@ -467,7 +473,7 @@ async function parseDocx(input: ParseDocxInput, options?: ModelCallOptions): Pro
 
 	const result = await generateText({
 		model,
-		...sdkCallSettings({ ...options, maxOutputTokens: null }),
+		...sdkCallSettings({ ...options, signal: options?.signal ?? aiDeadline(), maxOutputTokens: null }),
 		system: buildResumeParsingSystemPrompt(docxParserSystemPrompt),
 		messages,
 	}).catch((error: unknown) => logAndRethrow("Failed to generate the text with the model", error));

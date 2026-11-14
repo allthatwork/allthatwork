@@ -13,12 +13,14 @@ import { describeEntry, getSectionKind, getSectionType, isDraftEntry, PRIMARY_FI
 import { RichTextField, RichTextToolbar } from "./rich-text-field";
 import { useIsResumeLocked, useResumeStore } from "@/draft";
 import { Banner, EmptyState, IconButton, Text, useTheme } from "@/ui";
+import { useKeyboardScrollSpace } from "@/ui/keyboard";
 
 type EditorScreenProps = { title: string; backTitle?: string | undefined; right?: ReactNode; children: ReactNode };
 
 /** A full-screen editor: scrolls above the keyboard and docks the rich-text toolbar. */
 export function EditorScreen({ title, backTitle, right, children }: EditorScreenProps) {
 	const { colors, size, space } = useTheme();
+	const keyboardSpace = useKeyboardScrollSpace();
 	const ready = useResumeStore((state) => state.document !== null);
 	const locked = useIsResumeLocked();
 	const { t } = useLingui();
@@ -35,6 +37,7 @@ export function EditorScreen({ title, backTitle, right, children }: EditorScreen
 				<EmptyState icon="hourglass" title={t`Loading…`} />
 			) : (
 				<KeyboardAwareScrollView
+					extraKeyboardSpace={keyboardSpace}
 					keyboardShouldPersistTaps="handled"
 					bottomOffset={size.hit + space.s4}
 					contentContainerStyle={{ padding: space.s4, gap: space.s4, paddingBottom: size.hit * 2 }}

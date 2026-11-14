@@ -1,5 +1,5 @@
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createElement } from "react";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";

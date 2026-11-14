@@ -14,6 +14,10 @@ export type WebAccessContext = {
 	connection: WebAccessConnection | null;
 	userId: string;
 	signal?: AbortSignal | undefined;
+	/** ISO 3166-1 alpha-2 countries to search, first primary. Absent or empty searches anywhere. */
+	regions?: string[] | undefined;
+	/** The user's UI locale, for place names written into region queries. */
+	locale?: string | undefined;
 };
 
 export type ReadPageResult = {
@@ -54,6 +58,7 @@ export class WebAccessError extends Error {
 }
 
 export const MAX_PAGE_BYTES = 2_000_000;
+export const MAX_SEARCH_QUERY_CHARS = 512;
 
 /**
  * `serviceTimeoutMs` is what the search service itself may spend, inside the caller's own deadline. `maxResults` and
@@ -65,4 +70,6 @@ export type ProviderRequest = {
 	serviceTimeoutMs: number;
 	maxResults: number;
 	maxChars: number;
+	/** One ISO 3166-1 alpha-2 country for the provider's location parameter. */
+	region?: string | undefined;
 };

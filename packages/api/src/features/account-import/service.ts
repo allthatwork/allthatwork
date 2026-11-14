@@ -25,7 +25,7 @@ import { careerService } from "../career/service";
 import { sanitizeCoverLetterHtml } from "../cover-letters/html";
 import { writeLetterVersion } from "../cover-letters/versions";
 import { ensureCompany, linkApplicationDirectory } from "../directory/links";
-import { lockDocumentOwner } from "../documents/ownership";
+import { lockUser } from "../documents/ownership";
 import { parseWritableResumeData } from "../resume/resume-data-validation";
 import { findFreeRandomSlug, findFreeSlug, SLUG_PATTERN } from "../resume/slugs";
 import { writeVersion } from "../resume/version-history";
@@ -191,7 +191,7 @@ async function importDocuments(userId: string, input: AreaInput<"documents">) {
 
 	let removed: string[] = [];
 	await db.transaction(async (tx) => {
-		await lockDocumentOwner(tx, userId);
+		await lockUser(tx, userId);
 		if (input.mode === "replace") {
 			removed = (
 				await tx.delete(schema.resume).where(eq(schema.resume.userId, userId)).returning({ id: schema.resume.id })
@@ -301,7 +301,7 @@ async function importDirectory(userId: string, input: AreaInput<"directory">) {
 	);
 	const contacts = readAll(report, "contacts", contactFieldsSchema.extend(idFields), input.contacts);
 	await db.transaction(async (tx) => {
-		await lockDocumentOwner(tx, userId);
+		await lockUser(tx, userId);
 		if (input.mode === "replace") {
 			const applications = await tx
 				.select()
@@ -468,7 +468,7 @@ async function importApplications(userId: string, input: AreaInput<"applications
 	const views = readAll(report, "views", records.applicationViewRecord, input.views);
 
 	await db.transaction(async (tx) => {
-		await lockDocumentOwner(tx, userId);
+		await lockUser(tx, userId);
 		// Everything tied to an application goes with it (facts, stories, saved items, conversations...).
 		if (input.mode === "replace") {
 			await tx.delete(schema.application).where(eq(schema.application.userId, userId));
@@ -549,7 +549,7 @@ async function importKnowledge(userId: string, input: AreaInput<"knowledge">) {
 	const artifacts = readAll(report, "artifacts", records.artifactRecord, input.artifacts);
 
 	await db.transaction(async (tx) => {
-		await lockDocumentOwner(tx, userId);
+		await lockUser(tx, userId);
 		if (input.mode === "replace") {
 			for (const table of [
 				schema.careerArtifact,
@@ -736,7 +736,7 @@ async function importJobSearch(userId: string, input: AreaInput<"jobSearch">) {
 	const schedules = readAll(report, "schedules", records.scheduleRecord, input.schedules);
 
 	await db.transaction(async (tx) => {
-		await lockDocumentOwner(tx, userId);
+		await lockUser(tx, userId);
 		if (input.mode === "replace") {
 			await tx.delete(schema.careerOpportunity).where(eq(schema.careerOpportunity.userId, userId));
 			await tx.delete(schema.careerSchedule).where(eq(schema.careerSchedule.userId, userId));
@@ -787,7 +787,7 @@ async function importCoach(userId: string, input: AreaInput<"coach">) {
 
 	let removed: string[] = [];
 	await db.transaction(async (tx) => {
-		await lockDocumentOwner(tx, userId);
+		await lockUser(tx, userId);
 		if (input.mode === "replace") {
 			// Deleted the way Coach deletes a conversation: marked deleted, its attachments removed.
 			removed = (

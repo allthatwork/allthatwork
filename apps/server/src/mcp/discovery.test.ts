@@ -1,7 +1,7 @@
 import type { RequestAuthentication } from "@reactive-resume/api/context";
 import { Socket } from "node:net";
 import { setImmediate } from "node:timers/promises";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { Pool } from "pg";
 import z from "zod";
 

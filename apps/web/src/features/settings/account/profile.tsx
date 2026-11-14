@@ -150,9 +150,13 @@ export function ProfileSection({ session }: ProfileSectionProps) {
 	const changeEmail = async (email: string) => {
 		const { error } = await authClient.changeEmail({ newEmail: email, callbackURL: "/dashboard/settings/account" });
 		if (error) return getReadableErrorMessage(error, t`Couldn't change the email. Try again.`);
+		// A verified address approves the change first; Better Auth then sends the new address its own link.
+		const currentEmail = user.email;
 		toast.add({
 			type: "success",
-			description: t`We sent a confirmation link to ${email}. Open it to finish the change.`,
+			description: user.emailVerified
+				? t`We sent a link to ${currentEmail} to approve the change. Then open the link we send to ${email}.`
+				: t`We sent a confirmation link to ${email}. Open it to finish the change.`,
 		});
 		return null;
 	};
@@ -244,7 +248,10 @@ function ProfilePhoto({ name, image, onChange }: ProfilePhotoProps) {
 				if (failure) toast.add({ type: "error", description: failure });
 			},
 			onError: (error) =>
-				toast.add({ type: "error", description: getReadableErrorMessage(error, t`Couldn't upload the photo.`) }),
+				toast.add({
+					type: "error",
+					description: getReadableErrorMessage(error, t`Couldn't upload the photo. Try again.`),
+				}),
 			onSettled: () => {
 				if (input.current) input.current.value = "";
 			},
@@ -273,7 +280,7 @@ function ProfilePhoto({ name, image, onChange }: ProfilePhotoProps) {
 			</Button>
 			{image && (
 				<Button size="sm" variant="ghost" onClick={() => void onChange(null)}>
-					<Trans>Remove</Trans>
+					<Trans>Remove photo</Trans>
 				</Button>
 			)}
 		</div>

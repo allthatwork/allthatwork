@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const fetchMock = vi.fn<typeof fetch>();
 const rpcUrl = "https://resume.test/api/rpc/storage/uploadFile?batch=1";
@@ -52,6 +52,7 @@ describe("RPC fetch", () => {
 		expect(headers.get("x-resume-staged-body")).toBe("upload-1");
 		expect(headers.get("content-type")).toBe(contentType);
 		expect(headers.get("x-example")).toBe("preserved");
+		expect(headers.get("x-client-timezone")).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone);
 	});
 
 	it("sends large requests directly once staging is unavailable on Docker", async () => {

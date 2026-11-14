@@ -4,6 +4,7 @@ import { createSelectSchema } from "drizzle-zod";
 import z from "zod";
 import { accountAuth, auth } from "@reactive-resume/auth/config";
 import * as schema from "@reactive-resume/db/schema";
+import { applicationPipelineSchema } from "@reactive-resume/schema/applications/lanes";
 import { applicationViewSchema } from "@reactive-resume/schema/applications/views";
 import { boardPaySchema } from "@reactive-resume/schema/boards";
 import {
@@ -45,6 +46,16 @@ const accountProcedure = protectedProcedure.use(accountRateLimit).use(async ({ n
 		throw error;
 	}
 });
+
+// Sessions last a week; a key that never expires, or deleting the account, needs a sign-in from the last day.
+const RECENT_SIGN_IN_MS = 24 * 60 * 60 * 1000;
+
+async function assertRecentSignIn(headers: Headers | undefined) {
+	const session = headers ? await auth.api.getSession({ headers, query: { disableCookieCache: true } }) : null;
+	const signedInAt = session ? new Date(session.session.createdAt).getTime() : 0;
+	if (Date.now() - signedInAt > RECENT_SIGN_IN_MS)
+		throw new ORPCError("FORBIDDEN", { message: "For your security, sign out and sign in again, then try again." });
+}
 
 export const authRouter = {
 	getProfile: accountProcedure
@@ -193,7 +204,8 @@ export const authRouter = {
 		.output(z.object({ key: z.string() }))
 		.handler(async ({ context, input }) => {
 			if (context.authentication?.method !== "session")
-				throw new ORPCError("FORBIDDEN", { message: "Create API keys in your browser settings." });
+				throw new ORPCError("FORBIDDEN", { message: "Create API keys from Settings in a web browser." });
+			await assertRecentSignIn(context.reqHeaders);
 			const result = await auth.api.createApiKey({
 				body: {
 					userId: context.user.id,
@@ -270,6 +282,7 @@ export const authRouter = {
 						)
 						.describe("Job boards watched for Directory companies."),
 				}),
+				applicationPipeline: applicationPipelineSchema,
 				aiContentReports: z.array(createSelectSchema(schema.aiContentReport)),
 				career: z.object({
 					profile: careerProfileDataSchema,
@@ -347,7 +360,8 @@ export const authRouter = {
 		.output(z.void())
 		.handler(async ({ context }) => {
 			if (context.authentication?.method !== "session")
-				throw new ORPCError("FORBIDDEN", { message: "Account deletion must be performed in your browser settings." });
+				throw new ORPCError("FORBIDDEN", { message: "Delete your account from Settings in a web browser." });
+			await assertRecentSignIn(context.reqHeaders);
 			await authService.deleteAccount({ userId: context.user.id });
 		}),
 };

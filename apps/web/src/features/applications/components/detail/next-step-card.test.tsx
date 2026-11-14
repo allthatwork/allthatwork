@@ -2,12 +2,13 @@
 
 import type { Application } from "../../types";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const update = vi.hoisted(() => vi.fn().mockResolvedValue({}));
+vi.mock("@tanstack/react-router", () => ({ useRouteContext: () => ({ session: { user: { timezone: "UTC" } } }) }));
 vi.mock("@/libs/orpc/client", () => ({
 	orpc: { applications: { update: { mutationOptions: () => ({ mutationFn: update }) } } },
 }));

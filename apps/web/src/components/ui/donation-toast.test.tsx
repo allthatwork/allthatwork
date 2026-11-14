@@ -2,7 +2,7 @@
 // @vitest-environment-options {"url":"https://localhost:3000"}
 
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import Cookies from "js-cookie";
 import { DonationToast } from "./donation-toast";

@@ -2,12 +2,11 @@ import type { CheckIssue } from "./issues";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { ImperativeRouter } from "expo-router";
 import { t } from "@lingui/core/macro";
-import * as Haptics from "expo-haptics";
 import { Platform } from "react-native";
 import { computeCheck } from "./model";
 import { useResumeStore } from "@/draft";
 import { routes } from "@/routes";
-import { dismissToast, showToast } from "@/ui";
+import { dismissToast, haptics, showToast } from "@/ui";
 
 /** Shared draft owner retains history; a toast must never undo a later, unrelated edit. */
 export function editWithUndo(id: string, edit: (draft: ResumeData) => void, message: string) {
@@ -33,7 +32,7 @@ export function editWithUndo(id: string, edit: (draft: ResumeData) => void, mess
 		unsubscribe();
 	});
 	setTimeout(unsubscribe, 6000);
-	if (Platform.OS === "ios") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+	if (Platform.OS === "ios") haptics.success();
 	return true;
 }
 

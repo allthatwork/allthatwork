@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { isFutureEndpoint, isReversedPeriod, ONGOING_TOKENS_BY_LANGUAGE, parsePeriod } from "./period";
 
 const NOW = new Date("2024-06-15T00:00:00Z");

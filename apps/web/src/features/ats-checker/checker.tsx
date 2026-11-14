@@ -6,6 +6,7 @@ import { t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
+import { useIsClient } from "usehooks-ts";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Collapsible, CollapsibleContent } from "@reactive-resume/ui/components/collapsible";
 import { Icon } from "@reactive-resume/ui/components/icon";
@@ -18,14 +19,13 @@ import { PdfPasswordRequiredError, PdfTooLargeError, PdfUnreadableError } from "
 import { getPdfCategoryDescription, getPdfCategoryLabel, getPdfFindingMessage } from "./messages";
 import { savePendingImport, takePendingImport } from "./pending-import";
 import { runAtsCheck } from "./run-ats-check";
+import { RollingNumber } from "@/components/ui/rolling-number";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { ENTER_CLASS, POP_CLASS, stagger } from "@/libs/motion";
 import { client } from "@/libs/orpc/client";
 
 // PDF.js and the importers load only once there is a file, so the page's first screen stays light and prerenderable.
-const PdfViewer = lazy(() =>
-	import("@/features/resume/public/pdf-viewer").then((module) => ({ default: module.PdfViewer })),
-);
+const PdfViewer = lazy(() => import("./pdf-viewer").then((module) => ({ default: module.PdfViewer })));
 const loadReadFile = () => import("@/features/resume/import/read-file");
 
 const MAX_POSTING = 20_000;
@@ -43,8 +43,9 @@ function describeError(error: unknown) {
 	if (error instanceof PdfPasswordRequiredError)
 		return t`This PDF is password protected. Save an unprotected copy and try again.`;
 	if (error instanceof PdfTooLargeError) return t`That file is too large to check. PDFs up to 25 MB work.`;
-	if (error instanceof PdfUnreadableError) return t`That file couldn't be read as a PDF.`;
-	return t`Something went wrong while reading that file. Try again.`;
+	if (error instanceof PdfUnreadableError)
+		return t`That file couldn't be read as a PDF. Choose a PDF file and try again.`;
+	return t`Couldn't read that file. Try again.`;
 }
 
 type AtsCheckerProps = {
@@ -119,11 +120,17 @@ export function AtsChecker({ signedIn, importPending }: AtsCheckerProps) {
 	});
 
 	useEffect(() => () => abort.current?.abort(), []);
+	// The first state is already on screen (the page is prerendered), so only the states that replace it fade in;
+	// fading it too would hold back the page's largest paint until the app had loaded.
+	const replacing = useIsClient();
 
 	// Each state fades in as it replaces the last. Opacity only: a translate here would make this wrapper the
 	// containing block for the result's fixed mobile bar while it animates.
 	return (
-		<div key={state.name} className="transition-opacity duration-standard ease-enter starting:opacity-0">
+		<div
+			key={state.name}
+			className={cn(replacing && "transition-opacity duration-standard ease-enter starting:opacity-0")}
+		>
 			{state.name === "importing" ? (
 				<p role="status" className="flex items-center justify-center gap-2 py-24 text-ink-2">
 					<Spinner decorative className="size-4" />
@@ -193,7 +200,7 @@ function Idle({ error, posting, onPosting, onFile }: IdleProps) {
 			{/* oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- dropping is pointer-only; "choose a file" is the keyboard path. */}
 			<div
 				className={cn(
-					"grid justify-items-center gap-2.5 rounded-[14px] border-[1.5px] border-dashed border-line-2 bg-surface p-9 text-center transition-colors duration-quick",
+					"grid justify-items-center gap-2.5 rounded-lg border-[1.5px] border-dashed border-line-2 bg-surface p-9 text-center transition-colors duration-quick",
 					dragging && "border-accent bg-accent-soft",
 				)}
 				onDragOver={(event) => {
@@ -306,7 +313,7 @@ function Progress({ file, step }: { file: File; step: number }) {
 							) : index === step ? (
 								<Spinner decorative className={cn(POP_CLASS, "size-4")} />
 							) : (
-								<span aria-hidden className="size-3 rounded-full border-[1.5px] border-current" />
+								<span aria-hidden className="size-3 rounded-sm border-[1.5px] border-current" />
 							)}
 						</span>
 						{label}
@@ -395,7 +402,7 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 						}
 					>
 						<span className="grid size-[70px] place-items-center rounded-full bg-surface font-display text-[26px] font-medium">
-							{report.score}
+							<RollingNumber value={report.score} duration="480ms" />
 						</span>
 					</div>
 					<div className="grid gap-1">
@@ -521,7 +528,7 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 						hidden={lens !== "text"}
 						className={cn(
 							ENTER_CLASS,
-							"w-full max-w-[612px] rounded-[10px] border border-line bg-raised px-7 py-6 font-mono text-[13px] leading-[21px] whitespace-pre-wrap",
+							"w-full max-w-[612px] rounded-lg border border-line bg-raised px-7 py-6 font-mono text-[13px] leading-[21px] whitespace-pre-wrap",
 						)}
 					>
 						{result.fullText || t`No text could be read from this file.`}

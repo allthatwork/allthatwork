@@ -20,11 +20,12 @@ const PROVIDER_SITES = { firecrawl: "firecrawl.dev", tavily: "tavily.com", exa: 
 type Provider = keyof typeof PROVIDERS;
 
 function testFailureMessage(error: string | undefined) {
-	if (error === "auth") return t`The service rejected the credentials.`;
-	if (error === "quota") return t`The service quota is exhausted.`;
-	if (error === "timeout") return t`The service did not respond in time.`;
+	if (error === "auth") return t`The service rejected the API key. Check the key and save it again.`;
+	if (error === "quota")
+		return t`The service's quota is used up. Check your plan with the service, or try again later.`;
+	if (error === "timeout") return t`The service didn't respond in time. Try again.`;
 	if (error === "rate-limit") return t`Too many requests. Try again later.`;
-	return t`The service is unavailable or does not support this operation.`;
+	return t`The service is unavailable or doesn't support this. Try again later.`;
 }
 
 export function WebAccessSection() {
@@ -48,6 +49,8 @@ export function WebAccessSection() {
 	const pending = save.isPending || remove.isPending || test.isPending;
 	const failure = error || save.error || remove.error || test.error;
 	const connectedProvider = status?.provider ? PROVIDERS[status.provider] : null;
+	// Older servers leave `searxng` out.
+	const serverSearch = status?.searxng === true;
 	const openEditor = () => {
 		setProvider(status?.provider ?? "firecrawl");
 		setApiKey("");
@@ -75,7 +78,7 @@ export function WebAccessSection() {
 						<h3 className="text-sm font-medium">
 							<Trans>Built-in reader</Trans>
 						</h3>
-						<span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent-text">
+						<span className="inline-flex items-center gap-1 rounded-sm bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent-text">
 							<Icon name="check" size={14} />
 							<Trans>Active</Trans>
 						</span>
@@ -101,7 +104,7 @@ export function WebAccessSection() {
 							{status && (
 								<span
 									className={cn(
-										"rounded-full px-2 py-0.5 text-xs font-medium",
+										"rounded-sm px-2 py-0.5 text-xs font-medium",
 										status.configured ? "bg-accent-soft text-accent-text" : "bg-sunken text-ink-2",
 									)}
 								>
@@ -116,10 +119,17 @@ export function WebAccessSection() {
 							)}
 						</div>
 						<p className="max-w-[58ch] text-[13px] leading-5 text-ink-3">
-							<Trans>
-								Search from Applications and the assistant, and read pages the built-in reader can't. One service covers
-								both.
-							</Trans>
+							{serverSearch ? (
+								<Trans>
+									Your server provides search for Applications and the assistant. Connect a service to read pages the
+									built-in reader can't.
+								</Trans>
+							) : (
+								<Trans>
+									Search from Applications and the assistant, and read pages the built-in reader can't. One service
+									covers both.
+								</Trans>
+							)}
 						</p>
 					</div>
 				</div>
@@ -130,7 +140,7 @@ export function WebAccessSection() {
 						className="flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2.5 text-[13px] leading-5 text-danger-text"
 					>
 						<Icon name="warning-circle" size={18} className="mt-0.5 shrink-0" />
-						{getOrpcErrorMessage(failure, { fallback: t`Web access settings couldn't be saved or loaded.` })}
+						{getOrpcErrorMessage(failure, { fallback: t`Couldn't load or save web access settings. Try again.` })}
 					</p>
 				)}
 				{isLoading ? (
@@ -209,19 +219,42 @@ export function WebAccessSection() {
 								</div>
 							</div>
 						)}
+						{serverSearch && !status.configured && (
+							<Button
+								variant="secondary"
+								size="sm"
+								className="ms-8 w-fit max-sm:ms-0"
+								disabled={pending}
+								loading={test.isPending}
+								onClick={() => test.mutate()}
+							>
+								<Trans>Test search</Trans>
+							</Button>
+						)}
 						{test.isPending && (
 							<p role="status" className="text-[13px] text-ink-2">
-								<Trans>Testing search and reading with {connectedProvider}…</Trans>
+								{!serverSearch ? (
+									<Trans>Testing search and reading with {connectedProvider}…</Trans>
+								) : connectedProvider ? (
+									<Trans>Testing your server's search, and reading with {connectedProvider}…</Trans>
+								) : (
+									<Trans>Testing your server's search…</Trans>
+								)}
 							</p>
 						)}
 						{test.data && (
 							<div role="status" className="grid gap-2 text-[13px] leading-5">
 								{[
 									{ result: test.data.search, label: test.data.search.success ? t`Search works` : t`Search failed` },
-									{
-										result: test.data.read,
-										label: test.data.read.success ? t`Reading works` : t`Enhanced reading failed`,
-									},
+									// Without a connection only the built-in reader reads, and the test doesn't cover it.
+									...(connectedProvider
+										? [
+												{
+													result: test.data.read,
+													label: test.data.read.success ? t`Reading works` : t`Enhanced reading failed`,
+												},
+											]
+										: []),
 								].map(({ result, label }, index) => (
 									<p
 										key={index}
@@ -234,13 +267,19 @@ export function WebAccessSection() {
 										</span>
 									</p>
 								))}
-								{!test.data.read.success && (
+								{connectedProvider && !test.data.read.success && (
 									<p className="text-ink-3">
 										<Trans>The built-in reader remains active.</Trans>
 									</p>
 								)}
 								<p className="text-xs text-ink-3">
-									<Trans>Tested with {connectedProvider}. Only this service was tested.</Trans>
+									{!serverSearch ? (
+										<Trans>Tested with {connectedProvider}. Only this service was tested.</Trans>
+									) : connectedProvider ? (
+										<Trans>Search was tested with your server's search, and reading with {connectedProvider}.</Trans>
+									) : (
+										<Trans>Search was tested with your server's search. Links are read with the built-in reader.</Trans>
+									)}
 								</p>
 							</div>
 						)}
@@ -404,6 +443,16 @@ export function WebAccessSection() {
 					) : !hasUsableProvider ? (
 						<Trans>
 							Connect an AI provider above to use the assistant. Saving and preparing jobs doesn't need one.
+						</Trans>
+					) : serverSearch && connectedProvider ? (
+						<Trans>
+							Searches with your server's search and reads pages with {connectedProvider}, whichever AI provider you
+							use.
+						</Trans>
+					) : serverSearch ? (
+						<Trans>
+							Searches with your server's search and reads links with the built-in reader, whichever AI provider you
+							use.
 						</Trans>
 					) : connectedProvider ? (
 						<Trans>Searches and reads pages with {connectedProvider}, whichever AI provider you use.</Trans>

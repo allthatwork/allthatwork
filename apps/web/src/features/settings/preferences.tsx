@@ -14,6 +14,7 @@ import { PaletteTiles } from "./palette";
 import { RemindersSection } from "./reminders";
 import { ResumeLengthSection } from "./resume-length";
 import { SettingsSection } from "./section";
+import { PageHeader } from "@/components/layout/page-header";
 import { Combobox } from "@/components/ui/combobox";
 import { LocaleCombobox } from "@/features/locale/combobox";
 import { useTheme } from "@/features/theme/provider";
@@ -34,6 +35,7 @@ export function PreferencesSettings() {
 
 	return (
 		<>
+			<PageHeader title={<Trans>Preferences</Trans>} />
 			<SettingsSection title={<Trans>Appearance</Trans>}>
 				<ThemeTiles />
 				<PaletteTiles />
@@ -90,7 +92,10 @@ function TimezoneSetting({ id }: { id: string }) {
 		const { error } = await authClient.updateUser({ timezone });
 		if (error) {
 			setValue(previous);
-			toast.add({ type: "error", description: getReadableErrorMessage(error, t`Couldn't save the timezone.`) });
+			toast.add({
+				type: "error",
+				description: getReadableErrorMessage(error, t`Couldn't save the timezone. Try again.`),
+			});
 			return;
 		}
 		await queryClient.invalidateQueries({ queryKey: sessionQueryKey });

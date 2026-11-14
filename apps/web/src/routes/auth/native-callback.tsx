@@ -1,11 +1,26 @@
 import { Trans } from "@lingui/react/macro";
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { androidCallbackIntent } from "@/features/auth/native-callback";
 
 export const Route = createFileRoute("/auth/native-callback")({
 	component: NativeCallbackPage,
 });
 
+function openApp() {
+	// Build only at navigation time: authorization codes must never enter rendered markup.
+	window.location.assign(
+		/Android/i.test(navigator.userAgent) ? androidCallbackIntent(window.location.search) : window.location.href,
+	);
+}
+
 function NativeCallbackPage() {
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search);
+		if (/Android/i.test(navigator.userAgent) && params.has("state") && (params.has("code") || params.has("error")))
+			openApp();
+	}, []);
+
 	return (
 		<div className="space-y-4 text-center">
 			<h1 className="text-xl font-semibold">
@@ -19,8 +34,7 @@ function NativeCallbackPage() {
 				className="inline-flex min-h-11 items-center underline underline-offset-4"
 				onClick={(event) => {
 					event.preventDefault();
-					// Keep the authorization response out of rendered markup.
-					window.location.assign(window.location.href);
+					openApp();
 				}}
 			>
 				<Trans>Try opening the app again</Trans>

@@ -1,4 +1,5 @@
-import type { Application } from "@/features/applications/types";
+import type { ApplicationLane } from "@/features/applications/lanes";
+import type { Application, ApplicationSummary } from "@/features/applications/types";
 import type { ReminderTarget } from "@/features/reminders";
 import type {
 	ApplicationClosedReason,
@@ -14,7 +15,11 @@ import { WallClockField } from "./date-field";
 import { followUpReminder, leadLabel, useDocuments, useUserTime } from "./hooks";
 import { followUpDay } from "@/features/applications-board/calendar";
 import { applicationError } from "@/features/applications/error";
-import { useApplicationMutations } from "@/features/applications/queries";
+import { LaneNotice } from "@/features/applications/lane-notice";
+import { useApplicationLanes } from "@/features/applications/lane-queries";
+import { getLaneLabel, laneInput, resolveLane } from "@/features/applications/lanes";
+import { PriorNoResponse } from "@/features/applications/prior-no-response";
+import { useApplication, useApplicationMutations } from "@/features/applications/queries";
 import { CLOSED_REASONS, getClosedReasonLabel } from "@/features/applications/stages";
 import { DEFAULT_LEAD, followUpStart, REMINDER_LEADS, useReminders } from "@/features/reminders";
 import {
@@ -35,75 +40,103 @@ import {
 } from "@/ui";
 
 type SheetBaseProps = { open: boolean; onClose: () => void };
-type ApplicationSheetProps = SheetBaseProps & { application: Application };
+type ApplicationActionSheetProps = SheetBaseProps & {
+	application: ApplicationSummary;
+	lane?: ApplicationLane | undefined;
+};
+type ApplicationContentSheetProps = SheetBaseProps & { application: Application };
 
 const today = () => new Date().toLocaleDateString("en-CA");
 
-/** "Close this application": one reason, kept for Insights. */
-export function CloseSheet({ application, open, onClose }: ApplicationSheetProps) {
+/** Closing preserves the explicit lane/outcome choice; drafts reset each time the sheet opens. */
+export function CloseSheet({ application, lane, open, onClose }: ApplicationActionSheetProps) {
+	const { t } = useLingui();
+	return (
+		<Sheet open={open} onClose={onClose} title={t`Close this application`}>
+			{open ? <CloseForm application={application} lane={lane} onClose={onClose} /> : null}
+		</Sheet>
+	);
+}
+
+function CloseForm({ application, lane: initialLane, onClose }: Omit<ApplicationActionSheetProps, "open">) {
 	const { t } = useLingui();
 	const { space } = useTheme();
 	const { update } = useApplicationMutations();
+	const lanes = useApplicationLanes();
 	const [reason, setReason] = useState<ApplicationClosedReason>("not-selected");
-
+	const [laneId, setLaneId] = useState(initialLane?.id ?? "");
+	const selectedLane = lanes.active.find((item) => item.id === laneId && item.category === "closed");
+	const lane = selectedLane ?? resolveLane(lanes.lanes, { status: "closed" });
+	const laneAvailable = !laneId || !!selectedLane;
 	return (
-		<Sheet
-			open={open}
-			onClose={onClose}
-			title={t`Close this application`}
-			footer={
-				<View style={{ gap: space.s2 }}>
-					<Button
-						fullWidth
-						size="lg"
-						label={t`Close application`}
-						onPress={() => {
-							onClose();
-							update.mutate(
-								{ id: application.id, status: "closed", closedReason: reason },
-								{
-									onSuccess: () => showToast({ message: t`Application closed` }),
-									onError: (error) => showToast({ message: applicationError(error) }),
-								},
-							);
-						}}
+		<View style={{ gap: space.s3, paddingHorizontal: space.s4 }}>
+			<LaneNotice unavailable={!laneAvailable} />
+			<SelectSheet
+				label={t`Lane`}
+				value={laneId || lane.id}
+				options={lanes.active
+					.filter((item) => item.category === "closed")
+					.map((item) => ({ value: item.id, label: getLaneLabel(item) }))}
+				onChange={setLaneId}
+				disabled={!lanes.ready || update.isPending}
+			/>
+			{!lane.closedReason &&
+				CLOSED_REASONS.map((value) => (
+					<ListRow
+						key={value}
+						title={getClosedReasonLabel(value)}
+						leading={value === reason ? "check-circle" : "circle"}
+						selected={value === reason}
+						onPress={() => setReason(value)}
 					/>
-					<Button fullWidth variant="secondary" label={t`Cancel`} onPress={onClose} />
-				</View>
-			}
-		>
-			{CLOSED_REASONS.map((value) => (
-				<ListRow
-					key={value}
-					title={getClosedReasonLabel(value)}
-					leading={value === reason ? "check-circle" : "circle"}
-					selected={value === reason}
-					onPress={() => setReason(value)}
-				/>
-			))}
-			<Text variant="callout" color="ink3" style={{ paddingHorizontal: space.s4 }}>
-				{t`The reason is kept for Insights. Linked documents aren't touched.`}
-			</Text>
-		</Sheet>
+				))}
+			<Text variant="callout" color="ink3">{t`The reason is kept for Insights. Linked documents aren't touched.`}</Text>
+			<Button
+				fullWidth
+				size="lg"
+				label={t`Close application`}
+				loading={update.isPending}
+				disabled={!lanes.ready || !laneAvailable}
+				onPress={() =>
+					update.mutate(
+						{ id: application.id, ...laneInput(lane, lanes.supported), closedReason: lane.closedReason ?? reason },
+						{
+							onSuccess: () => {
+								onClose();
+								showToast({ message: t`Application closed` });
+							},
+							onError: (error) => showToast({ message: applicationError(error) }),
+						},
+					)
+				}
+			/>
+			<Button fullWidth variant="secondary" label={t`Cancel`} onPress={onClose} />
+		</View>
 	);
 }
 
 /** Saved → Applied: the date and the documents actually sent; their current versions are kept. */
-export function MarkAppliedSheet({ application, open, onClose }: ApplicationSheetProps) {
+export function MarkAppliedSheet({ application, lane, open, onClose }: ApplicationActionSheetProps) {
 	const { t } = useLingui();
 	return (
 		<Sheet open={open} onClose={onClose} title={t`Mark as applied`}>
-			{open ? <MarkAppliedForm application={application} onClose={onClose} /> : null}
+			{open ? <MarkAppliedForm application={application} lane={lane} onClose={onClose} /> : null}
 		</Sheet>
 	);
 }
 
-function MarkAppliedForm({ application, onClose }: Omit<ApplicationSheetProps, "open">) {
+function MarkAppliedForm({ application, lane: initialLane, onClose }: Omit<ApplicationActionSheetProps, "open">) {
 	const { t } = useLingui();
 	const { space } = useTheme();
 	const { update } = useApplicationMutations();
+	const detail = useApplication(application.id);
 	const documents = useDocuments();
 	const [date, setDate] = useState(today);
+	const lanes = useApplicationLanes();
+	const [laneId, setLaneId] = useState(initialLane?.id ?? "");
+	const selectedLane = lanes.active.find((item) => item.id === laneId && item.category === "applied");
+	const lane = selectedLane ?? resolveLane(lanes.lanes, { status: "applied" });
+	const laneAvailable = !laneId || !!selectedLane;
 	const [resumeId, setResumeId] = useState(application.resumeId ?? "");
 	const [letterId, setLetterId] = useState(application.coverLetterId ?? "");
 	const [resumeFileSent, setResumeFileSent] = useState(true);
@@ -121,6 +154,17 @@ function MarkAppliedForm({ application, onClose }: Omit<ApplicationSheetProps, "
 			<Text color="ink2">
 				{t`Confirm submission and choose the documents you actually sent. Their current versions will be saved.`}
 			</Text>
+			<LaneNotice unavailable={!laneAvailable} />
+			<PriorNoResponse company={application.company} excludeId={application.id} onOpen={onClose} />
+			<SelectSheet
+				label={t`Lane`}
+				value={laneId || lane.id}
+				options={lanes.active
+					.filter((item) => item.category === "applied")
+					.map((item) => ({ value: item.id, label: getLaneLabel(item) }))}
+				onChange={setLaneId}
+				disabled={!lanes.ready || update.isPending}
+			/>
 			<WallClockField label={t`Application date`} mode="date" value={date} onChange={setDate} />
 			<SelectSheet
 				label={t`Resume submitted (optional)`}
@@ -134,17 +178,17 @@ function MarkAppliedForm({ application, onClose }: Omit<ApplicationSheetProps, "
 				options={options("letter")}
 				onChange={setLetterId}
 			/>
-			{application.resumeFileUrl ? (
+			{detail.data?.resumeFileUrl ? (
 				<ListRow
-					title={t`Submitted attached resume: ${application.resumeFileName ?? "PDF"}`}
+					title={t`Submitted attached resume: ${detail.data.resumeFileName ?? "PDF"}`}
 					trailing={
 						<Switch label={t`Submitted attached resume`} value={resumeFileSent} onValueChange={setResumeFileSent} />
 					}
 				/>
 			) : null}
-			{application.coverLetterUrl ? (
+			{detail.data?.coverLetterUrl ? (
 				<ListRow
-					title={t`Submitted attached cover letter: ${application.coverLetterName ?? "PDF"}`}
+					title={t`Submitted attached cover letter: ${detail.data.coverLetterName ?? "PDF"}`}
 					trailing={
 						<Switch
 							label={t`Submitted attached cover letter`}
@@ -154,18 +198,25 @@ function MarkAppliedForm({ application, onClose }: Omit<ApplicationSheetProps, "
 					}
 				/>
 			) : null}
+			{detail.isError ? (
+				<Banner
+					tone="danger"
+					message={t`Couldn't load this. Check your connection and try again.`}
+					action={{ label: t`Retry loading applications`, onPress: () => void detail.refetch() }}
+				/>
+			) : null}
 			{update.error ? <Banner tone="danger" message={t`Couldn't record submission. Try again.`} /> : null}
 			<Button
 				fullWidth
 				size="lg"
 				label={t`Confirm applied`}
 				loading={update.isPending}
-				disabled={!date}
+				disabled={!date || !detail.data || !lanes.ready || !laneAvailable}
 				onPress={() =>
 					update.mutate(
 						{
 							id: application.id,
-							status: "applied",
+							...laneInput(lane, lanes.supported),
 							stageEnteredAt: date,
 							resumeId: resumeId || null,
 							coverLetterId: letterId || null,
@@ -182,7 +233,7 @@ function MarkAppliedForm({ application, onClose }: Omit<ApplicationSheetProps, "
 }
 
 /** The follow-up: a day and what to do, shown as the next step until done, with an optional local reminder. */
-export function FollowUpSheet({ application, open, onClose }: ApplicationSheetProps) {
+export function FollowUpSheet({ application, open, onClose }: ApplicationActionSheetProps) {
 	const { t } = useLingui();
 	return (
 		<Sheet open={open} onClose={onClose} title={t`Follow-up`}>
@@ -191,7 +242,7 @@ export function FollowUpSheet({ application, open, onClose }: ApplicationSheetPr
 	);
 }
 
-function FollowUpForm({ application, onClose }: Omit<ApplicationSheetProps, "open">) {
+function FollowUpForm({ application, onClose }: Omit<ApplicationActionSheetProps, "open">) {
 	const { t } = useLingui();
 	const { space } = useTheme();
 	const { timeZone } = useUserTime();
@@ -224,7 +275,7 @@ function FollowUpForm({ application, onClose }: Omit<ApplicationSheetProps, "ope
 						await reminders.turnOff({ kind: "follow-up", applicationId: application.id });
 					}
 				},
-				onError: () => showToast({ message: t`Couldn't save the follow-up.` }),
+				onError: () => showToast({ message: t`Couldn't save the follow-up. Try again.` }),
 			},
 		);
 
@@ -333,7 +384,7 @@ export function ReminderSheet({ target, subtitle, open, onClose, onShareIcs }: R
 }
 
 /** The saved posting: its link, provenance, what it asks for, and its editable text. */
-export function PostingSheet({ application, open, onClose }: ApplicationSheetProps) {
+export function PostingSheet({ application, open, onClose }: ApplicationContentSheetProps) {
 	return (
 		<Sheet open={open} onClose={onClose} detents={[0.9]} title={`${application.role} · ${application.company}`}>
 			{open ? <PostingBody application={application} onClose={onClose} /> : null}
@@ -341,7 +392,7 @@ export function PostingSheet({ application, open, onClose }: ApplicationSheetPro
 	);
 }
 
-function PostingBody({ application, onClose }: Omit<ApplicationSheetProps, "open">) {
+function PostingBody({ application, onClose }: Omit<ApplicationContentSheetProps, "open">) {
 	const { t } = useLingui();
 	const { space } = useTheme();
 	const { update } = useApplicationMutations();
@@ -385,7 +436,10 @@ function PostingBody({ application, onClose }: Omit<ApplicationSheetProps, "open
 				onPress={() =>
 					update.mutate(
 						{ id: application.id, jobDescription: text.trim() ? text : null },
-						{ onSuccess: onClose, onError: () => showToast({ message: t`Couldn't save.` }) },
+						{
+							onSuccess: onClose,
+							onError: () => showToast({ message: t`Couldn't save the job description. Try again.` }),
+						},
 					)
 				}
 			/>
@@ -396,7 +450,7 @@ function PostingBody({ application, onClose }: Omit<ApplicationSheetProps, "open
 const EMPTY_CONTACT = { name: "", role: "", type: "", email: "", phone: "" };
 
 /** Contacts: the list with remove, and a form to add one, checked with the API's schema before saving. */
-export function ContactsSheet({ application, open, onClose }: ApplicationSheetProps) {
+export function ContactsSheet({ application, open, onClose }: ApplicationContentSheetProps) {
 	const { t } = useLingui();
 	const { space } = useTheme();
 	const { update } = useApplicationMutations();
@@ -405,7 +459,7 @@ export function ContactsSheet({ application, open, onClose }: ApplicationSheetPr
 	const save = (contacts: Contact[], onSuccess = () => {}) =>
 		update.mutate(
 			{ id: application.id, contacts },
-			{ onSuccess, onError: () => showToast({ message: t`Couldn't save the contacts.` }) },
+			{ onSuccess, onError: () => showToast({ message: t`Couldn't save the contacts. Try again.` }) },
 		);
 	const set = (key: keyof typeof EMPTY_CONTACT) => (value: string) => {
 		setError("");
@@ -444,12 +498,7 @@ export function ContactsSheet({ application, open, onClose }: ApplicationSheetPr
 				<Text variant="label">{t`Add contact`}</Text>
 				<TextField label={t`Name`} value={draft.name} onChangeText={set("name")} />
 				<TextField label={t`Role (optional)`} value={draft.role} onChangeText={set("role")} />
-				<TextField
-					label={t`Label`}
-					value={draft.type}
-					placeholder={t`Label, e.g. Recruiter`}
-					onChangeText={set("type")}
-				/>
+				<TextField label={t`Label`} value={draft.type} placeholder={t`Recruiter`} onChangeText={set("type")} />
 				<View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.s2 }}>
 					{[t`Recruiter`, t`Hiring manager`, t`Referral`, t`Interviewer`].map((label) => (
 						<Chip key={label} label={label} selected={draft.type === label} onPress={() => set("type")(label)} />

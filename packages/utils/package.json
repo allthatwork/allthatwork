@@ -4,28 +4,33 @@
 	"type": "module",
 	"private": true,
 	"exports": {
+		"./amount": "./src/amount.ts",
+		"./app-paths": "./src/app-paths.ts",
 		"./brand": "./src/brand.ts",
 		"./color": "./src/color.ts",
 		"./file": "./src/file.ts",
+		"./http": "./src/http.ts",
 		"./knowledge": "./src/knowledge.ts",
 		"./link": "./src/link.ts",
 		"./locale": "./src/locale.ts",
 		"./monorepo.node": "./src/monorepo.node.ts",
+		"./queue": "./src/queue.ts",
 		"./rate-limit": "./src/rate-limit.ts",
+		"./region": "./src/region.ts",
 		"./relevance": "./src/relevance.ts",
 		"./reminders": "./src/reminders.ts",
 		"./resume-pages": "./src/resume-pages.ts",
+		"./slug": "./src/slug.ts",
 		"./string": "./src/string.ts",
 		"./style": "./src/style.ts",
 		"./timezone": "./src/timezone.ts",
 		"./url-security.node": "./src/url-security.node.ts"
 	},
 	"scripts": {
-		"typecheck": "tsgo --noEmit",
-		"test": "vitest run --passWithNoTests",
-		"test:coverage": "vitest run --coverage --passWithNoTests",
-		"test:ci": "vitest run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests",
-		"test:agent": "vitest run --reporter=agent --reporter=json --outputFile.json=reports/vitest-results.json --passWithNoTests"
+		"typecheck": "tsrs --noEmit",
+		"test": "vp test run --passWithNoTests",
+		"test:coverage": "vp test run --coverage --passWithNoTests",
+		"test:ci": "vp test run --reporter=default --reporter=github-actions --reporter=json --reporter=junit --outputFile.json=reports/vitest-results.json --outputFile.junit=reports/vitest-junit.xml --passWithNoTests"
 	},
 	"dependencies": {
 		"@sindresorhus/slugify": "^3.0.1",
@@ -38,7 +43,8 @@
 	"devDependencies": {
 		"@reactive-resume/config": "workspace:*",
 		"@types/node": "catalog:",
-		"@typescript/native-preview": "catalog:",
-		"typescript": "catalog:"
+		"tsrs": "catalog:",
+		"typescript": "catalog:",
+		"vite-plus": "catalog:"
 	}
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { getRootResume } from "./root";
 
@@ -14,6 +14,9 @@ const fixture = () => ({
 		isPublic: true,
 		isLocked: false,
 		showDownloadButtons: false,
+		showInSearchEngines: false,
+		hideContactDetails: false,
+		isPrimary: false,
 		hasPassword: false,
 		username: "owner",
 	})),

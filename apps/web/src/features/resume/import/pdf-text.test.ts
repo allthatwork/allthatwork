@@ -1,5 +1,5 @@
 import type { RawExtraction } from "@reactive-resume/resume/ats-pdf";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { buildExtractedDocument } from "@reactive-resume/resume/ats-pdf";
 import { documentToLines } from "./pdf-text";
 

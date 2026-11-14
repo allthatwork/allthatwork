@@ -27,9 +27,9 @@ pre-commit:
       # Keep fixes and formatting sequential, then fail on any remaining diagnostics.
       glob: "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,css,scss,less,md,mdx,yml,yaml,html,toml,graphql}"
       run: |
-        pnpm exec oxlint --fix --no-error-on-unmatched-pattern {staged_files} &&
-        pnpm exec oxfmt --write --no-error-on-unmatched-pattern {staged_files} &&
-        pnpm exec oxlint --deny-warnings --no-error-on-unmatched-pattern {staged_files}
+        pnpm exec vp lint --fix --no-error-on-unmatched-pattern {staged_files} &&
+        pnpm exec vp fmt --write --no-error-on-unmatched-pattern {staged_files} &&
+        pnpm exec vp lint --deny-warnings --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
 
 commit-msg:

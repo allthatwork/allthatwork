@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import type { TargetingBuildStatus } from "@reactive-resume/schema/applications/data";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { BuildStatusControl } from "./build-status";

@@ -1,4 +1,4 @@
-import { expect, it } from "vitest";
+import { expect, it } from "vite-plus/test";
 import { MCP_TOOL_NAME } from "@reactive-resume/mcp/tool-names";
 import { buildPatchGuide } from "./prompt";
 

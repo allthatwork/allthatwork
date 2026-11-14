@@ -17,7 +17,6 @@ import { getInitials } from "@reactive-resume/utils/string";
 import { cn } from "@reactive-resume/utils/style";
 import { MobileTabIndicator } from "@/components/layout/mobile-tab-indicator";
 import { useDialogStore } from "@/dialogs/store";
-import { applicationsListQueryOptions } from "@/features/applications/queries";
 import { GuestBanner } from "@/features/auth/components/guest-banner";
 import { useCommandPaletteStore } from "@/features/command-palette/store";
 import { isEditableElementFocused } from "@/features/resume/builder/draft";
@@ -39,7 +38,7 @@ type NavItem = {
 
 function useNavItems() {
 	const { data: counts } = useQuery(orpc.documents.counts.queryOptions());
-	const { data: applications } = useQuery(applicationsListQueryOptions());
+	const { data: applicationStats } = useQuery(orpc.applications.stats.queryOptions({}));
 	const { data: notifications } = useQuery(orpc.career.notifications.queryOptions({ input: {} }));
 
 	const items: NavItem[] = [
@@ -53,7 +52,13 @@ function useNavItems() {
 			to: "/dashboard/applications",
 			icon: "briefcase",
 			label: t`Applications`,
-			...(applications ? { count: applications.filter((application) => application.status !== "closed").length } : {}),
+			...(applicationStats
+				? {
+						count: applicationStats.byStage
+							.filter((row) => row.status !== "closed")
+							.reduce((total, row) => total + row.count, 0),
+					}
+				: {}),
 		},
 	];
 	items.push({ to: "/dashboard/directory", icon: "book-open", label: t`Directory` });
@@ -211,7 +216,7 @@ function NavLink({ item, current }: { item: NavItem; current: boolean }) {
 		>
 			<Icon name={item.icon} filled={current} />
 			<span className="flex-1">{item.label}</span>
-			{item.count !== undefined && <span className="font-mono text-xs text-ink-3">{item.count}</span>}
+			{item.count ? <span className="font-mono text-xs text-ink-3">{item.count}</span> : null}
 		</Link>
 	);
 }
@@ -269,7 +274,7 @@ function Rail() {
 				</RailTip>
 				<UserDropdownMenu>
 					{({ session }) => (
-						<button type="button" aria-label={t`Account`} className="rounded-full">
+						<button type="button" aria-label={t`Account`} className="rounded-sm">
 							<Avatar className="size-8">
 								<AvatarImage src={session.user.image ?? undefined} />
 								<AvatarFallback className="text-[11px]">{getInitials(session.user.name)}</AvatarFallback>
@@ -304,76 +309,55 @@ function RailTip({
 	);
 }
 
-/** Phones: Documents · Applications · New · Career · Settings, with New as an accent pill in the middle. */
+/** Phones: Documents · Applications · New · Career · Directory · Settings, with New as an accent pill in the middle. */
 function MobileTabs() {
 	const isCurrent = useIsCurrent();
 	const openDialog = useDialogStore((state) => state.openDialog);
+	const tabs: Pick<NavItem, "to" | "icon" | "label">[] = [
+		{ to: "/dashboard", icon: "file-text", label: t`Documents` },
+		{ to: "/dashboard/applications", icon: "briefcase", label: t`Applications` },
+		{ to: "/dashboard/career", icon: "compass", label: t`Career` },
+		{ to: "/dashboard/directory", icon: "book-open", label: t`Directory` },
+		{ to: "/dashboard/settings", icon: "gear-six", label: t`Settings` },
+	];
 
-	const tab = (icon: IconName, label: string, current: boolean) => (
-		<>
-			{current && <MobileTabIndicator />}
-			<Icon name={icon} size={24} filled={current} />
-			<span className={cn("text-[11px]", current ? "font-semibold text-ink" : "text-ink-2")}>{label}</span>
-		</>
-	);
+	const link = ({ to, icon, label }: (typeof tabs)[number]) => {
+		const current = isCurrent(to);
+
+		return (
+			<Link
+				key={to}
+				to={to}
+				aria-current={current ? "page" : undefined}
+				viewTransition={false}
+				className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 transition-[scale] duration-quick ease-enter active:scale-[0.97]"
+			>
+				{current && <MobileTabIndicator />}
+				<Icon name={icon} size={24} filled={current} />
+				<span className={cn("text-[11px]", current ? "font-semibold text-ink" : "text-ink-2")}>{label}</span>
+			</Link>
+		);
+	};
 
 	return (
 		<nav
 			aria-label={t`App`}
 			className="sticky bottom-0 z-30 grid grid-cols-6 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] [view-transition-name:app-nav]"
 		>
-			<Link
-				to="/dashboard"
-				aria-current={isCurrent("/dashboard") ? "page" : undefined}
-				viewTransition={false}
-				className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 transition-[scale] duration-quick ease-enter active:scale-[0.97]"
-			>
-				{tab("file-text", t`Documents`, isCurrent("/dashboard"))}
-			</Link>
-			<Link
-				to="/dashboard/applications"
-				aria-current={isCurrent("/dashboard/applications") ? "page" : undefined}
-				viewTransition={false}
-				className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 transition-[scale] duration-quick ease-enter active:scale-[0.97]"
-			>
-				{tab("briefcase", t`Applications`, isCurrent("/dashboard/applications"))}
-			</Link>
+			{tabs.slice(0, 2).map(link)}
 			<button
 				type="button"
 				onClick={() => openDialog("document.new", undefined)}
 				className="flex min-h-[52px] flex-col items-center justify-center gap-0.5 transition-[scale] duration-quick ease-enter active:scale-[0.97]"
 			>
-				<span className="grid h-[26px] w-[34px] place-items-center rounded-full bg-accent text-on-accent">
+				<span className="grid h-[26px] w-[34px] place-items-center rounded-sm bg-accent text-on-accent">
 					<Icon name="plus" size={20} />
 				</span>
 				<span className="text-[11px] text-ink-2">
 					<Trans>New</Trans>
 				</span>
 			</button>
-			<Link
-				to="/dashboard/career"
-				aria-current={isCurrent("/dashboard/career") ? "page" : undefined}
-				viewTransition={false}
-				className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 transition-[scale] duration-quick ease-enter active:scale-[0.97]"
-			>
-				{tab("compass", t`Career`, isCurrent("/dashboard/career"))}
-			</Link>
-			<Link
-				to="/dashboard/directory"
-				aria-current={isCurrent("/dashboard/directory") ? "page" : undefined}
-				viewTransition={false}
-				className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5"
-			>
-				{tab("book-open", t`Directory`, isCurrent("/dashboard/directory"))}
-			</Link>
-			<Link
-				to="/dashboard/settings"
-				aria-current={isCurrent("/dashboard/settings") ? "page" : undefined}
-				viewTransition={false}
-				className="relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 transition-[scale] duration-quick ease-enter active:scale-[0.97]"
-			>
-				{tab("gear-six", t`Settings`, isCurrent("/dashboard/settings"))}
-			</Link>
+			{tabs.slice(2).map(link)}
 		</nav>
 	);
 }

@@ -1,28 +1,27 @@
 import type { IconName } from "@reactive-resume/ui/components/icon";
 import type { CSSProperties } from "react";
 import { t } from "@lingui/core/macro";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { SegmentedControl, SegmentedControlItem } from "@reactive-resume/ui/components/segmented-control";
 import { cn } from "@reactive-resume/utils/style";
 import { SCENE, useLanding } from "./scroll";
 import { Sheet } from "./sheet";
 import { Doodle, labelClass, TypedText } from "./ui";
+import { useShareOrigin } from "@/features/resume/share/use-share-origin";
 
 /** A sample resume's path, in the shape this instance gives a public link: the username, then a random address. */
 const SAMPLE_PATH = "alex-morgan/7k2m9xq4ra3b";
-const noSubscription = () => () => undefined;
 
 /**
- * This instance's own address, as Settings → Account shows it. The homepage is prerendered per locale without one,
- * so the server snapshot is empty and the browser fills it in once the page loads.
+ * This instance's own address, as Settings → Account shows it (its alias when one is set). The homepage is
+ * prerendered per locale without one, so the prerendered page shows only the path and the browser fills in the host.
  */
-const useAddress = () =>
-	`${useSyncExternalStore(
-		noSubscription,
-		() => window.location.host,
-		() => "",
-	)}/${SAMPLE_PATH}`;
+const useAddress = () => {
+	const origin = useShareOrigin();
+	const host = origin ? new URL(origin).host : "";
+	return `${host}/${SAMPLE_PATH}`;
+};
 
 /**
  * Colours that switch from the day palette to the night sky's once the sky is half dark (--nts), rather than passing
@@ -97,7 +96,7 @@ export function Share() {
 		>
 			{/* --nt, the night, comes from the scroll engine (shareNight), which also hands it to the header. */}
 			<div
-				className="sticky top-0 h-svh overflow-hidden [--f1:clamp(0,(var(--p)-.62)*14,1)] [--f2:clamp(0,(var(--p)-.68)*14,1)] [--f3:clamp(0,(var(--p)-.74)*14,1)] [--fl:clamp(0,(var(--p)-.1)/.34,1)] [--nts:clamp(0,(var(--nt)-.5)*1000,1)] [--pw:min(40vw,26vh)] [--tu:clamp(0,(var(--p)-.34)/.22,1)] [--ui:clamp(0,(var(--p)-.58)*8,1)] min-[900px]:[--pw:min(22vw,42vh)]"
+				className="sticky top-0 h-svh overflow-clip [--f1:clamp(0,(var(--p)-.62)*14,1)] [--f2:clamp(0,(var(--p)-.68)*14,1)] [--f3:clamp(0,(var(--p)-.74)*14,1)] [--fl:clamp(0,(var(--p)-.1)/.34,1)] [--nts:clamp(0,(var(--nt)-.5)*1000,1)] [--pw:min(40vw,26vh)] [--tu:clamp(0,(var(--p)-.34)/.22,1)] [--ui:clamp(0,(var(--p)-.58)*8,1)] min-[900px]:[--pw:min(22vw,42vh)]"
 				style={nightPalette}
 			>
 				{/* Twilight, strongest halfway through the night's fade: dusk as it falls, dawn as it lifts into Prepare. */}
@@ -122,7 +121,8 @@ export function Share() {
 				<Doodle
 					name="plane"
 					wipe="clamp(0, (var(--p) - .12) / .2, 1)"
-					className="start-[7vw] top-[max(13vh,120px)] w-[14vw] translate-y-[calc(var(--p)*-30px)] rotate-[-8deg] opacity-[calc(var(--nt)*.6)]! [filter:invert(1)]!"
+					sizes="14vw"
+					className="start-[7vw] top-[max(13vh,120px)] w-[14vw] translate-y-[calc(var(--p)*-30px)] rotate-[-8deg] opacity-[calc(var(--nt)*.85)]!"
 				/>
 
 				<svg
@@ -139,11 +139,11 @@ export function Share() {
 						// Not non-scaling: that measures the dash in screen pixels, which breaks the pathLength-based draw.
 						strokeWidth={0.1}
 						strokeDasharray={1}
-						style={{ strokeDashoffset: "calc(1 - var(--fl))" }}
+						className="[stroke-dashoffset:calc(1-var(--fl))]"
 					/>
 				</svg>
 
-				<div className="absolute top-1/2 left-1/2 aspect-[612/792] w-(--pw) [transform:translate(-50%,-50%)_translate(calc(var(--dir)*var(--fl)*46vw),calc(var(--fl)*var(--fl)*-70vh))_rotate(calc(var(--dir)*var(--fl)*26deg))_scale(calc(1-var(--fl)*.78))] rounded-[2px] opacity-[calc(clamp(0,var(--p)*20,1)*(1-clamp(0,(var(--fl)-.6)*4,1)))] shadow-paper [transition:transform_.35s_var(--ease)]">
+				<div className="absolute top-1/2 left-1/2 aspect-[612/792] w-(--pw) [transform:translate(-50%,-50%)_translate(calc(var(--dir)*var(--fl)*46vw),calc(var(--fl)*var(--fl)*-70vh))_rotate(calc(var(--dir)*var(--fl)*26deg))_scale(calc(1-var(--fl)*.78))] rounded-sm opacity-[calc(clamp(0,var(--p)*20,1)*(1-clamp(0,(var(--fl)-.6)*4,1)))] shadow-paper [transition:transform_.35s_var(--ease)]">
 					<Sheet />
 				</div>
 
@@ -191,13 +191,13 @@ export function Share() {
 							aria-label={t`Visibility`}
 							value={visibility}
 							onValueChange={(value) => setVisibility(value as number)}
-							className="h-auto rounded-full border border-(--night-line) bg-(--night-fill) p-1"
+							className="h-auto rounded-sm border border-(--night-line) bg-(--night-fill) p-1"
 						>
 							{[t`Public`, t`Password`, t`Private`].map((label, index) => (
 								<label key={label} className="contents">
 									<SegmentedControlItem
 										value={index}
-										className="h-[34px] flex-none rounded-full px-3.5 font-ui text-(--night-ink-2) duration-300 not-data-checked:hover:text-(--night-ink) data-checked:bg-(--night-ink) data-checked:text-(--night-on-ink) data-checked:shadow-none"
+										className="h-[34px] flex-none rounded-sm px-3.5 font-ui text-(--night-ink-2) duration-300 not-data-checked:hover:text-(--night-ink) data-checked:bg-(--night-ink) data-checked:text-(--night-on-ink) data-checked:shadow-none"
 									>
 										<Icon name={visibilityIcons[index] ?? "globe-hemisphere-west"} size={17} />
 										{label}
@@ -209,7 +209,7 @@ export function Share() {
 							type="button"
 							onClick={copy}
 							className={cn(
-								"flex h-11 items-center gap-1.5 rounded-full px-[18px] font-ui text-sm font-semibold text-(--night-on-ink) transition-colors duration-standard",
+								"flex h-11 items-center gap-1.5 rounded-sm px-[18px] font-ui text-sm font-semibold text-(--night-on-ink) transition-colors duration-standard",
 								copied ? "bg-(--night-accent)" : "bg-(--night-ink)",
 							)}
 						>
@@ -222,7 +222,7 @@ export function Share() {
 						{formats.map((format, index) => (
 							<li
 								key={format.icon}
-								className="font-martian flex h-9 [transform:translateY(calc((1-var(--f))*10px))] items-center gap-2 rounded-md border border-[color-mix(in_oklch,var(--night-chip-line)_calc(var(--f)*100%),transparent)] px-3.5 text-[11.5px] leading-none font-medium tracking-[.08em] text-(--night-chip) uppercase opacity-(--f)"
+								className="font-martian flex h-9 [transform:translateY(calc((1-var(--f))*10px))] items-center gap-2 rounded-md border border-[color-mix(in_oklch,var(--night-chip-line)_calc(var(--f)*100%),transparent)] px-3.5 text-[11.5px] leading-none font-medium text-(--night-chip) opacity-(--f)"
 								style={{ "--f": `var(--f${index + 1})` } as CSSProperties}
 							>
 								<Icon name={format.icon} size={18} />

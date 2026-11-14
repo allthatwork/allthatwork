@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { createProcedureClient } from "@orpc/server";
 import { env } from "@reactive-resume/env/server";
 
@@ -21,6 +21,10 @@ vi.mock("@reactive-resume/auth/config", () => ({
 vi.mock("@reactive-resume/db/client", () => ({ db: dbMock }));
 vi.mock("@reactive-resume/db/schema", () => ({ user: { __table: "user" } }));
 vi.mock("drizzle-orm", () => ({ eq: () => "EQ" }));
+vi.mock("@reactive-resume/env/server", async (importOriginal) => {
+	const { env } = await importOriginal<typeof import("@reactive-resume/env/server")>();
+	return { env: { ...env, APP_ALIAS_URL: "https://rx.cv" } };
+});
 
 const {
 	isApiKeyRateLimitError,
@@ -85,16 +89,40 @@ describe("resolveUserFromRequestHeaders", () => {
 });
 
 describe("cookie request origins", () => {
-	it.each([{ origin: "https://attacker.example" }, { origin: "null" }, { "sec-fetch-site": "cross-site" }])(
-		"rejects ambient credentials from another origin: %j",
-		async (originHeaders) => {
-			reset();
-			authMock.api.getSession.mockResolvedValue({ user: { id: "owner" } });
-			const headers = new Headers({ cookie: "session=valid", ...originHeaders });
-			await expect(resolveUserFromRequestHeaders(headers)).rejects.toMatchObject({ code: "FORBIDDEN" });
-			expect(authMock.api.getSession).not.toHaveBeenCalled();
-		},
-	);
+	it.each([
+		{ origin: "https://attacker.example" },
+		{ origin: "null" },
+		{ "sec-fetch-site": "cross-site" },
+		{ origin: "https://rx.cv", "sec-fetch-site": "cross-site" },
+		{ origin: "https://rx.cv.attacker.example", "sec-fetch-site": "same-origin" },
+		{ origin: "http://rx.cv", "sec-fetch-site": "same-origin" },
+		{ origin: "https://rx.cv:8443", "sec-fetch-site": "same-origin" },
+	])("rejects ambient credentials from another origin: %j", async (originHeaders) => {
+		reset();
+		authMock.api.getSession.mockResolvedValue({ user: { id: "owner" } });
+		const headers = new Headers({ cookie: "session=valid", ...originHeaders });
+		await expect(resolveUserFromRequestHeaders(headers)).rejects.toMatchObject({ code: "FORBIDDEN" });
+		expect(authMock.api.getSession).not.toHaveBeenCalled();
+	});
+
+	it("serves anonymous public procedures on the alias when incidental cookies are present", async () => {
+		reset();
+		authMock.api.getSession.mockResolvedValue(null);
+		const context = {
+			locale: "en-US" as const,
+			reqHeaders: new Headers({ cookie: "theme=dark", origin: "https://rx.cv", "sec-fetch-site": "same-origin" }),
+		};
+		const publicOperation = createProcedureClient(
+			publicProcedure.handler(({ context }) => context.user),
+			{ context },
+		);
+		await expect(publicOperation(undefined)).resolves.toBeNull();
+		const protectedOperation = createProcedureClient(
+			protectedProcedure.handler(() => "private"),
+			{ context },
+		);
+		await expect(protectedOperation(undefined)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+	});
 
 	it("accepts same-origin cookies and explicit bearer credentials from other origins", async () => {
 		reset();
@@ -143,12 +171,16 @@ describe("credential authorization", () => {
 		{ permissions: { api: ["write"] }, method: "DELETE" as const, allowed: false },
 		{ permissions: null, method: "POST" as const, allowed: true },
 		{ permissions: {}, method: "GET" as const, allowed: false },
-	])("enforces API-key permissions at procedure execution: %j", async ({ permissions, method, allowed }) => {
+		// Moving to Trash deletes the document from view, then for good after 30 days.
+		{ permissions: { api: ["write"] }, method: "POST" as const, operationId: "trashDocument", allowed: false },
+		{ permissions: { api: ["write"] }, method: "PUT" as const, operationId: "putDocumentTrash", allowed: false },
+		{ permissions: { api: ["delete"] }, method: "POST" as const, operationId: "trashDocument", allowed: true },
+	])("enforces API-key permissions at procedure execution: %j", async ({ permissions, method, allowed, ...route }) => {
 		reset();
 		authMock.api.verifyApiKey.mockResolvedValue({ valid: true, key: { referenceId: "owner", permissions } });
 		setupDbResolves({ id: "owner" });
 		const operation = createProcedureClient(
-			protectedProcedure.route({ method }).handler(() => "executed"),
+			protectedProcedure.route({ method, ...route }).handler(() => "executed"),
 			{
 				context: { locale: "en-US", reqHeaders: new Headers({ "x-api-key": "key" }) },
 			},

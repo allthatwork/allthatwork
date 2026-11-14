@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
 import { copyCoverLetterStyle, createCoverLetterResumeData } from "./cover-letter";
 import { getResumeExportData } from "./export-sections";
@@ -19,12 +19,17 @@ const withLetter = () => {
 };
 
 describe("htmlToMarkdown", () => {
+	it("bounds repeated work and indentation across nested lists", () => {
+		const rows = "<li>line</li>".repeat(1000);
+		const nested = "<ul><li>parent".repeat(30) + `<ul>${rows}</ul>` + "</li></ul>".repeat(30);
+		expect(() => htmlToMarkdown(nested)).toThrow("too complex");
+	});
 	it("preserves numbered-list starts and inline formatting", () => {
 		expect(
 			htmlToMarkdown(
 				'<ol start="3"><li><p><strong>Lead</strong> <em>work</em> with <a href="https://example.com"><strong>proof</strong></a></p></li><li><p><s>Old</s> <u>New</u></p></li></ol>',
 			),
-		).toBe("3. **Lead** _work_ with [**proof**](https://example.com)\n4. ~~Old~~ <u>New</u>");
+		).toBe("3. **Lead** _work_ with [**proof**](https://example.com/)\n4. ~~Old~~ <u>New</u>");
 	});
 	it("keeps nested list markers beneath their parent", () => {
 		expect(htmlToMarkdown("<ul><li><p>Parent</p><ol><li><p>Child</p></li></ol></li></ul>")).toBe(
@@ -38,7 +43,7 @@ describe("htmlToMarkdown", () => {
 
 	it("converts anchors to Markdown links and decodes entities", () => {
 		expect(htmlToMarkdown('<p>See <a href="https://x.com">Tom &amp; Jerry</a></p>')).toBe(
-			"See [Tom & Jerry](https://x.com)",
+			"See [Tom & Jerry](https://x.com/)",
 		);
 	});
 });

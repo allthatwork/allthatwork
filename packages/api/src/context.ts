@@ -25,6 +25,8 @@ interface ORPCContext {
 }
 
 const TRUSTED_ORIGINS = getTrustedOrigins(env.APP_URL);
+// Public pages on the alias call the same API, including when incidental cookies are present.
+if (env.APP_ALIAS_URL) TRUSTED_ORIGINS.push(new URL(env.APP_ALIAS_URL).origin);
 const fullPermissions: readonly RequestPermission[] = ["read", "write", "delete"];
 
 async function findActiveUser(id: string): Promise<User | null> {
@@ -116,7 +118,9 @@ export async function resolveAuthenticationFromRequestHeaders(headers: Headers):
 		headers.has("cookie") &&
 		((origin && !TRUSTED_ORIGINS.includes(origin)) || headers.get("sec-fetch-site") === "cross-site")
 	) {
-		throw new ORPCError("FORBIDDEN", { message: "Cross-origin session requests are not allowed." });
+		throw new ORPCError("FORBIDDEN", {
+			message: "This request came from another site. Open Reactive Resume directly and try again.",
+		});
 	}
 	// Do not let Better Auth turn an API key into an unrestricted synthetic session.
 	const sessionHeaders = new Headers(headers);
@@ -162,6 +166,17 @@ export const publicProcedure = base
 		});
 	});
 
+/**
+ * The scope a route needs. Moving a document to Trash removes it like a delete, so its RPC and REST aliases need
+ * `delete` too. MCP tools check the same rule before calling a procedure.
+ */
+export function requiredPermission(route: { method?: string | undefined; operationId?: string | undefined }) {
+	if (route.method === "GET") return "read";
+	if (route.method === "DELETE" || /^(delete|bulkDelete|purge|trash)|^putDocumentTrash$/i.test(route.operationId ?? ""))
+		return "delete";
+	return "write";
+}
+
 export const protectedProcedure = publicProcedure
 	.route({
 		spec: (operation) => ({ ...operation, security: [{ apiKey: [] }, { bearerAuth: [] }, { cookieAuth: [] }] }),
@@ -173,16 +188,12 @@ export const protectedProcedure = publicProcedure
 			throw context.apiKeyRateLimit;
 		}
 		if (!context.user) throw new ORPCError("UNAUTHORIZED");
-		const route = procedure["~orpc"].route;
-		const permission =
-			route.method === "GET"
-				? "read"
-				: route.method === "DELETE" || /^(delete|bulkDelete|purge)/i.test(route.operationId ?? "")
-					? "delete"
-					: "write";
+		const permission = requiredPermission(procedure["~orpc"].route);
 		if (!context.authentication?.permissions.includes(permission)) {
 			context.resHeaders?.set("WWW-Authenticate", `Bearer error="insufficient_scope", scope="api:${permission}"`);
-			throw new ORPCError("FORBIDDEN", { message: `This credential requires api:${permission} permission.` });
+			throw new ORPCError("FORBIDDEN", {
+				message: `This credential needs the api:${permission} permission. Use a credential that includes it.`,
+			});
 		}
 
 		return next({

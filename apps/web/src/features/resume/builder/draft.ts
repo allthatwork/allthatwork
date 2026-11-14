@@ -2,7 +2,7 @@ import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { WritableDraft } from "immer";
 import { t } from "@lingui/core/macro";
-import { consumeEventIterator } from "@orpc/client";
+import { consumeEventIterator, ORPCError } from "@orpc/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBlocker, useParams } from "@tanstack/react-router";
 import { debounce, isEqual } from "es-toolkit";
@@ -26,6 +26,9 @@ export type Resume = {
 	hasPassword?: boolean | undefined;
 	isPublic?: boolean | undefined;
 	showDownloadButtons?: boolean | undefined;
+	showInSearchEngines?: boolean | undefined;
+	hideContactDetails?: boolean | undefined;
+	isPrimary?: boolean | undefined;
 	/** The job application this resume was made for; Check's Job match reads its posting. */
 	applicationId?: string | null;
 };
@@ -65,14 +68,11 @@ type ResumeStoreState = {
 	// step costs only the parts that changed.
 	undoStack: ResumeData[];
 	redoStack: ResumeData[];
-	canUndo: boolean;
-	canRedo: boolean;
 };
 
 type ResumeStoreActions = {
 	initialize: (resume: Resume | null) => void;
 	reset: () => void;
-	replaceResumeDraft: (resume: Resume) => void;
 	replaceResumeFromServer: (resume: Resume) => void;
 	updateResumeData: (fn: (draft: WritableDraft<ResumeData>) => void, options?: UpdateResumeDataOptions) => void;
 	patchResume: (fn: (draft: WritableDraft<Resume>) => void) => void;
@@ -166,7 +166,11 @@ export function readUnsavedResumeData(id: string): ResumeData | undefined {
 	try {
 		const raw = window.localStorage.getItem(`${UNSAVED_STORAGE_PREFIX}${id}`);
 		if (!raw) return undefined;
-		const parsed = JSON.parse(raw) as { data?: ResumeData };
+		const parsed = JSON.parse(raw) as { data?: ResumeData; storedAt?: number };
+		if (!Number.isFinite(parsed.storedAt) || Date.now() - (parsed.storedAt ?? 0) > 7 * 86_400_000) {
+			clearUnsavedResume(id);
+			return undefined;
+		}
 		return parsed.data;
 	} catch {
 		return undefined;
@@ -178,6 +182,19 @@ function isBrowserOffline() {
 }
 
 let lockedToastId: string | undefined;
+
+function warnLocked() {
+	lockedToastId = toast.add({
+		type: "error",
+		description: t`This resume is locked. Unlock it from its menu to edit.`,
+		id: lockedToastId,
+	});
+}
+
+function clearHistory(state: WritableDraft<ResumeStoreState>) {
+	state.undoStack = [];
+	state.redoStack = [];
+}
 
 function getResumeQueryKey(id: string): QueryKey {
 	return orpc.resume.getById.queryOptions({ input: { id } }).queryKey as QueryKey;
@@ -263,6 +280,7 @@ async function flushResumeSave(id: string) {
 			{ id: submitted.id, data: submittedData, sessionId: runtime.sessionId },
 			{ signal: runtime.abortController.signal },
 		)) as Resume;
+		if (runtime.abortController.signal.aborted) return;
 
 		runtime.queryClient?.setQueryData(getResumeQueryKey(submitted.id), updated);
 
@@ -292,6 +310,7 @@ async function flushResumeSave(id: string) {
 		runtime.saveFailed = false;
 		if (!runtime.pendingResume && !runtime.hasPendingLocalChanges) clearUnsavedResume(submitted.id);
 	} catch (error: unknown) {
+		if (runtime.abortController.signal.aborted) return;
 		if (error instanceof DOMException && error.name === "AbortError") return;
 
 		runtime.pendingResume ??= submitted;
@@ -390,6 +409,16 @@ function cleanupRuntime(id: string) {
 	runtimes.delete(id);
 }
 
+/** Cancel saves before account storage is cleared, including late failures from an old session. */
+export function clearResumeDrafts() {
+	for (const [id, runtime] of runtimes) {
+		runtime.pendingResume = undefined;
+		runtime.syncResume.cancel();
+		cleanupRuntime(id);
+	}
+	useResumeStore.getState().reset();
+}
+
 function syncCurrentResume(id: string) {
 	const resume = useResumeStore.getState().resume;
 	if (!resume || resume.id !== id) return;
@@ -405,8 +434,6 @@ export const useResumeStore = create<ResumeStore>()(
 		saveStatus: "idle",
 		undoStack: [],
 		redoStack: [],
-		canUndo: false,
-		canRedo: false,
 
 		initialize: (resume) => {
 			if (resume) setRuntimeBaseline(resume);
@@ -421,10 +448,7 @@ export const useResumeStore = create<ResumeStore>()(
 				state.resume = restored ?? resume;
 				state.resumeId = resume?.id;
 				state.isReady = resume !== null;
-				state.undoStack = [];
-				state.redoStack = [];
-				state.canUndo = false;
-				state.canRedo = false;
+				clearHistory(state);
 			});
 
 			if (restored) {
@@ -444,24 +468,7 @@ export const useResumeStore = create<ResumeStore>()(
 				state.resume = null;
 				state.resumeId = undefined;
 				state.isReady = false;
-				state.undoStack = [];
-				state.redoStack = [];
-				state.canUndo = false;
-				state.canRedo = false;
-			});
-		},
-
-		replaceResumeDraft: (resume) => {
-			resetHistoryRuntime();
-
-			set((state) => {
-				state.resume = resume;
-				state.resumeId = resume.id;
-				state.isReady = true;
-				state.undoStack = [];
-				state.redoStack = [];
-				state.canUndo = false;
-				state.canRedo = false;
+				clearHistory(state);
 			});
 		},
 
@@ -471,20 +478,18 @@ export const useResumeStore = create<ResumeStore>()(
 			// This runs both for the echo of our own autosave (identical data → keep history) and for
 			// external/cross-tab/AI rebases (different data → local undo history no longer applies).
 			const current = get().resume;
-			const isRebase = !current || !isEqual(current.data, resume.data);
+			// An echo keeps the data object the store already holds: a new but identical one would make everything that
+			// renders from it run again, the preview's PDF render of every page included, after every save.
+			const keptData = current && isEqual(current.data, resume.data) ? current.data : undefined;
+			const isRebase = keptData === undefined;
 			if (isRebase) resetHistoryRuntime();
 
 			set((state) => {
-				state.resume = resume;
+				state.resume = keptData ? { ...resume, data: keptData } : resume;
 				state.resumeId = resume.id;
 				state.isReady = true;
 
-				if (isRebase) {
-					state.undoStack = [];
-					state.redoStack = [];
-					state.canUndo = false;
-					state.canRedo = false;
-				}
+				if (isRebase) clearHistory(state);
 			});
 		},
 
@@ -521,11 +526,7 @@ export const useResumeStore = create<ResumeStore>()(
 			if (!currentResume) return;
 
 			if (currentResume.isLocked) {
-				lockedToastId = toast.add({
-					type: "error",
-					description: t`This resume is locked and cannot be updated.`,
-					id: lockedToastId,
-				});
+				warnLocked();
 				return;
 			}
 
@@ -560,8 +561,6 @@ export const useResumeStore = create<ResumeStore>()(
 				// identical to the draft, so an autosave never reads as an outside change.
 				syncResumeDates(state.resume.data as ResumeData);
 				state.saveStatus = "saving";
-				state.canUndo = state.undoStack.length > 0;
-				state.canRedo = state.redoStack.length > 0;
 			});
 
 			getRuntime(currentResume.id).hasPendingLocalChanges = true;
@@ -598,11 +597,7 @@ function applyHistoryStep(get: StoreGet, set: ImmerSet, direction: "undo" | "red
 	if (!currentResume) return;
 
 	if (currentResume.isLocked) {
-		lockedToastId = toast.add({
-			type: "error",
-			description: t`This resume is locked and cannot be updated.`,
-			id: lockedToastId,
-		});
+		warnLocked();
 		return;
 	}
 
@@ -627,8 +622,6 @@ function applyHistoryStep(get: StoreGet, set: ImmerSet, direction: "undo" | "red
 
 		draft.resume.data = snapshot;
 		draft.saveStatus = "saving";
-		draft.canUndo = draft.undoStack.length > 0;
-		draft.canRedo = draft.redoStack.length > 0;
 	});
 
 	getRuntime(currentResume.id).hasPendingLocalChanges = true;
@@ -723,6 +716,8 @@ export function useResumeUpdateSubscription({ resumeId, onUpdate, onError }: Res
 			},
 			onError: (error) => {
 				if (didCancel) return;
+				// A signed-out session stays signed out; retrying would only repeat the 401.
+				if (error instanceof ORPCError && error.code === "UNAUTHORIZED") return;
 				onError?.(error);
 				retryTimer = window.setTimeout(() => setRetryNonce((value) => value + 1), 2500);
 			},

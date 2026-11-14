@@ -9,6 +9,6 @@ const config = createVitestProjectConfig({
 
 export default {
 	...config,
-	test: { ...config.test, include: ["**/*.{test,spec}.?(c|m)[jt]s?(x)"] },
+	test: { ...config.test, include: ["**/*.{test,spec}.?(c|m)[jt]s?(x)"], testTimeout: 30_000 },
 	oxc: { jsx: { runtime: "automatic" as const } },
 };

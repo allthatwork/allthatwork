@@ -1,6 +1,6 @@
 import type { PdfRuleCode } from "./catalog";
 import type { PdfCheckResult } from "./types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import fc from "fast-check";
 import { PDF_ATS_RULE_CODES, pdfRuleCap, pdfRuleCategory, pdfRuleSeverity } from "./catalog";
 import { scoreChecks } from "./score";

@@ -18,7 +18,7 @@ The assistant uses the existing saved AI connections. Configure `ENCRYPTION_SECR
 The career platform has two places:
 
 - **Career** (sidebar): **Today** (notifications that need you, new roles from discovery, the next interview and your schedules), **Coach** (conversations across your whole search), **Knowledge** (facts, STARR stories and preferences) and **Offers** (two saved offers side by side).
-- **The application workspace** (open an application, then **Open workspace**): one job in seven tabs, in the order a search happens. **Fit**, **Apply**, **Prepare**, **Practise**, **Debrief**, **Messages** and **Saved**. The workspace opens on the tab for the application's stage, and **Ask the coach** opens the coach beside any tab. A job can have several conversations: start a new one, or reopen or delete an earlier one from the sheet's history.
+- **The application workspace** (open an application, then **Open workspace**): one job in seven tabs, in the order a search happens. **Fit**, **Apply**, **Prepare**, **Practice**, **Debrief**, **Messages** and **Saved**. The workspace opens on the tab for the application's stage, and **Ask the coach** opens the coach beside any tab. A job can have several conversations: start a new one, or reopen or delete an earlier one from the sheet's history.
 
 Each workspace tab is a purpose-built tool. Its AI action (**Check fit**, **Plan my preparation**, **Get feedback**, **Review my answer**, **Read it for me**, **Draft** or **Tighten**) asks the default AI connection for one structured result and saves it to **Saved**. While it works, the button names each step in turn. The result arrives whole rather than streamed, because its actions (apply, tick, add evidence) need the complete, checked result. Checklists, plans, saved briefings and the offer table are stored data, so they open without a working provider; when a provider call fails, the error says what didn't run.
 
@@ -38,7 +38,7 @@ The coach prioritizes the resume and letter versions recorded as sent for that a
 - **Remember facts from my messages** has three modes. **Ask first** (the default) shows a proposal under the coach's answer; nothing is saved until you choose **Remember**. **Automatically** saves facts you state and shows **Undo**. **Never** turns memory off. Mock answers are never remembered.
 - **Facts** show where they came from and their correction history. **Correct** keeps the original in the history and marks stories that use the fact for review. Switching a fact off stops the coach from reading it; a switched-off fact can't back a story. Facts private to one application are used only when coaching for it, until you choose **Use for all applications**.
 - **Forget** removes the fact after a six-second undo, unlinks it from stories and saved items, and keeps a content-free marker so it isn't re-extracted from the same source. The original resume, message or file isn't changed.
-- **STARR stories** contain Situation, Task, Action, Result and Reflection with the facts that back them. Leave a part blank until you can support it.
+- **STARR stories** contain Situation, Task, Action, Result and Reflection with the facts that back them. Situation, Task and Action are required; leave Result and Reflection blank until you can support them.
 - **Preferences** (target roles, places, what matters, minimum base salary, office days, notice period) feed discovery, the match chips on new roles, Fit's requirement checks and Offers. All times in Career are shown in the account's timezone, set in **Settings → Preferences** (UTC until changed).
 
 Every AI action shows a privacy line naming what is sent and to which connection. In **Coach**, the context chips decide what goes with the next message: **Applications** (summaries of your applications), **Knowledge** (switched-on facts, stories and preferences) and **Web research** (off by default; search terms go to your web search service). Choices persist per conversation. Turning context off can't recall information already sent to a provider. Comparing offers and editing Knowledge send nothing.
@@ -50,12 +50,12 @@ Every AI action shows a privacy line naming what is sent and to which connection
 | Fit      | Each requirement from the posting, stated or inferred, checked against your facts: supported, partly supported or no evidence yet. Missing evidence is not missing ability. **Add evidence** saves a shared fact.                                                   |
 | Apply    | Your answers for the application form with word counts, the facts behind them, **Draft** and **Tighten**, and a checklist before you submit on the employer's site yourself.                                                                                        |
 | Prepare  | The timed plan and briefing for the next round (see above).                                                                                                                                                                                                         |
-| Practise | One question at a time, typed or spoken, with feedback in a fixed shape: what works, what to strengthen and a stronger opening. Practice questions are simulated.                                                                                                   |
-| Debrief  | What they asked, what you said and how it landed, reviewed against your evidence, with a light plan for the week. Recalled questions become practisable.                                                                                                            |
+| Practice | One question at a time, typed or spoken, with feedback in a fixed shape: what works, what to strengthen and a stronger opening. Practice questions are simulated.                                                                                                   |
+| Debrief  | What they asked, what you said and how it landed, reviewed against your evidence, with a light plan for the week. Recalled questions become available to practice.                                                                                                  |
 | Messages | Paste an employer message to get a summary, an editable reply you send yourself, and proposed changes to the application that only happen when you apply them: a stage, the next step (with a reminder when a reply is due) and offer terms to save for **Offers**. |
 | Saved    | Everything the coach wrote for this job; **Open in** shows a saved version read-only in its tab.                                                                                                                                                                    |
 
-**Offers** compares two saved offers in their own currency and pay period. Differences are marked only when the currency and period match, unknown or conditional values are flagged, and totals aren't added up. **Plan what to ask** opens the coach with both offers as context.
+**Add offer** in Offers or an application's Messages tab saves structured terms manually without an AI connection. **Offers** compares two saved offers in their own currency and pay period. Differences are marked only when the currency and period match, unknown or conditional values are flagged, and totals aren't added up. **Plan what to ask** opens the coach with both offers as context.
 
 Undo replaces confirmation dialogs throughout: forgetting, deleting, dismissing and applying changes all show a six-second **Undo**.
 
@@ -116,7 +116,7 @@ Notifications are written in English for now. Each one is stored as what happene
 
 ## Optional voice practice
 
-On **Practise**, choose **Speak**. Voice starts with the default connection when it supports speech, otherwise another usable speech connection; **Voice settings** chooses another, or a different model.
+On **Practice**, choose **Speak**. Voice starts with the default connection when it supports speech, otherwise another usable speech connection; **Voice settings** chooses another, or a different model.
 
 | Provider          | Transcribes answers                                                                 | Reads questions aloud                                                               |
 | ----------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |

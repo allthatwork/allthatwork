@@ -1,5 +1,5 @@
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 
 const dbMock = vi.hoisted(() => ({ select: vi.fn(), insert: vi.fn(), update: vi.fn(), delete: vi.fn() }));

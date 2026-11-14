@@ -1,5 +1,5 @@
 import type { SQL } from "drizzle-orm";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { collectPassages, readTarget } from "@reactive-resume/resume/proposals";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";

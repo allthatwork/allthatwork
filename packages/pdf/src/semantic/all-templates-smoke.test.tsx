@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import * as forme from "@formepdf/core";
 import { templateSchema } from "@reactive-resume/schema/templates";
 import { renderResume } from "../forme/render";

@@ -1,6 +1,8 @@
 {
 	"extends": "@reactive-resume/config/tsconfig.base.json",
 	"compilerOptions": {
+		"declaration": true,
+		"isolatedDeclarations": true,
 		"noEmit": true
 	},
 	// Scoped to `src` so tsdown's declaration emit does not follow

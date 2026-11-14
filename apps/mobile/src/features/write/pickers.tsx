@@ -1,8 +1,9 @@
-import type { IconName } from "@/ui";
 import type { KeyboardTypeOptions } from "react-native";
 import { useLingui } from "@lingui/react/macro";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { FlatList, Pressable, View } from "react-native";
+import { SvgXml } from "react-native-svg";
+import iconPaths from "@reactive-resume/pdf/icons";
 import { icons as resumeIcons } from "@reactive-resume/schema/icons";
 import { Button, Icon, ListRow, Sheet, Text, TextField, useTheme } from "@/ui";
 
@@ -52,31 +53,6 @@ export function PromptSheet({ open, title, message, initialValue, keyboardType, 
 	);
 }
 
-// The icons the mockup's grid leads with; search covers every icon the page can print.
-const SUGGESTED_ICONS: readonly string[] = [
-	"briefcase",
-	"graduation-cap",
-	"graph",
-	"lightning",
-	"translate",
-	"bookmark-simple",
-	"check-circle",
-	"list-checks",
-	"file-text",
-	"user-circle",
-	"phone",
-	"link-simple-horizontal",
-	"code",
-	"star",
-	"globe",
-	"envelope-simple",
-	"map-pin",
-	"calendar-blank",
-	"trend-up",
-	"sparkle",
-	"palette",
-] satisfies IconName[];
-
 type IconPickerSheetProps = {
 	open: boolean;
 	value: string;
@@ -84,45 +60,63 @@ type IconPickerSheetProps = {
 	onChange: (icon: string) => void;
 };
 
-/**
- * Section, entry and custom-field icons: None, the common ones, and search over every icon the PDF can draw.
- * ponytail: only the suggested icons (all in the app's icon map) preview a glyph; search results show names. Ship
- * the PDF's Phosphor paths to the app if every glyph must preview.
- */
+/** Every printable Phosphor icon, virtualized so the full catalog stays cheap to browse. */
 export function IconPickerSheet({ open, value, onClose, onChange }: IconPickerSheetProps) {
 	const { t } = useLingui();
-	const { space } = useTheme();
+	const { colors, radius, size, space } = useTheme();
 	const [query, setQuery] = useState("");
+	const [columns, setColumns] = useState(1);
 	const search = query.trim().toLowerCase();
-	const names = search
-		? resumeIcons.filter((name) => name && name.includes(search)).slice(0, 60)
-		: SUGGESTED_ICONS.filter((name) => (resumeIcons as readonly string[]).includes(name));
+	const names = resumeIcons.filter((name) => !name || (Object.hasOwn(iconPaths, name) && name.includes(search)));
 
 	return (
-		<Sheet open={open} onClose={onClose} title={t`Icon`} detents={[0.6, 1]}>
-			<View style={{ paddingHorizontal: space.s4 }}>
-				<TextField
-					label={t`Search icons`}
-					placeholder={t`Search icons`}
-					value={query}
-					onChangeText={setQuery}
-					autoCapitalize="none"
-					autoCorrect={false}
-				/>
-			</View>
-			<ListRow title={t`None`} selected={!value} onPress={() => onChange("")} />
-			{names.map((name) => (
-				<ListRow
-					key={name}
-					title={name}
-					leading={SUGGESTED_ICONS.includes(name) ? <Icon name={name as IconName} size={20} /> : undefined}
-					selected={value === name}
-					onPress={() => onChange(name)}
-				/>
-			))}
-			{search && names.length === 0 ? (
-				<Text color="ink3" style={{ paddingHorizontal: space.s4 }}>{t`No icons match.`}</Text>
-			) : null}
+		<Sheet open={open} onClose={onClose} title={t`Icon`} detents={[0.6, 1]} scroll={false}>
+			<TextField
+				label={t`Search icons`}
+				placeholder={t`Search icons`}
+				value={query}
+				onChangeText={setQuery}
+				autoCapitalize="none"
+				autoCorrect={false}
+			/>
+			<FlatList
+				key={columns}
+				style={{ flex: 1, marginTop: space.s3 }}
+				onLayout={({ nativeEvent: { layout } }) => setColumns(Math.max(1, Math.floor(layout.width / size.hit)))}
+				numColumns={columns}
+				data={open ? names : []}
+				extraData={value}
+				keyExtractor={(name) => name}
+				keyboardShouldPersistTaps="handled"
+				nestedScrollEnabled
+				renderItem={({ item: name }) => (
+					<Pressable
+						accessibilityRole="radio"
+						accessibilityLabel={name || t`None`}
+						accessibilityState={{ checked: value === name }}
+						onPress={() => onChange(name)}
+						style={({ pressed }) => ({
+							width: `${100 / columns}%`,
+							minHeight: size.hit,
+							alignItems: "center",
+							justifyContent: "center",
+							borderRadius: radius.rMd,
+							backgroundColor: value === name ? colors.selectedFill : pressed ? colors.press : "transparent",
+						})}
+					>
+						{name ? (
+							<SvgXml
+								xml={`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="${colors.ink}">${(iconPaths as Record<string, string>)[name]}</svg>`}
+								width={size.icon.toolbar}
+								height={size.icon.toolbar}
+							/>
+						) : (
+							<Icon name="x" />
+						)}
+					</Pressable>
+				)}
+				ListFooterComponent={search && names.length === 1 ? <Text color="ink3">{t`No icons match.`}</Text> : undefined}
+			/>
 		</Sheet>
 	);
 }
@@ -183,7 +177,7 @@ export function ColorPickerSheet({ open, title, value, allowDefault, onClose, on
 						style={{
 							width: size.hit,
 							height: size.hit,
-							borderRadius: radius.rPill,
+							borderRadius: radius.rLg,
 							borderWidth: !value ? 3 : 1,
 							borderColor: !value ? colors.accent : colors.line2,
 							alignItems: "center",
@@ -203,7 +197,7 @@ export function ColorPickerSheet({ open, title, value, allowDefault, onClose, on
 						style={{
 							width: size.hit,
 							height: size.hit,
-							borderRadius: radius.rPill,
+							borderRadius: radius.rLg,
 							borderWidth: value === color ? 3 : 1,
 							borderColor: value === color ? colors.accent : colors.line2,
 							backgroundColor: color,
@@ -219,7 +213,7 @@ export function ColorPickerSheet({ open, title, value, allowDefault, onClose, on
 					onChangeText={setCustom}
 					autoCapitalize="none"
 					autoCorrect={false}
-					error={custom.trim() && !valid ? t`Enter a hex colour like #1a1a1a, or rgba(…).` : undefined}
+					error={custom.trim() && !valid ? t`Enter a hex color like #1a1a1a, or rgba(…).` : undefined}
 				/>
 				<Button label={t`Done`} disabled={!valid} onPress={() => onChange(custom.trim())} />
 			</View>
@@ -244,7 +238,7 @@ export function ColorRow({ label, value, disabled, onPress }: ColorRowProps) {
 					style={{
 						width: space.s6,
 						height: space.s6,
-						borderRadius: radius.rPill,
+						borderRadius: radius.rLg,
 						borderWidth: 1,
 						borderColor: colors.line2,
 						backgroundColor: value || colors.ink,

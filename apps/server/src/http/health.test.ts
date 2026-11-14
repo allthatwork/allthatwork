@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const { execute, healthcheck, ping, env } = vi.hoisted(() => ({
 	execute: vi.fn(),

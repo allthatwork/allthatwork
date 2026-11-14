@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { boardFromUrl, boardPageUrl, boardSlugGuesses, boardsInHtml, formatBoardPay, boardSourceName } from "./boards";
 
 describe("boardFromUrl", () => {

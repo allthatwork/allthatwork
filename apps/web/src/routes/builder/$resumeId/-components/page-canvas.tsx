@@ -5,7 +5,8 @@ import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { lazyRouteComponent } from "@tanstack/react-router";
+import { Suspense, useState } from "react";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
@@ -26,22 +27,33 @@ import { orpc } from "@/libs/orpc/client";
 
 const NONE: readonly never[] = [];
 
+const WebPagePreview = lazyRouteComponent(() => import("@/features/resume/share/web-page-preview"), "WebPagePreview");
+
+/** Share shows the web page; every other mode, the PDF's pages. */
+export function PageCanvas() {
+	const [mode] = useEditorMode();
+	if (mode !== "share") return <ResumePageCanvas />;
+	return (
+		<Suspense>
+			<WebPagePreview />
+		</Suspense>
+	);
+}
+
 /**
  * The page canvas: the live resume on the sunken desk, with a caption above the first page, a pointer layer
  * that links lines to entries, and the zoom bar.
  */
-export function PageCanvas() {
+function ResumePageCanvas() {
 	const data = useResumeData();
 	const format = useCurrentBuilderResumeSelector((resume) => resume.data.metadata.page.format);
-	const select = useEditorStore((state) => state.select);
-	const setDrawerOpen = useEditorStore((state) => state.setDrawerOpen);
 	const previewTemplate = useEditorStore((state) => state.previewTemplate);
 	const historyVersionId = useEditorStore((state) => state.historyVersionId);
 	const pageView = useEditorStore((state) => state.pageView);
 	const checkTab = useEditorStore((state) => state.checkTab);
 	const proposals = useEditorStore((state) => state.proposals);
 	const assistantProposals = useEditorStore((state) => (state.assistantOpen ? state.assistantProposals : NONE));
-	const sheetOpen = useEditorStore((state) => state.shareTab !== null);
+	const sheetOpen = useEditorStore((state) => state.sheetTab !== null);
 	const resumeId = useCurrentBuilderResumeSelector((resume) => resume.id);
 	const rendered = useEditorStore((state) => state.rendered);
 	const resumePages = useResumePages();
@@ -74,13 +86,13 @@ export function PageCanvas() {
 				? markProposals(data, marked)
 				: undefined;
 	const overflow = data && !previewTemplate && !viewing ? measureOverflow(data, rendered, resumePages) : null;
-	// Desktop: the page moves 120px aside so it stays visible beside the Share & export sheet.
+	// Desktop: the page moves 120px aside so it stays visible beside the Download & history sheet.
 	const shifted = sheetOpen && (breakpoint === "desktop" || breakpoint === "wide");
 
 	const onSelect = (selection: EditorSelection) => {
-		select(selection);
+		useEditorStore.setState({ selection });
 		// Tablet: tapping a line opens the drawer on that entry.
-		if (breakpoint === "tablet") setDrawerOpen(true);
+		if (breakpoint === "tablet") useEditorStore.setState({ drawerOpen: true });
 		// Phones show the page and the panel one at a time; the selection bar opens the entry instead.
 		if (mode === "write" && !isPhone) revealSelectionInPanel(selection);
 	};
@@ -97,8 +109,8 @@ export function PageCanvas() {
 				// dismisses the selection bar.
 				onPointerDown={(event) => {
 					if ((event.target as HTMLElement).closest("[data-kind]")) return;
-					if (breakpoint === "tablet") setDrawerOpen(false);
-					if (isPhone) select(null);
+					if (breakpoint === "tablet") useEditorStore.setState({ drawerOpen: false });
+					if (isPhone) useEditorStore.setState({ selection: null });
 				}}
 				className={cn(
 					"absolute inset-0 overflow-auto pb-24 outline-none",
@@ -252,7 +264,7 @@ function OverflowChip({ target, lines }: OverflowChipProps) {
 				}}
 				className="h-6 rounded-md bg-surface px-2.5 text-xs font-semibold whitespace-nowrap text-ink shadow-e1 disabled:opacity-60"
 			>
-				{authored === 1 ? <Trans>Fit to one page</Trans> : <Trans>Fit to {authored} pages</Trans>}
+				<Plural value={authored} _1="Fit to one page" other="Fit to # pages" />
 			</button>
 		</span>
 	);

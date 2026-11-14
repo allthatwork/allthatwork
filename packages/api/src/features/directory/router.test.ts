@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 import { createRouterClient } from "@orpc/server";
 
 const erase = vi.hoisted(() => vi.fn());
@@ -28,7 +28,7 @@ describe("Directory erasure permissions", () => {
 		});
 		await expect(client.deleteAllContacts({ confirm: true })).rejects.toMatchObject({
 			code: "FORBIDDEN",
-			message: "This credential requires api:delete permission.",
+			message: "This credential needs the api:delete permission. Use a credential that includes it.",
 		});
 		expect(erase).not.toHaveBeenCalled();
 	});

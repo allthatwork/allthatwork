@@ -1,6 +1,6 @@
 import type { CheckIssue } from "./issues";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { produce } from "immer";
 import { lintResumeForAts } from "@reactive-resume/resume/ats";

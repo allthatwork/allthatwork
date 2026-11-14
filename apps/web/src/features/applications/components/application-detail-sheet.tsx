@@ -1,4 +1,5 @@
-import type { Application } from "../types";
+import type { ApplicationLane } from "../lanes";
+import type { Application, ApplicationSummary } from "../types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
@@ -21,11 +22,13 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@reactive-res
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
-import { daysInStage } from "../next-step";
-import { applicationsListQueryOptions } from "../queries";
-import { getClosedReasonLabel, getNextStage, getStageColor, getStageLabel, PIPELINE } from "../stages";
+import { getCategoryLane, getDisplayLane, getLaneLabel, getNextLane } from "../lanes";
+import { daysInLane } from "../next-step";
+import { applicationDetailQueryOptions, applicationsListQueryOptions, getInitialApplicationDetail } from "../queries";
+import { getClosedReasonLabel } from "../stages";
 import { foundBySuggestions, foundOnSuggestions } from "../suggestions";
 import { useApplicationActions, useInvalidateApplications } from "../use-application-actions";
+import { useApplicationLanes } from "../use-application-lanes";
 import { ApplicationNotes } from "./application-notes";
 import { Activity } from "./detail/activity";
 import { SearchSection, TargetingSection } from "./detail/assessments";
@@ -42,7 +45,7 @@ import { useConfirm } from "@/hooks/use-confirm";
 import { orpc } from "@/libs/orpc/client";
 
 type DetailSheetProps = {
-	application: Application | null;
+	application: ApplicationSummary | null;
 	onOpenChange: (open: boolean) => void;
 	onEditDetails: (application: Application) => void;
 };
@@ -55,13 +58,15 @@ export function ApplicationDetailSheet({ application, onOpenChange, onEditDetail
 	const phone = useBreakpoint() === "mobile";
 	// Closing keeps the last application on screen until the sheet has slid away.
 	const [shown, onOpenChangeComplete] = useClosingValue(application);
-	const { data } = useQuery({
-		...orpc.applications.getById.queryOptions({ input: { id: shown?.id ?? "" } }),
+	const initialDetail = getInitialApplicationDetail(shown);
+	const { data, isError, isFetching, isPending, refetch } = useQuery({
+		...applicationDetailQueryOptions(shown?.id ?? ""),
 		// Fetch only while open; while closing, the cached copy keeps showing.
 		enabled: Boolean(application),
-		...(shown ? { placeholderData: shown } : {}),
+		initialData: initialDetail,
+		initialDataUpdatedAt: 0,
 	});
-	const current = data ?? shown;
+	const current = data;
 
 	return (
 		<Sheet open={Boolean(application)} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
@@ -70,7 +75,7 @@ export function ApplicationDetailSheet({ application, onOpenChange, onEditDetail
 				closeLabel={t`Close`}
 				className={cn("gap-0", phone ? "h-svh" : "data-[side=right]:sm:max-w-[480px]")}
 			>
-				{current && (
+				{current ? (
 					<Detail
 						key={current.id}
 						application={current}
@@ -78,6 +83,18 @@ export function ApplicationDetailSheet({ application, onOpenChange, onEditDetail
 						onEditDetails={onEditDetails}
 						onDeleted={() => onOpenChange(false)}
 					/>
+				) : (
+					<div className="grid gap-2 p-5">
+						<SheetTitle>{shown?.role}</SheetTitle>
+						<SheetDescription aria-live="polite">
+							{isError ? t`Couldn't load this. Your saved data hasn't changed.` : t`Loading…`}
+						</SheetDescription>
+						{isError && (
+							<Button variant="secondary" disabled={isFetching || isPending} onClick={() => void refetch()}>
+								<Trans>Try again</Trans>
+							</Button>
+						)}
+					</div>
 				)}
 			</SheetContent>
 		</Sheet>
@@ -98,21 +115,28 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 	const { data: profile } = useQuery(orpc.career.profile.queryOptions());
 	const confirm = useConfirm();
 	const { moveTo, close, remove } = useApplicationActions();
+	const { lanes, active } = useApplicationLanes();
 	const [interview, setInterview] = useState<{ open: boolean; entry: InterviewTimelineEntry | null }>({
 		open: false,
 		entry: null,
 	});
 	const [closing, setClosing] = useState(false);
 
-	const next = getNextStage(application.status);
-	const reached = PIPELINE.indexOf(application.status);
-	const since = daysInStage(application);
+	const current = getDisplayLane(lanes, application);
+	const steps = active.filter((lane) => lane.category !== "closed");
+	const next = getNextLane(lanes, current);
+	const reached = steps.findIndex((lane) => lane.id === current.id);
+	const since = daysInLane(application);
 	const closed = application.status === "closed";
+	// One click everywhere, Mark as applied included: a move out of Saved saves the written answers on the server.
+	const goTo = (lane: ApplicationLane) => {
+		if (lane.id !== current.id) moveTo(application, lane);
+	};
 
 	const onDelete = async () => {
 		const confirmed = await confirm(t`Delete this application?`, {
 			description: t`“${application.role} · ${application.company}” and its timeline are deleted permanently. This can't be undone.`,
-			confirmText: t`Delete`,
+			confirmText: t`Delete application`,
 		});
 		if (!confirmed) return;
 		remove.mutate({ id: application.id }, { onSuccess: onDeleted });
@@ -125,7 +149,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 					<div className="flex items-start gap-3 pe-8">
 						<span
 							aria-hidden="true"
-							className="grid size-10 shrink-0 place-items-center rounded-[9px] bg-sunken font-semibold text-ink-2"
+							className="grid size-10 shrink-0 place-items-center rounded-lg bg-sunken font-semibold text-ink-2"
 						>
 							{application.company.slice(0, 1).toUpperCase()}
 						</span>
@@ -170,44 +194,44 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 					</div>
 
 					<div className="grid gap-2.5">
-						<ol aria-label={t`Stages`} className="grid grid-cols-5 gap-1.5">
-							{PIPELINE.map((stage, index) => (
-								<li key={stage}>
-									<button
-										type="button"
-										aria-current={stage === application.status ? "step" : undefined}
-										onClick={() => {
-											if (stage !== application.status) moveTo(application, stage);
-										}}
-										className="grid w-full gap-1.5 text-start"
-									>
-										<span
-											className="h-1.5 rounded-full transition-colors duration-standard"
-											style={{
-												background: !closed && index <= reached ? getStageColor(stage) : "var(--line)",
-											}}
-										/>
-										<span
-											className={cn(
-												"truncate text-[11px]",
-												stage === application.status ? "font-semibold text-ink" : "text-ink-3",
-											)}
+						{/* Equal columns while they fit (five by default); more lanes scroll sideways. */}
+						<ol
+							aria-label={t`Stages`}
+							className="-mx-1 grid auto-cols-[minmax(64px,1fr)] grid-flow-col gap-1.5 overflow-x-auto px-1 pb-1"
+						>
+							{steps.map((lane, index) => {
+								const label = getLaneLabel(lane);
+								return (
+									<li key={lane.id} className="min-w-0">
+										<button
+											type="button"
+											title={label}
+											aria-current={lane.id === current.id ? "step" : undefined}
+											onClick={() => goTo(lane)}
+											className="grid w-full gap-1.5 text-start"
 										>
-											{getStageLabel(stage)}
-										</span>
-									</button>
-								</li>
-							))}
+											<span
+												className="h-1.5 rounded-sm transition-colors duration-standard"
+												style={{ background: !closed && index <= reached ? lane.color : "var(--line)" }}
+											/>
+											<span
+												className={cn(
+													"truncate text-[11px]",
+													lane.id === current.id ? "font-semibold text-ink" : "text-ink-3",
+												)}
+											>
+												{label}
+											</span>
+										</button>
+									</li>
+								);
+							})}
 						</ol>
 						<div className="flex flex-wrap items-center justify-between gap-2">
-							<span className="flex items-center gap-1.5 text-sm">
-								<span
-									aria-hidden="true"
-									className="size-2 rounded-full"
-									style={{ background: getStageColor(application.status) }}
-								/>
-								<strong className="font-semibold">{getStageLabel(application.status)}</strong>
-								<span className="text-ink-3">
+							<span className="flex min-w-0 items-center gap-1.5 text-sm">
+								<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: current.color }} />
+								<strong className="truncate font-semibold">{getLaneLabel(current)}</strong>
+								<span className="shrink-0 text-ink-3">
 									{closed && application.closedReason ? (
 										<>· {getClosedReasonLabel(application.closedReason)}</>
 									) : (
@@ -218,11 +242,11 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 								</span>
 							</span>
 							{next && !closed && (
-								<Button size="sm" variant="secondary" onClick={() => moveTo(application, next)}>
-									{application.status === "saved" ? (
+								<Button size="sm" variant="secondary" onClick={() => goTo(next)}>
+									{application.status === "saved" && next.category === "applied" ? (
 										<Trans>Mark as applied</Trans>
 									) : (
-										<Trans>Move to {getStageLabel(next)}</Trans>
+										<Trans>Move to {getLaneLabel(next)}</Trans>
 									)}
 									<Icon name="arrow-right" size={16} />
 								</Button>
@@ -276,13 +300,18 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 						<OpenWorkspaceButton application={application} />
 					</>
 				) : (
-					<Button variant="secondary" onClick={() => moveTo(application, "applied")}>
+					<Button variant="secondary" onClick={() => moveTo(application, getCategoryLane(lanes, "applied"))}>
 						<Trans>Reopen</Trans>
 					</Button>
 				)}
 			</footer>
 
-			<CloseDialog open={closing} onOpenChange={setClosing} onClose={(reason) => close(application, reason)} />
+			<CloseDialog
+				open={closing}
+				onOpenChange={setClosing}
+				lanes={active}
+				onClose={(lane, reason) => (lane ? moveTo(application, lane, reason) : reason && close(application, reason))}
+			/>
 			<InterviewDialog
 				application={application}
 				interview={interview.entry}
@@ -301,7 +330,7 @@ function Facts({ application, locale, foundOn, foundBy }: FactsProps) {
 	const update = useMutation({
 		...orpc.applications.update.mutationOptions(),
 		onSuccess: () => invalidate(application.id),
-		onError: () => toast.add({ type: "error", description: t`Couldn't save.` }),
+		onError: () => toast.add({ type: "error", description: t`Couldn't save the change. Try again.` }),
 	});
 	const applied = new Date(application.appliedAt).toLocaleDateString(locale, {
 		month: "short",
@@ -329,13 +358,13 @@ function Facts({ application, locale, foundOn, foundBy }: FactsProps) {
 				onSave={(value) => update.mutate({ id: application.id, foundBy: value })}
 			/>
 			<div className="grid gap-0.5">
-				<dt className="text-xs font-semibold text-ink-3 uppercase">
+				<dt className="text-xs font-semibold text-ink-3">
 					<Trans>Applied</Trans>
 				</dt>
 				<dd className="text-sm font-medium">{application.status === "saved" ? "—" : applied}</dd>
 			</div>
 			<div className="col-span-2 grid gap-0.5">
-				<dt className="text-xs font-semibold text-ink-3 uppercase">
+				<dt className="text-xs font-semibold text-ink-3">
 					<Trans>Contact</Trans>
 				</dt>
 				<dd className="min-w-0">
@@ -362,7 +391,7 @@ function ChoiceFact({ label, value, suggestions, onSave }: ChoiceFactProps) {
 	const id = useId();
 	return (
 		<div className="grid min-w-0 gap-0.5">
-			<dt className="text-xs font-semibold text-ink-3 uppercase">
+			<dt className="text-xs font-semibold text-ink-3">
 				<label htmlFor={id}>{label}</label>
 			</dt>
 			<dd className="min-w-0">
@@ -392,13 +421,13 @@ function Tags({ application }: { application: Application }) {
 	const update = useMutation({
 		...orpc.applications.update.mutationOptions(),
 		onSuccess: () => invalidate(application.id),
-		onError: () => toast.add({ type: "error", description: t`Couldn't save the tags.` }),
+		onError: () => toast.add({ type: "error", description: t`Couldn't save the tags. Try again.` }),
 	});
 	const save = (tags: string[]) => update.mutate({ id: application.id, tags });
 
 	return (
 		<section aria-labelledby="application-tags" className="grid gap-2">
-			<h3 id="application-tags" className="text-xs font-semibold text-ink-3 uppercase">
+			<h3 id="application-tags" className="text-xs font-semibold text-ink-3">
 				<Trans>Tags</Trans>
 			</h3>
 			<div className="flex flex-wrap items-center gap-1.5">

@@ -1,5 +1,5 @@
 import type { TextStreamPart, ToolSet } from "ai";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { smoothStream } from "ai";
 import { estimateTokenCount } from "tokenx";
 import { REPLY_WORD_DELAY_MS } from "./pacing";

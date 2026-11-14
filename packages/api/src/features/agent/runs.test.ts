@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
 vi.mock("@reactive-resume/db/client", () => ({ db: {} }));
 vi.mock("@reactive-resume/db/schema", () => ({

@@ -1,5 +1,5 @@
 import type { OfferTerms } from "@reactive-resume/schema/career";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { meetsMinimum, moneyDifference } from "./offer-compare";
 
 const offer = (patch: Partial<OfferTerms>): OfferTerms => ({

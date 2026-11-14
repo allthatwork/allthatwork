@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { strToU8, zipSync } from "fflate";
 import { LinkedInConnectionsError, parseLinkedInConnectionsCsv, readLinkedInConnections } from "./linkedin-connections";
 

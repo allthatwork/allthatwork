@@ -3,6 +3,7 @@ import {
 	careerFactInputSchema,
 	careerImportFactsInputSchema,
 	careerImportFactsResultSchema,
+	careerOfferInputSchema,
 	careerProfileDataSchema,
 	careerScheduleInputSchema,
 	careerScopeSchema,
@@ -27,6 +28,7 @@ import {
 	savedItemSchema,
 } from "../../dto/career";
 import { aiRequestRateLimit } from "../../middleware/rate-limit";
+import { searchScope } from "../web-access/regions";
 import { generateCareer } from "./generate";
 import { joinInFlight } from "./in-flight";
 import { careerJobs } from "./jobs";
@@ -79,7 +81,11 @@ export const careerRouter = {
 		})
 		.input(careerScheduleInputSchema.extend({ id: z.string().optional() }))
 		.output(careerScheduleSchema)
-		.handler(({ context, input }) => careerJobs.save(context.user.id, input)),
+		.handler(async ({ context, input }) => {
+			if (input.kind === "discovery" && input.enabled)
+				await searchScope(context.user.id, context.reqHeaders.get("x-client-timezone") ?? undefined);
+			return careerJobs.save(context.user.id, input);
+		}),
 	runSchedule: protectedProcedure
 		.route({
 			method: "POST",
@@ -553,6 +559,17 @@ export const careerRouter = {
 		)
 		.output(z.array(savedItemOutput))
 		.handler(({ context, input }) => careerService.savedItems({ userId: context.user.id, ...input })),
+	createOffer: protectedProcedure
+		.route({
+			method: "POST",
+			path: "/career/offers",
+			tags: ["Career"],
+			operationId: "createCareerOffer",
+			summary: "Save manually entered offer terms",
+		})
+		.input(careerOfferInputSchema)
+		.output(savedItemSchema.nullable())
+		.handler(({ context, input }) => careerService.createOffer(context.user.id, input)),
 	deleteSavedItem: protectedProcedure
 		.route({
 			method: "DELETE",

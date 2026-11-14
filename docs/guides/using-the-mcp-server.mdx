@@ -41,7 +41,7 @@ The server address is your instance's address followed by `/mcp`. On the hosted 
     Your client opens a browser window. If you aren't signed in, Reactive Resume asks you to sign in first.
   </Step>
   <Step title="Approve the connection">
-    Check the application name under **Connect an application**, read what it will be able to do, and select **Allow access**. Select **Deny** if you don't recognize the application.
+    Check the application name under **Connect an application**, read what it will be able to do, and select **Allow access**. Select **Deny access** if you don't recognize the application.
 
     <Frame caption="The consent screen for a new MCP client">
       <img src="/images/guides/using-the-mcp-server/oauth-consent.webp" alt="Connect an application screen for a client named Claude, listing access to resumes and job applications, profile information, email address and offline access, with Deny and Allow access buttons" />
@@ -193,7 +193,7 @@ The server keeps the original 43 tool names and adds API-derived tools for the r
 | `list_cover_letters`         | Lists your cover letters. Filter by name (`search`), `resumeId` or `applicationId`.                                   |
 | `read_cover_letter`          | Returns one letter, including its `revision`.                                                                         |
 | `create_cover_letter`        | Creates a letter, optionally linked to a resume (for its sender details and design) or an application.                |
-| `update_cover_letter`        | Changes a letter's text, recipient, template or links. Needs the latest `revision` as `expectedRevision`.             |
+| `update_cover_letter`        | Changes a letter's text, recipient, template, links, or sender details when unlinked. Needs `expectedRevision`.       |
 | `refresh_cover_letter_style` | Copies the sender details and design from a resume, keeping the letter's text and template. Needs `expectedRevision`. |
 | `duplicate_cover_letter`     | Copies a letter.                                                                                                      |
 | `delete_cover_letter`        | Moves a letter to Trash for 30 days. Needs `expectedRevision`.                                                        |
@@ -204,7 +204,7 @@ The server keeps the original 43 tool names and adds API-derived tools for the r
 
 | Tool                                | What it does                                                                                                                               |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `list_applications`                 | Lists your applications with contacts, documents and timeline. Filter by stage (`status`) or `tags`.                                       |
+| `list_applications`                 | Lists your applications with contacts, documents and timeline. Filter by stage (`status`), stage ID (`laneId`) or `tags`.                  |
 | `read_application`                  | Returns one application in full.                                                                                                           |
 | `list_application_tags`             | Lists every tag used across applications.                                                                                                  |
 | `get_application_stats`             | Counts applications by stage and source.                                                                                                   |
@@ -242,6 +242,7 @@ Additional tools use `api_` followed by the API router path in snake case. Input
 | Assistant                  | `api_agent_threads_start`, `api_agent_messages_send`, `api_agent_attachments_create`           | Threads, messages, cancellation, resumable replies, proposed edit status and attachments                                  |
 | Account and instance       | `api_auth_export_data`, `api_auth_delete_account`, `api_flags_get`                             | Account export, browser handoff for account deletion, enabled auth providers and platform statistics                      |
 | Integrations               | `api_ai_providers_list`, `api_web_access_status`                                               | Provider list/test/delete and web connection status/test/delete; credential entry uses browser handoffs                   |
+| Application stages         | `api_applications_lanes_get`, `api_applications_lanes_create`, `api_applications_lanes_retire` | Read, add, rename, recolor, reorder and remove stages; list earlier unanswered applications at a company                  |
 
 Resume and letter exports return authenticated REST URLs. Download with your existing credentials or open in your signed-in browser. Letter localization words are encoded in the URL. No generated file is permanently copied into storage by the export tool.
 
@@ -292,7 +293,7 @@ Prompts are ready-made instructions your client can start from. Each takes a res
 | `resume://_meta/schema` | The resume data JSON Schema, listed in `resources/list` and also served at `/schema.json`. Clients use it to build valid patches; tool schemas point to it instead of repeating it, for resume data and for a cover letter's style. Tool results also summarize application timeline entries, posting sources and the account export; their full shapes are in `/api/openapi/spec.json`. |
 | `resume://{id}`         | One resume's full data as JSON. This is a resource template (`resources/templates/list`); find IDs with `list_resumes`.                                                                                                                                                                                                                                                                  |
 
-Your instance also publishes a server card at `/.well-known/mcp/server-card.json` that summarizes the tools, prompts and resources, for clients that discover servers without connecting.
+Your instance also publishes a server card at `/.well-known/mcp/server-card.json` that summarizes the tools, prompts and resources, for clients that discover servers without connecting. An [Agentic Resource Discovery](https://agenticresourcediscovery.org/spec/) catalog at `/.well-known/ard.json` (also served at the older `/.well-known/ai-catalog.json`) points agent registries to that card.
 
 ## How authentication works
 

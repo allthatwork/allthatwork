@@ -18,16 +18,16 @@ export default function AiScreen() {
 				/>
 				<ListRow title={t`Web access`} leading="globe" chevron onPress={() => router.push("/settings/ai-web-access")} />
 				<ListRow
-					title={t`Report AI content`}
-					leading="warning-circle"
-					chevron
-					onPress={() => router.push("/settings/ai-report")}
-				/>
-				<ListRow
 					title={t`MCP server`}
 					leading="terminal-window"
 					chevron
 					onPress={() => router.push("/settings/ai-mcp")}
+				/>
+				<ListRow
+					title={t`Report AI content`}
+					leading="warning-circle"
+					chevron
+					onPress={() => router.push("/settings/ai-report")}
 				/>
 			</Card>
 		</Screen>

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
@@ -10,6 +10,7 @@ const env = vi.hoisted(() => ({
 	WEB_ACCESS_PROVIDER: "" as "" | "firecrawl" | "tavily" | "exa",
 	WEB_ACCESS_API_KEY: "",
 	WEB_ACCESS_API_URL: "",
+	WEB_SEARCH_SEARXNG_URL: "",
 	AI_PROVIDER: "",
 	AI_MODEL: "",
 	AI_API_KEY: "",
@@ -73,6 +74,7 @@ describe.skipIf(!process.env.INTEGRATIONS_TEST_DATABASE_URL)("integration creden
 			WEB_ACCESS_PROVIDER: "",
 			WEB_ACCESS_API_KEY: "",
 			WEB_ACCESS_API_URL: "",
+			WEB_SEARCH_SEARXNG_URL: "",
 			AI_PROVIDER: "",
 			AI_MODEL: "",
 			AI_API_KEY: "",
@@ -107,6 +109,9 @@ describe.skipIf(!process.env.INTEGRATIONS_TEST_DATABASE_URL)("integration creden
 			read: true,
 			builtInReader: true,
 		});
+		env.WEB_SEARCH_SEARXNG_URL = "http://searxng:8080";
+		expect(await web.status("alice")).toMatchObject({ configured: false, provider: null, search: true });
+		env.WEB_SEARCH_SEARXNG_URL = "";
 		env.ENCRYPTION_SECRET = "";
 		expect(await web.status("alice")).toMatchObject({ managed: false, configured: false, canSave: false });
 		await expect(web.save("alice", "firecrawl", "secret")).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });

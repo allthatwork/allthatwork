@@ -2,7 +2,7 @@
 import type { Application } from "../types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";

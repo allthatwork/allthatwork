@@ -20,9 +20,10 @@ import {
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useTheme } from "@/features/theme/provider";
+import { clearAccountData } from "@/libs/auth/clear-account-data";
 import { authClient } from "@/libs/auth/client";
 import { getReadableErrorMessage } from "@/libs/error-message";
-import { changeLocale, localeMap } from "@/libs/locale";
+import { changeLocale, localeMap, selectableLocales } from "@/libs/locale";
 import { isTheme } from "@/libs/theme";
 
 type Props = {
@@ -48,7 +49,7 @@ export function UserDropdownMenu({ children }: Props) {
 			fetchOptions: {
 				onSuccess: () => {
 					toast.close(toastId);
-					queryClient.clear();
+					clearAccountData(queryClient);
 					void router.invalidate();
 				},
 				onError: ({ error }) => {
@@ -58,7 +59,7 @@ export function UserDropdownMenu({ children }: Props) {
 							error,
 							t({
 								comment: "Fallback toast when signing out fails",
-								message: "Failed to sign out. Please try again.",
+								message: "Couldn't sign out. Try again.",
 							}),
 						),
 						id: toastId,
@@ -88,9 +89,9 @@ export function UserDropdownMenu({ children }: Props) {
 						</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent className="max-h-[400px] overflow-y-auto">
 							<DropdownMenuRadioGroup value={i18n.locale} onValueChange={changeLocale}>
-								{Object.entries(localeMap).map(([value, label]) => (
+								{selectableLocales.map((value) => (
 									<DropdownMenuRadioItem key={value} value={value}>
-										{i18n.t(label)}
+										{i18n.t(localeMap[value])}
 									</DropdownMenuRadioItem>
 								))}
 							</DropdownMenuRadioGroup>

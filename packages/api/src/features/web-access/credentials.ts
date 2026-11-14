@@ -29,12 +29,23 @@ async function savedCredential(userId: string) {
 }
 
 function assertPersonalKeysAllowed() {
-	if (serverConfig()) throw new ORPCError("FORBIDDEN", { message: "Web access is managed by the server." });
+	if (serverConfig())
+		throw new ORPCError("FORBIDDEN", {
+			message: "Web access is set by the server administrator and can't be changed here.",
+		});
 	if (!env.ENCRYPTION_SECRET)
-		throw new ORPCError("PRECONDITION_FAILED", { message: "Credential encryption is not configured." });
+		throw new ORPCError("PRECONDITION_FAILED", {
+			message: "Web access can't be saved on this server. Ask the server administrator to set ENCRYPTION_SECRET.",
+		});
+}
+
+/** Search runs through the web connection or, without one, through the operator's SearXNG. Reading needs neither. */
+function canSearch(hasConnection: boolean) {
+	return hasConnection || !!env.WEB_SEARCH_SEARXNG_URL;
 }
 
 export const webAccessService = {
+	canSearch,
 	status: async (userId: string) => {
 		const global = serverConfig();
 		const saved = !global && env.ENCRYPTION_SECRET ? await savedCredential(userId) : undefined;
@@ -45,7 +56,9 @@ export const webAccessService = {
 			provider,
 			managed: !!global,
 			canSave: !global && !!env.ENCRYPTION_SECRET,
-			search: provider !== null,
+			search: canSearch(provider !== null),
+			// Searches go to the operator's SearXNG, whatever the connection.
+			searxng: !!env.WEB_SEARCH_SEARXNG_URL,
 			read: true as const,
 		};
 	},

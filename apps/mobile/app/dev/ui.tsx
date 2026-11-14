@@ -4,6 +4,7 @@
 // Deep links: `me.rxresu://dev/ui?group=fields`, and `&open=sheet|long|reopen|tags|footer|dialog|destructive|toast|undo`
 // to open an overlay on arrival. `reopen` closes the sheet and reopens it while it is still sliding away.
 import type { ReactNode } from "react";
+import { AnimatedLegendList } from "@legendapp/list/reanimated";
 import { Redirect, Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
@@ -33,8 +34,8 @@ import {
 	useTheme,
 } from "@/ui";
 
-const groups = ["buttons", "fields", "lists", "feedback", "overlays", "sortable"] as const;
-type Group = (typeof groups)[number];
+const groups = ["buttons", "fields", "lists", "feedback", "overlays", "sortable", "collection"] as const;
+export type Group = (typeof groups)[number];
 
 type SectionProps = { title: string; children: ReactNode };
 
@@ -531,12 +532,14 @@ function Sortable() {
 	);
 }
 
-function Gallery() {
-	const params = useLocalSearchParams<{ group?: string; open?: string }>();
-	const router = useRouter();
-	// The group lives in the URL, so a deep link to the open gallery switches it too.
-	const group: Group = groups.includes(params.group as Group) ? (params.group as Group) : "buttons";
-	const setGroup = (value: Group) => router.setParams({ group: value, open: "" });
+const collection = Array.from({ length: 300 }, (_, index) => ({
+	id: String(index),
+	name: `Product designer ${index + 1}`,
+}));
+
+type GalleryContentProps = { group: Group; setGroup: (group: Group) => void; open?: string | undefined };
+
+export function GalleryContent({ group, setGroup, open }: GalleryContentProps) {
 	const { space } = useTheme();
 	const picker = (
 		<View style={{ gap: space.s2 }}>
@@ -557,11 +560,27 @@ function Gallery() {
 
 	return (
 		<>
-			<Stack.Screen options={{ title: "UI kit" }} />
-			{group === "sortable" ? (
+			{group === "sortable" || group === "collection" ? (
 				<Screen scroll={false} contentStyle={{ paddingHorizontal: 0 }}>
 					<View style={{ paddingHorizontal: space.s4 }}>{picker}</View>
-					<Sortable />
+					{group === "sortable" ? (
+						<Sortable />
+					) : (
+						<AnimatedLegendList
+							data={collection}
+							keyExtractor={(item) => item.id}
+							style={{ flex: 1 }}
+							renderItem={({ item }) => (
+								<ListRow
+									title={item.name}
+									subtitle="Resume · edited today"
+									leading="file-text"
+									chevron
+									onPress={noop}
+								/>
+							)}
+						/>
+					)}
 				</Screen>
 			) : (
 				<Screen contentStyle={{ gap: space.s6, paddingBottom: space.s12 * 2 }}>
@@ -570,9 +589,25 @@ function Gallery() {
 					{group === "fields" ? <Fields /> : null}
 					{group === "lists" ? <Lists /> : null}
 					{group === "feedback" ? <Feedback /> : null}
-					{group === "overlays" ? <Overlays open={params.open} /> : null}
+					{group === "overlays" ? <Overlays open={open} /> : null}
 				</Screen>
 			)}
+		</>
+	);
+}
+
+function Gallery() {
+	const params = useLocalSearchParams<{ group?: string; open?: string }>();
+	const router = useRouter();
+	const group: Group = groups.includes(params.group as Group) ? (params.group as Group) : "buttons";
+	return (
+		<>
+			<Stack.Screen options={{ title: "UI kit" }} />
+			<GalleryContent
+				group={group}
+				setGroup={(value) => router.setParams({ group: value, open: "" })}
+				open={params.open}
+			/>
 		</>
 	);
 }

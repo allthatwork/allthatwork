@@ -47,9 +47,12 @@ const resumePasswordLimiter = createRateLimiter("resumePasswordLimiter", rateLim
 const pdfLimiter = createRateLimiter("pdfLimiter", rateLimitConfig.orpc.pdfExport);
 const resumeDownloadLimiter = createRateLimiter("resumeDownloadLimiter", rateLimitConfig.orpc.pdfExport);
 const aiLimiter = createRateLimiter("aiLimiter", rateLimitConfig.orpc.aiRequest);
+const aiVoiceLimiter = createRateLimiter("aiVoiceLimiter", rateLimitConfig.orpc.aiRequest);
 const storageUploadLimiter = createRateLimiter("storageUploadLimiter", rateLimitConfig.orpc.storageUpload);
 const storageDeleteLimiter = createRateLimiter("storageDeleteLimiter", rateLimitConfig.orpc.storageDelete);
 const resumeMutationLimiter = createRateLimiter("resumeMutationLimiter", rateLimitConfig.orpc.resumeMutations);
+const resumeUpdatesLimiter = createRateLimiter("resumeUpdatesLimiter", rateLimitConfig.orpc.resumeUpdates);
+const resumeUpdatesUserLimiter = createRateLimiter("resumeUpdatesUserLimiter", rateLimitConfig.orpc.resumeUpdatesUser);
 const accountLimiter = createRateLimiter("accountLimiter", {
 	maxRequests: rateLimitConfig.betterAuth.global.max,
 	window: rateLimitConfig.betterAuth.global.window * 1000,
@@ -70,22 +73,29 @@ export const accountRateLimit = createRatelimitMiddleware<ContextWithHeaders, un
 	key: ({ context }) => `account:${getUserKey(context)}`,
 });
 
-export const resumePasswordRateLimit = createRatelimitMiddleware<
-	ContextWithHeaders,
-	{ username: string; slug: string }
->({
-	limiter: productionLimiter(resumePasswordLimiter),
-	key: ({ context }, input) => `resume-password:${input.username}:${input.slug}:${getClientKey(context.trustedClient)}`,
-});
+type ResumePasswordAttempt = { resumeId: string; trustedClient?: string | undefined };
+
+const resumePasswordKey = (input: ResumePasswordAttempt) =>
+	`resume-password:${input.resumeId}:${getClientKey(input.trustedClient)}`;
+
+/** Spends a try from the budget the API's verify call uses, so a web page's password form gets no extra guesses. */
+export async function consumeResumePasswordLimit(input: ResumePasswordAttempt): Promise<boolean> {
+	return (await productionLimiter(resumePasswordLimiter).limit(resumePasswordKey(input))).success;
+}
 
 export const pdfExportRateLimit = createRatelimitMiddleware<ContextWithHeaders, { id: string }>({
 	limiter: productionLimiter(pdfLimiter),
 	key: ({ context }, input) => `pdf-export:${getUserKey(context)}:${input.id}`,
 });
 
+// Each document has its own small budget; this one bounds an account rendering many documents.
+const pdfAccountLimiter = createRateLimiter("pdfAccountLimiter", { maxRequests: 30, window: 60 * 1000 });
+
 /** Shared by REST exports and signed download links, at the actual rendering boundary. */
 export async function consumePdfExportLimit(input: { id: string; userId: string; resHeaders?: Headers }) {
-	const result = await productionLimiter(pdfLimiter).limit(`pdf-export:${input.userId}:${input.id}`);
+	const account = await productionLimiter(pdfAccountLimiter).limit(`pdf-export-account:${input.userId}`);
+	const document = await productionLimiter(pdfLimiter).limit(`pdf-export:${input.userId}:${input.id}`);
+	const result = account.success ? document : account;
 	const reset = result.reset ?? Date.now() + 60_000;
 	input.resHeaders?.set("ratelimit-remaining", String(result.remaining));
 	input.resHeaders?.set("ratelimit-reset", String(reset));
@@ -104,9 +114,17 @@ export const resumeDownloadRateLimit = createRatelimitMiddleware<
 		`resume-download:${input.username}:${input.slug}:${getUserKey(context)}:${getClientKey(context.trustedClient)}`,
 });
 
+// Per account, not per document or thread: each new ID would otherwise get a fresh budget, and server-managed AI is
+// paid for by the operator.
 export const aiRequestRateLimit = createRatelimitMiddleware<ContextWithHeaders, unknown>({
 	limiter: productionLimiter(aiLimiter),
-	key: ({ context }, input) => `ai-request:${getUserKey(context)}:${getInputKeyPart(input)}`,
+	key: ({ context }) => `ai-request:${getUserKey(context)}`,
+});
+
+// Voice practice transcribes and speaks every turn, so it has its own account budget beside the chat's.
+export const aiVoiceRateLimit = createRatelimitMiddleware<ContextWithHeaders, unknown>({
+	limiter: productionLimiter(aiVoiceLimiter),
+	key: ({ context }) => `ai-voice:${getUserKey(context)}`,
 });
 
 export const storageUploadRateLimit = createRatelimitMiddleware<ContextWithHeaders, unknown>({
@@ -114,9 +132,10 @@ export const storageUploadRateLimit = createRatelimitMiddleware<ContextWithHeade
 	key: ({ context }) => `storage-upload:${getUserKey(context)}`,
 });
 
+// Per account: spellings of one filename (`a.jpg`, `/a.jpg`, `//a.jpg`) name the same file but would each get a budget.
 export const storageDeleteRateLimit = createRatelimitMiddleware<ContextWithHeaders, { filename: string }>({
 	limiter: productionLimiter(storageDeleteLimiter),
-	key: ({ context }, input) => `storage-delete:${getUserKey(context)}:${input.filename}`,
+	key: ({ context }) => `storage-delete:${getUserKey(context)}`,
 });
 
 export const resumeMutationRateLimit = createRatelimitMiddleware<ContextWithHeaders, unknown>({
@@ -128,4 +147,14 @@ const pdfAnalysisLimiter = createRateLimiter("pdfAnalysisLimiter", rateLimitConf
 export const pdfAnalysisRateLimit = createRatelimitMiddleware<ContextWithHeaders, unknown>({
 	limiter: productionLimiter(pdfAnalysisLimiter),
 	key: ({ context }) => `pdf-analysis:${getClientKey(context.trustedClient)}`,
+});
+
+export const resumeUpdatesRateLimit = createRatelimitMiddleware<ContextWithHeaders, { id: string }>({
+	limiter: productionLimiter(resumeUpdatesLimiter),
+	key: ({ context }, input) => `resume-updates:${getUserKey(context)}:${input.id}`,
+});
+
+export const resumeUpdatesUserRateLimit = createRatelimitMiddleware<ContextWithHeaders, unknown>({
+	limiter: productionLimiter(resumeUpdatesUserLimiter),
+	key: ({ context }) => `resume-updates-user:${getUserKey(context)}`,
 });

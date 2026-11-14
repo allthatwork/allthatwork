@@ -1,22 +1,42 @@
 import type { Fact, Story } from "./hooks";
 import type { CareerStoryData } from "@reactive-resume/schema/career";
+import type { ComponentRef } from "react";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { useState } from "react";
-import { View } from "react-native";
+import { useRef, useState } from "react";
+import { type TextInput, View } from "react-native";
+import Animated from "react-native-reanimated";
 import { careerStoryInputSchema } from "@reactive-resume/schema/career";
 import { client, useCareerAction, useCareerQueries, useUndoRows } from "./hooks";
 import { Actions, EditorSheet, LoadState, SwitchRow } from "./shared";
-import { Banner, Button, Card, ChipInput, EmptyState, Text, TextArea, TextField, useTheme } from "@/ui";
+import {
+	Banner,
+	Button,
+	Card,
+	ChipInput,
+	EmptyState,
+	Text,
+	TextArea,
+	TextField,
+	listItemMotion,
+	listLayout,
+	useFirstAppearance,
+	useTheme,
+} from "@/ui";
 
 const parts = () =>
-	[
-		{ key: "situation", label: t`Situation (required)`, max: 4000 },
-		{ key: "task", label: t`Task (required)`, max: 4000 },
-		{ key: "action", label: t`Action (required)`, max: 6000 },
-		{ key: "result", label: t`Result`, max: 4000 },
-		{ key: "reflection", label: t`Reflection`, max: 4000 },
-	] as const;
+	(
+		[
+			{ key: "situation", label: t`Situation`, max: 4000 },
+			{ key: "task", label: t`Task`, max: 4000 },
+			{ key: "action", label: t`Action`, max: 6000 },
+			{ key: "result", label: t`Result`, max: 4000 },
+			{ key: "reflection", label: t`Reflection`, max: 4000 },
+		] as const
+	).map((part) => ({
+		...part,
+		required: !careerStoryInputSchema.shape[part.key].safeParse("").success,
+	}));
 export function Stories() {
 	const { t } = useLingui();
 	const { space } = useTheme();
@@ -24,6 +44,7 @@ export function Stories() {
 	const [editor, setEditor] = useState<{ story: Story | null } | null>(null);
 	const undo = useUndoRows();
 	const rows = (stories.data ?? []).filter((row) => !undo.hidden.includes(row.id));
+	const firstAppearance = useFirstAppearance(!stories.isPending);
 	return (
 		<View style={{ gap: space.s4 }}>
 			<Text color="ink3">{t`Situation, Task, Action, Result, Reflection. Link each story to facts you can support; leave unknown outcomes blank.`}</Text>
@@ -33,40 +54,42 @@ export function Stories() {
 			{!stories.isError && !stories.isPending && !rows.length ? (
 				<EmptyState title={t`No stories yet`} message={t`Write one about something you did, in five parts.`} />
 			) : null}
-			{rows.map((story) => {
+			{rows.map((story, index) => {
 				const changed = story.data.factIds.some((id) => {
 					const fact = facts.data?.find((row) => row.id === id);
 					const revision = fact?.revisions.at(-1);
 					return !fact || fact.status !== "active" || (revision && new Date(revision.at) > new Date(story.updatedAt));
 				});
 				return (
-					<Card key={story.id} style={{ gap: space.s3 }}>
-						<Text variant="title">{story.data.title}</Text>
-						{changed ? <Banner tone="warn" message={t`A fact changed. Review this story.`} /> : null}
-						{parts().map((part) => (
-							<View key={part.key}>
-								<Text variant="label">{part.label}</Text>
-								<Text>{story.data[part.key] || t`Not recorded yet. Leave blank until you can support it.`}</Text>
-							</View>
-						))}
-						<Text variant="label">{t`Backed by`}</Text>
-						{story.data.factIds.map((id) => (
-							<Text key={id} color="ink2">
-								{facts.data?.find((row) => row.id === id)?.text ?? t`Fact no longer available`}
-							</Text>
-						))}
-						<Text color="ink3">{story.data.tags.join(" · ")}</Text>
-						<Actions>
-							<Button label={t`Edit`} variant="secondary" onPress={() => setEditor({ story })} />
-							<Button
-								label={t`Delete story`}
-								variant="ghost"
-								onPress={() =>
-									undo.remove(story.id, t`Story deleted`, () => client.career.deleteStory({ id: story.id }))
-								}
-							/>
-						</Actions>
-					</Card>
+					<Animated.View key={story.id} {...listItemMotion(index, firstAppearance)} layout={listLayout}>
+						<Card style={{ gap: space.s3 }}>
+							<Text variant="title">{story.data.title}</Text>
+							{changed ? <Banner tone="warn" message={t`A fact changed. Review this story.`} /> : null}
+							{parts().map((part) => (
+								<View key={part.key}>
+									<Text variant="label">{part.label}</Text>
+									<Text>{story.data[part.key] || t`Not recorded yet. Leave blank until you can support it.`}</Text>
+								</View>
+							))}
+							<Text variant="label">{t`Backed by`}</Text>
+							{story.data.factIds.map((id) => (
+								<Text key={id} color="ink2">
+									{facts.data?.find((row) => row.id === id)?.text ?? t`Fact no longer available`}
+								</Text>
+							))}
+							<Text color="ink3">{story.data.tags.join(" · ")}</Text>
+							<Actions>
+								<Button label={t`Edit`} variant="secondary" onPress={() => setEditor({ story })} />
+								<Button
+									label={t`Delete story`}
+									variant="ghost"
+									onPress={() =>
+										undo.remove(story.id, t`Story deleted`, () => client.career.deleteStory({ id: story.id }))
+									}
+								/>
+							</Actions>
+						</Card>
+					</Animated.View>
 				);
 			})}
 			{editor && facts.data ? (
@@ -100,12 +123,19 @@ function StoryEditor({ story, facts, onClose }: StoryEditorProps) {
 			},
 	);
 	const action = useCareerAction();
+	const [tried, setTried] = useState(false);
+	const inputs = useRef<
+		Partial<Record<"title" | ReturnType<typeof parts>[number]["key"], ComponentRef<typeof TextInput> | null>>
+	>({});
 	const available = facts.filter(
 		(fact) => fact.status === "active" && (!fact.applicationId || fact.applicationId === draft.applicationId),
 	);
 	const change = (patch: Partial<CareerStoryData>) => setDraft((current) => ({ ...current, ...patch }));
 	const payload = { ...draft, factIds: draft.factIds.filter((id) => available.some((fact) => fact.id === id)) };
 	const valid = careerStoryInputSchema.safeParse(payload).success;
+	const missingTitle = !draft.title.trim();
+	const missingParts = parts().filter((part) => part.required && !draft[part.key].trim());
+	const firstMissing = missingTitle ? "title" : missingParts[0]?.key;
 	const dirty =
 		JSON.stringify(draft) !==
 		JSON.stringify(
@@ -129,12 +159,30 @@ function StoryEditor({ story, facts, onClose }: StoryEditorProps) {
 			title={story ? t`Edit STARR story` : t`New STARR story`}
 		>
 			<View style={{ padding: space.s4, gap: space.s4 }}>
-				<TextField label={t`Title`} value={draft.title} maxLength={200} onChangeText={(title) => change({ title })} />
+				<Text color="ink3">{t`Situation, Task and Action are required. Leave Result and Reflection blank until you can support them.`}</Text>
+				<TextField
+					label={t`Title`}
+					ref={(input) => {
+						inputs.current.title = input;
+					}}
+					value={draft.title}
+					maxLength={200}
+					error={tried && missingTitle ? t`Give the story a title before you can save.` : undefined}
+					onChangeText={(title) => change({ title })}
+				/>
 				<ChipInput label={t`Tags`} values={draft.tags} onChange={(tags) => change({ tags })} />
 				{parts().map((part) => (
 					<TextArea
 						key={part.key}
-						label={part.label}
+						label={`${part.label} ${part.required ? t`(required)` : t`(optional)`}`}
+						ref={(input) => {
+							inputs.current[part.key] = input;
+						}}
+						error={
+							tried && missingParts.some((missing) => missing.key === part.key)
+								? t`Complete ${part.label} before saving.`
+								: undefined
+						}
 						value={draft[part.key]}
 						maxLength={part.max}
 						onChangeText={(value) => change({ [part.key]: value })}
@@ -156,8 +204,15 @@ function StoryEditor({ story, facts, onClose }: StoryEditorProps) {
 				<Button
 					label={t`Save story`}
 					loading={action.pending}
-					disabled={!valid}
+					disabled={!valid && !firstMissing}
 					onPress={() => {
+						setTried(true);
+						if (!valid) {
+							if (firstMissing) {
+								requestAnimationFrame(() => inputs.current[firstMissing]?.focus());
+							}
+							return;
+						}
 						void action.run(() => client.career.saveStory({ ...payload, ...(story ? { id: story.id } : {}) }), onClose);
 					}}
 				/>

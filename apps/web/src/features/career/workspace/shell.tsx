@@ -38,8 +38,9 @@ import { InterviewDialog } from "@/features/applications/components/interview-di
 import { ViewPostingButton } from "@/features/applications/components/posting-dialog";
 import { buildIcs } from "@/features/applications/ics";
 import { formatDuration, interviewKindOf, isInterview } from "@/features/applications/interviews";
+import { getDisplayLane, getLaneLabel } from "@/features/applications/lanes";
 import { describeNextStep, getNextStep, useNoReplyDays } from "@/features/applications/next-step";
-import { getStageLabel, PIPELINE } from "@/features/applications/stages";
+import { useApplicationLanes } from "@/features/applications/use-application-lanes";
 import { D1, EASE } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
@@ -373,7 +374,7 @@ function TabBadge({ tone, children }: { tone: "accent" | "warn" | "info" | "plai
 	return (
 		<span
 			className={cn(
-				"inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 font-mono text-[11px] font-medium",
+				"inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-sm px-1.5 font-mono text-[11px] font-medium",
 				tone === "accent" && "bg-accent-soft text-accent-text",
 				tone === "warn" && "bg-warn-soft text-warn-text",
 				tone === "info" && "bg-info-soft text-info-text",
@@ -385,20 +386,14 @@ function TabBadge({ tone, children }: { tone: "accent" | "warn" | "info" | "plai
 	);
 }
 
-const stageDot = {
-	saved: "bg-stage-saved",
-	applied: "bg-stage-applied",
-	screening: "bg-stage-screening",
-	interview: "bg-stage-interview",
-	offer: "bg-stage-offer",
-	closed: "bg-stage-closed",
-} as const;
-
 type WorkspaceHeaderProps = { application: Application; onAskCoach: () => void };
 
 function WorkspaceHeader({ application, onAskCoach }: WorkspaceHeaderProps) {
 	const { date } = useCareerTime();
-	const reached = PIPELINE.indexOf(application.status);
+	const { lanes, active } = useApplicationLanes();
+	const lane = getDisplayLane(lanes, application);
+	const steps = active.filter((item) => item.category !== "closed");
+	const reached = steps.findIndex((item) => item.id === lane.id);
 	const sent = application.status !== "saved";
 	return (
 		<header className="grid gap-3 border-b border-line px-4 pt-[22px] pb-4 md:px-8">
@@ -416,8 +411,8 @@ function WorkspaceHeader({ application, onAskCoach }: WorkspaceHeaderProps) {
 					</h1>
 					<p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-2">
 						<span className="flex items-center gap-1.5 text-ink">
-							<span aria-hidden="true" className={cn("size-2 rounded-full", stageDot[application.status])} />
-							{getStageLabel(application.status)}
+							<span aria-hidden="true" className="size-2 rounded-sm" style={{ background: lane.color }} />
+							{getLaneLabel(lane)}
 						</span>
 						{application.location && <span>· {application.location}</span>}
 						{sent && <span>· {t`Applied ${date(application.appliedAt)}`}</span>}
@@ -427,10 +422,11 @@ function WorkspaceHeader({ application, onAskCoach }: WorkspaceHeaderProps) {
 				<div className="flex flex-wrap items-center gap-x-4 gap-y-2">
 					{application.status !== "closed" && (
 						<div aria-hidden="true" className="hidden gap-1 lg:flex">
-							{PIPELINE.map((stage, index) => (
+							{steps.map((step, index) => (
 								<span
-									key={stage}
-									className={cn("h-1.5 w-10 rounded-full", index <= reached ? stageDot[stage] : "bg-line")}
+									key={step.id}
+									className={cn("h-1.5 w-10 rounded-sm", index > reached && "bg-line")}
+									style={index <= reached ? { background: step.color } : undefined}
 								/>
 							))}
 						</div>
@@ -465,7 +461,7 @@ type ContextColumnProps = {
 /** NEXT STEP, WHO YOU'LL MEET, WHAT YOU SENT, SEARCH, TARGETING and NOTES: the job at a glance beside every tab. */
 function ContextColumn({ application, interview, now, onEdit }: ContextColumnProps) {
 	const { i18n } = useLingui();
-	const { day, date, time } = useCareerTime();
+	const { day, date, time, timeZone } = useCareerTime();
 	const documents = useQuery(orpc.documents.list.queryOptions({ input: { trashed: false } }));
 	const hasSentVersion = Boolean(application.sentResumeVersionId || application.sentCoverLetterVersionId);
 	const trashed = useQuery({
@@ -474,7 +470,7 @@ function ContextColumn({ application, interview, now, onEdit }: ContextColumnPro
 	});
 	const noReplyDays = useNoReplyDays();
 	const step = getNextStep(application, { now, noReplyDays });
-	const text = describeNextStep(step, application, i18n.locale);
+	const text = describeNextStep(step, application, i18n.locale, timeZone);
 	const upcoming = step.kind === "interview" ? step.interview : interview;
 	const soon = upcoming ? minutesUntil(new Date(upcoming.at), now) <= 60 : false;
 	const available = [...(documents.data ?? []), ...(trashed.data ?? [])];
@@ -555,7 +551,7 @@ function ContextColumn({ application, interview, now, onEdit }: ContextColumnPro
 					</Eyebrow>
 					{upcoming.participants.map((person) => (
 						<div key={`${person.name}-${person.role}`} className="flex items-center gap-2.5">
-							<span className="grid size-[30px] shrink-0 place-items-center rounded-full bg-sunken text-xs font-semibold text-ink-2">
+							<span className="grid size-[30px] shrink-0 place-items-center rounded-sm bg-sunken text-xs font-semibold text-ink-2">
 								{getInitials(person.name)}
 							</span>
 							<div className="grid min-w-0">

@@ -22,11 +22,13 @@ import {
 	useWorkspace,
 } from "../hooks";
 import { formatMoney } from "../offer-compare";
+import { OfferEntry } from "../offer-entry";
 import { Swap, useCareerTime, withUndo, Working, workingSteps } from "../shared";
 import { AiNotice } from "./fit";
+import { getCategoryLane, getDisplayLane, getLaneLabel } from "@/features/applications/lanes";
 import { describeNextStep, getNextStep, useNoReplyDays } from "@/features/applications/next-step";
-import { getStageLabel } from "@/features/applications/stages";
 import { useInvalidateApplications } from "@/features/applications/use-application-actions";
+import { useApplicationLanes } from "@/features/applications/use-application-lanes";
 import { orpc } from "@/libs/orpc/client";
 
 type ReplyItem = SavedItem & { data: SavedData<"reply"> };
@@ -48,6 +50,7 @@ export function MessagesTab({ application, version, now }: WorkspaceTabProps) {
 	return (
 		<div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,1fr)_280px] @5xl:grid-cols-[minmax(0,1fr)_360px]">
 			<div className="grid gap-4">
+				{!readOnly && <OfferEntry application={application} />}
 				<PasteBox
 					key={`paste-${version?.id ?? "live"}`}
 					application={application}
@@ -191,10 +194,11 @@ type ProposalCardProps = {
  */
 function ProposalCard({ reply, application, now, readOnly }: ProposalCardProps) {
 	const { i18n } = useLingui();
-	const { when, day } = useCareerTime();
+	const { when, day, timeZone } = useCareerTime();
 	const queryClient = useQueryClient();
 	const invalidate = useInvalidateApplications();
 	const apply = useMutation(orpc.career.applyReply.mutationOptions());
+	const { lanes } = useApplicationLanes();
 	const changes = reply.data.changes;
 
 	// A stage the application is already at (or can't reach from Saved) is shown fixed: nothing to apply.
@@ -214,19 +218,20 @@ function ProposalCard({ reply, application, now, readOnly }: ProposalCardProps) 
 	const noReplyDays = useNoReplyDays();
 	const current =
 		application.followUpNote ||
-		describeNextStep(getNextStep(application, { now, noReplyDays }), application, i18n.locale).title;
+		describeNextStep(getNextStep(application, { now, noReplyDays }), application, i18n.locale, timeZone).title;
 
 	const describe = (change: (typeof changes)[number]) => {
 		switch (change.type) {
 			case "stage": {
-				const stage = getStageLabel(change.stage);
+				// A proposed stage lands in that stage's default lane.
+				const stage = getLaneLabel(getCategoryLane(lanes, change.stage));
 				if (change.stage === application.status)
 					return { title: t`Stage stays ${stage}`, detail: t`No change needed. It's already at ${stage}.` };
 				if (application.status === "saved")
 					return { title: t`Move to ${stage}`, detail: t`Mark it as applied in Apply first.` };
 				return {
 					title: t`Move to ${stage}`,
-					detail: t`Moves the application from ${getStageLabel(application.status)}.`,
+					detail: t`Moves the application from ${getLaneLabel(getDisplayLane(lanes, application))}.`,
 				};
 			}
 			// One change carries the next step and, when a reply is due, its reminder.
@@ -272,7 +277,10 @@ function ProposalCard({ reply, application, now, readOnly }: ProposalCardProps) 
 					},
 					() => {
 						setAppliedNow(null);
-						toast.add({ type: "error", description: t`Couldn't update the application. Nothing was changed.` });
+						toast.add({
+							type: "error",
+							description: t`Couldn't update the application. Nothing was changed. Try again.`,
+						});
 					},
 				),
 		});

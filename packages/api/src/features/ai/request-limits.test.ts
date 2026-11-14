@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { aiLimitsSchema } from "@reactive-resume/schema/career";
 import { modelCallOptions, sdkCallSettings, withRequestLimits } from "./request-limits";
 

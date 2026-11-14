@@ -1,4 +1,4 @@
-import type { Application } from "../types";
+import type { ApplicationSummary } from "../types";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ApplicationSort } from "@reactive-resume/schema/applications/filters";
@@ -29,15 +29,17 @@ import {
 	DialogTitle,
 } from "@reactive-resume/ui/components/dialog";
 import { cn } from "@reactive-resume/utils/style";
+import { getCategoryLane } from "../lanes";
 import { sortApplications } from "../sort";
 import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel } from "../stages";
 import { useApplicationActions } from "../use-application-actions";
+import { useApplicationLanes } from "../use-application-lanes";
 import { ApplicationCard } from "./application-card";
 import { getEdgeFadeStyle, useScrollEdges } from "@/hooks/use-scroll-edges";
 import { DRAG_SETTLE } from "@/libs/motion";
 
 type BoardProps = {
-	applications: Application[];
+	applications: ApplicationSummary[];
 	/** The stages the filters show; a column each, in pipeline order with Closed last. */
 	stages: readonly ApplicationStatus[];
 	/** Cards changed since the last filter change that no longer match, with the column they showed in. */
@@ -48,7 +50,7 @@ type BoardProps = {
 	columnWidth?: number | undefined;
 	/** Saves a dragged width; null goes back to sharing the board evenly. */
 	onColumnWidthChange: (width: number | null) => void;
-	onOpen: (application: Application) => void;
+	onOpen: (application: ApplicationSummary) => void;
 };
 
 /** The gap between columns (`gap-3`), for the resize line's position. */
@@ -79,10 +81,12 @@ export function ApplicationBoard({
 	onColumnWidthChange,
 	onOpen,
 }: BoardProps) {
-	const { moveTo, close } = useApplicationActions();
+	const { moveTo, close, update } = useApplicationActions();
+	// The board draws the six stages; a move lands in the stage's default lane, as the server does.
+	const { lanes } = useApplicationLanes();
 	const reduceMotion = useReducedMotion();
 	const [activeId, setActiveId] = useState<string | null>(null);
-	const [closing, setClosing] = useState<Application | null>(null);
+	const [closing, setClosing] = useState<ApplicationSummary | null>(null);
 	// The list query publishes the optimistic move a task after the drop (TanStack Query notifies on a timeout), so
 	// until it does the board shows the dropped card in its new column itself. Otherwise the card blinks back to its
 	// old column for a frame, and the drop animation would fly there.
@@ -90,16 +94,20 @@ export function ApplicationBoard({
 		null,
 	);
 
-	// The query caught up, rolled back, or the card went away: the override has done its job.
+	// The query caught up, rolled back, failed, or the card went away: the override has done its job.
+	const movedStatus = update.variables?.laneId
+		? lanes.find((lane) => lane.id === update.variables?.laneId)?.category
+		: update.variables?.status;
 	if (
 		pendingMove &&
-		applications.find((application) => application.id === pendingMove.id)?.status !== pendingMove.from
+		(applications.find((application) => application.id === pendingMove.id)?.status !== pendingMove.from ||
+			(update.isError && update.variables?.id === pendingMove.id && movedStatus === pendingMove.to))
 	) {
 		setPendingMove(null);
 	}
 	const stages = APPLICATION_STATUSES.filter((stage) => chosen.includes(stage));
 	// A changed card whose stage is filtered out stays in the column it was in until the filters change.
-	const statusOf = (application: Application) => {
+	const statusOf = (application: ApplicationSummary) => {
 		if (pendingMove?.id === application.id) return pendingMove.to;
 		if (stages.includes(application.status)) return application.status;
 		return stale.get(application.id) ?? application.status;
@@ -108,7 +116,7 @@ export function ApplicationBoard({
 	// A small activation distance so a click still opens the detail sheet instead of starting a drag.
 	const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-	const byStage = new Map<ApplicationStatus, Application[]>(stages.map((stage) => [stage, []]));
+	const byStage = new Map<ApplicationStatus, ApplicationSummary[]>(stages.map((stage) => [stage, []]));
 	for (const application of sortApplications(applications, sort)) byStage.get(statusOf(application))?.push(application);
 
 	// The width while the line is dragged; it's saved when the drag ends.
@@ -134,7 +142,7 @@ export function ApplicationBoard({
 		}
 		// Same batched render as setActiveId(null): the card is already in its new column when the drop animation measures it.
 		setPendingMove({ id: application.id, from: application.status, to: target });
-		moveTo(application, target);
+		moveTo(application, getCategoryLane(lanes, target));
 	};
 
 	return (
@@ -209,13 +217,13 @@ const COLUMN_PAGE_SIZE = 50;
 
 type ColumnProps = {
 	stage: ApplicationStatus;
-	applications: Application[];
+	applications: ApplicationSummary[];
 	stale: ReadonlyMap<string, ApplicationStatus>;
 	/** The set width, or none to share the board evenly. */
 	width: number | undefined;
 	/** The resize line in the gap after the column. */
 	handle: ReactNode;
-	onOpen: (application: Application) => void;
+	onOpen: (application: ApplicationSummary) => void;
 };
 
 function Column({ stage, applications, stale, width, handle, onOpen }: ColumnProps) {
@@ -246,7 +254,7 @@ function Column({ stage, applications, stale, width, handle, onOpen }: ColumnPro
 						key={application.id}
 						application={application}
 						stale={stale.has(application.id)}
-						onOpen={() => onOpen(application)}
+						onOpen={onOpen}
 					/>
 				))}
 				{remaining > 0 && (
@@ -263,14 +271,20 @@ function Column({ stage, applications, stale, width, handle, onOpen }: ColumnPro
 	);
 }
 
-type DraggableCardProps = { application: Application; stale: boolean; onOpen: () => void };
+type DraggableCardProps = {
+	application: ApplicationSummary;
+	stale: boolean;
+	onOpen: (application: ApplicationSummary) => void;
+};
+
+// Re-renders with every drag context change; the closure here stays stable, so the card itself doesn't.
 
 function DraggableCard({ application, stale, onOpen }: DraggableCardProps) {
 	const { setNodeRef, listeners, isDragging } = useDraggable({ id: application.id });
 
 	return (
 		<div ref={setNodeRef} {...listeners} className={cn(isDragging && "opacity-40")}>
-			<ApplicationCard application={application} onClick={onOpen} withMenu stale={stale} />
+			<ApplicationCard application={application} onClick={() => onOpen(application)} withMenu stale={stale} />
 		</div>
 	);
 }

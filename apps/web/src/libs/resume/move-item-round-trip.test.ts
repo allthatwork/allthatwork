@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from "vitest";
+import { assert, describe, expect, it } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { produce } from "immer";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";

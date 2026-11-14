@@ -1,6 +1,7 @@
 import z from "zod";
+import { timezoneSchema } from "@reactive-resume/utils/timezone";
 
-// Pipeline stages are a fixed enum. If per-user custom stages are ever needed, promote this to a table.
+// Canonical workflow categories stay fixed; user-owned lanes map to these categories.
 // `closed` is the terminal stage, with a reason; it replaced the old `rejected` stage and the `archived` flag.
 export const APPLICATION_STATUSES = ["saved", "applied", "screening", "interview", "offer", "closed"] as const;
 
@@ -209,15 +210,8 @@ export const interviewTimezoneSchema = z
 	.trim()
 	.min(1)
 	.max(100)
-	.refine((value) => {
-		if (/^[+-]/.test(value)) return false;
-		try {
-			new Intl.DateTimeFormat("en", { timeZone: value });
-			return true;
-		} catch {
-			return false;
-		}
-	}, "Choose a valid IANA timezone.");
+	// Modern Intl accepts offsets such as "+05:00"; interviews need a named zone.
+	.refine((value) => !/^[+-]/.test(value) && timezoneSchema.safeParse(value).success, "Choose a valid IANA timezone.");
 
 // Interview details editable by the user. `at` on the timeline entry is the scheduled start
 // (full timestamp, unlike stage/note entries which are day-granular).
@@ -242,6 +236,10 @@ export const applicationTimelineEntrySchema = z.discriminatedUnion("type", [
 	timelineBaseSchema.extend({
 		type: z.literal("stage"),
 		stage: applicationStatusSchema,
+		laneId: z.string().optional(),
+		laneLabel: z.string().max(80).nullable().optional(),
+		closedReason: applicationClosedReasonSchema.nullable().optional(),
+		canonicalTransition: z.boolean().optional(),
 	}),
 	timelineBaseSchema.extend({
 		type: z.literal("note"),
@@ -261,3 +259,18 @@ export type InterviewTimelineEntry = Extract<ApplicationTimelineEntry, { type: "
 export const aiMetadataSchema = z.record(z.string(), z.unknown());
 
 export type AiMetadata = z.infer<typeof aiMetadataSchema>;
+
+/** Active post-submission stages confirm sending; closing a saved job alone does not. */
+export function hasApplicationSubmission(application: {
+	status: ApplicationStatus;
+	activity: readonly ApplicationTimelineEntry[];
+}): boolean {
+	const sent = (status: ApplicationStatus) => status !== "saved" && status !== "closed";
+	return (
+		sent(application.status) ||
+		(application.status === "closed" &&
+			application.activity.some(
+				(entry) => entry.type === "stage" && entry.canonicalTransition !== false && sent(entry.stage),
+			))
+	);
+}

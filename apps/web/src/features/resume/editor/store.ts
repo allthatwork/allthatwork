@@ -5,11 +5,11 @@ import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { Template } from "@reactive-resume/schema/templates";
 import { create } from "zustand/react";
 
-export const EDITOR_MODES = ["write", "design", "check"] as const;
+export const EDITOR_MODES = ["write", "design", "check", "share"] as const;
 export type EditorMode = (typeof EDITOR_MODES)[number];
 
-/** The Share & export sheet's tabs; each entry point opens its own. */
-export type ShareTab = "link" | "download" | "history";
+/** The Download & history sheet's tabs; each entry point opens its own. */
+export type SheetTab = "download" | "history";
 
 export type CheckTab = "issues" | "match" | "writing";
 
@@ -45,8 +45,8 @@ type EditorStore = {
 	drawerOpen: boolean;
 	/** Tablet in landscape: the panel sits beside the page instead of over it. */
 	drawerPinned: boolean;
-	/** The open tab of the Share & export sheet, or null while it's closed. */
-	shareTab: ShareTab | null;
+	/** The open tab of the Download & history sheet, or null while it's closed. */
+	sheetTab: SheetTab | null;
 	/** History: the version shown on the page, read-only, instead of the current resume. */
 	historyVersionId: string | null;
 	assistantOpen: boolean;
@@ -54,8 +54,10 @@ type EditorStore = {
 	assistantInstant: boolean;
 	/** The assistant's conversation: a thread id, "new" for a fresh one, or null for the document's latest. */
 	assistantThread: string | null;
-	/** A message to send once the assistant is ready, from ⌘K Ask or Prepare for next step. */
+	/** A message to send once the assistant is ready, from ⌘K Ask or Job match. Never from a link. */
 	assistantPrompt: string | null;
+	/** Text from a link (`?ask=`) put in the composer, sent only when the user presses Send. */
+	assistantDraft: string | null;
 	/** The assistant's pending edits, marked on the page and counted in the outline. */
 	assistantProposals: readonly Proposal[];
 	/** Prepare for next step (Applications) opens the assistant with suggestions for the application. */
@@ -97,36 +99,14 @@ type EditorStore = {
 	 */
 	exportCheck: { report: PdfAtsReport; data: ResumeData } | null;
 	exportReportOpen: boolean;
-	select: (selection: EditorSelection | null) => void;
 	setZoom: (zoom: number | "fit") => void;
-	setDrawerOpen: (open: boolean) => void;
-	setDrawerPinned: (pinned: boolean) => void;
 	/** Opens the sheet on a tab, or closes it (which also returns the page to now). */
-	setShareTab: (tab: ShareTab | null) => void;
-	setHistoryVersion: (versionId: string | null) => void;
+	setSheetTab: (tab: SheetTab | null) => void;
 	setAssistantOpen: (open: boolean, instant?: boolean) => void;
-	setAssistantThread: (thread: string | null) => void;
-	setAssistantPrompt: (prompt: string | null) => void;
-	setAssistantProposals: (proposals: readonly Proposal[]) => void;
-	setAssistantSuggestions: (suggestions: "prepare" | null) => void;
 	setSectionOpen: (sectionId: string, open: boolean) => void;
 	markSectionAdded: (sectionId: string) => void;
-	setFocusEntry: (entryId: string | null) => void;
-	setBasicsOpen: (open: boolean) => void;
-	setPreviewTemplate: (template: Template | null) => void;
-	setStyleHighlight: (keys: readonly string[]) => void;
 	setRendered: (render: { pageCount: number; pageMap: PageMap | undefined; file: Blob }) => void;
-	setMobileView: (view: MobileView) => void;
-	setCheckTab: (tab: CheckTab) => void;
-	setCheckIssue: (key: string | null) => void;
-	setPageView: (view: "page" | "parser") => void;
-	setHighlightTerm: (term: string | null) => void;
-	setPastedPosting: (posting: string) => void;
-	setProposals: (proposals: readonly Proposal[]) => void;
 	setProposalStatus: (ids: readonly string[], status: Proposal["status"]) => void;
-	setWritingReview: (review: WritingReview | null) => void;
-	setExportCheck: (check: { report: PdfAtsReport; data: ResumeData } | null) => void;
-	setExportReportOpen: (open: boolean) => void;
 	reset: () => void;
 };
 
@@ -147,12 +127,13 @@ const initialState = {
 	zoom: "fit",
 	drawerOpen: false,
 	drawerPinned: false,
-	shareTab: null,
+	sheetTab: null,
 	historyVersionId: null,
 	assistantOpen: false,
 	assistantInstant: false,
 	assistantThread: null,
 	assistantPrompt: null,
+	assistantDraft: null,
 	assistantProposals: [],
 	assistantSuggestions: null,
 	openSections: [],
@@ -176,17 +157,9 @@ const initialState = {
 
 export const useEditorStore = create<EditorStore>()((set) => ({
 	...initialState,
-	select: (selection) => set({ selection }),
 	setZoom: (zoom) => set({ zoom: zoom === "fit" ? "fit" : clampZoom(zoom) }),
-	setDrawerOpen: (drawerOpen) => set({ drawerOpen }),
-	setDrawerPinned: (drawerPinned) => set({ drawerPinned }),
-	setShareTab: (shareTab) => set(shareTab ? { shareTab } : { shareTab, historyVersionId: null }),
-	setHistoryVersion: (historyVersionId) => set({ historyVersionId }),
+	setSheetTab: (sheetTab) => set(sheetTab ? { sheetTab } : { sheetTab, historyVersionId: null }),
 	setAssistantOpen: (assistantOpen, instant = false) => set({ assistantOpen, assistantInstant: instant }),
-	setAssistantThread: (assistantThread) => set({ assistantThread }),
-	setAssistantPrompt: (assistantPrompt) => set({ assistantPrompt }),
-	setAssistantProposals: (assistantProposals) => set({ assistantProposals }),
-	setAssistantSuggestions: (assistantSuggestions) => set({ assistantSuggestions }),
 	setSectionOpen: (sectionId, open) =>
 		set((state) => {
 			const isOpen = state.openSections.includes(sectionId);
@@ -199,25 +172,11 @@ export const useEditorStore = create<EditorStore>()((set) => ({
 		set((state) =>
 			state.addedSections.includes(sectionId) ? state : { addedSections: [...state.addedSections, sectionId] },
 		),
-	setFocusEntry: (focusEntryId) => set({ focusEntryId }),
-	setBasicsOpen: (basicsOpen) => set({ basicsOpen }),
-	setPreviewTemplate: (previewTemplate) => set({ previewTemplate }),
-	setStyleHighlight: (styleHighlight) => set({ styleHighlight }),
 	setRendered: (render) => set((state) => ({ rendered: { ...render, version: state.rendered.version + 1 } })),
-	setMobileView: (mobileView) => set({ mobileView }),
-	setCheckTab: (checkTab) => set({ checkTab }),
-	setCheckIssue: (checkIssue) => set({ checkIssue }),
-	setPageView: (pageView) => set({ pageView }),
-	setHighlightTerm: (highlightTerm) => set({ highlightTerm }),
-	setPastedPosting: (pastedPosting) => set({ pastedPosting }),
-	setProposals: (proposals) => set({ proposals }),
 	setProposalStatus: (ids, status) =>
 		set((state) => ({
 			proposals: state.proposals.map((proposal) => (ids.includes(proposal.id) ? { ...proposal, status } : proposal)),
 		})),
-	setWritingReview: (writingReview) => set({ writingReview }),
-	setExportCheck: (exportCheck) => set({ exportCheck }),
-	setExportReportOpen: (exportReportOpen) => set({ exportReportOpen }),
 	reset: () =>
 		set((state) => ({ ...initialState, rendered: { ...initialState.rendered, version: state.rendered.version + 1 } })),
 }));

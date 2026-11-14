@@ -11,6 +11,7 @@ import * as Clipboard from "expo-clipboard";
 import { randomUUID } from "expo-crypto";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { Pressable, View } from "react-native";
+import { hasApplicationSubmission } from "@reactive-resume/schema/applications/data";
 import { careerWorkspaceSchema } from "@reactive-resume/schema/career";
 import {
 	clearDraft,
@@ -32,6 +33,7 @@ import { orpc } from "@/api/client";
 import { getDraftScope } from "@/draft";
 import { useHasAIProvider } from "@/features/ai/providers";
 import { useUserTime } from "@/features/application-detail/hooks";
+import { PriorNoResponse } from "@/features/applications/prior-no-response";
 import { useInvalidateApplications } from "@/features/applications/queries";
 import { withUndo } from "@/features/career/undo";
 import { Banner, Button, Chip, IconButton, ListRow, Sheet, Skeleton, Text, TextArea, showToast, useTheme } from "@/ui";
@@ -108,7 +110,7 @@ function Apply({ application, version }: WorkspaceTabProps) {
 
 	return (
 		<View style={{ gap: space.s4 }}>
-			{application.status !== "saved" ? (
+			{hasApplicationSubmission(application) ? (
 				<Banner
 					tone="info"
 					icon="check-circle"
@@ -364,7 +366,7 @@ function AnswerCard({
 					value={text}
 					maxLength={6000}
 					editable={!disabled}
-					placeholder={t`Write your answer, or draft one from your Knowledge.`}
+					helper={t`Write your answer, or draft one from your Knowledge.`}
 					onChangeText={setText}
 					onBlur={answerSave.flush}
 				/>
@@ -429,7 +431,7 @@ type ChecklistProps = {
 	onSubmittingChange: (value: boolean) => void;
 };
 
-/** "Before you submit": five ticks stored with the application, copy/share, and Mark as applied. */
+/** Manual content checks survive submission; submission actions follow the application record. */
 function Checklist({
 	application,
 	answers,
@@ -446,15 +448,15 @@ function Checklist({
 	const workspace = useWorkspace(application.id);
 	const submit = useMutation(orpc.career.submitApplication.mutationOptions());
 	const [download, setDownload] = useState(false);
+	const submitted = hasApplicationSubmission(application);
 	const items = [
 		t`Review the selected resume and cover letter in their editors.`,
 		t`Check every claim, date and result against your experience.`,
 		t`Review required form answers and remove unsupported claims.`,
 		t`Submit through the employer's application page yourself.`,
 		t`Mark the application as applied to keep the versions you sent.`,
-	];
+	].slice(0, submitted ? 3 : undefined);
 	const ticked = workspace.data.checklist;
-	const submitted = application.status !== "saved";
 	const done = items.filter((_, index) => ticked.includes(index)).length;
 	const written = answers.filter((answer) => answer.answer.trim());
 	const total = items.length;
@@ -480,7 +482,7 @@ function Checklist({
 				format === "md" ? "net.daringfireball.markdown" : "public.plain-text",
 			);
 		} catch {
-			showToast({ message: t`Couldn't share the answers.` });
+			showToast({ message: t`Couldn't share the answers. Try again.` });
 		}
 	};
 
@@ -502,11 +504,9 @@ function Checklist({
 				clearDraft(`answer:${application.id}:${answer.id}:answer`, answer.answer);
 				clearDraft(`answer:${application.id}:${answer.id}:question`, answer.question);
 			}
-			// The ticks as they are now, not as they were when the button was pressed.
-			workspace.save({ checklist: [...new Set([...workspace.current().checklist, items.length - 1])] });
 			showToast({ message: t`Marked as applied. The versions you sent are kept.` });
 		} catch (error) {
-			showToast({ message: workspaceError(error, t`Couldn't mark it as applied.`) });
+			showToast({ message: workspaceError(error, t`Couldn't mark it as applied. Try again.`) });
 		} finally {
 			onSubmittingChange(false);
 			void invalidate();
@@ -515,11 +515,15 @@ function Checklist({
 	};
 
 	return (
-		<Block title={t`Before you submit`} trailing={<Text variant="mono" color="ink2">{t`${done} of ${total}`}</Text>}>
+		<Block
+			title={submitted ? t`Content review` : t`Before you submit`}
+			trailing={<Text variant="mono" color="ink2">{t`${done} of ${total}`}</Text>}
+		>
+			{!submitted && !readOnly ? <PriorNoResponse company={application.company} excludeId={application.id} /> : null}
 			<Progress value={done / total} label={t`Checklist progress`} />
 			<View>
 				{items.map((label, index) =>
-					!submitted && !readOnly && index === items.length - 1 ? (
+					application.status === "saved" && !readOnly && index === items.length - 1 ? (
 						<View key={label} style={{ paddingTop: space.s2 }}>
 							<Button
 								fullWidth
@@ -540,7 +544,7 @@ function Checklist({
 					),
 				)}
 			</View>
-			{!canSubmit && !readOnly ? (
+			{!submitted && !canSubmit && !readOnly ? (
 				<Text variant="callout" color="dangerText" accessibilityRole="alert">
 					{t`Shorten questions to 2,000 characters and answers to 6,000 characters before marking this applied.`}
 				</Text>
@@ -564,7 +568,9 @@ function Checklist({
 				/>
 			</Actions>
 			<Text variant="caption" color="ink3">
-				{t`You submit on the employer's site yourself. Marking it applied keeps the exact versions you sent.`}
+				{submitted
+					? t`Submission is recorded. Review checks only reflect what you checked yourself.`
+					: t`You submit on the employer's site yourself. Marking it applied keeps the exact versions you sent.`}
 			</Text>
 			<Sheet open={download} onClose={() => setDownload(false)} title={t`Download`}>
 				<ListRow title={t`Markdown (.md)`} leading="file-text" onPress={() => void share("md")} />
