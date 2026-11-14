@@ -135,7 +135,7 @@ const applicationSchema = createSelectSchema(schema.application, {
 	postingSource: postingSourceSchema.nullable(),
 	matchScore: z.number().int().min(0).max(100).nullable(),
 	aiMetadata: aiMetadataSchema.nullable(),
-	notes: z.string().nullable(),
+	notes: z.string().nullable().describe("The user's own notes. Search and targeting output has its own fields."),
 	// Rendered as an <a href>; only same-origin storage URLs are ever stored. Constrain to
 	// http(s)/relative so a hand-crafted `update` can't smuggle a `javascript:` href.
 	resumeFileUrl: z

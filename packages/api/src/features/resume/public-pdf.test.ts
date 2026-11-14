@@ -112,6 +112,16 @@ describe("createPublicResumePdf", () => {
 		expect(mocks.renderPdf).not.toHaveBeenCalled();
 	});
 
+	it("serves a rate-limited API key the public PDF as a visitor", async () => {
+		found(buildResume());
+		mocks.resolveAuthentication.mockRejectedValue(
+			Object.assign(new Error("Too many requests"), { code: "TOO_MANY_REQUESTS" }),
+		);
+
+		await expect(createPublicResumePdf(input)).resolves.toMatchObject({ filename: "resume.pdf" });
+		expect(mocks.renderPdf).toHaveBeenCalledOnce();
+	});
+
 	it("does not look in Trash, so a trashed resume's link stops serving its PDF", async () => {
 		await expect(createPublicResumePdf(input)).rejects.toMatchObject({ code: "NOT_FOUND" });
 		expect(pg.queries.at(-1)?.text).toContain('"resume"."trashed_at" is null');

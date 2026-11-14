@@ -14,4 +14,17 @@ describe("buildMcpServerCard", () => {
 			expect(tool.description.length, tool.name).toBeGreaterThan(0);
 		}
 	});
+
+	it("tells agents which application fields hold the user's notes and which hold search and targeting output", () => {
+		for (const name of ["create_application", "update_application"]) {
+			const properties = card.tools.find((tool) => tool.name === name)?.inputSchema.properties as
+				| Record<string, { description?: string }>
+				| undefined;
+			expect(properties?.notes?.description, name).toBe(
+				"The user's own notes. Search and targeting output has its own fields.",
+			);
+			for (const field of ["foundBy", "searchFit", "searchNotes", "targetingNotes", "targetingReviews"])
+				expect(properties?.[field]?.description, `${name}.${field}`).toBeTruthy();
+		}
+	});
 });
