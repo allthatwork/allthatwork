@@ -1227,13 +1227,14 @@ export const applicationService = {
 							})
 							.where(eq(schema.careerWorkspace.applicationId, id));
 				}
-				if (current.status === "saved" && SENT_STAGES.has(updated.status))
-					await snapshotSentAnswers(tx, userId, updated.id);
 				const linked = await linkApplicationDirectory(tx, updated);
 				// A sent snapshot belongs to the moment the application first enters a sent stage, or to an explicit
 				// submission. Later metadata saves and stage advances must not turn a late-linked draft into "sent".
 				const result =
 					!hasSubmitted(current) && isSentStage(updated.status) ? await recordSentResume(linked, tx) : linked;
+				// After the submission review exists, so the copied answers are the ones it records.
+				if (current.status === "saved" && SENT_STAGES.has(updated.status))
+					await snapshotSentAnswers(tx, userId, updated.id);
 				// Every explicit letter-link write reconciles both sides, including an equal-ID save that may be
 				// repairing a legacy null reverse or multiple aliases.
 				if (fields.coverLetterId !== undefined) {
@@ -1751,10 +1752,10 @@ export const applicationService = {
 					.where(and(eq(schema.application.id, row.id), activeApplications(input.userId)))
 					.returning();
 				saved(written ?? row);
+				if (written && transition.canonicalTransition && !hasSubmitted(row)) await recordSentResume(written, tx);
 				// Rows leaving Saved for a sent stage get their written answers saved, like a single move.
 				if (written && row.status === "saved" && SENT_STAGES.has(written.status))
 					await snapshotSentAnswers(tx, input.userId, written.id);
-				if (written && transition.canonicalTransition && !hasSubmitted(row)) await recordSentResume(written, tx);
 			}
 			return { updated, stages };
 		}),

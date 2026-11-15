@@ -2423,7 +2423,10 @@ export const careerService = {
 			return { stages };
 		});
 	},
-	/** Copies the workspace's answers into Saved once the application has been sent (moves out of Saved do it too). */
+	/**
+	 * Copies the workspace's answers into Saved once the application has been sent (moves out of Saved do it too). A copy
+	 * made here never becomes the submission review's answers: they may have been written after the application was sent.
+	 */
 	snapshotAnswers: (userId: string, applicationId: string) =>
 		db.transaction(async (tx) => {
 			await lockUser(tx, userId);
@@ -2437,7 +2440,7 @@ export const careerService = {
 				throw new ORPCError("BAD_REQUEST", {
 					message: "Mark the application as applied before recording sent answers.",
 				});
-			await snapshotSentAnswers(tx, userId, applicationId);
+			await snapshotSentAnswers(tx, userId, applicationId, { linkReview: false });
 		}),
 	/** Saves a discovered role to Applications at Saved, with the posting link and why it matched. */
 	trackOpportunity: (userId: string, id: string) => {
@@ -2471,7 +2474,7 @@ export const careerService = {
 							role: opportunity.role,
 							location: opportunity.location || null,
 							sourceUrl: opportunity.url,
-							jobDescription: opportunity.description || opportunity.snippet || null,
+							jobDescription: opportunity.description || null,
 							...values,
 							foundBy: FOUND_BY_IN_APP_SEARCH,
 							...(matches.length ? { searchNotes: `Matched: ${matches.join(" · ")}`, searchAt: new Date() } : {}),

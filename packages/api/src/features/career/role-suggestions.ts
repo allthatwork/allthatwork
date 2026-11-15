@@ -109,8 +109,13 @@ export async function suggestTargetRoles(userId: string, input: Input, signal?: 
 	// The short guard checks context and provider together, releasing locks before I/O; no awaited preparation follows.
 	await assertCurrent();
 	deadline.throwIfAborted();
-	// Every attempt, retries included, re-checks Knowledge and the connection before it's sent (the AI usage check).
-	const result = await generateJson(model, prompt, response, { ...modelCallOptions(limits), signal: deadline });
+	// No retries, whatever the account's setting: a retry would resend Knowledge the user may have revoked meanwhile, and
+	// a provider asking to wait (503 Retry-After) is reported rather than repeated.
+	const result = await generateJson(model, prompt, response, {
+		...modelCallOptions(limits),
+		maxRetries: 0,
+		signal: deadline,
+	});
 	deadline.throwIfAborted();
 	await assertCurrent();
 	const seen = new Set<string>();
