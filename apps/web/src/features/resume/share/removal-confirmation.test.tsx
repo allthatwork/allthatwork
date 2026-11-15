@@ -21,6 +21,8 @@ vi.mock("@/libs/orpc/client", () => {
 				["get", "suggestion", "set", "verify", "remove"].map((name) => [name, endpoint(name)]),
 			),
 			webAccess: Object.fromEntries(["status", "save", "delete", "test"].map((name) => [name, endpoint(name)])),
+			// Web access shows the account's web limits (AI limits form) below the connection.
+			career: { aiLimits: endpoint("aiLimits"), saveAiLimits: endpoint("saveAiLimits") },
 		},
 	};
 });
