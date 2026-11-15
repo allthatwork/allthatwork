@@ -128,7 +128,11 @@ describe.skipIf(!databaseUrl)("application Trash: real retained rows, storage an
 		await expect(api("alice", ["delete"]).deleteContact(input)).resolves.toBeUndefined();
 		await expect(api().deleteContact(input)).rejects.toMatchObject({ code: "CONFLICT" });
 		const saved = await api().getById({ id });
-		expect(saved.contacts).toEqual([contact, contacts[2]]);
+		// Each saved contact carries the fork's Directory link (contactId).
+		expect(saved.contacts).toEqual([
+			{ ...contact, contactId: expect.any(String) },
+			{ ...contacts[2], contactId: expect.any(String) },
+		]);
 		expect(saved.notes).toBe(reviewed.notes);
 		expect(saved.activity).toEqual(reviewed.activity);
 		expect((await raw(id)).contacts).toEqual(saved.contacts);
@@ -179,7 +183,7 @@ describe.skipIf(!databaseUrl)("application Trash: real retained rows, storage an
 			expect(outcomes.filter((result) => result.status === "rejected")).toEqual([
 				expect.objectContaining({ reason: expect.objectContaining({ code: "CONFLICT" }) }),
 			]);
-			expect((await raw(id)).contacts).toEqual([contact]);
+			expect((await raw(id)).contacts).toEqual([{ ...contact, contactId: expect.any(String) }]);
 		} finally {
 			await blocker.query("ROLLBACK");
 			blocker.release();

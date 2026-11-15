@@ -16,6 +16,7 @@ import { db, withDatabasePool } from "@reactive-resume/db/client";
 import * as tables from "@reactive-resume/db/schema";
 import { coverLetterTextToHtml } from "@reactive-resume/resume/cover-letter";
 import { aiOperationIds } from "@reactive-resume/schema/ai-usage";
+import { careerProfileDataSchema } from "@reactive-resume/schema/career";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
 import { buildAccountZip } from "@reactive-resume/utils/account-zip";
 import { truncateCascade } from "../../test-database";
@@ -840,6 +841,11 @@ describe.skipIf(!databaseUrl)("AI request metering through installed SDK, protec
 			const owner = users[0];
 			if (!owner) throw new Error("Missing fixture user");
 			user = owner;
+			// Fork: model retries are a per-account AI limit (default 2). These cases meter single attempts, as upstream's
+			// fixed 0 did; SDK retries are metered per attempt in the "retry" case above.
+			await db
+				.insert(tables.careerProfile)
+				.values({ userId: owner.id, data: careerProfileDataSchema.parse({}), aiLimits: { modelRetries: 0 } });
 		});
 	});
 	afterAll(async () => {

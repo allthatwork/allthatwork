@@ -97,6 +97,7 @@ describe.skipIf(!databaseUrl)("moving a guest's work into an existing account", 
 			.where(eq(tables.resume.id, id));
 		return row;
 	};
+	// Fork: publishing never makes a resume primary by itself, so these cases choose primary explicitly.
 	const publish = (id: string, userId: string, isPrimary?: boolean) =>
 		resumes.update({ id, userId, isPublic: true, ...(isPrimary === undefined ? {} : { isPrimary }) });
 	const primaryRows = () =>
@@ -118,10 +119,10 @@ describe.skipIf(!databaseUrl)("moving a guest's work into an existing account", 
 
 	it("keeps the target account's primary when the guest published", async () => {
 		const main = await create("priya", "Main");
-		await publish(main, "priya");
+		await publish(main, "priya", true);
 		expect((await read(main)).isPrimary).toBe(true);
 		const guestCv = await create("guest", "Guest CV");
-		await expect(publish(guestCv, "guest")).resolves.toMatchObject({ isPrimary: true });
+		await expect(publish(guestCv, "guest", true)).resolves.toMatchObject({ isPrimary: true });
 
 		await expect(linkAnonymousAccount({ fromUserId: "guest", toUserId: "priya" })).resolves.toBeUndefined();
 
@@ -132,7 +133,7 @@ describe.skipIf(!databaseUrl)("moving a guest's work into an existing account", 
 
 	it("still moves a guest who declined primary, keeping the target's primary", async () => {
 		const main = await create("priya", "Main");
-		await publish(main, "priya");
+		await publish(main, "priya", true);
 		const guestCv = await create("guest", "Guest CV");
 		await expect(publish(guestCv, "guest", false)).resolves.toMatchObject({ isPrimary: false });
 
@@ -145,7 +146,7 @@ describe.skipIf(!databaseUrl)("moving a guest's work into an existing account", 
 	it("makes the guest's published resume primary when the target has none", async () => {
 		const privateCopy = await create("priya", "Private copy");
 		const guestCv = await create("guest", "Guest CV");
-		await publish(guestCv, "guest");
+		await publish(guestCv, "guest", true);
 
 		await expect(linkAnonymousAccount({ fromUserId: "guest", toUserId: "priya" })).resolves.toBeUndefined();
 
@@ -156,10 +157,10 @@ describe.skipIf(!databaseUrl)("moving a guest's work into an existing account", 
 
 	it("moves several guest resumes with only the guest's primary, never the target's role", async () => {
 		const main = await create("priya", "Main");
-		await publish(main, "priya");
+		await publish(main, "priya", true);
 		const notes = await create("guest", "Notes");
 		const guestCv = await create("guest", "Guest CV");
-		await publish(guestCv, "guest");
+		await publish(guestCv, "guest", true);
 
 		await expect(linkAnonymousAccount({ fromUserId: "guest", toUserId: "priya" })).resolves.toBeUndefined();
 
@@ -171,7 +172,7 @@ describe.skipIf(!databaseUrl)("moving a guest's work into an existing account", 
 	it("keeps exactly one primary when another first publish claims the role during the move", async () => {
 		const claimed = await create("priya", "Claimed");
 		const guestCv = await create("guest", "Guest CV");
-		await publish(guestCv, "guest");
+		await publish(guestCv, "guest", true);
 		const holder = await admin.connect();
 		let linked: ReturnType<typeof linkAnonymousAccount> | undefined;
 		try {

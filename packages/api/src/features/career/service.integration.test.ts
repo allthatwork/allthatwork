@@ -3053,11 +3053,11 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 				documents: false,
 				answers: true,
 				stageEntryId: expect.any(String),
-				answerVersionId: entry === "apply" || entry === "reply" ? expect.any(String) : null,
+				// Fork: a move out of Saved copies the written answers, and the review links that copy as Apply does.
+				answerVersionId: expect.any(String),
 			});
 			const versions = await service.savedItems({ userId: "alice", applicationId: "review-job", kind: "answers" });
-			if (entry === "apply" || entry === "reply")
-				expect(versions.find((item) => item.id === review?.answerVersionId)?.data).toMatchObject({ answers });
+			expect(versions.find((item) => item.id === review?.answerVersionId)?.data).toMatchObject({ answers });
 			// An old server parses only the six live keys, then replaces the entire JSON payload.
 			const [stored] = await getDb()
 				.select()
@@ -3271,7 +3271,8 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		expect(versions.filter((item) => item.id === review?.answerVersionId)).toMatchObject([{ data: { answers } }]);
 	});
 
-	it.each([0, 1000])("rejects late legacy answer capture at submission plus %i ms", async (offset) => {
+	// Fork: recording answers by hand still works after sending, but never becomes the submission review's answers.
+	it.each([0, 1000])("keeps late legacy answer capture out of the submission review at plus %i ms", async (offset) => {
 		await service.submitApplication("alice", "alice-app", [], []);
 		const application = await applications.getById({ userId: "alice", id: "alice-app" });
 		const applied = application.activity.findLast(
@@ -3292,8 +3293,14 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		} finally {
 			vi.useRealTimers();
 		}
-		await expect(service.snapshotAnswers("alice", "alice-app")).rejects.toMatchObject({ code: "CONFLICT" });
-		expect(await service.savedItems({ userId: "alice", applicationId: "alice-app", kind: "answers" })).toEqual([]);
+		const before = (await service.workspace("alice", "alice-app")).submissionReview;
+		await service.snapshotAnswers("alice", "alice-app");
+		expect(await service.savedItems({ userId: "alice", applicationId: "alice-app", kind: "answers" })).toMatchObject([
+			{ data: { answers: [{ answer: "Later draft" }] } },
+		]);
+		const review = (await service.workspace("alice", "alice-app")).submissionReview;
+		expect(review).toEqual(before);
+		expect(review?.answerVersionId ?? null).toBeNull();
 	});
 
 	it("rejects a stale submit after another tab closes a never-submitted application", async () => {

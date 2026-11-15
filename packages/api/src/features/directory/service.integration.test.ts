@@ -227,7 +227,8 @@ suite("Directory migration and account boundaries", () => {
 			otherId,
 			accountImportDto.run.input.parse({ area: "directory", mode: "append", ...source }),
 		);
-		const oldContact = source.contacts[0];
+		// The export has no fixed row order: read back the contact that got the note.
+		const oldContact = source.contacts.find((contact) => contact.id === first.id);
 		if (!oldContact) throw new Error("Missing exported contact");
 		const mapped = result.ids.contact?.[oldContact.id];
 		expect(mapped).toBeTruthy();
