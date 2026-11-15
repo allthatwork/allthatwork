@@ -98,7 +98,9 @@ describe("generateOpenApiSpec", () => {
 						schema: {
 							required: [
 								"targetRoles",
+								"lanes",
 								"locations",
+								"excludeTitles",
 								"priorities",
 								"minBase",
 								"maxOfficeDays",
