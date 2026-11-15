@@ -12,6 +12,7 @@ import { Link } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { resumeToFactCandidates } from "@reactive-resume/import/facts";
 import { readLinkedInConnections } from "@reactive-resume/import/linkedin-connections";
+import { Alert, AlertDescription } from "@reactive-resume/ui/components/alert";
 import { Button } from "@reactive-resume/ui/components/button";
 import {
 	Dialog,
@@ -29,6 +30,7 @@ import { ImportComparison } from "./import-comparison";
 import { ContactsImportReview, emptyContactsResult, saveReviewedContacts } from "./import-contacts";
 import { findImportDuplicates } from "./import-duplicates";
 import { ImportRow, rowLabel } from "./import-fact-row";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { detectImportKind, ImportError, readResumeFile } from "@/features/resume/import/read-file";
 import { AiProviderLoadState } from "@/features/settings/integrations/ai-provider-load-state";
 import { useHasUsableAiProvider } from "@/features/settings/integrations/hooks/use-has-usable-ai-provider";
@@ -451,9 +453,10 @@ export function KnowledgeImportPage() {
 					</DialogContent>
 				</Dialog>
 				{error && (
-					<div role="alert" className="rounded-lg border border-line p-4 text-sm">
-						{error}
-					</div>
+					<Alert variant="error">
+						<Icon name="warning-circle" />
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
 				)}
 				{(step === "choose" || step === "reading") && (
 					<>
@@ -516,17 +519,17 @@ export function KnowledgeImportPage() {
 				)}
 				{(step === "review" || step === "saving") && (
 					<>
-						<div className="grid gap-3 rounded-xl bg-sunken p-4">
-							<p className="text-sm font-medium break-all">{fileName}</p>
+						<div className="grid gap-2.5 border-b border-line pb-4">
+							<p className="t-label break-all text-ink">{fileName}</p>
 							{importFacts && (
 								<>
-									<p className="text-sm text-ink-2">
+									<p className="t-small text-ink-2">
 										<Trans>
 											Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden
 											resume entries start unchecked.
 										</Trans>
 									</p>
-									<p className="text-sm text-ink-2">
+									<p className="t-small text-ink-2">
 										<Trans>
 											New facts follow their group's coaching and privacy settings. New groups start with coaching on.
 										</Trans>
@@ -549,7 +552,7 @@ export function KnowledgeImportPage() {
 										>
 											<Trans>Recheck matches</Trans>
 										</Button>
-										<span className="text-sm" role="status">
+										<span className="t-small text-ink-2" role="status">
 											{plural(chosen.length, { one: "# fact selected", other: "# facts selected" })}
 										</span>
 									</div>
@@ -567,19 +570,18 @@ export function KnowledgeImportPage() {
 							</p>
 						)}
 						{connections && (
-							<section
-								aria-labelledby="import-contacts"
-								className="grid min-w-0 gap-4 rounded-xl border border-line p-4"
-							>
-								<h2 id="import-contacts" className="text-lg font-semibold">
-									<Trans>LinkedIn contacts</Trans>
-								</h2>
-								<p className="text-sm text-ink-2">
-									{plural(connections.connections.length, {
-										one: "# connection found in this export",
-										other: "# connections found in this export",
-									})}
-								</p>
+							<section aria-labelledby="import-contacts" className="grid min-w-0 gap-3">
+								<header className="grid gap-0.5">
+									<SectionHeading id="import-contacts" className="pt-3">
+										<Trans>LinkedIn contacts</Trans>
+									</SectionHeading>
+									<p className="t-small text-ink-2">
+										{plural(connections.connections.length, {
+											one: "# connection found in this export",
+											other: "# connections found in this export",
+										})}
+									</p>
+								</header>
 
 								{!!(
 									connections.skipped +
@@ -587,7 +589,7 @@ export function KnowledgeImportPage() {
 									connections.invalidEmails +
 									connections.invalidDates
 								) && (
-									<p className="text-xs text-ink-3">{t`${connections.skipped} invalid rows skipped; ${connections.duplicateRows} repeated profiles removed; ${connections.invalidEmails} invalid emails and ${connections.invalidDates} invalid connection dates left blank.`}</p>
+									<p className="t-small text-ink-3">{t`${connections.skipped} invalid rows skipped; ${connections.duplicateRows} repeated profiles removed; ${connections.invalidEmails} invalid emails and ${connections.invalidDates} invalid connection dates left blank.`}</p>
 								)}
 								{importContacts && (
 									<ContactsImportReview file={connections} disabled={busy} onChange={setContactsSelection} />
@@ -611,12 +613,11 @@ export function KnowledgeImportPage() {
 						{importFacts && (
 							<>
 								<section aria-labelledby="import-new-facts" className="grid min-w-0 gap-5">
-									<header className="grid gap-1">
-										<h2 id="import-new-facts" className="text-lg font-semibold">
-											<Trans>New facts</Trans>{" "}
-											<span className="text-sm font-normal text-ink-3">{rows.length - duplicateRows.length}</span>
-										</h2>
-										<p className="text-sm text-ink-2">
+									<header className="grid gap-0.5">
+										<SectionHeading id="import-new-facts" className="pt-3" note={rows.length - duplicateRows.length}>
+											<Trans>New facts</Trans>
+										</SectionHeading>
+										<p className="t-small text-ink-2">
 											<Trans>
 												These facts have no close matches in Knowledge or earlier in this file. Edit the text and choose
 												what to save.
@@ -624,7 +625,7 @@ export function KnowledgeImportPage() {
 										</p>
 									</header>
 									{grouped.size === 0 && (
-										<p className="rounded-lg bg-sunken p-4 text-sm text-ink-2">
+										<p className="border-y border-line py-4 t-small text-ink-3">
 											{rows.length ? (
 												<Trans>All proposed facts have matches. Review them in Duplicates below.</Trans>
 											) : (
@@ -634,15 +635,15 @@ export function KnowledgeImportPage() {
 									)}
 									{Array.from(grouped).map(([group, entries]) => (
 										<fieldset key={group} className="grid min-w-0 gap-3" disabled={busy}>
-											<legend className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
+											<legend className="mb-3 flex flex-wrap items-center gap-2 t-label text-ink">
 												{entries[0] ? rowLabel(entries[0]) : group}
-												<span className="font-normal text-ink-3">{group}</span>
+												<span className="t-small text-ink-3">{group}</span>
 												{isPrivateGroup(group, privateGroups) ? (
-													<span className="text-ink-2">
+													<span className="t-small text-ink-2">
 														<Trans>Private</Trans>
 													</span>
 												) : nearestGroupSetting(group, settings) === "excluded" ? (
-													<span className="text-ink-2">
+													<span className="t-small text-ink-2">
 														<Trans>Coaching off</Trans>
 													</span>
 												) : null}
@@ -658,13 +659,12 @@ export function KnowledgeImportPage() {
 										</fieldset>
 									))}
 								</section>
-								<section aria-labelledby="import-duplicates" className="grid min-w-0 gap-4 border-t border-line pt-6">
-									<header className="grid gap-1">
-										<h2 id="import-duplicates" className="text-lg font-semibold">
-											<Trans>Duplicates</Trans>{" "}
-											<span className="text-sm font-normal text-ink-3">{duplicateRows.length}</span>
-										</h2>
-										<p className="text-sm text-ink-2">
+								<section aria-labelledby="import-duplicates" className="grid min-w-0 gap-4">
+									<header className="grid gap-0.5">
+										<SectionHeading id="import-duplicates" className="pt-3" note={duplicateRows.length}>
+											<Trans>Duplicates</Trans>
+										</SectionHeading>
+										<p className="t-small text-ink-2">
 											<Trans>
 												Compare facts with the same or similar wording. Edit either side, keep the other fact, or keep
 												both when they add different details.
@@ -672,7 +672,7 @@ export function KnowledgeImportPage() {
 										</p>
 									</header>
 									{duplicateRows.length === 0 && (
-										<p className="rounded-lg bg-sunken p-4 text-sm text-ink-2">
+										<p className="border-y border-line py-4 t-small text-ink-3">
 											<Trans>No duplicates found.</Trans>
 										</p>
 									)}
@@ -712,7 +712,7 @@ export function KnowledgeImportPage() {
 								<Trans>Select up to 500 facts at a time.</Trans>
 							</p>
 						)}
-						<div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex flex-wrap items-center gap-3 rounded-xl border border-line bg-raised p-3 shadow-e1 sm:bottom-3">
+						<div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex flex-wrap items-center gap-3 rounded-xl border border-line bg-raised p-2 shadow-e3 sm:bottom-3">
 							<Button
 								disabled={!valid || busy || corrections.size > 0 || (importFacts && (facts.isError || groups.isError))}
 								loading={step === "saving"}
@@ -730,7 +730,7 @@ export function KnowledgeImportPage() {
 								<Trans>Choose another file</Trans>
 							</Button>
 							{corrections.size > 0 && (
-								<p className="text-xs text-ink-3">
+								<p className="t-small text-ink-3">
 									<Trans>Save or cancel your Knowledge corrections before finishing the review.</Trans>
 								</p>
 							)}
@@ -738,8 +738,8 @@ export function KnowledgeImportPage() {
 					</>
 				)}
 				{step === "done" && (
-					<div className="grid justify-items-start gap-4 rounded-xl border border-line p-6" role="status">
-						<h2 className="font-semibold">
+					<div className="grid justify-items-start gap-3" role="status">
+						<h2 className="t-section-title">
 							<Trans>Knowledge import complete</Trans>
 						</h2>
 						{importFacts &&
@@ -757,13 +757,20 @@ export function KnowledgeImportPage() {
 						{importContacts && (
 							<>
 								<p className="text-sm">{t`${contactsResult.created} contacts created; ${contactsResult.updated} updated; ${contactsResult.unchanged} unchanged; ${contactsResult.skipped} skipped.`}</p>
-								<Link to="/dashboard/directory" search={{ tab: "contacts" }} className="text-sm underline">
+								<Link
+									to="/dashboard/directory"
+									search={{ tab: "contacts" }}
+									className="text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+								>
 									<Trans>View contacts</Trans>
 								</Link>
 							</>
 						)}
 						{importFacts && (
-							<Link to="/dashboard/career/knowledge/facts" className="text-sm underline">
+							<Link
+								to="/dashboard/career/knowledge/facts"
+								className="text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+							>
 								<Trans>View facts</Trans>
 							</Link>
 						)}

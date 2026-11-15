@@ -14,6 +14,7 @@ import {
 } from "@reactive-resume/ui/components/dialog";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
+import { Chip } from "@/components/calm/filter-bar";
 import { useNow } from "@/features/career/shared";
 
 type ViewPostingButtonProps = { application: Application; size?: "default" | "sm"; className?: string };
@@ -103,14 +104,19 @@ function PostingDialog({ application, open, onOpenChange }: PostingDialogProps) 
 				)}
 				{application.requirements.length > 0 && (
 					<section aria-labelledby="posting-requirements" className="grid gap-2">
-						<h3 id="posting-requirements" className="text-xs font-semibold text-ink-3">
+						<h3 id="posting-requirements" className="text-[13px]/[18px] font-medium text-ink-2">
 							<Trans>What it asks for</Trans>
 						</h3>
 						<ul className="flex flex-wrap gap-1.5">
 							{application.requirements.map((requirement) => (
-								<li key={requirement} className="rounded-md bg-sunken px-2 py-1 text-xs">
+								<Chip
+									key={requirement}
+									variant="ctx"
+									render={<li />}
+									className="h-auto min-h-[26px] max-w-full shrink py-1 whitespace-normal"
+								>
 									{requirement}
-								</li>
+								</Chip>
 							))}
 						</ul>
 					</section>

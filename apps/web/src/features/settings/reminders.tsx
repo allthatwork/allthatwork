@@ -93,7 +93,7 @@ export function RemindersSection() {
 					onCheckedChange={(checked) => void save({ interviewReminders: checked })}
 				/>
 			</div>
-			<p id={`${id}-hint`} className={nudging && invalid ? "text-xs text-danger-text" : "text-xs text-ink-3"}>
+			<p id={`${id}-hint`} className={nudging && invalid ? "t-small text-danger-text" : "t-small text-ink-3"}>
 				{nudging && invalid ? (
 					<Trans>Enter a whole number of days from 1 to {NO_REPLY_DAYS.max}.</Trans>
 				) : (

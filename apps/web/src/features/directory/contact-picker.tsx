@@ -51,7 +51,7 @@ export function ContactPicker({ disabled, onSelect }: ContactPickerProps) {
 				))}
 			</div>
 			{query.isError && (
-				<p role="alert" className="text-xs text-danger-text">
+				<p role="alert" className="text-[13px]/[18px] text-danger-text">
 					<Trans>Could not load contacts.</Trans>
 				</p>
 			)}

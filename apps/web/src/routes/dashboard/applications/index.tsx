@@ -731,7 +731,7 @@ function RouteComponent() {
 										onChange={(event) => setQuery(event.target.value)}
 										className={cn(
 											"w-auto",
-											phone ? "min-w-0 flex-1 basis-0" : "max-w-[400px] min-w-[220px] flex-[4_1_220px]",
+											phone ? "min-w-0 flex-1 basis-0" : "max-w-[400px] min-w-[300px] flex-[4_1_300px]",
 										)}
 									/>
 									{phone ? (
@@ -746,7 +746,7 @@ function RouteComponent() {
 											{shown !== "calendar" && (
 												<div
 													ref={endRef}
-													className={cn("ms-auto flex shrink-0 items-center gap-1.5", twoLines ? "order-1" : "order-2")}
+													className={cn("ms-auto flex shrink-0 items-center gap-2", twoLines ? "order-1" : "order-2")}
 												>
 													<SortButton sort={sort} onChange={setSort} />
 													{shown === "list" && (
@@ -978,7 +978,7 @@ function FollowUpNudge({ applications, onOpen, onShowAll }: FollowUpNudgeProps) 
 			role="status"
 			className={cn(
 				ENTER_CLASS,
-				"flex flex-wrap items-center gap-2 rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn-text",
+				"flex flex-wrap items-center gap-2 rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn-text",
 			)}
 		>
 			<Icon name="clock" size={20} />
@@ -1028,6 +1028,6 @@ function ViewSkeleton({ view }: { view: View }) {
 				))}
 			</div>
 		);
-	if (view === "board") return <Skeleton className="min-h-96 flex-1 rounded-xl" />;
-	return <Skeleton className="h-[calc(100svh-230px)] min-h-96 rounded-xl" />;
+	if (view === "board") return <Skeleton className="min-h-96 flex-1 rounded-lg" />;
+	return <Skeleton className="h-[calc(100svh-230px)] min-h-96 rounded-lg" />;
 }

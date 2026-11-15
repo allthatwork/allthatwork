@@ -19,6 +19,7 @@ import { DOCUMENT_FILTER_VALUES, OPEN_STAGES } from "@reactive-resume/schema/app
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
+import { menuLabelClassName, menuSeparatorClassName } from "@reactive-resume/ui/components/menu-styles";
 import { SegmentedControl, SegmentedControlItem } from "@reactive-resume/ui/components/segmented-control";
 import { cn } from "@reactive-resume/utils/style";
 import {
@@ -94,7 +95,7 @@ type NumberRowProps = {
 /** One Fit or Dates row: the label, ≥ for a fit, the field, its unit, then how many show once the field holds a number. */
 function NumberRow({ label, hint, indent, sign, field, unit, count }: NumberRowProps) {
 	return (
-		<div className={cn("flex min-h-9 items-center gap-2 py-0.5 pe-2", indent ? "ps-5" : "ps-2")}>
+		<div className={cn("flex min-h-11 items-center gap-2 py-1 pe-2.5", indent ? "ps-6" : "ps-2.5")}>
 			<span className="grid min-w-0 flex-1">
 				<span className="truncate">{label}</span>
 				{hint && <span className="text-xs text-ink-3">{hint}</span>}
@@ -137,7 +138,7 @@ export function BuildMark({ value, label }: { value: BuildFilterValue; label: st
 			);
 		case "built":
 			return (
-				<span className="inline-flex items-center gap-[7px] text-emerald-600 dark:text-emerald-400">
+				<span className="inline-flex items-center gap-[7px] text-success-text">
 					<Icon name="check-circle" filled size={13} />
 					{label}
 				</span>
@@ -161,7 +162,7 @@ type OptionRowProps = {
 
 function OptionRow({ checked, count, onToggle, children }: OptionRowProps) {
 	return (
-		<label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 select-none hover:bg-hover">
+		<label className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-sm px-2.5 select-none hover:bg-hover">
 			<Checkbox checked={checked} onCheckedChange={onToggle} />
 			<span className={cn("flex min-w-0 items-center gap-1.5", count === 0 && !checked && "text-ink-3")}>
 				{children}
@@ -173,7 +174,7 @@ function OptionRow({ checked, count, onToggle, children }: OptionRowProps) {
 
 function Heading({ children, hint }: { children: ReactNode; hint?: ReactNode }) {
 	return (
-		<div className="mx-2 my-1.5 flex items-baseline justify-between gap-2 text-xs font-medium text-ink-3">
+		<div className={cn(menuLabelClassName, "flex items-baseline justify-between gap-2")}>
 			<span>{children}</span>
 			{hint && <span className="font-normal">{hint}</span>}
 		</div>
@@ -194,10 +195,10 @@ function Segments<T extends string>({ label, value, values, labelOf, onChange }:
 			aria-label={label}
 			value={value}
 			onValueChange={(next) => onChange(next as T)}
-			className="mx-2 mb-2 flex h-8"
+			className="mx-2.5 mb-2 flex"
 		>
 			{values.map((item) => (
-				<SegmentedControlItem key={item} value={item} className="px-1.5 text-xs">
+				<SegmentedControlItem key={item} value={item} className="px-1.5">
 					{labelOf(item)}
 				</SegmentedControlItem>
 			))}
@@ -208,8 +209,8 @@ function Segments<T extends string>({ label, value, values, labelOf, onChange }:
 function Footer({ children, onClear }: { children?: ReactNode; onClear?: () => void }) {
 	return (
 		<>
-			<div className="mx-0.5 my-1.5 h-px bg-line" />
-			<div className="flex items-center justify-between gap-2 px-2 pt-1 pb-0.5 text-xs">
+			<div className={menuSeparatorClassName} />
+			<div className="flex min-h-8 items-center justify-between gap-2 px-2.5 text-[13px]/[18px]">
 				{children ?? <span />}
 				{onClear && (
 					<button type="button" onClick={onClear} className="text-accent-text hover:underline">
@@ -339,7 +340,7 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 			return (
 				<>
 					<ValueList facet="lane" options={options("lane")} filters={filters} onChange={onChange} />
-					<div className="mx-0.5 my-1.5 h-px bg-line" />
+					<div className={menuSeparatorClassName} />
 					<Heading>
 						<Trans>Match</Trans>
 					</Heading>
@@ -350,7 +351,7 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 						labelOf={(value) => (value === "either" ? t`Either lane` : t`Primary only`)}
 						onChange={(laneMode) => onChange({ ...filters, laneMode })}
 					/>
-					<div className="flex items-center justify-between gap-2 px-2 pt-1 pb-0.5 text-xs">
+					<div className="flex min-h-8 items-center justify-between gap-2 px-2.5 text-[13px]/[18px]">
 						<Link to="/dashboard/career/knowledge/preferences" className="text-accent-text hover:underline">
 							{lanes.length ? <Trans>Edit lanes in Preferences</Trans> : <Trans>Add your lanes in Preferences</Trans>}
 						</Link>
@@ -371,7 +372,7 @@ export function FilterPanel({ facet, filters, onChange, applications, context, l
 						field={fitField("fit")}
 						count={filledCount(filters.fit)}
 					/>
-					<div className="mx-0.5 my-1 h-px bg-line" />
+					<div className={menuSeparatorClassName} />
 					<NumberRow
 						label={<Trans>Targeting fit</Trans>}
 						hint={t`the reviewers' median, after a build`}
@@ -487,11 +488,11 @@ function TagsPanel({ options, filters, onChange, onClear }: TagsPanelProps) {
 
 	return (
 		<>
-			<div className="relative m-0.5 mb-1.5">
+			<div className="relative m-1 mb-1.5">
 				<Icon
 					name="magnifying-glass"
 					size={15}
-					className="pointer-events-none absolute start-2 top-1/2 -translate-y-1/2 text-ink-3"
+					className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3"
 				/>
 				<Input
 					type="search"
@@ -499,7 +500,7 @@ function TagsPanel({ options, filters, onChange, onClear }: TagsPanelProps) {
 					placeholder={t`Search tags`}
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
-					className="h-[30px] ps-7 text-[12.5px]"
+					className="h-9 ps-8"
 				/>
 			</div>
 			{filters.tag.length > 1 && (
@@ -513,14 +514,14 @@ function TagsPanel({ options, filters, onChange, onClear }: TagsPanelProps) {
 			)}
 			<div className="max-h-52 overflow-y-auto">
 				{shown.length === 0 && (
-					<p className="px-2 py-1.5 text-ink-3">
+					<p className="px-2.5 py-2 text-ink-3">
 						{options.length === 0 ? <Trans>No tags yet.</Trans> : <Trans>No tags match.</Trans>}
 					</p>
 				)}
 				{shown.map((option) => {
 					const mark = tagMark(filters, option.value);
 					return (
-						<div key={option.value} className="flex items-center gap-2 rounded-md py-1 ps-2 pe-1 hover:bg-hover">
+						<div key={option.value} className="flex min-h-9 items-center gap-2 rounded-sm ps-2.5 pe-1.5 hover:bg-hover">
 							<span
 								className={cn(
 									"min-w-0 flex-1 truncate",
@@ -532,7 +533,7 @@ function TagsPanel({ options, filters, onChange, onClear }: TagsPanelProps) {
 								{option.label}
 							</span>
 							<span className="w-[22px] text-end font-mono text-xs text-ink-3">{option.count}</span>
-							<span className="inline-flex overflow-hidden rounded-md border border-line-2">
+							<span className="inline-flex overflow-hidden rounded-xs shadow-[inset_0_0_0_1px_var(--control-border)]">
 								<button
 									type="button"
 									aria-pressed={mark === "in"}
@@ -540,7 +541,7 @@ function TagsPanel({ options, filters, onChange, onClear }: TagsPanelProps) {
 									title={t`Must have`}
 									onClick={() => onChange(markTag(filters, option.value, "in"))}
 									className={cn(
-										"grid h-[22px] w-6 place-items-center text-ink-3",
+										"grid h-6 w-6 place-items-center text-ink-3",
 										mark === "in" ? "bg-accent text-on-accent" : "hover:bg-hover",
 									)}
 								>
@@ -553,7 +554,7 @@ function TagsPanel({ options, filters, onChange, onClear }: TagsPanelProps) {
 									title={t`Must not have`}
 									onClick={() => onChange(markTag(filters, option.value, "out"))}
 									className={cn(
-										"grid h-[22px] w-6 place-items-center border-s border-line-2 text-ink-3",
+										"grid h-6 w-6 place-items-center border-s border-control-border text-ink-3",
 										mark === "out" ? "bg-danger-text text-raised" : "hover:bg-hover",
 									)}
 								>

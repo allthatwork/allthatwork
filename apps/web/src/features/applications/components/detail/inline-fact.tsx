@@ -1,5 +1,7 @@
 import { useId, useState } from "react";
 import { Input } from "@reactive-resume/ui/components/input";
+import { cn } from "@reactive-resume/utils/style";
+import { factLabelClassName, factRowClassName } from "./sheet-parts";
 import { isImeComposing } from "@/libs/keyboard";
 
 type InlineFactProps = {
@@ -13,7 +15,7 @@ type InlineFactProps = {
 	placeholder?: string;
 };
 
-/** A fact that edits in place: click to type, Enter or leaving saves, Esc cancels. Sits inside a `<dl>`. */
+/** A fact row (`.kv`) that edits in place: click to type, Enter or leaving saves, Esc cancels. Sits inside a `<dl>`. */
 export function InlineFact({ label, value, onSave, suggestions, display, placeholder }: InlineFactProps) {
 	const id = useId();
 	const listId = `${id}-suggestions`;
@@ -27,9 +29,11 @@ export function InlineFact({ label, value, onSave, suggestions, display, placeho
 	};
 
 	return (
-		<div className="grid min-w-0 gap-0.5">
-			<dt className="text-xs font-semibold text-ink-3 uppercase">
-				<label htmlFor={id}>{label}</label>
+		<div className={factRowClassName}>
+			<dt className={factLabelClassName}>
+				<label htmlFor={id} className="block leading-5">
+					{label}
+				</label>
 			</dt>
 			<dd className="min-w-0">
 				{draft === null ? (
@@ -37,7 +41,10 @@ export function InlineFact({ label, value, onSave, suggestions, display, placeho
 						id={id}
 						type="button"
 						onClick={() => setDraft(value ?? "")}
-						className="w-full truncate rounded-md text-start text-sm font-medium hover:bg-hover"
+						className={cn(
+							"block w-full cursor-text truncate rounded-xs text-start hover:underline",
+							!value && "text-ink-3",
+						)}
 					>
 						{value ? (display ? display(value) : value) : "—"}
 					</button>

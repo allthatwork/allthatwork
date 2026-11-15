@@ -12,8 +12,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { LIST_COLUMN_IDS } from "@reactive-resume/schema/applications/layout";
+import { Button } from "@reactive-resume/ui/components/button";
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
 import { Icon } from "@reactive-resume/ui/components/icon";
+import { menuLabelClassName, menuSeparatorClassName } from "@reactive-resume/ui/components/menu-styles";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
 import { cn } from "@reactive-resume/utils/style";
 import { LIST_COLUMNS } from "./list-columns";
@@ -51,11 +53,12 @@ export function ColumnsButton({ columns, onChange, onReset }: ColumnsButtonProps
 
 	return (
 		<Popover>
+			{/* A ghost button beside Sort, as Calm's toolbar draws its end controls. */}
 			<PopoverTrigger
 				title={iconOnly ? t`Columns` : undefined}
-				className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-line-2 bg-raised px-2 text-[13px] whitespace-nowrap text-ink transition-colors duration-quick outline-none hover:bg-hover focus-visible:ring-2 focus-visible:ring-accent data-popup-open:border-accent data-popup-open:ring-1 data-popup-open:ring-accent min-[1400px]:ps-2 min-[1400px]:pe-2.5"
+				render={<Button variant="ghost" className="min-w-9 shrink-0 gap-1.5 px-2 min-[1400px]:pe-2.5" />}
 			>
-				<Icon name="columns" size={16} className="text-ink-2" />
+				<Icon name="columns" size={18} />
 				<span className="max-[1400px]:sr-only">
 					<Trans>Columns</Trans>
 				</span>
@@ -63,21 +66,21 @@ export function ColumnsButton({ columns, onChange, onReset }: ColumnsButtonProps
 			<PopoverContent
 				align="end"
 				sideOffset={6}
-				className="max-h-[min(640px,var(--available-height))] w-[264px] gap-0 overflow-y-auto p-1.5"
+				className="max-h-[min(640px,var(--available-height))] w-[264px] gap-0 overflow-y-auto p-1"
 			>
-				<div className="flex items-baseline justify-between px-2 pt-1 pb-1.5 text-xs font-medium text-ink-3">
+				<div className={cn(menuLabelClassName, "flex items-baseline justify-between")}>
 					<Trans>Shown</Trans>
 					<button type="button" onClick={onReset} className="font-normal text-accent-text hover:underline">
 						<Trans>Reset</Trans>
 					</button>
 				</div>
-				<div className="flex items-center gap-2.5 px-2 py-1.5">
+				<div className="flex min-h-9 items-center gap-2.5 px-2.5">
 					<Icon name="dots-six-vertical" size={14} className="text-ink-3 opacity-45" />
 					<Checkbox checked disabled aria-label={t`Role`} />
 					<span>
 						<Trans>Role</Trans>
 					</span>
-					<span className="ms-auto text-[11.5px] text-ink-3">
+					<span className="ms-auto text-xs text-ink-3">
 						<Trans>Always first</Trans>
 					</span>
 				</div>
@@ -94,15 +97,15 @@ export function ColumnsButton({ columns, onChange, onReset }: ColumnsButtonProps
 				</DndContext>
 				{hidden.length > 0 && (
 					<>
-						<div className="my-1.5 h-px bg-line" />
-						<div className="px-2 pt-1 pb-1.5 text-xs font-medium text-ink-3">
+						<div className={menuSeparatorClassName} />
+						<div className={menuLabelClassName}>
 							<Trans>More columns</Trans>
 						</div>
 						{hidden.map((id) => (
 							// oxlint-disable-next-line jsx-a11y/label-has-associated-control -- the checkbox inside the label is the control
 							<label
 								key={id}
-								className="flex cursor-pointer items-center gap-2.5 rounded-md py-1.5 ps-[30px] pe-2 transition-colors hover:bg-hover"
+								className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-sm ps-[34px] pe-2.5 transition-colors hover:bg-hover"
 							>
 								<Checkbox checked={false} onCheckedChange={() => onChange([...columns, { id }])} />
 								{LIST_COLUMNS[id].label()}
@@ -110,8 +113,8 @@ export function ColumnsButton({ columns, onChange, onReset }: ColumnsButtonProps
 						))}
 					</>
 				)}
-				<div className="my-1.5 h-px bg-line" />
-				<p className="px-2 pb-1 text-[11.5px] text-ink-3">
+				<div className={menuSeparatorClassName} />
+				<p className="px-2.5 pt-1 pb-1.5 text-xs text-ink-3">
 					<Trans>Drag to reorder. To resize, drag the line between two headings.</Trans>
 				</p>
 			</PopoverContent>
@@ -132,7 +135,7 @@ function ShownColumnRow({ id, onHide }: ShownColumnRowProps) {
 			ref={setNodeRef}
 			style={{ transform: CSS.Translate.toString(transform), transition }}
 			className={cn(
-				"flex items-center gap-2.5 rounded-md px-2 transition-colors hover:bg-hover",
+				"flex min-h-9 items-center gap-2.5 rounded-sm px-2.5 transition-colors hover:bg-hover",
 				isDragging && "relative z-10 bg-sunken shadow-e1",
 			)}
 		>
@@ -142,12 +145,12 @@ function ShownColumnRow({ id, onHide }: ShownColumnRowProps) {
 				{...attributes}
 				{...listeners}
 				aria-label={t`Move ${label}`}
-				className="-mx-0.5 grid cursor-grab touch-none place-items-center rounded py-1.5 text-ink-3 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
+				className="-mx-0.5 grid cursor-grab touch-none place-items-center rounded-xs py-1.5 text-ink-3 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
 			>
 				<Icon name="dots-six-vertical" size={14} />
 			</button>
 			{/* oxlint-disable-next-line jsx-a11y/label-has-associated-control -- the checkbox inside the label is the control */}
-			<label className="flex flex-1 cursor-pointer items-center gap-2.5 py-1.5">
+			<label className="flex min-h-9 flex-1 cursor-pointer items-center gap-2.5">
 				<Checkbox checked onCheckedChange={onHide} />
 				{label}
 			</label>

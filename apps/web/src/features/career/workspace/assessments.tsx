@@ -3,7 +3,8 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
 import { cn } from "@reactive-resume/utils/style";
-import { Eyebrow, useCareerTime } from "../shared";
+import { useCareerTime } from "../shared";
+import { ListRow } from "@/components/calm/list-row";
 import { BuildStatusControl } from "@/features/applications/components/build-status";
 import { TargetingNoteButton } from "@/features/applications/components/detail/assessments";
 
@@ -23,12 +24,12 @@ type FitScoreProps = { label: string; value: number | null; detail?: string | nu
 
 function FitScore({ label, value, detail }: FitScoreProps) {
 	return (
-		<div className="grid min-w-0 gap-0.5 rounded-lg border border-line px-3 py-2">
-			<span className="text-xs text-ink-3">{label}</span>
-			<span className={cn("text-lg leading-6 font-semibold tabular-nums", value === null && "text-ink-3")}>
+		<div className="grid min-w-0 content-start gap-0.5">
+			<span className="text-[13px]/[18px] text-ink-3">{label}</span>
+			<span className={cn("font-display text-[28px]/[34px] tabular-nums", value === null && "text-ink-3")}>
 				{value === null ? "—" : `${value}%`}
 			</span>
-			{detail && <span className="truncate text-xs text-ink-3">{detail}</span>}
+			{detail && <span className="truncate text-[13px]/[18px] text-ink-3">{detail}</span>}
 		</div>
 	);
 }
@@ -42,7 +43,7 @@ export function FitTabScores({ application }: AssessmentsProps) {
 		.join(" · ");
 	const lanes = [application.targetingPrimaryLane, application.targetingSecondaryLane].filter(Boolean).join(" + ");
 	return (
-		<div className="mb-5 grid grid-cols-2 gap-2.5 @lg:max-w-[560px]">
+		<div className="mb-5 grid grid-cols-2 gap-8 @lg:max-w-[560px]">
 			<FitScore label={t`Search fit`} value={application.searchFit} detail={searchDetail || null} />
 			<FitScore label={t`Targeting fit`} value={application.targetingFit} detail={lanes || null} />
 		</div>
@@ -64,7 +65,10 @@ function reviewSummary(reviews: Application["targetingReviews"]) {
 	return t`Round ${round}: ${scores}`;
 }
 
-/** SEARCH and TARGETING in the context column: what the job search and the resume targeting made of the posting. */
+/**
+ * Search and Targeting as rows of the Details list: what the job search and the resume targeting made of the posting.
+ * Render inside a `List`.
+ */
 export function AssessmentContext({ application }: AssessmentsProps) {
 	const { date } = useCareerTime();
 	const [expanded, setExpanded] = useState(false);
@@ -85,58 +89,59 @@ export function AssessmentContext({ application }: AssessmentsProps) {
 		application.targetingFit !== null ||
 		lanes.length > 0 ||
 		Boolean(application.targetingNotes);
+	const fit = (value: number | null) =>
+		value === null ? undefined : <span className="text-sm/5 font-medium text-ink tabular-nums">{value}%</span>;
 
 	return (
 		<>
 			{hasSearch && (
-				<section className="grid gap-2">
-					<Eyebrow>
-						<Trans>Search</Trans>
-						{application.searchAt && <> · {date(application.searchAt)}</>}
-					</Eyebrow>
-					<p className="flex flex-wrap items-baseline gap-x-2 text-[13px] text-ink-2">
-						{application.searchFit !== null && (
-							<span className="font-semibold text-ink tabular-nums">{application.searchFit}%</span>
-						)}
-						{found && <span>{found}</span>}
-					</p>
-					{application.searchNotes && (
-						<div className="grid justify-items-start gap-1">
-							<p
-								className={cn("text-[13px] leading-[19px] whitespace-pre-wrap text-ink-2", !expanded && "line-clamp-5")}
-							>
-								{application.searchNotes}
-							</p>
-							<button
-								type="button"
-								onClick={() => setExpanded((value) => !value)}
-								className="text-xs text-ink-3 underline-offset-2 hover:text-ink-2 hover:underline"
-							>
-								{expanded ? <Trans>Show less</Trans> : <Trans>Show all</Trans>}
-							</button>
-						</div>
-					)}
-				</section>
+				<ListRow
+					title={t`Search`}
+					subtitle={
+						[found, application.searchAt && date(application.searchAt)].filter(Boolean).join(" · ") || undefined
+					}
+					wrap
+					value={fit(application.searchFit)}
+					detail={
+						application.searchNotes && (
+							<span className="flex flex-col items-start gap-1 pt-1">
+								<span className={cn("whitespace-pre-wrap text-ink-2", !expanded && "line-clamp-5")}>
+									{application.searchNotes}
+								</span>
+								<button
+									type="button"
+									onClick={() => setExpanded((value) => !value)}
+									className="touch-target relative rounded-xs font-medium text-accent-text hover:underline"
+								>
+									{expanded ? <Trans>Show less</Trans> : <Trans>Show all</Trans>}
+								</button>
+							</span>
+						)
+					}
+				/>
 			)}
 
 			{hasTargeting && (
-				<section className="grid gap-2">
-					<Eyebrow>
-						<Trans>Targeting</Trans>
-						{application.targetingAt && <> · {date(application.targetingAt)}</>}
-					</Eyebrow>
-					<p className="flex flex-wrap items-baseline gap-x-2 text-[13px] text-ink-2">
-						{application.targetingFit !== null && (
-							<span className="font-semibold text-ink tabular-nums">{application.targetingFit}%</span>
-						)}
-						{lanes.length > 0 && <span>{lanes.join(" + ")}</span>}
-						<BuildStatusControl application={application} />
-					</p>
-					{reviewers && <p className="text-xs text-ink-3 tabular-nums">{reviewers}</p>}
-					{application.targetingNotes && (
-						<TargetingNoteButton application={application} notes={application.targetingNotes} />
-					)}
-				</section>
+				<ListRow
+					title={t`Targeting`}
+					subtitle={
+						[lanes.join(" + "), application.targetingAt && date(application.targetingAt)].filter(Boolean).join(" · ") ||
+						undefined
+					}
+					wrap
+					value={fit(application.targetingFit)}
+					trailing={<BuildStatusControl size="default" application={application} />}
+					detail={
+						(reviewers || application.targetingNotes) && (
+							<span className="flex flex-col items-start gap-1">
+								{reviewers && <span className="tabular-nums">{reviewers}</span>}
+								{application.targetingNotes && (
+									<TargetingNoteButton variant="link" application={application} notes={application.targetingNotes} />
+								)}
+							</span>
+						)
+					}
+				/>
 			)}
 		</>
 	);

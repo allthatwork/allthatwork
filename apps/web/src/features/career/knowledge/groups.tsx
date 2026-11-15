@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@reactive-resume/ui/com
 import { groupAncestors, type KnowledgeRules, nearestGroupSetting } from "@reactive-resume/utils/knowledge";
 import { cn } from "@reactive-resume/utils/style";
 import { CareerLoadError, CareerLoading } from "../load-state";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
 
@@ -204,27 +205,23 @@ export function GroupsCard() {
 	const ungrouped = query.data.find((entry) => entry.group === null);
 
 	return (
-		<section aria-labelledby={`${id}-title`} className="overflow-hidden rounded-xl border border-line bg-surface">
-			<header className="grid gap-0.5 border-b border-line px-4 py-3">
-				<h2 id={`${id}-title`} className="flex items-center gap-2 text-sm font-semibold">
-					<Icon name="folder-simple" size={20} className="text-ink-2" />
-					<Trans>Groups</Trans>
-				</h2>
-				<p className="text-xs leading-[17px] text-ink-3">
-					<Trans>
-						Switch a group off to keep its facts out of what your AI provider gets, subgroups included. Facts you add to
-						a group later start the way it's switched. Lock a group to make it private: it's never sent, whatever its
-						switch says, unless an application includes it from its details. Put a fact in a group from its row in
-						Facts.
-					</Trans>
-				</p>
-			</header>
+		<section aria-labelledby={`${id}-title`}>
+			<SectionHeading id={`${id}-title`}>
+				<Trans>Groups</Trans>
+			</SectionHeading>
+			<p className="pb-2 t-small text-ink-3">
+				<Trans>
+					Switch a group off to keep its facts out of what your AI provider gets, subgroups included. Facts you add to a
+					group later start the way it's switched. Lock a group to make it private: it's never sent, whatever its switch
+					says, unless an application includes it from its details. Put a fact in a group from its row in Facts.
+				</Trans>
+			</p>
 			{tree.length === 0 ? (
-				<p className="px-4 py-5 text-center text-sm text-ink-3">
+				<p className="border-b border-line py-4 t-small text-ink-3">
 					<Trans>No groups yet. Give a fact a group in Facts, or set one through the API.</Trans>
 				</p>
 			) : (
-				<ul>
+				<ul className="flex flex-col">
 					{tree.map((node) => {
 						const total = node.facts.active + node.facts.excluded;
 						const switching = toggle.isPending && toggle.variables?.group === node.path;
@@ -233,14 +230,15 @@ export function GroupsCard() {
 						return (
 							<li
 								key={node.path}
-								className="flex items-center gap-2 border-b border-line px-4 py-2.5 last:border-b-0"
-								style={{ paddingInlineStart: `${16 + node.depth * 20}px` }}
+								className="flex min-h-16 items-center gap-2 border-b border-line py-2.5 sm:min-h-(--row)"
+								// Subgroups step in under their parent, as a tree.
+								style={{ paddingInlineStart: `${node.depth * 20}px` }}
 							>
-								<div className="grid min-w-0 flex-1 gap-0.5">
-									<p className="truncate text-sm font-medium" title={node.path}>
+								<div className="flex min-w-0 flex-1 flex-col gap-px">
+									<p className="truncate text-[15px]/[22px] font-medium text-ink" title={node.path}>
 										{node.name}
 									</p>
-									<p className="text-xs text-ink-3">
+									<p className="t-small text-ink-3">
 										{groupMeta(node, number)} · <Trans>new facts default:</Trans>{" "}
 										<NewFactsDefault
 											node={node}
@@ -256,7 +254,7 @@ export function GroupsCard() {
 									onChange={(locked) => privacy.mutate({ group: node.path, private: locked })}
 								/>
 								<Switch
-									className="ms-1 me-0.5"
+									className="ms-1"
 									checked={on}
 									disabled={total === 0 || switching}
 									aria-label={t`Switch ${node.path} on`}
@@ -270,7 +268,7 @@ export function GroupsCard() {
 				</ul>
 			)}
 			{ungrouped && (
-				<p className="border-t border-line px-4 py-2.5 text-xs text-ink-3">
+				<p className="pt-2.5 t-small text-ink-3">
 					{t`Not in a group: ${number.format(ungrouped.facts.active)} on · ${number.format(ungrouped.facts.excluded)} off`}
 				</p>
 			)}

@@ -37,18 +37,20 @@ export function FilterButton({
 	const focusTarget = useRef<HTMLDivElement>(null);
 	return (
 		<Popover open={open} onOpenChange={onOpenChange}>
+			{/* Calm's chip (`.chip`): 28px, a quiet outline; a set filter takes the accent tint, like a pressed chip. */}
 			<span
+				data-slot="chip"
 				className={cn(
-					"inline-flex h-8 shrink-0 items-center rounded-lg border text-[13px] whitespace-nowrap transition-colors duration-quick",
+					"inline-flex h-7 shrink-0 items-center rounded-sm text-[13px]/[18px] font-medium whitespace-nowrap transition-colors duration-quick",
 					active
-						? "border-transparent bg-accent-soft text-accent-text"
-						: "border-line-2 bg-raised text-ink hover:bg-hover",
-					open && "border-accent ring-1 ring-accent",
+						? "bg-accent-soft text-accent-text"
+						: "text-ink-2 shadow-[inset_0_0_0_1px_var(--line-2)] hover:bg-hover hover:text-ink",
+					open && !active && "bg-hover text-ink",
 				)}
 			>
 				<PopoverTrigger
 					className={cn(
-						"inline-flex h-full items-center gap-1 rounded-lg ps-[11px] outline-none focus-visible:ring-2 focus-visible:ring-accent",
+						"touch-target relative inline-flex h-full items-center gap-1 rounded-sm ps-2.5 outline-none focus-visible:ring-2 focus-visible:ring-accent",
 						active ? "pe-1" : "pe-2",
 					)}
 				>
@@ -56,16 +58,16 @@ export function FilterButton({
 						{value === null ? label : `${label}: `}
 						{value !== null && <span className={cn(active && "font-semibold")}>{value}</span>}
 					</span>
-					{!active && <Icon name="caret-down" size={13} className="text-ink-3" />}
+					{!active && <Icon name="caret-down" size={14} className="text-ink-3" />}
 				</PopoverTrigger>
 				{active && (
 					<button
 						type="button"
 						aria-label={t`Clear ${label}`}
 						onClick={onClear}
-						className="me-1.5 grid size-[18px] place-items-center rounded transition-colors hover:bg-hover"
+						className="touch-target relative me-1.5 grid size-[18px] place-items-center rounded-xs text-accent-text transition-colors hover:bg-hover"
 					>
-						<Icon name="x" size={12} />
+						<Icon name="x" size={14} />
 					</button>
 				)}
 			</span>
@@ -75,7 +77,7 @@ export function FilterButton({
 				// Fit and Dates open with the cursor in their first field; the others focus as before.
 				initialFocus={() => focusTarget.current?.querySelector<HTMLElement>(`[${INITIAL_FOCUS_ATTRIBUTE}]`) ?? true}
 				ref={focusTarget}
-				className={cn("w-[284px] gap-0 p-1.5", popoverClassName)}
+				className={cn("w-[284px] gap-0 p-1", popoverClassName)}
 			>
 				{children}
 			</PopoverContent>

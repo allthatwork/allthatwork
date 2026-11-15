@@ -11,6 +11,7 @@ import { toast } from "@reactive-resume/ui/components/toast";
 import { useDefaultProvider } from "../hooks";
 import { CareerLoadError, CareerLoading } from "../load-state";
 import { PrivacyLine, useCareerTime, Working } from "../shared";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { client, orpc } from "@/libs/orpc/client";
 
@@ -89,25 +90,25 @@ export function ReviewCard() {
 		) ?? [];
 
 	return (
-		<section aria-labelledby={`${id}-title`} className="overflow-hidden rounded-xl border border-line bg-surface">
-			<header className="grid gap-2 border-b border-line px-4 py-3">
-				<div className="flex flex-wrap items-center gap-2">
-					<h2 id={`${id}-title`} className="flex flex-1 items-center gap-2 text-sm font-semibold">
-						<Icon name="sparkle" size={20} className="text-ink-2" />
-						<Trans>Knowledge review</Trans>
-					</h2>
+		<section aria-labelledby={`${id}-title`}>
+			<SectionHeading id={`${id}-title`}>
+				<Trans>Knowledge review</Trans>
+			</SectionHeading>
+			<div className="flex flex-col gap-2 pb-3">
+				<div className="flex flex-wrap items-start gap-x-6 gap-y-3">
+					<p className="min-w-0 flex-1 basis-80 t-small text-ink-3">
+						<Trans>
+							Removes copies of shared facts, then asks your AI connection which facts disagree, which a newer fact
+							replaces, and which claim a result with nothing to check it by. You decide what to do with each.
+						</Trans>
+					</p>
 					{connection.provider && (
 						<Button size="sm" variant="secondary" loading={run.isPending} onClick={() => run.mutate({})}>
+							{!run.isPending && <Icon name="sparkle" />}
 							{last ? <Trans>Review again</Trans> : <Trans>Review my Knowledge</Trans>}
 						</Button>
 					)}
 				</div>
-				<p className="text-xs leading-[17px] text-ink-3">
-					<Trans>
-						Removes copies of shared facts, then asks your AI connection which facts disagree, which a newer fact
-						replaces, and which claim a result with nothing to check it by. You decide what to do with each.
-					</Trans>
-				</p>
 				{connection.provider ? (
 					<PrivacyLine>
 						{t`Sends your shared, switched-on facts to ${connection.provider.label}, in requests within your AI limits. Private groups and switched-off facts are never sent.`}
@@ -116,53 +117,53 @@ export function ReviewCard() {
 					!connection.isUnavailable && (
 						<Link
 							to="/dashboard/settings/ai"
-							className="flex w-fit items-center gap-1.5 text-[13px] text-accent-text underline-offset-4 hover:underline"
+							className="touch-target relative flex w-fit items-center gap-1.5 text-[13px]/[18px] font-medium text-accent-text underline-offset-4 hover:underline"
 						>
 							<Icon name="key" size={16} />
 							<Trans>Connect an AI provider in Settings</Trans>
 						</Link>
 					)
 				)}
-			</header>
+			</div>
 
 			{run.isPending && (
-				<div className="px-4 py-4">
+				<div className="border-t border-line py-4">
 					<Working steps={[t`Removing copies`, t`Reading your facts`, t`Checking for conflicts`]} />
 				</div>
 			)}
 
 			{last && !run.isPending && (
 				<>
-					<p className="border-b border-line px-4 py-2.5 text-xs text-ink-3">
+					<p className="border-y border-line py-2.5 t-small text-ink-3">
 						{t`Last review ${format(last.at, { day: "numeric", month: "short" })} on ${last.connection}: read ${last.reviewed} of ${last.total} facts.`}{" "}
 						{last.cleaned > 0 && plural(last.cleaned, { one: "Removed # copy.", other: "Removed # copies." })}
 						{last.reviewed < last.total && <> {t`Raise "Facts in each action" in AI limits to read the rest.`}</>}
 					</p>
 					{open.length === 0 ? (
-						<p className="px-4 py-5 text-center text-sm text-ink-3">
+						<p className="border-b border-line py-4 t-small text-ink-3">
 							<Trans>Nothing left to decide.</Trans>
 						</p>
 					) : (
-						<ul>
+						<ul className="flex flex-col">
 							{open.map((finding) => (
-								<li key={finding.id} className="grid gap-2 border-b border-line px-4 py-3 last:border-b-0">
-									<p className="text-xs font-medium text-ink-3">{kindLabel(finding.kind)}</p>
-									<p className="text-sm">{finding.note}</p>
-									<ul className="grid gap-1.5">
+								<li key={finding.id} className="flex flex-col gap-2.5 border-b border-line py-4 last:border-b-0">
+									<p className="t-small text-ink-3">{kindLabel(finding.kind)}</p>
+									<p className="text-[15px]/[22px] font-medium [overflow-wrap:anywhere] text-ink">{finding.note}</p>
+									{/* The facts in a finding hang under it, as a setting's own rows do (passkeys, devices). */}
+									<ul className="flex flex-col">
 										{finding.factIds.map((factId) => (
 											<li
 												key={factId}
-												className="flex flex-wrap items-center gap-2 rounded-md bg-sunken px-3 py-2 text-[13px]"
+												className="ms-2 flex min-h-11 flex-wrap items-center gap-x-3.5 gap-y-1 border-s border-line-2 py-1.5 ps-5 t-ui"
 											>
-												<span className="min-w-0 flex-1 basis-60">
+												<span className="min-w-0 flex-1 basis-60 [overflow-wrap:anywhere]">
 													{byId.get(factId)?.text}
-													{finding.keep === factId && <span className="ms-1.5 text-xs text-ink-3">{t`(newer)`}</span>}
+													{finding.keep === factId && <span className="ms-1.5 t-small text-ink-3">{t`(newer)`}</span>}
 												</span>
 												{finding.kind !== "unsupported" && (
 													<Button
 														size="sm"
 														variant="ghost"
-														className="h-7"
 														disabled={resolve.isPending}
 														onClick={() => resolve.mutate({ finding, archive: [factId], resolved: "fixed" })}
 													>
@@ -173,7 +174,6 @@ export function ReviewCard() {
 													<Button
 														size="sm"
 														variant="ghost"
-														className="h-7"
 														nativeButton={false}
 														render={<Link to="/dashboard/career/knowledge/facts" search={{ highlight: factId }} />}
 													>

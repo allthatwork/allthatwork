@@ -12,7 +12,6 @@ import {
 } from "@reactive-resume/schema/directory-import";
 import { compareContacts } from "@reactive-resume/schema/directory-names";
 import { Button } from "@reactive-resume/ui/components/button";
-import { cn } from "@reactive-resume/utils/style";
 import { client, orpc } from "@/libs/orpc/client";
 
 const alphabetical = new Intl.Collator(undefined, { sensitivity: "base", numeric: true }).compare;
@@ -232,7 +231,7 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 				<label className="text-sm">
 					<Trans>Show contacts</Trans>
 					<select
-						className="ms-2 rounded-md border border-line bg-surface px-2 py-1"
+						className="ms-2 h-9 rounded-md border border-control-border bg-raised px-2.5 text-sm text-ink pointer-coarse:h-11"
 						disabled={disabled}
 						value={filter}
 						onChange={(event) => {
@@ -261,15 +260,12 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 			<div className="grid gap-5">
 				{Array.from(grouped, ([key, group]) => (
 					<section key={key} aria-label={group.name} className="grid gap-2">
-						<h3 className="text-sm font-semibold">{group.name}</h3>
-						<div className="grid gap-3 md:grid-cols-2">
+						<h3 className="t-label text-ink">{group.name}</h3>
+						<div className="flex flex-col">
 							{group.rows.map(({ connection, match, target, checked }) => (
 								<article
 									key={connection.profileUrl}
-									className={cn(
-										"grid content-start gap-3 rounded-lg border p-4",
-										checked ? "border-accent/30 bg-raised" : "border-line",
-									)}
+									className="grid content-start gap-2 border-b border-line py-3 last:border-b-0"
 								>
 									<label
 										htmlFor={`${listId}-${connection.profileUrl}`}
@@ -281,14 +277,14 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 											aria-label={t`Import ${connection.name}`}
 											checked={checked}
 											disabled={disabled}
-											className="mt-0.5 size-4 shrink-0 accent-accent"
+											className="mt-0.5 size-[18px] shrink-0 accent-accent"
 											onChange={(event) =>
 												setIncluded((previous) => ({ ...previous, [connection.profileUrl]: event.target.checked }))
 											}
 										/>
 										<span className="grid min-w-0 gap-1">
-											<span className="font-medium">{connection.name}</span>
-											<span className="text-xs text-ink-3">
+											<span className="text-[15px]/[22px] font-medium text-ink">{connection.name}</span>
+											<span className="t-small text-ink-3">
 												{match.kind === "new"
 													? t`New contact`
 													: match.kind === "update"
@@ -304,7 +300,7 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 											</p>
 										)}
 										{connection.email && <p className="break-all text-ink-2">{connection.email}</p>}
-										<div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1 text-xs">
+										<div className="flex flex-wrap items-center gap-x-3 gap-y-1 t-small">
 											<a
 												href={connection.profileUrl}
 												target="_blank"
@@ -319,8 +315,8 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 										</div>
 									</div>
 									{match.kind === "duplicate" && checked && (
-										<div className="grid gap-2 border-t border-line pt-3 text-sm">
-											<p className="text-xs text-ink-2">
+										<div className="ms-7.5 grid gap-2 border-s border-line-2 ps-4 text-sm">
+											<p className="t-small text-ink-2">
 												<Trans>Choose an existing contact to update or create a separate person.</Trans>
 											</p>
 											<fieldset disabled={disabled} className="grid gap-2">
@@ -337,7 +333,7 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 															name={`${listId}-${connection.profileUrl}-match`}
 															value={candidate.id}
 															checked={target === candidate.id}
-															className="mt-0.5 size-4 shrink-0 accent-accent"
+															className="mt-0.5 size-[18px] shrink-0 accent-accent"
 															onChange={() =>
 																setChoices((previous) => ({ ...previous, [connection.profileUrl]: candidate.id }))
 															}
@@ -363,7 +359,7 @@ export function ContactsImportReview({ file, disabled, onChange }: ContactsImpor
 															name={`${listId}-${connection.profileUrl}-match`}
 															value="create"
 															checked={target === "create"}
-															className="size-4 shrink-0 accent-accent"
+															className="size-[18px] shrink-0 accent-accent"
 															onChange={() =>
 																setChoices((previous) => ({ ...previous, [connection.profileUrl]: "create" }))
 															}

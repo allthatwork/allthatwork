@@ -11,6 +11,7 @@ import { Input } from "@reactive-resume/ui/components/input";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { cn } from "@reactive-resume/utils/style";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { applicationsListQueryOptions } from "@/features/applications/queries";
 import { useInvalidateApplications } from "@/features/applications/use-application-actions";
 import { getOrpcErrorMessage } from "@/libs/error-message";
@@ -48,10 +49,10 @@ export function QuestionsTab({ application, version }: WorkspaceTabProps) {
 	if (questions.length === 0)
 		return (
 			<div className="grid justify-items-center gap-3 rounded-xl border border-dashed border-line-2 p-7 text-center">
-				<h2 className="font-display text-[22px] leading-7 font-medium">
+				<h2 className="t-section-title">
 					<Trans>No questions for you</Trans>
 				</h2>
-				<p className="max-w-[440px] text-sm text-ink-2">
+				<p className="max-w-[340px] text-sm text-ink-2">
 					<Trans>
 						When a resume is targeted at this job, what it looked for and couldn't find in your Knowledge shows up here
 						as questions. Each answer is saved to Knowledge, so the next resume can use it.
@@ -61,9 +62,9 @@ export function QuestionsTab({ application, version }: WorkspaceTabProps) {
 		);
 
 	return (
-		<div className="grid max-w-[760px] gap-6">
-			<header className="grid gap-1">
-				<h2 className="font-display text-[22px] leading-7 font-medium">
+		<div className="grid max-w-[760px]">
+			<header className="grid gap-1 pb-4">
+				<h2 className="t-section-title">
 					{open.length > 0 ? (
 						<Plural value={open.length} one="# question for you" other="# questions for you" />
 					) : (
@@ -90,10 +91,10 @@ export function QuestionsTab({ application, version }: WorkspaceTabProps) {
 			))}
 
 			{done.length > 0 && (
-				<section aria-labelledby="questions-done" className="grid gap-2.5">
-					<h3 id="questions-done" className="text-xs font-semibold text-ink-3 uppercase">
-						<Trans>Done</Trans> · {done.length}
-					</h3>
+				<section aria-labelledby="questions-done" className="grid">
+					<SectionHeading id="questions-done" note={done.length}>
+						<Trans>Done</Trans>
+					</SectionHeading>
 					{done.map((question) => (
 						<DoneQuestion key={question.id} applicationId={application.id} question={question} readOnly={readOnly} />
 					))}
@@ -174,17 +175,17 @@ function QuestionCard({ applicationId, question, number, readOnly, shared }: Que
 	};
 
 	return (
-		<article aria-labelledby={`${id}-question`} className="grid gap-3.5 rounded-xl border border-line bg-surface p-4">
+		<article aria-labelledby={`${id}-question`} className="grid gap-3.5 border-t border-line py-5">
 			<div className="flex gap-3">
 				<span className="grid size-6 shrink-0 place-items-center rounded-full bg-sunken text-xs font-semibold text-ink-2">
 					{number}
 				</span>
 				<div className="grid gap-1">
-					<p id={`${id}-question`} className="text-sm leading-[21px] font-medium">
+					<p id={`${id}-question`} className="text-[15px]/[22px] font-medium">
 						{question.question}
 					</p>
 					{shared > 0 && (
-						<p className="text-xs text-ink-3">
+						<p className="text-[13px]/[18px] text-ink-3">
 							<Plural
 								value={shared}
 								one="Also asked on # other application. Answering here answers it there too."
@@ -196,7 +197,7 @@ function QuestionCard({ applicationId, question, number, readOnly, shared }: Que
 			</div>
 
 			<div className="grid gap-1.5">
-				<label htmlFor={`${id}-answer`} className="text-xs font-semibold text-ink-3 uppercase">
+				<label htmlFor={`${id}-answer`} className="text-[13px]/[18px] font-medium text-ink-2">
 					<Trans>Your answer</Trans>
 				</label>
 				<Textarea
@@ -209,8 +210,8 @@ function QuestionCard({ applicationId, question, number, readOnly, shared }: Que
 					className="text-sm"
 				/>
 				{question.proposedFact && (
-					<p className="text-xs leading-[18px] text-ink-3">
-						<span className="font-semibold">
+					<p className="text-[13px]/[18px] text-ink-3">
+						<span className="font-medium text-ink-2">
 							<Trans>Suggested wording:</Trans>
 						</span>{" "}
 						{question.proposedFact}
@@ -229,14 +230,14 @@ function QuestionCard({ applicationId, question, number, readOnly, shared }: Que
 					</p>
 				)}
 				{question.boundary && (
-					<p className="text-xs leading-[18px] text-ink-3">
-						<span className="font-semibold">
+					<p className="text-[13px]/[18px] text-ink-3">
+						<span className="font-medium text-ink-2">
 							<Trans>Keep it within the record:</Trans>
 						</span>{" "}
 						{question.boundary}
 					</p>
 				)}
-				<p className="text-xs text-ink-3">
+				<p className="text-[13px]/[18px] text-ink-3">
 					{question.factGroup ? (
 						<Trans>
 							Goes to Knowledge · <span className="font-medium text-ink-2">{question.factGroup}</span>
@@ -249,8 +250,8 @@ function QuestionCard({ applicationId, question, number, readOnly, shared }: Que
 
 			{!readOnly &&
 				(declining ? (
-					<div className="grid gap-2 rounded-lg border border-line p-3">
-						<label htmlFor={`${id}-no`} className="text-xs text-ink-3">
+					<div className="grid gap-2 border-s border-line-2 ps-4">
+						<label htmlFor={`${id}-no`} className="text-[13px]/[18px] font-medium text-ink-2">
 							<Trans>
 								Anything to remember instead? Saved to Knowledge so later resumes don't ask again (optional).
 							</Trans>
@@ -260,7 +261,6 @@ function QuestionCard({ applicationId, question, number, readOnly, shared }: Que
 							value={no}
 							placeholder={t`For example: No hands-on Go; read and reviewed Go code only.`}
 							onChange={(event) => setNo(event.target.value)}
-							className="h-8 text-sm"
 						/>
 						<div className="flex flex-wrap gap-1.5">
 							{no.trim() && (
@@ -297,9 +297,9 @@ function DoneQuestion({ applicationId, question, readOnly }: DoneQuestionProps) 
 	const { setStatus, saving } = useQuestionActions(applicationId);
 	const answered = question.status === "answered";
 	return (
-		<div className="grid gap-1.5 rounded-lg border border-line px-3.5 py-3">
+		<div className="grid gap-1.5 border-b border-line py-3 last:border-b-0">
 			<div className="flex items-start justify-between gap-3">
-				<p className="text-[13px] leading-[19px] text-ink-2">{question.question}</p>
+				<p className="text-sm/5 text-ink-2">{question.question}</p>
 				{!readOnly && (
 					<Button
 						size="sm"
@@ -319,7 +319,7 @@ function DoneQuestion({ applicationId, question, readOnly }: DoneQuestionProps) 
 					</Button>
 				)}
 			</div>
-			<p className={cn("flex gap-1.5 text-[13px] leading-[19px]", answered ? "text-ink" : "text-ink-3")}>
+			<p className={cn("flex gap-1.5 text-sm/5", answered ? "text-ink" : "text-ink-3")}>
 				<Icon name={answered ? "check" : "minus"} size={16} className="mt-0.5 shrink-0" />
 				<span>
 					{answered ? (

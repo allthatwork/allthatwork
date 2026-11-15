@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { aiModelForTask } from "@reactive-resume/ai/task-models";
+import { Alert, AlertDescription } from "@reactive-resume/ui/components/alert";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
@@ -14,6 +15,7 @@ import { knowledgeBudget, reachesAi, storyHolds } from "@reactive-resume/utils/k
 import { cn } from "@reactive-resume/utils/style";
 import { CareerLoadError, CareerLoading } from "../load-state";
 import { useKnowledgeRules } from "./groups";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { contextWindow, modelSuggestionsQuery } from "@/features/settings/ai/catalog";
 import { useHasUsableAiProvider } from "@/features/settings/integrations/hooks/use-has-usable-ai-provider";
 import { getOrpcErrorMessage } from "@/libs/error-message";
@@ -93,24 +95,28 @@ export function BudgetMeter({ showSettingsLink = false, bare = false }: BudgetMe
 	const n = (value: number) => number.format(value);
 
 	return (
-		<section
-			aria-labelledby={`${id}-title`}
-			className={cn("grid gap-3.5", !bare && "rounded-xl border border-line bg-surface px-4 py-3.5")}
-		>
-			<header className="flex flex-wrap items-center gap-2">
-				<Icon name="gauge" size={20} className="text-ink-2" />
-				<h2 id={`${id}-title`} className="flex-1 text-sm font-semibold">
+		<section aria-labelledby={`${id}-title`} className="flex flex-col gap-3.5">
+			{bare ? (
+				// Inside the AI limits settings group: a subheading like the limit groups under it.
+				<h3 id={`${id}-title`} className="pt-2 t-section-heading text-ink">
 					<Trans>Knowledge budget</Trans>
-				</h2>
-				{showSettingsLink && (
-					<Link
-						to="/dashboard/settings/ai"
-						className="text-xs text-ink-3 underline underline-offset-2 transition-colors duration-quick hover:text-ink"
-					>
-						<Trans>Change AI limits</Trans>
-					</Link>
-				)}
-			</header>
+				</h3>
+			) : (
+				<SectionHeading
+					id={`${id}-title`}
+					// Under the Knowledge tabs, as the other tabs' first heading.
+					className="pt-6 pb-0"
+					action={
+						showSettingsLink && (
+							<Link to="/dashboard/settings/ai">
+								<Trans>Change AI limits</Trans>
+							</Link>
+						)
+					}
+				>
+					<Trans>Knowledge budget</Trans>
+				</SectionHeading>
+			)}
 
 			<div className="grid gap-3 sm:grid-cols-2">
 				<Meter
@@ -127,7 +133,7 @@ export function BudgetMeter({ showSettingsLink = false, bare = false }: BudgetMe
 				/>
 			</div>
 
-			<p className="text-xs leading-[17px] text-ink-2">
+			<p className="t-small text-ink-2">
 				{t`The Coach shares up to ${n(budget.coach.facts.limit)} of ${n(budget.coach.facts.count)} facts and ${n(budget.coach.stories.limit)} of ${n(budget.coach.stories.count)} stories with each message, best matches first.`}
 			</p>
 
@@ -140,7 +146,7 @@ export function BudgetMeter({ showSettingsLink = false, bare = false }: BudgetMe
 				</Notice>
 			)}
 
-			<div className="grid gap-1.5 border-t border-line pt-3 text-xs leading-[17px] text-ink-2">
+			<div className="grid gap-1.5 border-t border-line pt-3 t-small text-ink-2">
 				<p>
 					{t`An action sends about ${n(budget.tokens.used)} tokens with this Knowledge, and up to ${n(budget.tokens.budget)} with full budgets, counting about four characters a token and the posting, notes and documents.`}
 				</p>
@@ -177,7 +183,7 @@ function Meter({ label, used, budget, detail }: MeterProps) {
 	const share = budget > 0 ? Math.min(used / budget, 1) : 1;
 	return (
 		<div className="grid gap-1.5">
-			<div className="flex items-baseline justify-between gap-2 text-xs">
+			<div className="flex items-baseline justify-between gap-2 text-[13px]/[18px]">
 				<span className="font-medium text-ink-2">{label}</span>
 				<span className={cn("font-mono", over ? "text-warn-text" : "text-ink-3")}>
 					{over ? t`${Math.round((used / budget) * 10) / 10}× budget` : `${Math.round(share * 100)}%`}
@@ -197,7 +203,7 @@ function Meter({ label, used, budget, detail }: MeterProps) {
 					style={{ width: `${share * 100}%` }}
 				/>
 			</div>
-			<p className="text-xs text-ink-3">{detail}</p>
+			<p className="t-small text-ink-3">{detail}</p>
 		</div>
 	);
 }
@@ -206,15 +212,10 @@ type NoticeProps = { tone: "info" | "warn"; children: ReactNode };
 
 function Notice({ tone, children }: NoticeProps) {
 	return (
-		<p
-			className={cn(
-				"flex items-start gap-1.5 rounded-md px-2.5 py-2 text-xs leading-[17px]",
-				tone === "warn" ? "bg-warn-soft text-warn-text" : "bg-info-soft text-info-text",
-			)}
-		>
-			<Icon name={tone === "warn" ? "warning" : "info"} size={16} className="mt-px flex-none" />
-			<span>{children}</span>
-		</p>
+		<Alert variant={tone}>
+			<Icon name={tone === "warn" ? "warning" : "info"} />
+			<AlertDescription>{children}</AlertDescription>
+		</Alert>
 	);
 }
 
@@ -305,7 +306,7 @@ function ContextLine({ providerId, managed, model, tokens, source }: ContextLine
 				<button
 					type="button"
 					onClick={() => setEditing(true)}
-					className="text-ink-3 underline underline-offset-2 transition-colors duration-quick hover:text-ink"
+					className="touch-target relative font-medium text-accent-text underline-offset-4 hover:underline"
 				>
 					{source === "unknown" ? <Trans>Set it</Trans> : <Trans>Change</Trans>}
 				</button>

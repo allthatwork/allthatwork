@@ -10,8 +10,10 @@ import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { cn } from "@reactive-resume/utils/style";
 import { hostname } from "./lists";
 import { DisabledWatchBox, JobsButton, watchDisabledReason } from "./watch";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { useCareerTime } from "@/features/career/shared";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
@@ -24,6 +26,10 @@ const lower = (value: string) => value.charAt(0).toLocaleLowerCase() + value.sli
 
 const failed = (error: unknown, fallback: string) =>
 	toast.add({ type: "error", description: getOrpcErrorMessage(error, { fallback, allowServerMessage: true }) });
+
+/** A jobs page under Open roles: a flat row on a hairline, like the rows of a Calm list. */
+const rowClassName =
+	"flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1 border-b border-line py-1.5 text-sm first:border-t";
 
 type CompanyBoardsProps = { companyId: string; companyName: string };
 
@@ -93,11 +99,11 @@ export function CompanyBoards({ companyId, companyName: name }: CompanyBoardsPro
 
 	return (
 		<section aria-labelledby={`${id}-boards`} className="grid gap-3">
-			<div className="grid gap-1">
-				<h3 id={`${id}-boards`} className="text-sm font-bold">
+			<div className="grid">
+				<SectionHeading id={`${id}-boards`}>
 					<Trans>Open roles</Trans>
-				</h3>
-				<p className="text-sm text-ink-2">
+				</SectionHeading>
+				<p className="max-w-prose text-sm text-ink-2">
 					<Trans>
 						Most companies list their jobs on Greenhouse, Ashby or Lever. Watch the company's page there, and its new
 						roles that match your Preferences show up in New roles on Today.
@@ -111,32 +117,61 @@ export function CompanyBoards({ companyId, companyName: name }: CompanyBoardsPro
 				</p>
 			) : (
 				<>
-					{data.watched.map((board) => (
-						<div
-							key={board.id}
-							className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-line px-2.5 py-1.5 text-[13px]"
-						>
-							<p className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
-								<span className="font-semibold">{t`Watching on ${platform(board.ats)}`}</span>{" "}
-								<span className="text-ink-2">
-									{board.error
-										? `· ${t`The last check failed. Its last postings are kept, and the next check tries again.`}`
-										: board.fetchedAt
-											? `· ${t`${board.jobCount ?? 0} open`} · ${t`checked ${lower(relative(board.fetchedAt))}`}`
-											: `· ${t`not checked yet`}`}
-								</span>
-							</p>
-							<OpenOn ats={board.ats} url={board.url} />
-							<Button
-								variant="secondary"
-								size="sm"
-								loading={unwatch.isPending && unwatch.variables?.id === board.id}
-								onClick={() => unwatch.mutate({ id: board.id })}
-							>
-								<Trans>Stop watching</Trans>
-							</Button>
+					{(data.watched.length > 0 || data.detected.length > 0 || data.careersUrl) && (
+						<div>
+							{data.watched.map((board) => (
+								<div key={board.id} className={rowClassName}>
+									<p className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+										<span className="font-medium">{t`Watching on ${platform(board.ats)}`}</span>{" "}
+										<span className="text-ink-2">
+											{board.error
+												? `· ${t`The last check failed. Its last postings are kept, and the next check tries again.`}`
+												: board.fetchedAt
+													? `· ${t`${board.jobCount ?? 0} open`} · ${t`checked ${lower(relative(board.fetchedAt))}`}`
+													: `· ${t`not checked yet`}`}
+										</span>
+									</p>
+									<OpenOn ats={board.ats} url={board.url} />
+									<Button
+										variant="secondary"
+										size="sm"
+										loading={unwatch.isPending && unwatch.variables?.id === board.id}
+										onClick={() => unwatch.mutate({ id: board.id })}
+									>
+										<Trans>Stop watching</Trans>
+									</Button>
+								</div>
+							))}
+							{data.detected.map((board) => (
+								<div key={`${board.ats}:${board.region}:${board.slug}`} className={rowClassName}>
+									<p className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
+										<span className="font-medium">{t`Found on ${platform(board.ats)}`}</span>{" "}
+										<span className="text-ink-2">
+											· {t`from a posting link on file`}
+											{board.jobCount !== null && ` · ${t`${board.jobCount} open`}`}
+										</span>
+									</p>
+									<OpenOn ats={board.ats} url={board.url} />
+									<Button size="sm" loading={confirming(board.slug)} onClick={() => confirm(board, "posting")}>
+										<Trans>Confirm</Trans>
+									</Button>
+								</div>
+							))}
+
+							{data.careersUrl && (
+								<div className={cn(rowClassName, "flex-nowrap gap-x-2.5")}>
+									<DisabledWatchBox reason={watchDisabledReason("saved")} label={t`Watch ${name}`} />
+									<p className="min-w-0 flex-1 truncate">
+										<span className="font-medium">
+											<Trans>Saved link</Trans>
+										</span>{" "}
+										<span className="text-ink-2">· {hostname(data.careersUrl) ?? data.careersUrl}</span>
+									</p>
+									<JobsButton url={data.careersUrl} />
+								</div>
+							)}
 						</div>
-					))}
+					)}
 
 					{data.watched.length > 0 && schedules.data && !hasSchedule && (
 						<p className="text-sm text-warn-text">
@@ -145,38 +180,6 @@ export function CompanyBoards({ companyId, companyName: name }: CompanyBoardsPro
 								<Trans>Add a Watched companies schedule</Trans>
 							</Link>
 						</p>
-					)}
-
-					{data.detected.map((board) => (
-						<div
-							key={`${board.ats}:${board.region}:${board.slug}`}
-							className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-dashed border-line-2 px-2.5 py-1.5 text-[13px]"
-						>
-							<p className="min-w-0 basis-full sm:flex-1 sm:basis-auto">
-								<span className="font-semibold">{t`Found on ${platform(board.ats)}`}</span>{" "}
-								<span className="text-ink-2">
-									· {t`from a posting link on file`}
-									{board.jobCount !== null && ` · ${t`${board.jobCount} open`}`}
-								</span>
-							</p>
-							<OpenOn ats={board.ats} url={board.url} />
-							<Button size="sm" loading={confirming(board.slug)} onClick={() => confirm(board, "posting")}>
-								<Trans>Confirm</Trans>
-							</Button>
-						</div>
-					))}
-
-					{data.careersUrl && (
-						<div className="flex items-center gap-2.5 rounded-md border border-line px-2.5 py-1.5 text-[13px]">
-							<DisabledWatchBox reason={watchDisabledReason("saved")} label={t`Watch ${name}`} />
-							<p className="min-w-0 flex-1 truncate">
-								<span className="font-semibold">
-									<Trans>Saved link</Trans>
-								</span>{" "}
-								<span className="text-ink-2">· {hostname(data.careersUrl) ?? data.careersUrl}</span>
-							</p>
-							<JobsButton url={data.careersUrl} />
-						</div>
 					)}
 
 					<form
@@ -208,7 +211,7 @@ export function CompanyBoards({ companyId, companyName: name }: CompanyBoardsPro
 					</form>
 
 					{justSaved && (
-						<p role="status" className="text-[12.5px] text-danger-text">
+						<p role="status" className="text-[13px]/[18px] text-danger-text">
 							<Trans>
 								Only Greenhouse, Ashby and Lever are supported for now. The link is saved but won't be watched.
 							</Trans>
@@ -232,33 +235,36 @@ export function CompanyBoards({ companyId, companyName: name }: CompanyBoardsPro
 											<Trans>Confirm to watch it.</Trans>
 										)}
 									</p>
-									{found.boards.map((board) => (
-										<div
-											key={`${board.ats}:${board.region}:${board.slug}`}
-											className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-line px-2.5 py-1.5 text-[13px]"
-										>
-											<div className="grid min-w-0 basis-full gap-0.5 sm:flex-1 sm:basis-auto">
-												<p>
-													<span className="font-semibold">{platform(board.ats)}</span>
-													{board.name && ` · ${board.name}`}
-													<span className="text-ink-2"> · {t`${board.jobCount} open`}</span>
-												</p>
-												{board.sample.length > 0 && (
-													<p className="truncate text-xs text-ink-2">{board.sample.join(" · ")}</p>
+									<div>
+										{found.boards.map((board) => (
+											<div key={`${board.ats}:${board.region}:${board.slug}`} className={rowClassName}>
+												<div className="grid min-w-0 basis-full gap-0.5 sm:flex-1 sm:basis-auto">
+													<p>
+														<span className="font-medium">{platform(board.ats)}</span>
+														{board.name && ` · ${board.name}`}
+														<span className="text-ink-2"> · {t`${board.jobCount} open`}</span>
+													</p>
+													{board.sample.length > 0 && (
+														<p className="truncate text-[13px]/[18px] text-ink-3">{board.sample.join(" · ")}</p>
+													)}
+												</div>
+												<OpenOn ats={board.ats} url={board.url} />
+												{watchedKeys.has(boardKey(board)) ? (
+													<p className="self-center text-sm text-ink-2">
+														<Trans>Already watching</Trans>
+													</p>
+												) : (
+													<Button
+														size="sm"
+														loading={confirming(board.slug)}
+														onClick={() => confirm(board, found.source)}
+													>
+														<Trans>Confirm</Trans>
+													</Button>
 												)}
 											</div>
-											<OpenOn ats={board.ats} url={board.url} />
-											{watchedKeys.has(boardKey(board)) ? (
-												<p className="self-center text-sm text-ink-2">
-													<Trans>Already watching</Trans>
-												</p>
-											) : (
-												<Button size="sm" loading={confirming(board.slug)} onClick={() => confirm(board, found.source)}>
-													<Trans>Confirm</Trans>
-												</Button>
-											)}
-										</div>
-									))}
+										))}
+									</div>
 								</>
 							)}
 						</div>
@@ -306,12 +312,9 @@ export function WatchSuggestions() {
 		</Link>
 	);
 	return (
-		<section
-			aria-labelledby={`${id}-watch`}
-			className="grid gap-2 rounded-md border border-line px-2.5 py-1.5 text-[13px]"
-		>
+		<section aria-labelledby={`${id}-watch`} className="grid gap-2 border-y border-line py-1.5 text-sm">
 			<div className="flex min-w-0 items-center gap-2">
-				<h2 id={`${id}-watch`} className="shrink-0 font-bold">
+				<h2 id={`${id}-watch`} className="shrink-0 font-semibold">
 					<Trans>Recommended companies to watch</Trans>
 				</h2>
 				{!open && (
@@ -328,7 +331,7 @@ export function WatchSuggestions() {
 				)}
 				<Button
 					variant="link"
-					className="ms-auto shrink-0 text-[13px]"
+					className="ms-auto shrink-0"
 					aria-expanded={open}
 					aria-controls={`${id}-all`}
 					onClick={() => setOpen((value) => !value)}
@@ -347,7 +350,7 @@ export function WatchSuggestions() {
 					<ul className="grid gap-1.5">
 						{rows.map((row) => (
 							<li key={row.id} className="flex flex-wrap items-baseline gap-x-2">
-								<span className="font-semibold">{companyLink(row)}</span>
+								<span className="font-medium">{companyLink(row)}</span>
 								<span className="text-ink-2">
 									{row.contacts === 1 ? t`1 contact` : t`${row.contacts} contacts`}
 									{row.openRoles !== null &&

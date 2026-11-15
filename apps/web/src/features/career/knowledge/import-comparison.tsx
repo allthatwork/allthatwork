@@ -49,10 +49,10 @@ export function ImportComparison(props: ImportComparisonProps) {
 			),
 	);
 	return (
-		<article className="grid min-w-0 gap-4 rounded-xl border border-line bg-surface p-4">
+		<article className="grid min-w-0 gap-4 border-b border-line pb-5 last:border-b-0">
 			<header className="flex flex-wrap items-center justify-between gap-2">
-				<h3 className="text-sm font-semibold">{rowLabel(row)}</h3>
-				<span className="rounded-full bg-sunken px-2 py-1 text-xs text-ink-2">
+				<h3 className="t-label text-ink">{rowLabel(row)}</h3>
+				<span className="rounded-xs bg-sunken px-1.5 py-0.5 t-caption text-ink-2">
 					{originalSource ? (
 						<Trans>Imported before</Trans>
 					) : identical ? (
@@ -64,7 +64,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 			</header>
 			<div className={cn("grid min-w-0 gap-4", knowledgeMatches.length > 0 && "lg:grid-cols-2")}>
 				<section aria-label={t`From this file`} className="grid min-w-0 content-start gap-3">
-					<p className="text-xs font-semibold text-ink-2">
+					<p className="text-[13px]/[18px] font-medium text-ink-2">
 						<Trans>From this file</Trans> <span className="font-normal text-ink-3">({fileFacts.length})</span>
 					</p>
 					{fileFacts.map((fact, index) => (
@@ -81,7 +81,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 				</section>
 				{knowledgeMatches.length > 0 && (
 					<section aria-label={t`In Knowledge`} className="grid min-w-0 content-start gap-3">
-						<p className="text-xs font-semibold text-ink-2">
+						<p className="text-[13px]/[18px] font-medium text-ink-2">
 							<Trans>In Knowledge</Trans>
 						</p>
 						{knowledgeMatches.map((match) => {
@@ -96,7 +96,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 							return (
 								<div key={fact.id} className="grid min-w-0 gap-2">
 									<div className="grid min-w-0 gap-3 rounded-lg bg-sunken p-3">
-										<p className="text-xs text-ink-3">
+										<p className="t-small text-ink-3">
 											{[
 												fact.group,
 												fact.status === "archived"
@@ -123,7 +123,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 														{edit.error}
 													</p>
 												)}
-												<p className="text-xs text-ink-3">
+												<p className="t-small text-ink-3">
 													<Trans>Saving corrects the existing fact now. Linked stories may need review.</Trans>
 												</p>
 												<div className="flex flex-wrap gap-2">
@@ -143,7 +143,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 											</>
 										) : (
 											<>
-												<p className="text-sm leading-relaxed whitespace-pre-wrap">{fact.text}</p>
+												<p className="t-ui whitespace-pre-wrap text-ink">{fact.text}</p>
 												<div className="flex flex-wrap items-center gap-2">
 													<Button size="sm" variant="ghost" disabled={busy} onClick={() => props.onEdit(fact)}>
 														<Trans>Edit existing fact</Trans>
@@ -158,7 +158,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 														{t`Use wording from ${rowLabel(row)}`}
 													</Button>
 													{corrected.has(fact.id) && (
-														<span role="status" className="text-xs text-ink-2">
+														<span role="status" className="t-small text-ink-2">
 															<Trans>Correction saved</Trans>
 														</span>
 													)}
@@ -172,7 +172,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 					</section>
 				)}
 			</div>
-			<footer className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+			<footer className="flex flex-wrap items-center gap-2">
 				<Button
 					size="sm"
 					variant={included ? "ghost" : "secondary"}
@@ -192,7 +192,7 @@ export function ImportComparison(props: ImportComparisonProps) {
 					<Trans>Keep both</Trans>
 				</Button>
 				{!canInclude && (
-					<p className="text-xs text-ink-3">
+					<p className="t-small text-ink-3">
 						{originalSource ? (
 							<Trans>This source was already imported. Edit the fact in Knowledge to correct it.</Trans>
 						) : (

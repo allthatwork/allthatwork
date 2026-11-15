@@ -55,11 +55,11 @@ export function ResumeLengthSection() {
 					onKeyDown={(event) => event.key === "Enter" && void save()}
 					className="w-24"
 				/>
-				<span className="text-[13px] text-ink-3">
+				<span className="t-small text-ink-3">
 					<Trans>pages</Trans>
 				</span>
 			</div>
-			<p id={`${id}-hint`} className={invalid ? "text-xs text-danger-text" : "text-xs text-ink-3"}>
+			<p id={`${id}-hint`} className={invalid ? "t-small text-danger-text" : "t-small text-ink-3"}>
 				{invalid ? (
 					<Trans>
 						Enter a whole number from {RESUME_PAGES.min} to {RESUME_PAGES.max}.

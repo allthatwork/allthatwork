@@ -105,7 +105,7 @@ export function ApplicationCard({
 						<span
 							title={t`Search fit`}
 							aria-label={t`Search fit ${application.searchFit}%`}
-							className="inline-flex items-center gap-1 rounded-sm bg-sunken px-1.5 py-0.5 text-[11px] font-medium text-ink-2 tabular-nums"
+							className="inline-flex items-center gap-1 rounded-xs bg-sunken px-1.5 py-0.5 text-xs font-medium text-ink-2 tabular-nums"
 						>
 							<span className="font-normal text-ink-3">
 								<Trans>Fit</Trans>
@@ -130,7 +130,7 @@ export function ApplicationCard({
 /** The line on a card or row that changed and no longer matches the filters. */
 export function StaleNote() {
 	return (
-		<span className="flex items-center gap-1.5 text-[11.5px] text-ink-3">
+		<span className="flex items-center gap-1.5 text-xs text-ink-3">
 			<Icon name="funnel" size={14} className="shrink-0" />
 			<Trans>Doesn't match the filters now</Trans>
 		</span>

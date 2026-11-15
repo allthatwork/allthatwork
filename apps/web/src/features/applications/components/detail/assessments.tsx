@@ -19,6 +19,7 @@ import { cn } from "@reactive-resume/utils/style";
 import { useInvalidateApplications } from "../../use-application-actions";
 import { ApplicationNotes } from "../application-notes";
 import { BuildStatusControl } from "../build-status";
+import { factLabelClassName, factRowClassName, SheetSection, TextButton } from "./sheet-parts";
 import { AssistantMarkdown } from "@/features/assistant/markdown";
 import { orpc } from "@/libs/orpc/client";
 
@@ -35,36 +36,31 @@ function useUpdate(id: string) {
 
 type ReadOnlyFactProps = { label: string; children: ReactNode };
 
+/** A fact row of the sheet that only reads (`.kv`): the search's and the targeting's own numbers. */
 function ReadOnlyFact({ label, children }: ReadOnlyFactProps) {
 	return (
-		<div className="grid min-w-0 gap-0.5">
-			<dt className="text-xs font-semibold text-ink-3 uppercase">{label}</dt>
-			<dd className="truncate text-sm font-medium">{children}</dd>
+		<div className={factRowClassName}>
+			<dt className={factLabelClassName}>{label}</dt>
+			<dd className="min-w-0 truncate tabular-nums">{children}</dd>
 		</div>
 	);
 }
 
 const percent = (fit: number | null) => (fit === null ? "—" : `${fit}%`);
 
-function AssessedOn({ at, locale }: { at: Date | string | null; locale: string }) {
-	if (!at) return null;
-	const date = new Date(at).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
-	return <span className="text-xs text-ink-3">{date}</span>;
-}
+const assessedOn = (at: Date | string | null, locale: string) =>
+	at ? new Date(at).toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" }) : undefined;
 
 type SearchSectionProps = { application: Application; locale: string };
 
 /** What the job search made of the posting: its fit (the search's number, not editable here) and its notes. */
 export function SearchSection({ application, locale }: SearchSectionProps) {
 	return (
-		<section aria-labelledby="application-search" className="grid gap-3">
-			<div className="flex items-baseline justify-between gap-2">
-				<h3 id="application-search" className="text-xs font-semibold text-ink-3 uppercase">
-					<Trans>Search</Trans>
-				</h3>
-				<AssessedOn at={application.searchAt} locale={locale} />
-			</div>
-			<dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+		<section aria-labelledby="application-search" className="grid">
+			<SheetSection id="application-search" note={assessedOn(application.searchAt, locale)}>
+				<Trans>Search</Trans>
+			</SheetSection>
+			<dl className="grid">
 				<ReadOnlyFact label={t`Search fit`}>{percent(application.searchFit)}</ReadOnlyFact>
 			</dl>
 			<ApplicationNotes
@@ -73,6 +69,11 @@ export function SearchSection({ application, locale }: SearchSectionProps) {
 				label={t`Search notes`}
 				placeholder={t`What the search found: strengths, gaps, unknowns`}
 				rows={application.searchNotes ? 6 : 2}
+				renderLabel={(label, htmlFor) => (
+					<label htmlFor={htmlFor} className="pt-3 pb-1.5 text-[13px]/[18px] font-medium text-ink-2">
+						{label}
+					</label>
+				)}
 			/>
 		</section>
 	);
@@ -90,11 +91,13 @@ function LaneSelect({ label, value, lanes, onSave }: LaneSelectProps) {
 	const id = useId();
 	const unlisted = value !== null && !lanes.includes(value);
 	return (
-		<div className="grid min-w-0 gap-0.5">
-			<dt className="text-xs font-semibold text-ink-3 uppercase">
-				<label htmlFor={id}>{label}</label>
+		<div className={factRowClassName}>
+			<dt className={factLabelClassName}>
+				<label htmlFor={id} className="block leading-5">
+					{label}
+				</label>
 			</dt>
-			<dd className="min-w-0">
+			<dd className="relative flex min-w-0 items-center">
 				<select
 					id={id}
 					value={value ?? ""}
@@ -102,7 +105,10 @@ function LaneSelect({ label, value, lanes, onSave }: LaneSelectProps) {
 						const next = event.target.value || null;
 						if (next !== value) onSave(next);
 					}}
-					className="h-8 w-full truncate rounded-md border border-line bg-surface px-2 text-sm font-medium"
+					className={cn(
+						"h-8 w-full min-w-0 cursor-pointer appearance-none truncate rounded-xs bg-transparent pe-6 text-start hover:underline",
+						!value && "text-ink-3",
+					)}
 				>
 					<option value="">{t`None`}</option>
 					{lanes.map((lane) => (
@@ -112,6 +118,11 @@ function LaneSelect({ label, value, lanes, onSave }: LaneSelectProps) {
 					))}
 					{unlisted && <option value={value}>{t`${value} (not in Preferences)`}</option>}
 				</select>
+				<Icon
+					name="caret-up-down"
+					size={16}
+					className="pointer-events-none absolute inset-e-0 top-1/2 -translate-y-1/2 text-ink-3"
+				/>
 			</dd>
 		</div>
 	);
@@ -123,18 +134,18 @@ function Reviews({ reviews }: { reviews: Application["targetingReviews"] }) {
 	const round = Math.max(...reviews.map((review) => review.round));
 	const latest = reviews.filter((review) => review.round === round);
 	return (
-		<div className="grid gap-1.5">
-			<p className="text-xs font-semibold text-ink-3 uppercase">
+		<div className="grid">
+			<p className="pt-3 pb-1 text-[13px]/[18px] font-medium text-ink-2">
 				<Trans>Reviewers · round {round}</Trans>
 			</p>
-			<ul className="grid gap-1">
+			<ul className="grid">
 				{latest.map((review) => (
 					<li
 						key={`${review.round}-${review.reviewer}`}
-						className="flex min-w-0 items-baseline gap-2 text-[13px] text-ink-2"
+						className="flex min-h-[33px] min-w-0 items-center gap-3 border-b border-line text-[13px]/[18px] text-ink-3 last:border-0"
 					>
-						<span className="w-5 shrink-0 font-semibold text-ink">{review.reviewer}</span>
-						<span className="w-12 shrink-0 text-ink tabular-nums">
+						<span className="w-5 shrink-0 text-sm/5 font-medium text-ink">{review.reviewer}</span>
+						<span className="w-12 shrink-0 text-sm/5 text-ink tabular-nums">
 							{review.status === "ran" ? percent(review.fit) : t`skipped`}
 						</span>
 						<span className="min-w-0 truncate" title={review.status === "ran" ? review.verdict : (review.reason ?? "")}>
@@ -168,37 +179,32 @@ export function TargetingSection({ application, targetingNotes, lanes, locale }:
 	const save = (input: Omit<UpdateInput, "id">) => update.mutate({ id: application.id, ...input });
 
 	return (
-		<section aria-labelledby="application-targeting" className="grid gap-3">
-			<div className="flex items-baseline justify-between gap-2">
-				<h3 id="application-targeting" className="text-xs font-semibold text-ink-3 uppercase">
-					<Trans>Targeting</Trans>
-				</h3>
-				<AssessedOn at={application.targetingAt} locale={locale} />
-			</div>
-			<dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+		<section aria-labelledby="application-targeting" className="grid">
+			<SheetSection id="application-targeting" note={assessedOn(application.targetingAt, locale)}>
+				<Trans>Targeting</Trans>
+			</SheetSection>
+			<dl className="grid">
 				<ReadOnlyFact label={t`Targeting fit`}>{percent(application.targetingFit)}</ReadOnlyFact>
-				<div className="grid min-w-0 gap-0.5">
-					<dt className="text-xs font-semibold text-ink-3 uppercase">
+				<div className={factRowClassName}>
+					<dt className={factLabelClassName}>
 						<Trans>Build status</Trans>
 					</dt>
-					<dd className="flex min-h-6 flex-wrap items-center gap-2">
-						<BuildStatusControl application={application} />
+					<dd className="flex min-h-8 min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+						<BuildStatusControl size="default" application={application} />
 						{application.targetingBuildStatus === "failed" && (
-							<Button variant="secondary" size="sm" onClick={() => save({ targetingBuildStatus: "build" })}>
-								<Icon name="arrow-clockwise" size={14} />
+							<TextButton onClick={() => save({ targetingBuildStatus: "build" })}>
 								<Trans>Retry build</Trans>
-							</Button>
+							</TextButton>
 						)}
 						{application.targetingBuildStatus === "built" && (
-							<Button variant="ghost" size="sm" onClick={() => save({ targetingBuildStatus: "build" })}>
-								<Icon name="arrow-clockwise" size={14} />
+							<TextButton onClick={() => save({ targetingBuildStatus: "build" })}>
 								<Trans>Rebuild</Trans>
-							</Button>
+							</TextButton>
 						)}
 						{application.targetingBuildStatus === "building" && (
-							<Button variant="ghost" size="sm" onClick={() => save({ targetingBuildStatus: null })}>
+							<TextButton onClick={() => save({ targetingBuildStatus: null })}>
 								<Trans>Cancel</Trans>
-							</Button>
+							</TextButton>
 						)}
 					</dd>
 				</div>
@@ -215,14 +221,14 @@ export function TargetingSection({ application, targetingNotes, lanes, locale }:
 					onSave={(targetingSecondaryLane) => save({ targetingSecondaryLane })}
 				/>
 			</dl>
+			<Reviews reviews={application.targetingReviews} />
 			<Link
 				to="/dashboard/career/knowledge/preferences"
-				className="w-fit text-xs text-ink-3 hover:text-ink-2 hover:underline"
+				className="mt-2 w-fit rounded-xs text-[13px]/[18px] font-medium text-accent-text hover:underline"
 			>
 				{lanes.length ? <Trans>Edit lanes in Preferences</Trans> : <Trans>Add your lanes in Preferences</Trans>}
 			</Link>
-			<Reviews reviews={application.targetingReviews} />
-			{targetingNotes && <TargetingNoteButton application={application} notes={targetingNotes} />}
+			{targetingNotes && <TargetingNoteButton className="mt-3" application={application} notes={targetingNotes} />}
 		</section>
 	);
 }
@@ -230,16 +236,28 @@ export function TargetingSection({ application, targetingNotes, lanes, locale }:
 type TargetingNoteButtonProps = {
 	application: Pick<Application, "role" | "company">;
 	notes: string;
+	/** `link` inside a row's quiet lines; a small secondary button otherwise. */
+	variant?: "secondary" | "link";
 	className?: string;
 };
 
 /** Read the targeting note button and the wide dialog it opens, with the whole note as Markdown. */
-export function TargetingNoteButton({ application, notes, className }: TargetingNoteButtonProps) {
+export function TargetingNoteButton({
+	application,
+	notes,
+	variant = "secondary",
+	className,
+}: TargetingNoteButtonProps) {
 	const [reading, setReading] = useState(false);
 	return (
 		<>
-			<Button variant="secondary" size="sm" className={cn("w-fit", className)} onClick={() => setReading(true)}>
-				<Icon name="file-text" size={16} />
+			<Button
+				variant={variant}
+				size="sm"
+				className={cn("w-fit", variant === "link" && "text-[13px]/[18px]", className)}
+				onClick={() => setReading(true)}
+			>
+				{variant === "secondary" && <Icon name="file-text" size={16} />}
 				<Trans>Read the targeting note</Trans>
 			</Button>
 			<Dialog open={reading} onOpenChange={setReading}>

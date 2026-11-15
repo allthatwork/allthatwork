@@ -27,6 +27,7 @@ import {
 } from "../../filter";
 import { FilterButton } from "./filter-button";
 import { FilterPanel } from "./filter-panel";
+import { Chip } from "@/components/calm/filter-bar";
 
 export type FilterBarProps = {
 	/** Every application, for the options and their counts. */
@@ -130,12 +131,14 @@ export function FilterBar({
 	};
 
 	return (
-		<div ref={ref} className={cn("flex min-w-0 flex-auto flex-wrap items-center gap-1.5", className)}>
+		<div ref={ref} className={cn("flex min-w-0 flex-auto flex-wrap items-center gap-2", className)}>
 			{PRIMARY_FACETS.map(button)}
 			{extras.map(button)}
 			{notShown.length > 0 && (
 				<DropdownMenu>
-					<DropdownMenuTrigger className="inline-flex h-8 items-center gap-1 rounded-lg px-2 text-[13px] whitespace-nowrap text-ink-2 transition-colors hover:bg-hover hover:text-ink data-popup-open:ring-1 data-popup-open:ring-accent">
+					<DropdownMenuTrigger
+						render={<Chip variant="dash" className="aria-expanded:bg-hover aria-expanded:text-ink" />}
+					>
 						<Icon name="plus" size={14} />
 						<Trans>More filters</Trans>
 					</DropdownMenuTrigger>
@@ -151,7 +154,7 @@ export function FilterBar({
 							>
 								<Icon name={EXTRA_ICONS[facet]} size={16} className="text-ink-3" />
 								<span className="whitespace-nowrap">{getFacetLabel(facet)}</span>
-								<span className="ms-auto truncate text-[11.5px] text-ink-3">{extraHint(facet)}</span>
+								<span className="ms-auto truncate text-xs text-ink-3">{extraHint(facet)}</span>
 							</DropdownMenuItem>
 						))}
 					</DropdownMenuContent>

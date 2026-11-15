@@ -7,7 +7,14 @@ import { useId, useState } from "react";
 import { APPLICATION_VIEW_NAME_MAX } from "@reactive-resume/schema/applications/views";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Checkbox } from "@reactive-resume/ui/components/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@reactive-resume/ui/components/dialog";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@reactive-resume/ui/components/dialog";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Label } from "@reactive-resume/ui/components/label";
 import { toast } from "@reactive-resume/ui/components/toast";
@@ -52,7 +59,7 @@ type SaveViewDialogProps = {
 export function SaveViewDialog({ open, onOpenChange, ...props }: SaveViewDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent showCloseButton={false} className="gap-3 p-5 sm:max-w-[460px]">
+			<DialogContent showCloseButton={false}>
 				{/* A fresh form each time it opens. */}
 				{open && <SaveViewForm {...props} onClose={() => onOpenChange(false)} />}
 			</DialogContent>
@@ -88,20 +95,20 @@ function SaveViewForm({ filters, sort, columns, noReplyDays, onSave, existingNam
 
 	return (
 		<form
-			className="grid gap-3"
+			className="grid gap-5"
 			onSubmit={(event) => {
 				event.preventDefault();
 				void submit();
 			}}
 		>
-			<div className="grid gap-1">
-				<DialogTitle className="text-[22px] leading-7">
+			<DialogHeader className="gap-1.5">
+				<DialogTitle>
 					<Trans>Save as a view</Trans>
 				</DialogTitle>
-				<DialogDescription className="text-[13px] text-ink-2">
+				<DialogDescription>
 					<Trans>Saves the filters, sort and List columns you have now.</Trans>
 				</DialogDescription>
-			</div>
+			</DialogHeader>
 			<div className="grid gap-1.5">
 				<Label htmlFor={`${id}-name`}>
 					<Trans>Name</Trans>
@@ -121,12 +128,12 @@ function SaveViewForm({ filters, sort, columns, noReplyDays, onSave, existingNam
 					}}
 				/>
 				{taken !== null && (
-					<p id={`${id}-error`} className="text-[12.5px] text-danger-text">
+					<p id={`${id}-error`} className="text-[13px]/[18px] text-danger-text">
 						<Trans>You already have a view called “{taken}”. Pick another name, or use Update in the Views menu.</Trans>
 					</p>
 				)}
 			</div>
-			<dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1.5 rounded-lg bg-sunken px-3 py-2.5 text-[12.5px]">
+			<dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 border-y border-line py-3 text-[13px]/[18px]">
 				<dt className="text-ink-3">
 					<Trans>Filters</Trans>
 				</dt>
@@ -135,7 +142,7 @@ function SaveViewForm({ filters, sort, columns, noReplyDays, onSave, existingNam
 						chips.map((chip) => (
 							<span
 								key={chip}
-								className="inline-flex h-5 items-center rounded-[5px] bg-accent-soft px-[7px] text-xs whitespace-nowrap text-accent-text"
+								className="inline-flex h-5 items-center rounded-xs bg-accent-soft px-1.5 text-xs whitespace-nowrap text-accent-text"
 							>
 								{chip}
 							</span>
@@ -163,14 +170,14 @@ function SaveViewForm({ filters, sort, columns, noReplyDays, onSave, existingNam
 					</span>
 				</span>
 			</label>
-			<div className="mt-1 flex justify-end gap-2">
-				<Button type="button" variant="secondary" onClick={onClose}>
+			<DialogFooter className="mt-0">
+				<Button type="button" variant="ghost" onClick={onClose}>
 					<Trans>Cancel</Trans>
 				</Button>
 				<Button type="submit" disabled={!name.trim() || saving} className={cn(saving && "cursor-progress")}>
 					<Trans>Save view</Trans>
 				</Button>
-			</div>
+			</DialogFooter>
 		</form>
 	);
 }

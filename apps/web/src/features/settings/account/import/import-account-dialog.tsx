@@ -173,16 +173,16 @@ export function ImportAccountDialog({ open, onOpenChange }: ImportAccountDialogP
 								const file = event.dataTransfer.files[0];
 								if (file) void readFile(file);
 							}}
-							className="flex items-start gap-4 rounded-xl border-[1.5px] border-dashed border-line-2 p-5 text-start transition-[background-color,border-color,scale] duration-quick ease-enter hover:border-accent hover:bg-accent-soft active:scale-[0.98]"
+							className="flex items-start gap-3.5 rounded-xl border border-dashed border-line-2 p-5 text-start transition-[background-color,border-color,scale] duration-quick ease-enter hover:border-accent hover:bg-accent-soft active:scale-[0.98]"
 						>
-							<span className="grid size-11 shrink-0 place-items-center rounded-[10px] bg-sunken text-ink-2">
-								<Icon name="file-arrow-up" size={24} />
+							<span className="grid size-10 shrink-0 place-items-center rounded-md bg-sunken text-ink-2">
+								<Icon name="file-arrow-up" size={20} />
 							</span>
-							<span className="grid gap-1">
-								<span className="text-[15px] font-semibold">
+							<span className="grid gap-0.5">
+								<span className="t-label text-ink">
 									<Trans>Choose the zip</Trans>
 								</span>
-								<span className="text-[13px] leading-[19px] text-ink-2">
+								<span className="t-small text-ink-3">
 									<Trans>
 										Drop it here or browse. It's read in your browser first, so you can pick what to import before
 										anything is saved.
@@ -191,7 +191,7 @@ export function ImportAccountDialog({ open, onOpenChange }: ImportAccountDialogP
 							</span>
 						</button>
 						{stage.error && (
-							<p role="alert" className="text-[13px] text-danger-text">
+							<p role="alert" className="t-small text-danger-text">
 								{stage.error}
 							</p>
 						)}
@@ -241,10 +241,10 @@ export function ImportAccountDialog({ open, onOpenChange }: ImportAccountDialogP
 						</ol>
 						{stage.name === "failed" && (
 							<>
-								<p role="alert" className="text-[13px] text-danger-text">
+								<p role="alert" className="t-small text-danger-text">
 									{stage.message}
 								</p>
-								<p className="text-[13px] text-ink-2">
+								<p className="t-small text-ink-2">
 									<Trans>The steps marked done were imported. Nothing from the failed step was saved.</Trans>
 								</p>
 								<DialogFooter showCloseButton closeLabel={t`Close`} />
@@ -343,7 +343,7 @@ function ImportOptions({
 
 	return (
 		<div key="options" className={cn(ENTER_CLASS, "grid gap-4")}>
-			<p className="text-[13px] text-ink-2">
+			<p className="t-small text-ink-2">
 				{exported ? (
 					<Trans>
 						From {from}, exported {exported}.
@@ -398,7 +398,7 @@ function ImportOptions({
 					))}
 			</div>
 
-			<p className="text-[13px] text-ink-2">
+			<p className="t-small text-ink-2">
 				<Trans>
 					Added records come in as new ones, so tidy up afterwards in Knowledge, Curate. Public resumes come in private,
 					and schedules come in switched off.
@@ -498,7 +498,7 @@ function ReplaceConfirmation({ open, onOpenChange, areas, onConfirm }: ReplaceCo
 					<Spinner decorative className="size-5" />
 				)}
 				{areas.directory?.on && areas.directory.mode === "replace" && (
-					<p className="text-sm text-ink-2">
+					<p className="t-small text-ink-2">
 						<Trans>
 							Replacing Directory also removes contact details from existing applications and interviews. The
 							applications remain.
@@ -506,7 +506,7 @@ function ReplaceConfirmation({ open, onOpenChange, areas, onConfirm }: ReplaceCo
 					</p>
 				)}
 				{areas.documents?.on && areas.documents.mode === "replace" && !areas.applications?.on && (
-					<p className="text-[13px] text-ink-2">
+					<p className="t-small text-ink-2">
 						<Trans>Your applications stay, but lose their linked resumes and letters.</Trans>
 					</p>
 				)}
@@ -603,7 +603,7 @@ function ImportReport({ summary }: ImportReportProps) {
 					))}
 				</dl>
 			)}
-			<ul className="grid gap-1.5 text-[13px] text-ink-2">
+			<ul className="grid gap-1.5 t-small text-ink-2">
 				{summary.skipped.map((skip) => (
 					<li key={`${skip.kind}-${skip.reason}`}>
 						{labels[skip.kind] ?? skip.kind}: {skip.count} {reasons[skip.reason]}

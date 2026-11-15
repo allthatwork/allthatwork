@@ -1,7 +1,7 @@
 import type { ApplicationLane } from "../lanes";
 import type { Application, ApplicationSummary } from "../types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Plural, Trans } from "@lingui/react/macro";
@@ -37,6 +37,7 @@ import { CloseDialog } from "./detail/close-dialog";
 import { Contacts } from "./detail/contacts";
 import { NextStepCard } from "./detail/next-step-card";
 import { SentDocuments } from "./detail/sent-documents";
+import { factLabelClassName, factRowClassName, SheetSection, TextButton } from "./detail/sheet-parts";
 import { InterviewDialog } from "./interview-dialog";
 import { ViewPostingButton } from "./posting-dialog";
 import { SuggestionCombobox } from "./suggestion-combobox";
@@ -138,50 +139,6 @@ function SheetHeading({ title, description, menu }: { title: ReactNode; descript
 				<Icon name="x" size={20} />
 			</SheetClose>
 		</header>
-	);
-}
-
-/** A heading inside the sheet (`.sx`): 14px semibold, a quiet note after it, its one action at the end. */
-function SheetSection({
-	id,
-	note,
-	action,
-	children,
-	render,
-}: {
-	id?: string;
-	note?: ReactNode;
-	action?: ReactNode;
-	children: ReactNode;
-	render?: (className: string, content: ReactNode) => ReactNode;
-}) {
-	const className = "flex shrink-0 flex-wrap items-baseline gap-2 pt-5 pb-1.5 text-sm/5 font-semibold text-ink";
-	const content = (
-		<>
-			{children}
-			{note && <small className="text-[13px]/[18px] font-normal text-ink-3">{note}</small>}
-			{action && <span className="ms-auto">{action}</span>}
-		</>
-	);
-	if (render) return render(className, content);
-	return (
-		<h3 id={id} className={className}>
-			{content}
-		</h3>
-	);
-}
-
-/** The accent text button of a sheet heading or row (`.lk`, `.ttb`). */
-function TextButton({ className, ...props }: ComponentProps<"button">) {
-	return (
-		<button
-			type="button"
-			className={cn(
-				"rounded-xs text-[13px]/[18px] font-medium text-accent-text hover:underline disabled:opacity-50",
-				className,
-			)}
-			{...props}
-		/>
 	);
 }
 
@@ -425,15 +382,13 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 							foundBy={foundBySuggestions(applications)}
 						/>
 
-						<div className="grid gap-5 pt-5">
-							<SearchSection application={application} locale={i18n.locale} />
-							<TargetingSection
-								application={application}
-								targetingNotes={targetingNotes}
-								lanes={profile?.lanes ?? []}
-								locale={i18n.locale}
-							/>
-						</div>
+						<SearchSection application={application} locale={i18n.locale} />
+						<TargetingSection
+							application={application}
+							targetingNotes={targetingNotes}
+							lanes={profile?.lanes ?? []}
+							locale={i18n.locale}
+						/>
 
 						<ContactSection application={application} />
 
@@ -562,10 +517,6 @@ function ContactSection({ application }: { application: Application }) {
 		/>
 	);
 }
-
-const factRowClassName =
-	"grid min-h-[33px] grid-cols-[88px_minmax(0,1fr)] items-center gap-3 border-b border-line text-sm/5 last:border-0";
-const factLabelClassName = "text-[13px] font-normal text-ink-3";
 
 type FactsProps = { application: Application; foundOn: string[]; foundBy: string[] };
 
