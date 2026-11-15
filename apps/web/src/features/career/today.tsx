@@ -33,6 +33,7 @@ import {
 	getNextStep,
 	needsAttention,
 	nextStepSortKey,
+	useNoReplyDays,
 } from "@/features/applications/next-step";
 import { offerHintFor, savedOffersQueryOptions, useOfferHints } from "@/features/applications/queries";
 import { applicationsListQueryOptions } from "@/features/applications/queries";
@@ -186,6 +187,7 @@ function NeedsYou({ now, onReview, className }: NeedsYouProps) {
 	const applicationQuery = useQuery(applicationsListQueryOptions());
 	const applications = applicationQuery.data;
 	const hints = useOfferHints();
+	const noReplyDays = useNoReplyDays();
 	const [showRead, setShowRead] = useState(false);
 	const [pending, setPending] = useState<string[]>([]);
 	const setReadAt = (id: string, readAt: Date | null) =>
@@ -198,9 +200,10 @@ function NeedsYou({ now, onReview, className }: NeedsYouProps) {
 	// The same next-step rules as the Applications list: due follow-ups, no reply, interviews this week, offers.
 	const attention = (applications ?? [])
 		.flatMap((application) => {
-			const step = getNextStep(application, now, timeZone, offerHintFor(hints, application.id));
+			const offer = offerHintFor(hints, application.id);
+			const step = getNextStep(application, now, timeZone, offer, noReplyDays);
 			return needsAttention(step, now)
-				? [{ application, step, key: nextStepSortKey(application, now, timeZone, offerHintFor(hints, application.id)) }]
+				? [{ application, step, key: nextStepSortKey(application, now, timeZone, offer, noReplyDays) }]
 				: [];
 		})
 		.sort((a, b) => compareNextStepSortKeys(a.key, b.key, a.application.id, b.application.id));

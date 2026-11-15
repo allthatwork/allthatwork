@@ -192,8 +192,9 @@ export function nextStepSortKey(
 	now = new Date(),
 	timeZone = "UTC",
 	offer?: OfferHint | null,
+	noReplyDays = FOLLOW_UP_AFTER_DAYS,
 ): [rank: number, time: number] {
-	const step = getNextStep(application, now, timeZone, offer);
+	const step = getNextStep(application, now, timeZone, offer, noReplyDays);
 	if (step.kind === "interview" || step.kind === "follow-up") return [0, step.at.getTime()];
 	if (step.kind === "offer" && step.respondBy) return [0, step.respondBy.getTime()];
 	return [1, applicationStageSince(application)?.getTime() ?? Infinity];
