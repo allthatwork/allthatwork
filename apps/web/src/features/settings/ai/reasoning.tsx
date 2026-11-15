@@ -47,7 +47,7 @@ export function ReasoningField({ provider, value, onChange }: ReasoningFieldProp
 
 	return (
 		<fieldset className="grid gap-1">
-			<legend className="mb-1 text-sm font-medium">
+			<legend className="mb-1 text-[13px]/[18px] font-medium text-ink-2">
 				<Trans>Reasoning</Trans>
 			</legend>
 			<SwitchRow
@@ -72,26 +72,29 @@ export function ReasoningField({ provider, value, onChange }: ReasoningFieldProp
 				<Label htmlFor={`${id}-effort`} className={thinking ? undefined : "text-ink-3"}>
 					<Trans>Effort</Trans>
 				</Label>
-				<NativeSelect
-					id={`${id}-effort`}
-					className="w-40"
-					value={effort}
-					disabled={!thinking}
-					onChange={(event) => {
-						const next = efforts.find((item) => item === event.target.value);
-						if (!next) return;
-						setLastEffort(next);
-						onChange(next);
-					}}
-				>
-					{efforts.map((item) => (
-						<option key={item} value={item}>
-							{effortLabel(item)}
-						</option>
-					))}
-				</NativeSelect>
+				{/* NativeSelect fills its box and puts the chevron at the box's end: the box sets the width. */}
+				<div className="w-40 shrink-0">
+					<NativeSelect
+						id={`${id}-effort`}
+						className="w-full"
+						value={effort}
+						disabled={!thinking}
+						onChange={(event) => {
+							const next = efforts.find((item) => item === event.target.value);
+							if (!next) return;
+							setLastEffort(next);
+							onChange(next);
+						}}
+					>
+						{efforts.map((item) => (
+							<option key={item} value={item}>
+								{effortLabel(item)}
+							</option>
+						))}
+					</NativeSelect>
+				</div>
 			</div>
-			<p className="text-xs leading-5 text-ink-3">
+			<p className="t-small text-ink-3">
 				{provider === "openai-compatible" || provider === "openrouter" ? (
 					<Trans>
 						Sent as reasoning_effort, or none for thinking off. Ultra goes as-is, for servers that accept it. A model

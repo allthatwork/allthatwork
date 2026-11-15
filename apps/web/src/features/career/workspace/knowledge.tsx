@@ -8,7 +8,8 @@ import { NativeSelect } from "@reactive-resume/ui/components/native-select";
 import { Switch } from "@reactive-resume/ui/components/switch";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { groupTree } from "../knowledge/groups";
-import { Eyebrow } from "../shared";
+import { List, ListRow } from "@/components/calm/list-row";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
 
@@ -51,67 +52,64 @@ export function ApplicationKnowledge({ applicationId }: ApplicationKnowledgeProp
 	const pending = save.isPending || remove.isPending;
 
 	return (
-		<section aria-labelledby={`${id}-title`} className="grid gap-2">
-			<Eyebrow>
-				<span id={`${id}-title`}>
-					<Trans>Knowledge for this job</Trans>
-				</span>
-			</Eyebrow>
-			<div className="grid gap-2.5 rounded-xl border border-line bg-surface p-3.5">
+		<section aria-labelledby={`${id}-title`} className="grid">
+			<SectionHeading id={`${id}-title`} className="pt-0">
+				<Trans>Knowledge for this job</Trans>
+			</SectionHeading>
+			<List>
 				{privateGroups.map((node) => {
 					const included = byGroup.get(node.path);
 					return (
-						<div key={node.path} className="flex items-center gap-2.5 text-[13px]">
-							<Icon name="lock" size={16} className="flex-none text-ink-3" />
-							<span className="min-w-0 flex-1">
-								<span className="block truncate font-medium">{node.path}</span>
-								<span className="block text-xs text-ink-3">
-									{included?.mode === "include" ? t`Included for this job` : t`Private, not sent`}
-								</span>
-							</span>
-							<Switch
-								checked={included?.mode === "include"}
-								disabled={pending}
-								aria-label={t`Include ${node.path} for this job`}
-								onCheckedChange={(checked) =>
-									checked
-										? save.mutate({ applicationId, group: node.path, mode: "include" })
-										: included && remove.mutate({ id: included.id })
-								}
-							/>
-						</div>
+						<ListRow
+							key={node.path}
+							leading={<Icon name="lock" size={18} className="flex-none text-ink-3" />}
+							title={node.path}
+							subtitle={included?.mode === "include" ? t`Included for this job` : t`Private, not sent`}
+							trailing={
+								<Switch
+									checked={included?.mode === "include"}
+									disabled={pending}
+									aria-label={t`Include ${node.path} for this job`}
+									onCheckedChange={(checked) =>
+										checked
+											? save.mutate({ applicationId, group: node.path, mode: "include" })
+											: included && remove.mutate({ id: included.id })
+									}
+								/>
+							}
+						/>
 					);
 				})}
 
 				{others.map((row) => (
-					<div key={row.id} className="flex items-center gap-2.5 text-[13px]">
-						<Icon name={row.factId ? "list-checks" : "folder-simple"} size={16} className="flex-none text-ink-3" />
-						<span className="min-w-0 flex-1">
-							<span className="block truncate font-medium">{row.factId ? factText(row.factId) : row.group}</span>
-							<span className="block text-xs text-ink-3">
-								{row.mode === "include" ? t`Included for this job` : t`Left out for this job`}
-							</span>
-						</span>
-						<Button
-							size="sm"
-							variant="ghost"
-							className="h-7 text-ink-2"
-							disabled={pending}
-							onClick={() => remove.mutate({ id: row.id })}
-						>
-							<Trans>Undo</Trans>
-						</Button>
-					</div>
+					<ListRow
+						key={row.id}
+						leading={
+							<Icon name={row.factId ? "list-checks" : "folder-simple"} size={18} className="flex-none text-ink-3" />
+						}
+						title={row.factId ? factText(row.factId) : row.group}
+						subtitle={row.mode === "include" ? t`Included for this job` : t`Left out for this job`}
+						trailing={
+							<Button
+								variant="link"
+								className="leading-5"
+								disabled={pending}
+								onClick={() => remove.mutate({ id: row.id })}
+							>
+								<Trans>Undo</Trans>
+							</Button>
+						}
+					/>
 				))}
 
 				{choices.length > 0 && (
-					<div className="flex flex-wrap items-center gap-1.5">
-						<div className="min-w-0 flex-1 basis-32">
+					<div className="flex flex-wrap items-center gap-2 border-b border-line py-3 last:border-b-0">
+						<div className="min-w-0 flex-1 basis-40">
 							<NativeSelect
 								aria-label={t`Another group`}
 								value={picked}
 								onChange={(event) => setPicked(event.target.value)}
-								className="h-8 w-full text-[13px]"
+								className="w-full"
 							>
 								<option value="">{t`Another group…`}</option>
 								{choices.map((node) => (
@@ -122,9 +120,7 @@ export function ApplicationKnowledge({ applicationId }: ApplicationKnowledgeProp
 							</NativeSelect>
 						</div>
 						<Button
-							size="sm"
 							variant="secondary"
-							className="h-8"
 							disabled={!picked || pending}
 							onClick={() => {
 								save.mutate({ applicationId, group: picked, mode: "include" });
@@ -134,9 +130,8 @@ export function ApplicationKnowledge({ applicationId }: ApplicationKnowledgeProp
 							<Trans>Include</Trans>
 						</Button>
 						<Button
-							size="sm"
 							variant="ghost"
-							className="h-8 text-ink-2"
+							className="text-ink-2"
 							disabled={!picked || pending}
 							onClick={() => {
 								save.mutate({ applicationId, group: picked, mode: "exclude" });
@@ -147,8 +142,8 @@ export function ApplicationKnowledge({ applicationId }: ApplicationKnowledgeProp
 						</Button>
 					</div>
 				)}
-			</div>
-			<p className="text-xs text-ink-3">
+			</List>
+			<p className="pt-2 text-[13px]/[18px] text-ink-3">
 				<Trans>Only this job's Fit, Apply, Prepare and coach use these. Nothing is copied.</Trans>
 			</p>
 		</section>

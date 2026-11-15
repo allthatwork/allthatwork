@@ -19,7 +19,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@reactive-resume/ui/components/alert-dialog";
+import { Badge } from "@reactive-resume/ui/components/badge";
 import { Button } from "@reactive-resume/ui/components/button";
+import { Checkbox } from "@reactive-resume/ui/components/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@reactive-resume/ui/components/dialog";
 import {
 	DropdownMenu,
@@ -29,10 +31,11 @@ import {
 } from "@reactive-resume/ui/components/dropdown-menu";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
+import { Label } from "@reactive-resume/ui/components/label";
+import { NativeSelect } from "@reactive-resume/ui/components/native-select";
 import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
-import { cn } from "@reactive-resume/utils/style";
 import { CompanyBoards, WatchSuggestions } from "./boards";
 import {
 	CompaniesHead,
@@ -44,8 +47,11 @@ import {
 	hostname,
 	useShortDate,
 } from "./lists";
+import { FilterBar, FilterField } from "@/components/calm/filter-bar";
+import { List, ListRow } from "@/components/calm/list-row";
 import { Page, PageBody, RootHeader } from "@/components/calm/page";
-import { getStageLabel } from "@/features/applications/stages";
+import { SectionHeading } from "@/components/calm/section-heading";
+import { StageDot } from "@/components/calm/stage-dot";
 import { useCareerTime } from "@/features/career/shared";
 import { client, orpc } from "@/libs/orpc/client";
 
@@ -112,15 +118,13 @@ type FieldProps = { label: string; hint?: string | undefined; children: ReactNod
 function Field({ label, hint, children }: FieldProps) {
 	const id = useId();
 	return (
-		<div className="grid content-start gap-1.5 text-sm">
-			<label htmlFor={id} className="font-medium">
-				{label}
-			</label>
+		<div className="grid content-start gap-1.5">
+			<Label htmlFor={id}>{label}</Label>
 			{isValidElement<{ id?: string; "aria-describedby"?: string }>(children)
 				? cloneElement(children, { id, ...(hint ? { "aria-describedby": `${id}-hint` } : {}) })
 				: children}
 			{hint && (
-				<p id={`${id}-hint`} className="-mt-0.5 text-xs text-ink-3">
+				<p id={`${id}-hint`} className="text-[13px]/[18px] text-ink-3">
 					{hint}
 				</p>
 			)}
@@ -132,7 +136,7 @@ type LoadStateProps = { pending: boolean; error: boolean; retry: () => void };
 function LoadState({ pending, error, retry }: LoadStateProps) {
 	if (error)
 		return (
-			<div role="alert" className="grid justify-items-start gap-2">
+			<div role="alert" className="grid justify-items-start gap-2 text-sm">
 				<p>
 					<Trans>Could not load the directory.</Trans>
 				</p>
@@ -142,7 +146,7 @@ function LoadState({ pending, error, retry }: LoadStateProps) {
 			</div>
 		);
 	return pending ? (
-		<p role="status" className="text-ink-2">
+		<p role="status" className="text-sm text-ink-3">
 			<Trans>Loading…</Trans>
 		</p>
 	) : null;
@@ -156,7 +160,7 @@ function DeleteAction({ label, onDelete }: DeleteActionProps) {
 		<div className="grid justify-items-start gap-2">
 			{armed ? (
 				<div className="flex flex-wrap items-center gap-2">
-					<span className="text-sm">
+					<span className="text-sm text-ink-2">
 						<Trans>This permanently deletes the selected records.</Trans>
 					</span>
 					<Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
@@ -204,15 +208,17 @@ type ToolbarProps = {
 function Toolbar({ search, onSearch, label, placeholder, add, onAdd, count, children }: ToolbarProps) {
 	const mobile = useBreakpoint() === "mobile";
 	return (
-		<div className="flex items-center gap-2">
-			<Input
-				className="min-w-0 flex-1 sm:max-w-xs"
-				aria-label={label}
+		<FilterBar className="flex-nowrap pt-0">
+			<FilterField
+				label={label}
+				icon="magnifying-glass"
 				placeholder={mobile ? t`Search` : placeholder}
 				value={search}
 				onChange={(event) => onSearch(event.target.value)}
+				className="min-w-0 flex-1 max-sm:w-auto sm:w-80 sm:flex-none"
 			/>
 			<Button onClick={onAdd} aria-label={add}>
+				<Icon name="plus" />
 				<span className="sm:hidden">
 					<Trans>Add</Trans>
 				</span>
@@ -220,7 +226,7 @@ function Toolbar({ search, onSearch, label, placeholder, add, onAdd, count, chil
 			</Button>
 			{count && <span className="ms-auto hidden text-sm text-ink-3 sm:inline">{count}</span>}
 			{children}
-		</div>
+		</FilterBar>
 	);
 }
 
@@ -245,7 +251,7 @@ function CompaniesList() {
 			{!search && <WatchSuggestions />}
 			<LoadState pending={query.isPending} error={query.isError} retry={() => void query.refetch()} />
 			{rows?.length === 0 && (
-				<p className="text-ink-2">
+				<p className="text-sm text-ink-3">
 					<Trans>No companies found. Add a company or track an application to get started.</Trans>
 				</p>
 			)}
@@ -296,7 +302,7 @@ function ContactsList() {
 								<Button variant="secondary" size="icon" aria-label={t`More actions`} className="ms-auto sm:ms-0" />
 							}
 						>
-							<Icon name="dots-three" size={18} />
+							<Icon name="dots-three" size={20} />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem variant="destructive" onClick={() => setErasing(true)}>
@@ -315,7 +321,7 @@ function ContactsList() {
 				}}
 			/>
 			{rows?.length === 0 && (
-				<p className="text-ink-2">
+				<p className="text-sm text-ink-3">
 					<Trans>No contacts found. People added from applications and interviews also appear here.</Trans>
 				</p>
 			)}
@@ -400,11 +406,11 @@ function CompanyPage({ id, onDeleted }: DetailProps) {
 	const hidden = contacts.length - shown.length;
 	const domain = hostname(company.website);
 	return (
-		<section className="grid max-w-6xl gap-6">
+		<section className="grid max-w-(--content-max) content-start">
 			<div className="grid gap-1">
-				<div className="flex items-center gap-2.5">
+				<div className="flex items-center gap-3">
 					<CompanyLogo key={company.website} name={company.name} website={company.website} size="md" />
-					<h2 className="min-w-0 flex-1 truncate font-display text-2xl font-medium">{company.name}</h2>
+					<h2 className="min-w-0 flex-1 truncate t-page-title">{company.name}</h2>
 					<Button variant="secondary" onClick={() => setEditing(true)}>
 						<Trans>Edit company</Trans>
 					</Button>
@@ -414,104 +420,91 @@ function CompanyPage({ id, onDeleted }: DetailProps) {
 						href={company.website}
 						target="_blank"
 						rel="noreferrer"
-						className="ms-[42px] w-fit text-sm text-accent-text hover:underline"
+						className="ms-[52px] w-fit text-sm text-accent-text underline-offset-2 hover:underline"
 					>
 						{domain ?? company.website}
 					</a>
 				)}
 			</div>
-			{company.notes && <p className="text-sm whitespace-pre-wrap">{company.notes}</p>}
-			<div className="grid gap-2">
-				<div className="flex items-center justify-between">
-					<h3 className="text-sm font-bold">
-						<Trans>Contacts</Trans> <span className="font-normal text-ink-3">{contacts.length}</span>
-					</h3>
-					<Button size="sm" onClick={() => setAdding(true)}>
+			{company.notes && <p className="max-w-prose pt-4 t-body whitespace-pre-wrap text-ink-2">{company.notes}</p>}
+			<SectionHeading
+				note={contacts.length}
+				action={
+					<button type="button" onClick={() => setAdding(true)}>
 						<Trans>Add contact</Trans>
-					</Button>
-				</div>
-				{contacts.length > 0 ? (
-					<ul className="overflow-clip rounded-md border border-line">
-						{shown.map((contact) => (
-							<li key={contact.id} className="border-b border-line last:border-b-0">
-								<ContactRow contact={contact} showCompany={false} />
-							</li>
-						))}
-						{hidden > 0 && (
-							<li>
-								<button
-									type="button"
-									className="px-2.5 py-1.5 text-[13px] text-accent-text underline-offset-4 hover:underline"
-									onClick={() => setAllContacts(true)}
-								>
-									{hidden === 1 ? t`Show 1 more` : t`Show ${hidden} more`}
-								</button>
-							</li>
-						)}
-					</ul>
-				) : (
-					<p className="text-sm text-ink-2">
-						<Trans>No contacts at this company yet.</Trans>
-					</p>
-				)}
-			</div>
-			<div className="grid gap-2">
-				<h3 className="text-sm font-bold">
-					<Trans>Applications</Trans> <span className="font-normal text-ink-3">{applications.length}</span>
-				</h3>
-				{applications.length > 0 ? (
-					<ul className="overflow-clip rounded-md border border-line">
-						{applications.map((row) => (
-							<li
-								key={row.id}
-								className="relative grid grid-cols-[minmax(0,1fr)_auto_4.5rem] items-center gap-3 border-b border-line px-2.5 py-1.5 text-[13px] last:border-b-0 hover:bg-sunken"
+					</button>
+				}
+			>
+				<Trans>Contacts</Trans>
+			</SectionHeading>
+			{contacts.length > 0 ? (
+				<ul className="border-t border-line">
+					{shown.map((contact) => (
+						<li key={contact.id} className="border-b border-line last:border-b-0">
+							<ContactRow contact={contact} showCompany={false} />
+						</li>
+					))}
+					{hidden > 0 && (
+						<li>
+							<button
+								type="button"
+								className="h-9 px-2.5 text-sm font-medium text-accent-text underline-offset-4 hover:underline"
+								onClick={() => setAllContacts(true)}
 							>
-								<Link
-									to="/dashboard/applications/$applicationId/{-$tab}"
-									params={{ applicationId: row.id }}
-									className="truncate font-semibold after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-accent"
-								>
-									{row.role}
-								</Link>
-								<StagePill status={row.status} />
-								<span className="text-end text-ink-2 tabular-nums">{shortDate(row.at)}</span>
-							</li>
-						))}
-					</ul>
-				) : (
-					<p className="text-sm text-ink-2">
-						<Trans>No applications at this company yet.</Trans>
-					</p>
-				)}
-			</div>
+								{hidden === 1 ? t`Show 1 more` : t`Show ${hidden} more`}
+							</button>
+						</li>
+					)}
+				</ul>
+			) : (
+				<p className="text-sm text-ink-3">
+					<Trans>No contacts at this company yet.</Trans>
+				</p>
+			)}
+			<SectionHeading note={applications.length}>
+				<Trans>Applications</Trans>
+			</SectionHeading>
+			{applications.length > 0 ? (
+				<List tight cap>
+					{applications.map((row) => (
+						<ListRow
+							key={row.id}
+							render={<Link to="/dashboard/applications/$applicationId/{-$tab}" params={{ applicationId: row.id }} />}
+							title={row.role}
+							value={<Stage status={row.status} />}
+							trailing={
+								<span className="w-16 text-end text-[13px]/[18px] text-ink-3 tabular-nums">{shortDate(row.at)}</span>
+							}
+						/>
+					))}
+				</List>
+			) : (
+				<p className="text-sm text-ink-3">
+					<Trans>No applications at this company yet.</Trans>
+				</p>
+			)}
 			<CompanyBoards companyId={company.id} companyName={company.name} />
-			<DeleteAction
-				label={t`Delete company`}
-				onDelete={async () => {
-					await client.directory.deleteCompany({ id });
-					await onDeleted();
-					await refresh();
-				}}
-			/>
+			<div className="pt-8">
+				<DeleteAction
+					label={t`Delete company`}
+					onDelete={async () => {
+						await client.directory.deleteCompany({ id });
+						await onDeleted();
+						await refresh();
+					}}
+				/>
+			</div>
 			<CompanyEditor open={editing} company={company} onClose={() => setEditing(false)} />
 			<ContactEditor open={adding} companyId={id} onClose={() => setAdding(false)} />
 		</section>
 	);
 }
 
-type StagePillProps = { status: string };
-function StagePill({ status }: StagePillProps) {
+type StageProps = { status: string };
+/** The application's stage as Calm writes it: its dot and its name. */
+function Stage({ status }: StageProps) {
 	const stage = (APPLICATION_STATUSES as readonly string[]).includes(status) ? (status as ApplicationStatus) : null;
-	return (
-		<span
-			className={cn(
-				"rounded-full px-1.5 py-px text-[11px] font-semibold whitespace-nowrap",
-				stage === "closed" ? "bg-sunken text-ink-2" : "bg-accent-soft text-accent-text",
-			)}
-		>
-			{stage ? getStageLabel(stage) : status}
-		</span>
-	);
+	return stage ? <StageDot status={stage} /> : <span>{status}</span>;
 }
 
 type ApplicationLinkProps = { application: { id: string; company: string; role: string; status: string } };
@@ -520,10 +513,10 @@ function ApplicationLink({ application }: ApplicationLinkProps) {
 		<Link
 			to="/dashboard/applications/$applicationId/{-$tab}"
 			params={{ applicationId: application.id }}
-			className="rounded-lg border border-line p-3 text-sm hover:bg-sunken"
+			className="w-fit [overflow-wrap:anywhere] underline-offset-2 hover:underline"
 		>
-			<span className="font-medium">{application.role}</span>
-			<span className="text-ink-2"> · {application.company}</span>
+			<span className="font-medium text-ink">{application.role}</span>
+			<span className="text-ink-3"> · {application.company}</span>
 		</Link>
 	);
 }
@@ -573,49 +566,49 @@ function ContactPage({ id, onDeleted }: DetailProps) {
 		})),
 	].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 	return (
-		<section className="grid max-w-6xl gap-6">
+		<section className="grid max-w-(--content-max) content-start">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div className="grid gap-1">
-					<h2 className="font-display text-2xl font-medium">{contact.name}</h2>
-					<p className="text-ink-2">{contact.position}</p>
+					<h2 className="t-page-title [overflow-wrap:anywhere]">{contact.name}</h2>
+					<p className="text-sm text-ink-2">{contact.position}</p>
 					{company && (
 						<Link
 							to="/dashboard/directory"
 							search={{ tab: "companies", company: company.id }}
-							className="text-accent-text hover:underline"
+							className="w-fit text-sm text-accent-text underline-offset-2 hover:underline"
 						>
 							{company.name}
 						</Link>
 					)}
 					{contact.lookingForWork && (
-						<p className="text-sm text-accent-text">
+						<Badge variant="accent" className="w-fit">
 							<Trans>Looking for work</Trans>
-						</p>
+						</Badge>
 					)}
 				</div>
 				<Button variant="secondary" onClick={() => setEditing(true)}>
 					<Trans>Edit contact</Trans>
 				</Button>
 			</div>
-			<div className="grid gap-2 text-sm">
+			<div className="grid gap-2 pt-6 text-sm">
 				{contact.profileLinks.map((url) => (
 					<a
 						key={url}
 						href={url}
 						target="_blank"
 						rel="noreferrer"
-						className="break-all text-accent-text hover:underline"
+						className="w-fit break-all text-accent-text underline-offset-2 hover:underline"
 					>
 						{url}
 					</a>
 				))}
 				{contact.emails.map((email) => (
-					<a key={email} href={`mailto:${email}`} className="text-accent-text">
+					<a key={email} href={`mailto:${email}`} className="w-fit text-accent-text underline-offset-2 hover:underline">
 						{email}
 					</a>
 				))}
 				{contact.phones.map((phone) => (
-					<a key={phone} href={`tel:${phone}`} className="text-accent-text">
+					<a key={phone} href={`tel:${phone}`} className="w-fit text-accent-text underline-offset-2 hover:underline">
 						{phone}
 					</a>
 				))}
@@ -633,22 +626,33 @@ function ContactPage({ id, onDeleted }: DetailProps) {
 				</p>
 			</div>
 			{employment.length > 0 && (
-				<div className="grid gap-2">
-					<h3 className="text-lg font-semibold">
+				<>
+					<SectionHeading>
 						<Trans>Company history</Trans>
-					</h3>
-					{employment.map((row) => (
-						<p key={row.id} className="text-sm">
-							{[row.position, row.companyName].filter(Boolean).join(" · ")}
-							{(row.startedOn || row.endedOn) && ` (${row.startedOn ?? "?"} – ${row.endedOn ?? "?"})`}
-						</p>
-					))}
-				</div>
+					</SectionHeading>
+					<List tight cap>
+						{employment.map((row) => (
+							<ListRow
+								key={row.id}
+								title={
+									<>
+										{[row.position, row.companyName].filter(Boolean).join(" · ")}
+										{(row.startedOn || row.endedOn) && (
+											<span className="font-normal text-ink-3 tabular-nums">
+												{` (${row.startedOn ?? "?"} – ${row.endedOn ?? "?"})`}
+											</span>
+										)}
+									</>
+								}
+							/>
+						))}
+					</List>
+				</>
 			)}
+			<SectionHeading>
+				<Trans>Timeline</Trans>
+			</SectionHeading>
 			<div className="grid gap-3">
-				<h3 className="text-lg font-semibold">
-					<Trans>Timeline</Trans>
-				</h3>
 				<form
 					className="grid justify-items-start gap-2"
 					onSubmit={(event) => {
@@ -672,37 +676,43 @@ function ContactPage({ id, onDeleted }: DetailProps) {
 						</p>
 					)}
 				</form>
-				{timeline.map((row) => (
-					<div key={row.id} className="grid gap-2 border-l-2 border-line pl-4 text-sm">
-						<time className="text-xs text-ink-3" dateTime={new Date(row.at).toISOString()}>
-							{format(row.at, { dateStyle: "medium", timeStyle: "short" })}
-						</time>
-						{row.content}
-						{row.note && (
-							<DeleteAction
-								label={t`Delete note`}
-								onDelete={async () => {
-									await client.directory.deleteNote({ id: row.id });
-									await refresh();
-								}}
-							/>
-						)}
-					</div>
-				))}
+				{timeline.length > 0 && (
+					<ul className="border-t border-line">
+						{timeline.map((row) => (
+							<li key={row.id} className="grid gap-2 border-b border-line py-3 text-sm last:border-b-0">
+								<time className="text-[13px]/[18px] text-ink-3" dateTime={new Date(row.at).toISOString()}>
+									{format(row.at, { dateStyle: "medium", timeStyle: "short" })}
+								</time>
+								{row.content}
+								{row.note && (
+									<DeleteAction
+										label={t`Delete note`}
+										onDelete={async () => {
+											await client.directory.deleteNote({ id: row.id });
+											await refresh();
+										}}
+									/>
+								)}
+							</li>
+						))}
+					</ul>
+				)}
 				{!timeline.length && (
-					<p className="text-sm text-ink-2">
+					<p className="text-sm text-ink-3">
 						<Trans>Notes, linked applications, and interviews will appear here.</Trans>
 					</p>
 				)}
 			</div>
-			<DeleteAction
-				label={t`Delete contact`}
-				onDelete={async () => {
-					await client.directory.deleteContact({ id });
-					await onDeleted();
-					await refresh();
-				}}
-			/>
+			<div className="pt-8">
+				<DeleteAction
+					label={t`Delete contact`}
+					onDelete={async () => {
+						await client.directory.deleteContact({ id });
+						await onDeleted();
+						await refresh();
+					}}
+				/>
+			</div>
 			<ContactEditor open={editing} contact={contact} onClose={() => setEditing(false)} />
 		</section>
 	);
@@ -717,7 +727,7 @@ function CompanyEditor({ open, company, onClose }: CompanyEditorProps) {
 				if (!value) onClose();
 			}}
 		>
-			<DialogContent closeLabel={t`Close`} className="max-w-lg">
+			<DialogContent closeLabel={t`Close`}>
 				<DialogHeader>
 					<DialogTitle>{company ? t`Edit company` : t`Add company`}</DialogTitle>
 				</DialogHeader>
@@ -777,9 +787,11 @@ function CompanyForm({ company, onClose }: CompanyFormProps) {
 					{save.error.message}
 				</p>
 			)}
-			<Button type="submit" disabled={save.isPending || !name.trim()}>
-				<Trans>Save</Trans>
-			</Button>
+			<div className="flex justify-end pt-2">
+				<Button type="submit" disabled={save.isPending || !name.trim()}>
+					<Trans>Save</Trans>
+				</Button>
+			</div>
 		</form>
 	);
 }
@@ -798,7 +810,7 @@ function ContactEditor({ open, contact, companyId, onClose }: ContactEditorProps
 				if (!value) onClose();
 			}}
 		>
-			<DialogContent closeLabel={t`Close`} className="max-h-[90vh] max-w-xl overflow-y-auto">
+			<DialogContent closeLabel={t`Close`} className="sm:max-w-[560px]">
 				<DialogHeader>
 					<DialogTitle>{contact ? t`Edit contact` : t`Add contact`}</DialogTitle>
 				</DialogHeader>
@@ -897,11 +909,7 @@ function ContactForm({ contact, companyId, onClose }: ContactFormProps) {
 				</Field>
 			</div>
 			<Field label={t`Company`}>
-				<select
-					className="h-9 rounded-md border border-line bg-surface px-3"
-					value={draft.companyId}
-					onChange={(event) => set("companyId", event.target.value)}
-				>
+				<NativeSelect value={draft.companyId} onChange={(event) => set("companyId", event.target.value)}>
 					<option value="">{t`No company`}</option>
 					{companies.data &&
 						groupCompanies(companies.data, i18n.locale)
@@ -911,19 +919,15 @@ function ContactForm({ contact, companyId, onClose }: ContactFormProps) {
 									{row.name}
 								</option>
 							))}
-				</select>
+				</NativeSelect>
 			</Field>
 			<Field label={t`Position`}>
 				<Input maxLength={300} value={draft.position} onChange={(event) => set("position", event.target.value)} />
 			</Field>
-			<label className="flex items-center gap-2 text-sm">
-				<input
-					type="checkbox"
-					checked={draft.lookingForWork}
-					onChange={(event) => set("lookingForWork", event.target.checked)}
-				/>
+			<Label className="w-fit cursor-pointer text-sm leading-5 font-normal text-ink">
+				<Checkbox checked={draft.lookingForWork} onCheckedChange={(checked) => set("lookingForWork", checked)} />
 				<Trans>Looking for work</Trans>
-			</label>
+			</Label>
 			{multi("profileLinks", t`Profile links`)}
 			{multi("emails", t`Email addresses`)}
 			{multi("phones", t`Phone numbers`)}
@@ -955,17 +959,19 @@ function ContactForm({ contact, companyId, onClose }: ContactFormProps) {
 					{save.error.message}
 				</p>
 			)}
-			<Button
-				type="submit"
-				disabled={
-					save.isPending ||
-					!contactFullName(draft.firstName, draft.lastName) ||
-					companies.isPending ||
-					companies.isError
-				}
-			>
-				<Trans>Save</Trans>
-			</Button>
+			<div className="flex justify-end pt-2">
+				<Button
+					type="submit"
+					disabled={
+						save.isPending ||
+						!contactFullName(draft.firstName, draft.lastName) ||
+						companies.isPending ||
+						companies.isError
+					}
+				>
+					<Trans>Save</Trans>
+				</Button>
+			</div>
 		</form>
 	);
 }

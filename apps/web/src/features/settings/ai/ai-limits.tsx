@@ -10,6 +10,7 @@ import { Button } from "@reactive-resume/ui/components/button";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Spinner } from "@reactive-resume/ui/components/spinner";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { cn } from "@reactive-resume/utils/style";
 import { SettingsSection } from "../section";
 import { BudgetMeter } from "@/features/career/knowledge/budget";
 import { getOrpcErrorMessage } from "@/libs/error-message";
@@ -299,7 +300,7 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 
 	return (
 		<form
-			className="grid gap-5 border-t border-line pt-4"
+			className="flex flex-col"
 			onSubmit={(event) => {
 				event.preventDefault();
 				if (!valid) return;
@@ -308,10 +309,11 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 			}}
 		>
 			{groups.map((group, index) => (
-				<fieldset key={index} className="grid gap-3">
-					<legend className="mb-1 text-sm font-medium">{group.legend}</legend>
-					{group.description && <p className="-mt-1 text-[13px] text-ink-3">{group.description}</p>}
-					<div className="grid gap-3 sm:grid-cols-2">
+				<fieldset key={index} className="pt-6 first:pt-4">
+					{/* Floated, the legend is laid out like any heading, below the fieldset's padding instead of on its edge. */}
+					<legend className="float-left w-full t-section-heading text-ink">{group.legend}</legend>
+					{group.description && <p className="clear-left pt-0.5 t-small text-ink-3">{group.description}</p>}
+					<div className="clear-left flex flex-col pt-1 [&>div:last-child]:border-b-0">
 						{group.limits.map(({ name, label, unit, blank }) => {
 							const fallback = DEFAULTS[name];
 							return (
@@ -336,7 +338,7 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 				</fieldset>
 			))}
 
-			<div className="flex flex-wrap items-center justify-end gap-2">
+			<div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
 				<Button
 					type="button"
 					variant="ghost"
@@ -370,10 +372,17 @@ function LimitField({ name, label, unit, value, invalid, placeholder, hint, onCh
 	const { min, max } = bounds(name);
 
 	return (
-		<div className="grid content-start gap-1.5">
-			<label htmlFor={id} className="text-xs font-medium text-ink-2">
-				{label}
-			</label>
+		// One settings row: the label and its hint at the start, the number and its unit at the end. On a phone the field
+		// goes under the label, so a long label keeps its width.
+		<div className="grid gap-x-3.5 gap-y-2 border-b border-line py-3 sm:min-h-(--row) sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:py-2.5">
+			<div className="flex min-w-0 flex-col gap-px">
+				<label htmlFor={id} className="text-[15px]/[22px] font-medium [overflow-wrap:anywhere] text-ink">
+					{label}
+				</label>
+				<p id={`${id}-hint`} className={cn("t-small", invalid ? "text-danger-text" : "text-ink-3")}>
+					{hint}
+				</p>
+			</div>
 			<div className="flex items-center gap-2">
 				<Input
 					id={id}
@@ -387,13 +396,10 @@ function LimitField({ name, label, unit, value, invalid, placeholder, hint, onCh
 					aria-invalid={invalid || undefined}
 					aria-describedby={`${id}-hint`}
 					onChange={(event) => onChange(event.target.value)}
-					className="w-36"
+					className="w-32"
 				/>
-				<span className="text-[13px] text-ink-3">{unit}</span>
+				<span className="min-w-[88px] t-small text-ink-3">{unit}</span>
 			</div>
-			<p id={`${id}-hint`} className={invalid ? "text-xs text-danger-text" : "text-xs text-ink-3"}>
-				{hint}
-			</p>
 		</div>
 	);
 }

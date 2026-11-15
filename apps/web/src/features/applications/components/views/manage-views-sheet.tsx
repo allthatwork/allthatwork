@@ -16,7 +16,7 @@ import { useRef, useState } from "react";
 import { APPLICATION_VIEW_NAME_MAX, APPLICATION_VIEWS_MAX } from "@reactive-resume/schema/applications/views";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@reactive-resume/ui/components/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@reactive-resume/ui/components/sheet";
 import { cn } from "@reactive-resume/utils/style";
 
 type ManageViewsSheetProps = {
@@ -70,17 +70,18 @@ export function ManageViewsSheet({
 			}}
 		>
 			<SheetContent closeLabel={t`Close`} side={phone ? "bottom" : "right"} className="gap-0 sm:max-w-[440px]">
-				<div className={cn("grid gap-1 pe-14 pb-3.5", phone ? "ps-4 pt-1.5" : "ps-6 pt-5")}>
-					<SheetTitle className="text-[22px] leading-7">
+				<SheetHeader className={cn(phone && "ps-5 pt-2")}>
+					<SheetTitle>
 						<Trans>Views</Trans>
 					</SheetTitle>
-					<SheetDescription className="text-[13px] text-ink-2">
+					<SheetDescription>
 						<Trans>Drag to reorder. The star marks the view a new tab opens with.</Trans>
 					</SheetDescription>
-				</div>
-				<div className="grid min-h-0 flex-1 content-start gap-0.5 overflow-y-auto px-3">
+				</SheetHeader>
+				{/* Calm's tight list: 44px rows split by hairlines, on the sheet itself. */}
+				<div className={cn("flex min-h-0 flex-1 flex-col overflow-y-auto", phone ? "px-5" : "px-6")}>
 					{count === 0 ? (
-						<p className="mx-2 text-xs text-ink-3">
+						<p className="text-[13px]/[18px] text-ink-3">
 							<Trans>No views yet.</Trans>
 						</p>
 					) : (
@@ -103,8 +104,8 @@ export function ManageViewsSheet({
 				</div>
 				<p
 					className={cn(
-						"mt-auto border-t border-line pt-3.5 text-xs text-ink-3",
-						phone ? "px-4 pb-[calc(22px+env(safe-area-inset-bottom))]" : "px-6 pb-5",
+						"mt-auto border-t border-line pt-4 text-[13px]/[18px] text-ink-3",
+						phone ? "px-5 pb-[calc(16px+env(safe-area-inset-bottom))]" : "px-6 pb-4",
 					)}
 				>
 					<Trans>
@@ -145,8 +146,8 @@ function ManageRow({
 			ref={setNodeRef}
 			style={{ transform: CSS.Translate.toString(transform), transition }}
 			className={cn(
-				"flex h-11 items-center gap-2 rounded-lg ps-1 pe-1.5 transition-colors hover:bg-hover",
-				isDragging && "relative z-10 bg-sunken shadow-e1",
+				"flex min-h-11 items-center gap-2 border-t border-line first:border-t-0",
+				isDragging && "relative z-10 rounded-md border-transparent bg-raised shadow-e2",
 			)}
 		>
 			<button
@@ -155,7 +156,7 @@ function ManageRow({
 				{...attributes}
 				{...listeners}
 				aria-label={t`Move ${name}`}
-				className="grid shrink-0 cursor-grab touch-none place-items-center rounded py-0.5 text-ink-3 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
+				className="-ms-1 grid shrink-0 cursor-grab touch-none place-items-center rounded-xs py-0.5 text-ink-3 outline-none hover:text-ink focus-visible:ring-2 focus-visible:ring-accent active:cursor-grabbing"
 			>
 				<Icon name="dots-six-vertical" size={14} />
 			</button>
@@ -163,7 +164,7 @@ function ManageRow({
 				<RenameField view={view} onRename={onRename} onDone={onStopRename} />
 			) : (
 				<>
-					<span className="min-w-0 truncate text-sm font-medium">{name}</span>
+					<span className="min-w-0 truncate text-sm/5 font-medium">{name}</span>
 					<span className="ms-auto shrink-0 pe-1.5 font-mono text-xs text-ink-3 tabular-nums">{count}</span>
 				</>
 			)}
@@ -204,7 +205,7 @@ function RowButton({ label, pressed, onClick, className, children }: RowButtonPr
 			aria-pressed={pressed}
 			onClick={onClick}
 			className={cn(
-				"grid size-[30px] shrink-0 place-items-center rounded-md text-ink-3 transition-colors outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-accent",
+				"touch-target relative grid size-7 shrink-0 place-items-center rounded-sm text-ink-3 transition-colors outline-none hover:bg-hover hover:text-ink focus-visible:ring-2 focus-visible:ring-accent",
 				className,
 			)}
 		>

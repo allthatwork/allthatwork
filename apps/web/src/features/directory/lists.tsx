@@ -6,6 +6,7 @@ import { Trans } from "@lingui/react/macro";
 import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { contactSortKey, DIRECTORY_LETTERS } from "@reactive-resume/schema/directory-names";
+import { Badge } from "@reactive-resume/ui/components/badge";
 import { cn } from "@reactive-resume/utils/style";
 import { JobsButton, jobsLink, WatchBox } from "./watch";
 import { useCareerTime } from "@/features/career/shared";
@@ -35,21 +36,22 @@ export function GroupedList<T>({ label, groups, head, rowKey, renderRow }: Group
 		document.getElementById(`${id}-${key}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
 	return (
 		<div className="grid grid-cols-[minmax(0,1fr)_0.875rem] items-start gap-1.5 sm:grid-cols-[minmax(0,1fr)_1rem] sm:gap-2">
-			<div aria-label={label} role="region" className="overflow-clip rounded-md border border-line">
+			<div aria-label={label} role="region" className="min-w-0">
 				{head}
 				{groups.map((group) => (
 					<section
 						key={group.key}
 						id={`${id}-${group.key}`}
 						aria-labelledby={`${id}-${group.key}-label`}
-						className="scroll-mt-2 border-t border-line first-of-type:border-t-0"
+						className="scroll-mt-2"
 					>
+						{/* The letter, like the Applications List's stage groups; it stays pinned, on the page's own ground. */}
 						<h3
 							id={`${id}-${group.key}-label`}
-							className="sticky top-0 z-10 flex items-baseline gap-2 border-b border-line bg-sunken px-2.5 py-1 text-[13px] font-bold"
+							className="sticky top-0 z-10 flex h-9 items-center gap-2 border-b border-line bg-bg px-2.5 pt-1 text-sm font-semibold"
 						>
 							{groupLabel(group.key)}
-							<span className="text-xs font-normal text-ink-3">{group.items.length}</span>
+							<span className="font-mono text-xs font-medium text-ink-3">{group.items.length}</span>
 						</h3>
 						<ul>
 							{group.items.map((item) => (
@@ -63,7 +65,7 @@ export function GroupedList<T>({ label, groups, head, rowKey, renderRow }: Group
 			</div>
 			<nav
 				aria-label={t`Jump to a letter`}
-				className="sticky top-2 grid content-start gap-px pt-0.5 text-center text-[9px] leading-[1.35] font-bold sm:text-[10px]"
+				className="sticky top-2 grid content-start gap-px pt-0.5 text-center text-[9px] leading-[1.35] font-semibold sm:text-[10px]"
 			>
 				{DIRECTORY_LETTERS.map((letter) =>
 					present.has(letter) ? (
@@ -71,7 +73,7 @@ export function GroupedList<T>({ label, groups, head, rowKey, renderRow }: Group
 							key={letter}
 							type="button"
 							aria-label={t`Jump to ${letter}`}
-							className="rounded-xs text-accent-text hover:bg-sunken"
+							className="rounded-xs text-accent-text transition-colors hover:bg-hover"
 							onClick={() => jump(letter)}
 						>
 							{letter}
@@ -106,7 +108,7 @@ export function ContactName({ contact }: ContactNameProps) {
 	return (
 		<>
 			{contact.firstName && `${contact.firstName} `}
-			<b className="font-bold">{bold}</b>
+			<b className="font-semibold">{bold}</b>
 			{rest}
 		</>
 	);
@@ -114,9 +116,9 @@ export function ContactName({ contact }: ContactNameProps) {
 
 function LookingForWork() {
 	return (
-		<span className="me-1.5 inline-flex rounded-full bg-accent-soft px-1.5 py-px text-[11px] font-semibold text-accent-text">
+		<Badge variant="accent" className="me-1.5 align-[1px]">
 			<Trans>Looking for work</Trans>
-		</span>
+		</Badge>
 	);
 }
 
@@ -145,7 +147,7 @@ function ListHead({ columns, children }: ListHeadProps) {
 		<div
 			aria-hidden="true"
 			className={cn(
-				"hidden h-7 items-center gap-3 border-b border-line bg-sunken px-2.5 text-[11px] tracking-[0.04em] text-ink-3 uppercase sm:grid",
+				"hidden h-9 items-center gap-3 border-b border-line px-2.5 text-xs font-medium text-ink-3 sm:grid",
 				columns,
 			)}
 		>
@@ -195,21 +197,21 @@ export function ContactRow({ contact, company, showCompany = true }: ContactRowP
 	return (
 		<div
 			className={cn(
-				"relative grid gap-0.5 px-2.5 py-1.5 text-[13px] hover:bg-sunken sm:min-h-[34px] sm:items-center sm:gap-3 sm:py-1",
+				"relative grid gap-0.5 px-2.5 py-2 text-sm transition-colors duration-quick hover:bg-hover sm:min-h-9 sm:items-center sm:gap-3 sm:py-1",
 				showCompany ? CONTACT_COLUMNS : COMPANY_CONTACT_COLUMNS,
 			)}
 		>
 			<span className="flex min-w-0 items-center gap-2">
 				<span
 					aria-hidden="true"
-					className="hidden size-[22px] shrink-0 place-items-center rounded-full border border-line bg-sunken text-[10px] font-bold text-ink-2 sm:grid"
+					className="hidden size-6 shrink-0 place-items-center rounded-sm bg-sunken text-[11px] font-semibold text-ink-2 sm:grid"
 				>
 					{initials(contact)}
 				</span>
 				<Link
 					to="/dashboard/directory"
 					search={{ tab: "contacts", contact: contact.id }}
-					className="truncate after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-accent"
+					className="truncate text-ink after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-accent"
 				>
 					<ContactName contact={contact} />
 				</Link>
@@ -311,7 +313,7 @@ export function CompanyRow({ company }: CompanyRowProps) {
 	return (
 		<div
 			className={cn(
-				"relative grid grid-cols-[minmax(0,1fr)_1.5rem] gap-x-2 gap-y-0.5 px-2.5 py-1.5 text-[13px] hover:bg-sunken sm:min-h-[34px] sm:items-center sm:gap-3 sm:py-1",
+				"relative grid grid-cols-[minmax(0,1fr)_1.5rem] gap-x-2 gap-y-0.5 px-2.5 py-2 text-sm transition-colors duration-quick hover:bg-hover sm:min-h-9 sm:items-center sm:gap-3 sm:py-1",
 				COMPANY_COLUMNS,
 			)}
 		>
@@ -320,11 +322,11 @@ export function CompanyRow({ company }: CompanyRowProps) {
 				<Link
 					to="/dashboard/directory"
 					search={{ tab: "companies", company: company.id }}
-					className="truncate font-semibold after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-accent"
+					className="truncate font-medium text-ink after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-accent"
 				>
 					{company.name}
 				</Link>
-				{domain && <span className="hidden truncate text-ink-3 sm:inline">{domain}</span>}
+				{domain && <span className="hidden truncate text-[13px] text-ink-3 sm:inline">{domain}</span>}
 			</span>
 			{phoneLine.length > 0 && (
 				<span className="col-start-1 row-start-2 truncate text-ink-2 sm:hidden">
@@ -357,9 +359,9 @@ export function CompanyRow({ company }: CompanyRowProps) {
 
 type CompanyLogoProps = { name: string; website: string | null; size?: "sm" | "md" | "lg" };
 const LOGO_SIZES = {
-	sm: { box: "size-5 rounded-[5px] text-[10px]", px: 20 },
-	md: { box: "size-8 rounded-[7px] text-sm", px: 32 },
-	lg: { box: "size-10 rounded-lg", px: 40 },
+	sm: { box: "size-6 rounded-xs text-[11px]", px: 24 },
+	md: { box: "size-10 rounded-md text-sm", px: 40 },
+	lg: { box: "size-10 rounded-md", px: 40 },
 };
 
 /** The company's favicon, or its first letter while there's none. */
@@ -374,7 +376,10 @@ export function CompanyLogo({ name, website, size = "lg" }: CompanyLogoProps) {
 	}
 	return (
 		<span
-			className={cn("relative grid shrink-0 place-items-center overflow-hidden bg-sunken font-semibold", box)}
+			className={cn(
+				"relative grid shrink-0 place-items-center overflow-hidden bg-sunken font-sans font-semibold text-ink-2",
+				box,
+			)}
 			aria-hidden="true"
 		>
 			{name.slice(0, 1).toUpperCase()}

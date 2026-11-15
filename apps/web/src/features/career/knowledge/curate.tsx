@@ -8,7 +8,7 @@ import { DuplicatesCard, StoriesCard } from "./upkeep";
 export function CuratePage() {
 	return (
 		<KnowledgeFrame current="curate">
-			<div className="grid gap-3.5 pt-6">
+			<div className="flex flex-col">
 				<BudgetMeter showSettingsLink />
 				<GroupsCard />
 				<StoriesCard />

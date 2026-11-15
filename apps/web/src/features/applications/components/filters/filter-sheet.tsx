@@ -30,8 +30,10 @@ import {
 	toggleValue,
 	withReviewerFit,
 } from "../../filter";
+import { phoneSheetFooterClassName, phoneSheetHeaderClassName } from "../phone-sheet";
 import { documentLabel, numberFieldLabel, ReviewerLabel, reviewerFieldLabel } from "./filter-panel";
 import { NumberFilterField } from "./number-filter-field";
+import { Chip } from "@/components/calm/filter-bar";
 
 type PillProps = {
 	on: boolean;
@@ -42,38 +44,35 @@ type PillProps = {
 	children: ReactNode;
 };
 
+/** Calm's chip, at 36px for a thumb: a quiet outline, the accent tint once picked (danger for an excluded tag). */
 function Pill({ on, onClick, count, tone, className, children }: PillProps) {
 	return (
-		<button
-			type="button"
-			aria-pressed={on}
+		<Chip
+			pressed={on}
 			onClick={onClick}
 			className={cn(
-				"inline-flex h-8 items-center gap-1.5 rounded-full border px-[11px] text-[13px] transition-colors",
-				on
-					? tone === "out"
-						? "border-transparent bg-danger-soft font-semibold text-danger-text line-through"
-						: "border-transparent bg-accent-soft font-semibold text-accent-text"
-					: "border-line-2 text-ink",
+				"h-9 px-3 text-sm",
+				on && "font-semibold",
+				on && tone === "out" && "bg-danger-soft text-danger-text line-through hover:text-danger-text",
 				className,
 			)}
 		>
 			{children}
 			{count !== undefined && (
-				<span className={cn("font-mono text-[11.5px]", on ? "text-current" : "text-ink-3")}>{count}</span>
+				<span className={cn("font-mono text-xs", on ? "text-current" : "text-ink-3")}>{count}</span>
 			)}
-		</button>
+		</Chip>
 	);
 }
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
 	return (
-		<section className="grid gap-2 pt-3 pb-1">
-			<h3 className="flex justify-between text-[13px] font-semibold">
+		<section className="grid gap-2.5 pt-4 pb-1">
+			<h3 className="flex items-baseline justify-between gap-3 t-section-heading">
 				{title}
-				{hint && <span className="font-normal text-ink-3">{hint}</span>}
+				{hint && <span className="text-[13px]/[18px] font-normal text-ink-3">{hint}</span>}
 			</h3>
-			<div className="flex flex-wrap gap-1.5">{children}</div>
+			<div className="flex flex-wrap gap-2">{children}</div>
 		</section>
 	);
 }
@@ -110,7 +109,7 @@ export function PhoneFilters({
 			kind={key === "fit" || key === "tfit" ? "fit" : "days"}
 			label={numberFieldLabel(key)}
 			onChange={(value, replace) => setNumber(key, value, replace)}
-			className="h-11 w-16 rounded-lg text-base"
+			className="h-11 w-16 rounded-md text-base"
 		/>
 	);
 
@@ -121,7 +120,7 @@ export function PhoneFilters({
 		options: { sign?: boolean; unit?: ReactNode; indent?: boolean },
 	) => (
 		<div className={cn("flex basis-full items-center gap-2.5", options.indent && "ps-4")}>
-			<span className="min-w-0 flex-1 text-sm text-ink-2">{label}</span>
+			<span className="min-w-0 flex-1 text-[15px]/[22px] text-ink-2">{label}</span>
 			{options.sign && (
 				<span aria-hidden="true" className="text-base text-ink-3">
 					≥
@@ -219,7 +218,7 @@ export function PhoneFilters({
 										kind="fit"
 										label={reviewerFieldLabel(slot)}
 										onChange={(value, replace) => onChange(withReviewerFit(filters, slot, value), { replace })}
-										className="h-11 w-16 rounded-lg text-base"
+										className="h-11 w-16 rounded-md text-base"
 									/>,
 									{ sign: true, indent: true },
 								)}
@@ -288,7 +287,7 @@ export function PhoneFilters({
 				<Icon name="funnel" size={16} />
 				<Trans>Filters</Trans>
 				{count > 0 && (
-					<span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-[5px] text-[11px] font-semibold text-on-accent">
+					<span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-[5px] text-xs font-semibold text-on-accent">
 						{count}
 					</span>
 				)}
@@ -296,27 +295,28 @@ export function PhoneFilters({
 			{trailing}
 
 			{set.length > 0 && (
-				<div className="-mx-4 flex basis-full [scrollbar-width:none] gap-1.5 overflow-x-auto px-4 pb-0.5">
+				<div className="-mx-4 flex basis-full [scrollbar-width:none] gap-2 overflow-x-auto px-4 pb-0.5">
 					{set.map((facet) => (
 						<span
 							key={facet}
-							className="inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-accent-soft ps-2.5 pe-1.5 text-[12.5px] whitespace-nowrap text-accent-text"
+							data-slot="chip"
+							className="inline-flex h-7 shrink-0 items-center gap-1 rounded-sm bg-accent-soft ps-2.5 pe-1.5 text-[13px]/[18px] font-medium whitespace-nowrap text-accent-text"
 						>
 							{getFacetLabel(facet)}: <b className="font-semibold">{summary(filters, facet, context)}</b>
 							<button
 								type="button"
 								aria-label={t`Clear ${getFacetLabel(facet)}`}
 								onClick={() => onChange(clearFacet(filters, facet))}
-								className="grid size-5 place-items-center"
+								className="touch-target relative grid size-5 place-items-center rounded-xs"
 							>
-								<Icon name="x" size={12} />
+								<Icon name="x" size={14} />
 							</button>
 						</span>
 					))}
 				</div>
 			)}
 			{!isDefaultFilters(filters) && (
-				<p className="basis-full text-[12.5px] text-ink-3">
+				<p className="basis-full text-[13px]/[18px] text-ink-3">
 					<Trans>
 						<b className="font-semibold text-ink">{matching}</b> of {applications.length}
 					</Trans>
@@ -329,24 +329,28 @@ export function PhoneFilters({
 
 			<Sheet open={open} onOpenChange={setOpen}>
 				<SheetContent side="bottom" showCloseButton={false} className="h-[86svh] gap-0">
-					<div className="flex items-center justify-between border-b border-line px-4 pt-1.5 pb-2.5">
-						<SheetTitle className="font-sans text-[17px] leading-6 font-bold">
+					<div className={cn(phoneSheetHeaderClassName, "border-b border-line")}>
+						<SheetTitle>
 							<Trans>Filters</Trans>
 						</SheetTitle>
-						<button type="button" onClick={() => onChange(clearAll())} className="text-accent-text">
+						<button
+							type="button"
+							onClick={() => onChange(clearAll())}
+							className="touch-target relative text-sm font-medium text-accent-text"
+						>
 							<Trans>Clear all</Trans>
 						</button>
 					</div>
-					<div className="min-h-0 flex-1 overflow-y-auto px-4 pt-1 pb-3">
+					<div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
 						{PRIMARY_FACETS.map(section)}
-						<div className="mt-3 h-px bg-line" />
+						<div className="mt-4 h-px bg-line" />
 						{EXTRA_FACETS.map(section)}
 					</div>
-					<div className="flex gap-2.5 border-t border-line px-4 pt-3 pb-[calc(22px+env(safe-area-inset-bottom))]">
-						<Button variant="secondary" className="h-[42px] w-[110px]" onClick={() => onChange(clearAll())}>
+					<div className={phoneSheetFooterClassName}>
+						<Button variant="secondary" size="lg" onClick={() => onChange(clearAll())}>
 							<Trans>Clear all</Trans>
 						</Button>
-						<Button className="h-[42px] flex-1" onClick={() => setOpen(false)}>
+						<Button size="lg" className="flex-1" onClick={() => setOpen(false)}>
 							<Plural value={matching} one="Show # application" other="Show # applications" />
 						</Button>
 					</div>

@@ -87,7 +87,7 @@ export function NumberFilterField({
 			onKeyDown={onKeyDown}
 			{...(initialFocus ? { [INITIAL_FOCUS_ATTRIBUTE]: "" } : {})}
 			className={cn(
-				"h-[30px] w-[52px] px-1 text-center text-[13px] tabular-nums",
+				"h-8 w-[52px] rounded-sm px-1 text-center text-sm tabular-nums",
 				text !== "" && "font-semibold",
 				className,
 			)}

@@ -135,7 +135,7 @@ export const LIST_COLUMNS: Record<ListColumnId, ListColumnDefinition> = {
 			) : (
 				<span className="flex gap-1 overflow-hidden">
 					{application.tags.map((tag) => (
-						<span key={tag} className="shrink-0 rounded bg-sunken px-1.5 py-0.5 text-[11.5px] text-ink-2">
+						<span key={tag} className="shrink-0 rounded-xs bg-sunken px-1.5 py-0.5 text-xs text-ink-2">
 							{tag}
 						</span>
 					))}

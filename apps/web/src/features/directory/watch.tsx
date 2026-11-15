@@ -52,7 +52,7 @@ export function JobsButton({ url, className }: JobsButtonProps) {
 			variant="secondary"
 			size="sm"
 			nativeButton={false}
-			className={cn("relative z-1 h-6 px-2 text-xs", className)}
+			className={cn("relative z-1", className)}
 			render={<a href={url} target="_blank" rel="noopener noreferrer" />}
 		>
 			{t`Jobs`} ↗

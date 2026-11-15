@@ -36,7 +36,7 @@ vi.mock("@tanstack/react-router", () => ({
 vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() } }));
 
 i18n.loadAndActivate({ locale: "en", messages: {} });
-const { DuplicatesCard, StoriesCard } = await import("./upkeep");
+const { ClampedText, DuplicatesCard, StoriesCard } = await import("./upkeep");
 
 const duplicate = (id: string, text: string, applicationId: string | null = null) => ({
 	id,
@@ -180,5 +180,44 @@ describe("Stories the AI can't use", () => {
 		fireEvent.click(confirm[0] as HTMLElement);
 		await waitFor(() => expect(api.saveStory).toHaveBeenCalled());
 		expect(api.saveStory.mock.calls[0]?.[0]).toMatchObject({ id: "s-fixed", applicationId: null, factIds: ["fixed"] });
+	});
+});
+
+describe("Long fact text in Duplicates", () => {
+	afterEach(() => {
+		cleanup();
+		vi.restoreAllMocks();
+	});
+
+	/** happy-dom lays nothing out: report a paragraph `lines` lines tall, of which four show while it's cut. */
+	const lay = (lines: number) => {
+		vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(lines * 20);
+		vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(Math.min(lines, 4) * 20);
+	};
+
+	it("cuts text longer than four lines and opens it with Show more", () => {
+		lay(9);
+		mount(<ClampedText text="A long fact." />);
+		const text = screen.getByText("A long fact.");
+		expect(text.className).toContain("line-clamp-4");
+		const more = screen.getByRole("button", { name: "Show more" });
+		expect(more.getAttribute("aria-expanded")).toBe("false");
+		expect(more.getAttribute("aria-controls")).toBe(text.id);
+
+		fireEvent.click(more);
+		expect(text.className).not.toContain("line-clamp-4");
+		const less = screen.getByRole("button", { name: "Show less" });
+		expect(less.getAttribute("aria-expanded")).toBe("true");
+
+		fireEvent.click(less);
+		expect(text.className).toContain("line-clamp-4");
+		expect(screen.getByRole("button", { name: "Show more" })).toBeTruthy();
+	});
+
+	it("shows no button when the text fits in four lines", () => {
+		lay(3);
+		mount(<ClampedText text="A short fact." />);
+		expect(screen.getByText("A short fact.")).toBeTruthy();
+		expect(screen.queryByRole("button", { name: /Show (more|less)/ })).toBeNull();
 	});
 });

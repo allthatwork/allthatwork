@@ -309,10 +309,11 @@ export function ApplicationOverview({
 									.join(" · ")}
 								caret
 							/>
-						</List>
-						{/* The search's and the targeting's notes, and what this application sends of Knowledge. */}
-						<div className="grid gap-[22px] pt-6">
+							{/* What the job search and the resume targeting made of the posting. */}
 							<AssessmentContext application={application} />
+						</List>
+						{/* What this application sends of Knowledge. */}
+						<div className="pt-6">
 							<ApplicationKnowledge applicationId={application.id} />
 						</div>
 					</>

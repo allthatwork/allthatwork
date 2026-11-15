@@ -1,6 +1,7 @@
 import type { ImportFactCandidate } from "@reactive-resume/import/facts";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
+import { Textarea } from "@reactive-resume/ui/components/textarea";
 
 type Draft = ImportFactCandidate;
 
@@ -32,11 +33,12 @@ type ImportRowProps = {
 };
 export function ImportRow({ row, duplicate, onChange, showSelection = true, textLabel }: ImportRowProps) {
 	return (
-		<div className="grid min-w-0 gap-2 rounded-lg border border-line p-3">
-			<div className="flex items-center gap-2 text-sm">
+		<div className="grid min-w-0 gap-2 border-b border-line py-3.5 last:border-b-0 first-of-type:pt-0">
+			<div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[15px]/[22px] font-medium text-ink">
 				{showSelection && (
 					<input
 						type="checkbox"
+						className="size-[18px] shrink-0 accent-accent"
 						aria-label={t`Include ${rowLabel(row)}`}
 						checked={row.selected && !duplicate}
 						disabled={duplicate}
@@ -44,7 +46,7 @@ export function ImportRow({ row, duplicate, onChange, showSelection = true, text
 					/>
 				)}
 				{rowLabel(row)}{" "}
-				<span className="text-xs text-ink-3">
+				<span className="t-small font-normal text-ink-3">
 					{duplicate
 						? t`Already in Knowledge`
 						: {
@@ -55,15 +57,15 @@ export function ImportRow({ row, duplicate, onChange, showSelection = true, text
 							}[row.category]}
 				</span>
 			</div>
-			<textarea
+			<Textarea
 				aria-label={textLabel ?? t`Fact text`}
 				value={row.text}
 				maxLength={2000}
 				rows={Math.min(8, Math.max(2, Math.ceil(row.text.length / 100)))}
-				className="bg-field w-full resize-y rounded-md border border-line p-2 text-sm"
+				className="min-h-0 w-full resize-y text-sm"
 				onChange={(event) => onChange({ text: event.target.value })}
 			/>
-			<details className="text-xs text-ink-3">
+			<details className="t-small text-ink-3">
 				<summary className="cursor-pointer">
 					<Trans>Original text</Trans>
 				</summary>

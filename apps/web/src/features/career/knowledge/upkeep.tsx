@@ -5,18 +5,22 @@ import { plural, t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useId, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { Button } from "@reactive-resume/ui/components/button";
-import { Icon } from "@reactive-resume/ui/components/icon";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { storyIssues } from "@reactive-resume/utils/knowledge";
+import { cn } from "@reactive-resume/utils/style";
 import { CareerLoadError, CareerLoading } from "../load-state";
 import { useKnowledgeRules } from "./groups";
+import { SectionHeading } from "@/components/calm/section-heading";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { client, orpc } from "@/libs/orpc/client";
 
 type Duplicates = RouterOutput["career"]["duplicates"];
 type DuplicateFact = Duplicates["facts"][number];
+
+/** A flat row of the upkeep lists: a hairline under each one, none under the last. */
+const rowClassName = "flex flex-col gap-2.5 border-b border-line py-4 last:border-b-0";
 
 const DISMISSED_KEY = "curate:not-duplicates";
 const readDismissed = () => {
@@ -96,122 +100,134 @@ export function DuplicatesCard() {
 	const busy = clean.isPending || merge.isPending;
 
 	return (
-		<section aria-labelledby={`${id}-title`} className="overflow-hidden rounded-xl border border-line bg-surface">
-			<header className="grid gap-0.5 border-b border-line px-4 py-3">
-				<h2 id={`${id}-title`} className="flex items-center gap-2 text-sm font-semibold">
-					<Icon name="copy" size={20} className="text-ink-2" />
-					<Trans>Duplicates</Trans>
-				</h2>
-				<p className="text-xs leading-[17px] text-ink-3">
-					<Trans>
-						A fact said twice takes twice the budget. Keeping one archives the other: it's hidden and never sent, and
-						you can restore it from Archived in Facts. Its stories, saved work and per-job choices move to the one you
-						keep.
-					</Trans>
-				</p>
-			</header>
+		<section aria-labelledby={`${id}-title`}>
+			<SectionHeading id={`${id}-title`}>
+				<Trans>Duplicates</Trans>
+			</SectionHeading>
+			<p className="pb-2 t-small text-ink-3">
+				<Trans>
+					A fact said twice takes twice the budget. Keeping one archives the other: it's hidden and never sent, and you
+					can restore it from Archived in Facts. Its stories, saved work and per-job choices move to the one you keep.
+				</Trans>
+			</p>
 
 			{copies.length === 0 && sets.length === 0 && near.length === 0 && (
-				<p className="px-4 py-5 text-center text-sm text-ink-3">
+				<p className="border-b border-line py-4 t-small text-ink-3">
 					<Trans>No duplicates found.</Trans>
 				</p>
 			)}
 
-			{copies.length > 0 && (
-				<div className="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3">
-					<p className="min-w-0 flex-1 basis-60 text-[13px]">
-						{plural(copies.length, {
-							one: "# application fact is a word-for-word copy of a shared fact, which already reaches that application.",
-							other:
-								"# application facts are word-for-word copies of shared facts, which already reach those applications.",
-						})}
-					</p>
-					<Button
-						size="sm"
-						variant="secondary"
-						loading={clean.isPending}
-						disabled={busy}
-						onClick={() => clean.mutate({})}
-					>
-						<Trans>Remove copies</Trans>
-					</Button>
-				</div>
-			)}
-
-			{sets.map((set) => (
-				<div key={set.keep} className="grid gap-2 border-b border-line px-4 py-3 last:border-b-0">
-					<p className="text-xs font-medium text-ink-3">{plural(set.copies.length + 1, { other: "Said # times" })}</p>
-					<FactQuote fact={facts.get(set.keep)} />
-					<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-						<Button
-							size="sm"
-							variant="secondary"
-							disabled={busy}
-							loading={merge.isPending && merge.variables.into === set.keep}
-							onClick={() => merge.mutate({ into: set.keep, ids: set.copies })}
-						>
-							{plural(set.copies.length, { one: "Keep one, archive # copy", other: "Keep one, archive # copies" })}
-						</Button>
-						<span className="text-xs text-ink-3">
-							<Trans>Keeps the oldest one that's switched on.</Trans>
-						</span>
-					</div>
-				</div>
-			))}
-
-			{near.slice(0, shown).map((pair) => {
-				const [left, right] = pair.factIds.map((factId) => facts.get(factId));
-				const key = pair.factIds.join(":");
-				if (!left || !right) return null;
-				const percent = Math.round(pair.similarity * 100);
-				// Keeping a job's own fact over a shared one makes it shared, as the server does, so no job loses it.
-				const becomesShared = (keep: DuplicateFact, other: DuplicateFact) =>
-					keep.applicationId !== null && keep.applicationId !== other.applicationId;
-				return (
-					<div key={key} className="grid gap-2 border-b border-line px-4 py-3 last:border-b-0">
-						<p className="text-xs font-medium text-ink-3">
-							{pair.contained
-								? t`The longer one says almost everything the shorter one does · ${percent}%`
-								: t`Nearly the same words · ${percent}%`}
-						</p>
-						{/* Both cards share the rows (text, button, note), so the buttons line up whichever side has a note. */}
-						<div className="grid gap-2 sm:grid-cols-2">
-							{[
-								[left, right],
-								[right, left],
-							].map(([keep, other]) =>
-								keep && other ? (
-									<div
-										key={keep.id}
-										className="row-span-3 grid grid-rows-subgrid justify-items-start rounded-md bg-sunken px-3 py-2.5"
-									>
-										<FactQuote fact={keep} />
-										<Button
-											size="sm"
-											variant="secondary"
-											disabled={busy}
-											onClick={() => merge.mutate({ into: keep.id, ids: [other.id] })}
-										>
-											<Trans>Keep this, archive the other</Trans>
-										</Button>
-										<span className="text-xs text-ink-3">
-											{becomesShared(keep, other) && (
-												<Trans>This one becomes shared, so every application gets it.</Trans>
-											)}
-										</span>
-									</div>
-								) : null,
-							)}
+			<div className="flex flex-col">
+				{copies.length > 0 && (
+					<div className={rowClassName}>
+						<div className="flex flex-wrap items-center gap-3">
+							<p className="min-w-0 flex-1 basis-60 t-ui text-ink">
+								{plural(copies.length, {
+									one: "# application fact is a word-for-word copy of a shared fact, which already reaches that application.",
+									other:
+										"# application facts are word-for-word copies of shared facts, which already reach those applications.",
+								})}
+							</p>
+							<Button
+								size="sm"
+								variant="secondary"
+								loading={clean.isPending}
+								disabled={busy}
+								onClick={() => clean.mutate({})}
+							>
+								<Trans>Remove copies</Trans>
+							</Button>
 						</div>
-						<Button size="sm" variant="ghost" className="justify-self-start text-ink-2" onClick={() => dismiss(key)}>
-							<Trans>Not duplicates, keep both</Trans>
-						</Button>
 					</div>
-				);
-			})}
+				)}
+
+				{sets.map((set) => (
+					<div key={set.keep} className={rowClassName}>
+						<p className="t-small text-ink-3">{plural(set.copies.length + 1, { other: "Said # times" })}</p>
+						<FactQuote fact={facts.get(set.keep)} />
+						<div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+							<Button
+								size="sm"
+								variant="secondary"
+								disabled={busy}
+								loading={merge.isPending && merge.variables.into === set.keep}
+								onClick={() => merge.mutate({ into: set.keep, ids: set.copies })}
+							>
+								{plural(set.copies.length, { one: "Keep one, archive # copy", other: "Keep one, archive # copies" })}
+							</Button>
+							<span className="t-small text-ink-3">
+								<Trans>Keeps the oldest one that's switched on.</Trans>
+							</span>
+						</div>
+					</div>
+				))}
+
+				{near.slice(0, shown).map((pair) => {
+					const [left, right] = pair.factIds.map((factId) => facts.get(factId));
+					const key = pair.factIds.join(":");
+					if (!left || !right) return null;
+					const percent = Math.round(pair.similarity * 100);
+					// Keeping a job's own fact over a shared one makes it shared, as the server does, so no job loses it.
+					const becomesShared = (keep: DuplicateFact, other: DuplicateFact) =>
+						keep.applicationId !== null && keep.applicationId !== other.applicationId;
+					// The note row is shared by both sides; without a note on either, it isn't there to add space.
+					const noted = becomesShared(left, right) || becomesShared(right, left);
+					return (
+						<div key={key} className={rowClassName}>
+							<p className="t-small text-ink-3">
+								{pair.contained
+									? t`The longer one says almost everything the shorter one does · ${percent}%`
+									: t`Nearly the same words · ${percent}%`}
+							</p>
+							{/* Both sides share the rows (text, button, note), so the buttons line up whichever side has a note. */}
+							<div className="grid gap-y-4 sm:grid-cols-2">
+								{[
+									[left, right],
+									[right, left],
+								].map(([keep, other]) =>
+									keep && other ? (
+										<div
+											key={keep.id}
+											className={cn(
+												"grid grid-rows-subgrid justify-items-start gap-y-2 not-first:border-line max-sm:not-first:border-t max-sm:not-first:pt-4 sm:not-first:border-s sm:not-first:ps-5 first:sm:pe-5",
+												noted ? "row-span-3" : "row-span-2",
+											)}
+										>
+											<FactQuote fact={keep} />
+											<Button
+												size="sm"
+												variant="secondary"
+												disabled={busy}
+												onClick={() => merge.mutate({ into: keep.id, ids: [other.id] })}
+											>
+												<Trans>Keep this, archive the other</Trans>
+											</Button>
+											{noted && (
+												<span className="t-small text-ink-3">
+													{becomesShared(keep, other) && (
+														<Trans>This one becomes shared, so every application gets it.</Trans>
+													)}
+												</span>
+											)}
+										</div>
+									) : null,
+								)}
+							</div>
+							<Button
+								size="sm"
+								variant="ghost"
+								className="-ms-2.5 self-start justify-self-start text-ink-2"
+								onClick={() => dismiss(key)}
+							>
+								<Trans>Not duplicates, keep both</Trans>
+							</Button>
+						</div>
+					);
+				})}
+			</div>
 			{near.length > shown && (
-				<div className="px-4 py-2.5">
-					<Button size="sm" variant="ghost" onClick={() => setShown((count) => count + 10)}>
+				<div className="pt-2">
+					<Button size="sm" variant="ghost" className="-ms-2.5" onClick={() => setShown((count) => count + 10)}>
 						{t`Show more (${near.length - shown})`}
 					</Button>
 				</div>
@@ -226,9 +242,9 @@ function FactQuote({ fact }: FactQuoteProps) {
 	if (!fact) return null;
 	const company = fact.company;
 	return (
-		<div className="grid gap-0.5">
-			<p className="text-sm leading-[21px]">{fact.text}</p>
-			<p className="text-xs text-ink-3">
+		<div className="flex min-w-0 flex-col gap-1">
+			<ClampedText text={fact.text} />
+			<p className="t-small text-ink-3">
 				{[
 					fact.applicationId === null ? t`All applications` : company ? t`${company} only` : t`One application only`,
 					fact.status === "active"
@@ -239,6 +255,50 @@ function FactQuote({ fact }: FactQuoteProps) {
 					.filter(Boolean)
 					.join(" · ")}
 			</p>
+		</div>
+	);
+}
+
+type ClampedTextProps = { text: string };
+
+/**
+ * A fact's text cut at four lines, so a pair of long facts doesn't make the page very tall. Show more opens it in
+ * place; the button appears only when the text runs past four lines.
+ */
+export function ClampedText({ text }: ClampedTextProps) {
+	const id = useId();
+	const ref = useRef<HTMLParagraphElement>(null);
+	const [open, setOpen] = useState(false);
+	const [long, setLong] = useState(false);
+
+	useLayoutEffect(() => {
+		const element = ref.current;
+		// Measured only while cut: open, the text has no limit to run past.
+		if (!element || open) return;
+		const measure = () => setLong(element.scrollHeight > element.clientHeight + 1);
+		measure();
+		if (typeof ResizeObserver === "undefined") return;
+		const observer = new ResizeObserver(measure);
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, [open, text]);
+
+	return (
+		<div className="flex min-w-0 flex-col items-start gap-0.5">
+			<p id={id} ref={ref} className={cn("t-ui [overflow-wrap:anywhere] text-ink", !open && "line-clamp-4")}>
+				{text}
+			</p>
+			{(long || open) && (
+				<button
+					type="button"
+					aria-expanded={open}
+					aria-controls={id}
+					onClick={() => setOpen((value) => !value)}
+					className="touch-target relative text-[13px]/[18px] font-medium text-accent-text underline-offset-4 hover:underline"
+				>
+					{open ? <Trans>Show less</Trans> : <Trans>Show more</Trans>}
+				</button>
+			)}
 		</div>
 	);
 }
@@ -278,33 +338,29 @@ export function StoriesCard() {
 		.filter(({ issues }) => issues.length > 0);
 
 	return (
-		<section aria-labelledby={`${id}-title`} className="overflow-hidden rounded-xl border border-line bg-surface">
-			<header className="grid gap-0.5 border-b border-line px-4 py-3">
-				<h2 id={`${id}-title`} className="flex items-center gap-2 text-sm font-semibold">
-					<Icon name="book-open" size={20} className="text-ink-2" />
-					<Trans>Stories the AI can't use</Trans>
-				</h2>
-				<p className="text-xs leading-[17px] text-ink-3">
-					<Trans>
-						A story reaches the AI only while every fact behind it does, and none was corrected after the story was
-						saved.
-					</Trans>
-				</p>
-			</header>
+		<section aria-labelledby={`${id}-title`}>
+			<SectionHeading id={`${id}-title`}>
+				<Trans>Stories the AI can't use</Trans>
+			</SectionHeading>
+			<p className="pb-2 t-small text-ink-3">
+				<Trans>
+					A story reaches the AI only while every fact behind it does, and none was corrected after the story was saved.
+				</Trans>
+			</p>
 			{blocked.length === 0 ? (
-				<p className="px-4 py-5 text-center text-sm text-ink-3">
+				<p className="border-b border-line py-4 t-small text-ink-3">
 					<Trans>Every story can be used.</Trans>
 				</p>
 			) : (
-				<ul>
+				<ul className="flex flex-col">
 					{blocked.map(({ story, issues }) => {
 						const onlyCorrections = issues.every((issue) => issue.reason === "corrected");
 						return (
-							<li key={story.id} className="grid gap-2 border-b border-line px-4 py-3 last:border-b-0">
-								<p className="text-sm font-semibold">{story.data.title}</p>
-								<ul className="grid gap-1.5">
+							<li key={story.id} className={rowClassName}>
+								<p className="text-[15px]/[22px] font-medium [overflow-wrap:anywhere] text-ink">{story.data.title}</p>
+								<ul className="flex flex-col gap-1.5">
 									{issues.map((issue) => (
-										<li key={`${issue.factId}-${issue.reason}`} className="text-xs leading-[17px] text-ink-2">
+										<li key={`${issue.factId}-${issue.reason}`} className="t-small [overflow-wrap:anywhere] text-ink-2">
 											<IssueText issue={issue} fact={byId.get(issue.factId)} />
 										</li>
 									))}

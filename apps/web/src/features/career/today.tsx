@@ -454,20 +454,28 @@ function NeedsYou({ now, compact = false, first = false, readCount = 0, onShowRe
 }
 
 /** Row controls that take the caret's place on hover and keyboard focus; touch screens always show them. */
-function HoverActions({ children }: { children: ReactNode }) {
+function HoverActions({ children, className }: { children: ReactNode; className?: string }) {
 	return (
-		<span className="pointer-events-none relative z-10 flex shrink-0 items-center gap-3.5 opacity-0 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 group-hover/row:pointer-events-auto group-hover/row:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100">
+		<span
+			className={cn(
+				"pointer-events-none relative z-10 flex shrink-0 items-center gap-3.5 opacity-0 group-focus-within/row:pointer-events-auto group-focus-within/row:opacity-100 group-hover/row:pointer-events-auto group-hover/row:opacity-100 pointer-coarse:pointer-events-auto pointer-coarse:opacity-100",
+				className,
+			)}
+		>
 			{children}
 		</span>
 	);
 }
 
-function RowCaret() {
+function RowCaret({ className }: { className?: string }) {
 	return (
 		<Icon
 			name="caret-right"
 			size={18}
-			className="pointer-events-none absolute end-0 text-ink-3 group-focus-within/row:opacity-0 group-hover/row:opacity-0 pointer-coarse:hidden"
+			className={cn(
+				"pointer-events-none absolute end-0 text-ink-3 group-focus-within/row:opacity-0 group-hover/row:opacity-0 pointer-coarse:hidden",
+				className,
+			)}
 		/>
 	);
 }
@@ -922,13 +930,15 @@ function RoleRow({ row, now, selecting, selected, open, pending, onOpen, onSelec
 				: t`no preference phrase matches`;
 	const host = new URL(row.url).hostname.replace(/^www\./, "");
 	const detailId = `role-detail-${row.id}`;
+	const about = [row.source === "board" ? foundOn(row.url) : null, pay, why].filter(Boolean).join(" · ");
 
 	return (
 		<>
 			<ListRow
 				interactive
 				selected={selected}
-				className={cn(selecting && "min-h-[52px]", open && "border-transparent")}
+				// On a phone the role keeps its own line: the actions wrap onto a line of their own under the text.
+				className={cn("max-sm:flex-wrap", selecting && "min-h-[52px]", open && "border-transparent")}
 				leading={
 					<>
 						{selecting && (
@@ -958,25 +968,20 @@ function RoleRow({ row, now, selecting, selected, open, pending, onOpen, onSelec
 						aria-expanded={open}
 						aria-controls={detailId}
 						onClick={onOpen}
-						className={cn("truncate text-start t-row-title", rowLinkClassName)}
+						className={cn("text-start t-row-title [overflow-wrap:anywhere] sm:truncate", rowLinkClassName)}
 					>
 						{row.role}
 					</button>
 					<span className="truncate text-[13px]/[18px] text-ink-3">
-						{[
-							isolate(company),
-							row.location && isolate(row.location),
-							row.source === "board" ? foundOn(row.url) : null,
-							pay,
-							why,
-						]
-							.filter(Boolean)
-							.join(" · ")}
+						{[isolate(company), row.location && isolate(row.location)].filter(Boolean).join(" · ")}
+						{/* Where it was found and its pay: on the same line from 640px, on the line below on a phone. */}
+						{about && <span className="max-sm:hidden">{` · ${about}`}</span>}
 					</span>
+					{about && <span className="truncate text-[13px]/[18px] text-ink-3 sm:hidden">{about}</span>}
 				</span>
 				{!selecting && (
 					<>
-						<HoverActions>
+						<HoverActions className="max-sm:pointer-events-auto max-sm:basis-full max-sm:gap-1 max-sm:ps-[44px] max-sm:opacity-100">
 							<Button size="sm" variant="ghost" disabled={pending} onClick={onDismiss}>
 								<Trans>Not for me</Trans>
 							</Button>
@@ -985,7 +990,7 @@ function RoleRow({ row, now, selecting, selected, open, pending, onOpen, onSelec
 								<Trans>Track</Trans>
 							</Button>
 						</HoverActions>
-						<RowCaret />
+						<RowCaret className="max-sm:hidden" />
 					</>
 				)}
 			</ListRow>

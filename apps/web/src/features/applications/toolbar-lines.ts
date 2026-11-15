@@ -4,12 +4,12 @@
  * all the filters), so the filters move as one group and nothing sits alone on a line.
  */
 
-/** The search box's narrowest width. */
-export const SEARCH_MIN_WIDTH = 220;
+/** The search box's narrowest width: enough to show its placeholder, "Search role, company or contact", in full. */
+export const SEARCH_MIN_WIDTH = 300;
 /** The gap between the search box, the filter group and Sort and Columns. */
 export const TOOLBAR_GAP = 8;
-/** The gap between the filter buttons. */
-export const FILTER_GAP = 6;
+/** The gap between the filter buttons, as in Calm's filter bar. */
+export const FILTER_GAP = 8;
 
 export type ToolbarWidths = {
 	/** The width the toolbar has. */
