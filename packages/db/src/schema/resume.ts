@@ -206,15 +206,19 @@ export const resumeStatisticsDaily = pg.pgTable(
 );
 
 /** A user's previous username, kept for 30 days after a change so shared public links keep working. */
-export const usernameRedirect = pg.pgTable("username_redirect", {
-	username: pg.text("username").primaryKey(),
-	userId: pg
-		.text("user_id")
-		.notNull()
-		.references(() => user.id, { onDelete: "cascade" }),
-	expiresAt: pg.timestamp("expires_at", { withTimezone: true }).notNull(),
-	createdAt: pg.timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const usernameRedirect = pg.pgTable(
+	"username_redirect",
+	{
+		username: pg.text("username").primaryKey(),
+		userId: pg
+			.text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		expiresAt: pg.timestamp("expires_at", { withTimezone: true }).notNull(),
+		createdAt: pg.timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+	},
+	(t) => [pg.index().on(t.userId)],
+);
 
 /** One paid writing review per resume, kept independently of the editable document revision. */
 export const resumeWritingReview = pg.pgTable("resume_writing_review", {

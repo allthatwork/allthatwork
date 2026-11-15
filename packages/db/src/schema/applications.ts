@@ -153,6 +153,7 @@ export const application = pg.pgTable(
 			foreignColumns: [applicationLane.userId, applicationLane.id],
 		}),
 		pg.index().on(t.userId, t.laneId),
+		pg.index().on(t.companyId),
 	],
 );
 

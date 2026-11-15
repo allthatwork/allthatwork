@@ -123,6 +123,8 @@ export const careerFactOverride = pg.pgTable(
 	(t) => [
 		pg.uniqueIndex().on(t.applicationId, t.group),
 		pg.uniqueIndex().on(t.applicationId, t.factId),
+		pg.index().on(t.userId),
+		pg.index().on(t.factId),
 		pg.check("career_fact_override_one_target", sql`(${t.group} is null) <> (${t.factId} is null)`),
 	],
 );
@@ -239,7 +241,7 @@ export const careerOpportunity = pg.pgTable(
 		/** Its posting disappeared from the board: out of New roles. Tracked applications aren't touched. */
 		closedAt: pg.timestamp("closed_at", { withTimezone: true }),
 	},
-	(t) => [pg.uniqueIndex().on(t.userId, t.url), pg.index().on(t.postingId)],
+	(t) => [pg.uniqueIndex().on(t.userId, t.url), pg.index().on(t.postingId), pg.index().on(t.companyId)],
 );
 
 /** One application's live workspace state: answers, checklist ticks, questions to ask. */

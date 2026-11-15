@@ -68,7 +68,7 @@ export const contact = pg.pgTable(
 			.defaultNow()
 			.$onUpdate(() => new Date()),
 	},
-	(t) => [pg.index().on(t.userId, t.companyId), pg.index().on(t.userId, t.normalizedKey)],
+	(t) => [pg.index().on(t.userId, t.companyId), pg.index().on(t.userId, t.normalizedKey), pg.index().on(t.companyId)],
 );
 
 export const contactEmployment = pg.pgTable(
@@ -92,7 +92,7 @@ export const contactEmployment = pg.pgTable(
 		startedOn: pg.date("started_on"),
 		endedOn: pg.date("ended_on"),
 	},
-	(t) => [pg.index().on(t.userId, t.contactId)],
+	(t) => [pg.index().on(t.userId, t.contactId), pg.index().on(t.contactId), pg.index().on(t.companyId)],
 );
 
 export const contactNote = pg.pgTable(
@@ -113,5 +113,5 @@ export const contactNote = pg.pgTable(
 		text: pg.text("text").notNull(),
 		at: pg.timestamp("at", { withTimezone: true }).notNull().defaultNow(),
 	},
-	(t) => [pg.index().on(t.userId, t.contactId)],
+	(t) => [pg.index().on(t.userId, t.contactId), pg.index().on(t.contactId)],
 );
