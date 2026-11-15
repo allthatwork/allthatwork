@@ -77,10 +77,6 @@ export function PreferencesSettings() {
 					/>
 				</List>
 			</SettingsSection>
-
-			<ResumeLengthSection />
-
-			<RemindersSection />
 		</>
 	);
 }
