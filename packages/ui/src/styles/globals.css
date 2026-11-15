@@ -10,13 +10,16 @@
 @import "@phosphor-icons/web/regular/style.css";
 @import "./typeset.css";
 
+/* `focus-visible:` utilities follow the same keyboard-only rule as the global focus ring below. */
+@custom-variant focus-visible (&:focus-visible:not([data-pointer] *));
+
 @source "../**/*.{ts,tsx}";
 @source "../../../../apps/**/*.{ts,tsx}";
 
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Desk & Paper tokens. oklch is the source of truth; the hex values are sRGB approximations.
+ * Calm tokens (colour values unchanged from Desk & Paper). oklch is the source of truth; the hex values are sRGB approximations.
  * The resume page (--paper) is white in both themes and never inverts.
  */
 :root {
@@ -39,10 +42,12 @@
 	--accent-text: oklch(0.463 0.175 258.5); /* #0052B8 */
 	--brand: oklch(0.597 0.221 258); /* #0077FF logo blue, the same in every palette */
 	--danger: oklch(0.53 0.17 27); /* #BA3630 */
+	--danger-fill: oklch(0.53 0.17 27); /* the permanent-delete button */
 	--danger-soft: oklch(0.95 0.03 27); /* #FFE7E4 */
 	--danger-text: oklch(0.48 0.17 27); /* #A92321 */
 	--success-text: oklch(0.48 0.12 150); /* #197037 on, beside danger-text for off */
 	--warn: oklch(0.72 0.14 80); /* #D29922 check issues, stale edits */
+	--warn-mark: oklch(0.6 0.14 70); /* warning marks that must hold 3:1 on bg */
 	--warn-soft: oklch(0.95 0.045 85); /* #FCEDCD */
 	--warn-text: oklch(0.48 0.1 70); /* #81520A */
 	--warn-ink: oklch(0.22 0.03 80); /* #22190A text on a warn fill */
@@ -76,10 +81,13 @@
 	/* Layout constants */
 	--editor-bar: 56px;
 	--editor-panel: 400px;
-	--app-sidebar: 240px;
-	--sheet-share: 440px;
+	--app-sidebar: 248px;
+	--sheet: 440px; /* side sheets; they float 8px inside the window */
 	--sheet-detail: 480px;
+	--dialog: 480px; /* 560px when fields sit two to a row */
 	--assistant: 400px;
+	--content-max: 1040px; /* reading width of a dashboard page; tables and boards may run wider */
+	--row: 56px; /* minimum height of a list row */
 }
 
 .dark {
@@ -102,10 +110,12 @@
 	--accent-text: oklch(0.8 0.104 252.1); /* #8CC2FF */
 	--brand: oklch(0.696 0.163 254.1); /* #4D9FFF lifted for contrast on dark */
 	--danger: oklch(0.62 0.17 27); /* #D9544B */
+	--danger-fill: oklch(0.55 0.18 27);
 	--danger-soft: oklch(0.3 0.06 27); /* #47211D */
 	--danger-text: oklch(0.8 0.11 27); /* #FDA297 */
 	--success-text: oklch(0.8 0.12 150); /* #83D494 */
 	--warn: oklch(0.8 0.13 85); /* #E4B750 */
+	--warn-mark: oklch(0.8 0.13 85);
 	--warn-soft: oklch(0.31 0.05 80); /* #3E2D10 */
 	--warn-text: oklch(0.86 0.1 85); /* #EFCC83 */
 	--warn-ink: oklch(0.22 0.03 80); /* #22190A text on a warn fill */
@@ -125,7 +135,8 @@
 /*
  * Cobalt palette (All That Work, the default): GitHub's Primer neutrals with a blue accent. The tokens above are
  * the Original palette. `data-palette` on <html> is set before first paint (index.html) and by ThemeProvider.
- * Danger, success, warn, the other stages and motion are shared. Info moves to violet so it doesn't read as the accent.
+ * Danger, success, warn, the other stages, motion and Calm's sizes, fonts and corners are shared; Calm's control border,
+ * delete fill and warning mark and ink get Cobalt's own values. Info moves to violet so it doesn't read as the accent.
  */
 :root[data-palette="cobalt"] {
 	--stage-saved: oklch(0.64 0.02 255); /* #8D949C */
@@ -146,6 +157,10 @@
 	--on-accent: oklch(1 0 0); /* #FFFFFF */
 	--accent-soft: oklch(0.954 0.028 228); /* #DDF4FF */
 	--accent-text: oklch(0.451 0.164 258); /* #0550AE */
+	--control-border: #818b98; /* Primer's control emphasis border, 3.2:1 on bg */
+	--danger-fill: #cf222e; /* Primer's danger emphasis, the permanent-delete button */
+	--warn-mark: #9a6700; /* Primer's attention text, 4.5:1 on bg */
+	--warn-ink: #1f2328; /* ink on a warn fill */
 	--info-soft: oklch(0.966 0.025 318); /* #FBEFFF */
 	--info-text: oklch(0.563 0.207 295); /* #8250DF */
 	--hover: oklch(0.254 0.011 254 / 0.05);
@@ -174,6 +189,10 @@
 	--on-accent: oklch(1 0 0); /* #FFFFFF */
 	--accent-soft: oklch(0.285 0.066 257); /* #132A4A */
 	--accent-text: oklch(0.715 0.152 253); /* #58A6FF */
+	--control-border: #6e7681; /* 3.4:1 on raised, 4.1:1 on bg */
+	--danger-fill: #da3633; /* Primer's dark danger emphasis */
+	--warn-mark: #d29922; /* Primer's dark attention text */
+	--warn-ink: #1f2328; /* ink on a warn fill */
 	--info-soft: oklch(0.26 0.059 296); /* #271D3D */
 	--info-text: oklch(0.732 0.167 302); /* #BC8CFF */
 }
@@ -204,16 +223,21 @@
 	--font-sans: var(--font-ui);
 	--font-mono: "Geist Mono Variable", ui-monospace, monospace;
 
-	/* Corners are 2–4px everywhere: 2 chips, tags and small marks · 3 controls · 4 cards, menus, dialogs, sheets. */
-	--radius: 4px;
-	--radius-xs: 2px;
-	--radius-sm: 2px;
-	--radius-md: 3px;
-	--radius-lg: 4px;
-	--radius-xl: 4px;
-	--radius-2xl: 4px;
-	--radius-3xl: 4px;
-	--radius-4xl: 4px;
+	/*
+	 * Corners are soft: 6 badges, checkboxes, keys · 8 chips, small buttons, menu items · 10 buttons, inputs, sidebar
+	 * items · 12 large buttons, segmented controls, menus, toasts, board cards · 16 cards, composer · 20 dialogs,
+	 * sheets, palette. Paper and thumbnails stay square (`rounded-paper`).
+	 */
+	--radius: 10px;
+	--radius-xs: 6px;
+	--radius-sm: 8px;
+	--radius-md: 10px;
+	--radius-lg: 12px;
+	--radius-xl: 16px;
+	--radius-2xl: 20px;
+	--radius-3xl: 20px;
+	--radius-4xl: 20px;
+	--radius-paper: 2px;
 
 	--aspect-page: 210 / 297;
 }
@@ -236,10 +260,12 @@
 	--color-accent-text: var(--accent-text);
 	--color-brand: var(--brand);
 	--color-danger: var(--danger);
+	--color-danger-fill: var(--danger-fill);
 	--color-danger-soft: var(--danger-soft);
 	--color-danger-text: var(--danger-text);
 	--color-success-text: var(--success-text);
 	--color-warn: var(--warn);
+	--color-warn-mark: var(--warn-mark);
 	--color-warn-soft: var(--warn-soft);
 	--color-warn-text: var(--warn-text);
 	--color-warn-ink: var(--warn-ink);
@@ -248,6 +274,7 @@
 	--color-hover: var(--hover);
 	--color-press: var(--press);
 	--color-scrim: var(--scrim);
+	--color-scrim-sheet: var(--scrim-sheet);
 	--color-paper: var(--paper);
 	--color-stage-saved: var(--stage-saved);
 	--color-stage-applied: var(--stage-applied);
@@ -297,14 +324,30 @@
 		unicode-bidi: plaintext;
 	}
 
+	/* Code (keys, selectors, header names) reads left to right in every interface, and stays one unit inside a
+	   right-to-left sentence instead of losing its leading hyphens to the far end. */
+	:where(code, kbd, samp) {
+		direction: ltr;
+		unicode-bidi: isolate;
+	}
+
 	h1 {
 		@apply font-display;
 	}
 
-	/* A 2px accent ring with a 2px gap on every interactive element; never removed. */
-	:focus-visible {
+	/*
+	 * A 2px accent ring with a 2px gap on every interactive element while navigating by keyboard. After a tap or click
+	 * the app sets `data-pointer` on <html> (apps/web/src/libs/input-modality.ts), so focus the app moves itself shows
+	 * no ring.
+	 */
+	:focus-visible:not([data-pointer] *) {
 		outline: 2px solid var(--accent);
 		outline-offset: 2px;
+	}
+
+	/* The browser's own ring too: its default style would otherwise take over. */
+	[data-pointer] :focus-visible {
+		outline: none;
 	}
 
 	input[type="number"] {
@@ -417,4 +460,102 @@ input[type="url"],
 input[type="tel"] {
 	direction: ltr;
 	text-align: start;
+}
+
+/*
+ * Calm type styles: size / line-height, family and weight in one utility. Longhand on purpose: a later `font-medium`
+ * or `font-semibold` on the same element must still win, which the `font` shorthand would not allow. Instrument Serif has one weight: never bold.
+ * `eyebrow` is for group labels inside menus and the command palette only.
+ */
+@utility t-display {
+	font-family: var(--font-display);
+	font-size: 44px;
+	line-height: 48px;
+	font-weight: 400;
+	letter-spacing: -0.01em;
+}
+@utility t-big-number {
+	font-family: var(--font-display);
+	font-size: 40px;
+	line-height: 44px;
+	font-weight: 400;
+}
+@utility t-root-title {
+	font-family: var(--font-display);
+	font-size: 34px;
+	line-height: 40px;
+	font-weight: 400;
+	letter-spacing: -0.005em;
+}
+@utility t-page-title {
+	font-family: var(--font-display);
+	font-size: 28px;
+	line-height: 34px;
+	font-weight: 400;
+}
+@utility t-section-title {
+	font-family: var(--font-display);
+	font-size: 22px;
+	line-height: 28px;
+	font-weight: 400;
+}
+@utility t-heading {
+	font-family: var(--font-ui);
+	font-size: 20px;
+	line-height: 28px;
+	font-weight: 600;
+}
+@utility t-section-heading {
+	font-family: var(--font-ui);
+	font-size: 17px;
+	line-height: 24px;
+	font-weight: 600;
+}
+@utility t-label {
+	font-family: var(--font-ui);
+	font-size: 15px;
+	line-height: 22px;
+	font-weight: 600;
+}
+@utility t-row-title {
+	font-family: var(--font-ui);
+	font-size: 15px;
+	line-height: 22px;
+	font-weight: 500;
+}
+@utility t-body {
+	font-family: var(--font-ui);
+	font-size: 15px;
+	line-height: 24px;
+	font-weight: 400;
+}
+@utility t-ui {
+	font-family: var(--font-ui);
+	font-size: 14px;
+	line-height: 20px;
+	font-weight: 400;
+}
+@utility t-small {
+	font-family: var(--font-ui);
+	font-size: 13px;
+	line-height: 18px;
+	font-weight: 400;
+}
+@utility t-caption {
+	font-family: var(--font-ui);
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 500;
+}
+@utility t-eyebrow {
+	font-family: var(--font-ui);
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 600;
+}
+@utility t-mono {
+	font-family: var(--font-mono);
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 500;
 }

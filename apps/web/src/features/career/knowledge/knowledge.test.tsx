@@ -86,6 +86,7 @@ vi.mock("@/libs/orpc/client", () => {
 });
 vi.mock("@tanstack/react-router", () => ({
 	useNavigate: () => api.navigate,
+	createLink: (component: unknown) => component,
 	useRouter: () => ({ state: { location: { pathname: "/test" } } }),
 	useSearch: () => ({}),
 	useRouteContext: () => ({ session: { user: { id: api.userId } } }),
@@ -97,6 +98,7 @@ vi.mock("../shared", () => ({
 		locale: "en-US",
 		timeZone: "Europe/Berlin",
 		format: () => "Oct 8",
+		date: () => "Oct 8",
 		when: () => "Oct 8",
 		relative: () => "today",
 	}),
@@ -133,6 +135,7 @@ vi.mock("@/features/applications/use-application-lanes", async () => {
 });
 vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() } }));
 
+import { isolate } from "@reactive-resume/utils/string";
 import { OfferEntry } from "../offer-entry";
 import { OffersPage } from "../offers";
 import { FactsPage } from "./facts";
@@ -193,7 +196,7 @@ async function chooseCurrency(code: string) {
 	fireEvent.click(screen.getByRole("combobox", { name: "Currency" }));
 	const input = await screen.findByPlaceholderText("Search…");
 	fireEvent.change(input, { target: { value: code } });
-	fireEvent.click(await screen.findByRole("option", { name: new RegExp(`^${code}(?: ·|$)`) }));
+	fireEvent.click(await screen.findByRole("option", { name: new RegExp(`^${code}(?: |$)`) }));
 }
 
 it("keeps the complete correction after a failed save and retries its reviewed type/scope atomically", async () => {
@@ -216,19 +219,18 @@ it("keeps the complete correction after a failed save and retries its reviewed t
 		.mockResolvedValueOnce(undefined);
 	mount(<FactsPage highlight={undefined} />);
 	fireEvent.click(await screen.findByRole("button", { name: "Correct" }));
-	fireEvent.change(screen.getByLabelText("Correct this fact"), { target: { value: "Fictional private correction" } });
-	const type = screen.getAllByLabelText("Fact type").at(-1);
-	if (!type) throw new Error("Missing correction type control");
-	fireEvent.change(type, { target: { value: "skill" } });
-	await waitFor(() => expect(screen.getByLabelText("Scope")).not.toBeDisabled());
-	fireEvent.change(screen.getByLabelText("Scope"), { target: { value: "cedar" } });
-	fireEvent.click(screen.getByRole("button", { name: "Save correction" }));
+	const dialog = within(await screen.findByRole("dialog", { name: "Correct this fact" }));
+	fireEvent.change(dialog.getByLabelText("Fact"), { target: { value: "Fictional private correction" } });
+	fireEvent.change(dialog.getByLabelText("Type"), { target: { value: "skill" } });
+	await waitFor(() => expect(dialog.getByLabelText("Used for")).not.toBeDisabled());
+	fireEvent.change(dialog.getByLabelText("Used for"), { target: { value: "cedar" } });
+	fireEvent.click(dialog.getByRole("button", { name: "Save correction" }));
 	await waitFor(() => expect(api.correctFact).toHaveBeenCalledTimes(1));
-	await waitFor(() => expect(screen.getByRole("button", { name: "Save correction" })).not.toBeDisabled());
-	expect(screen.getByLabelText("Correct this fact")).toHaveValue("Fictional private correction");
-	expect(screen.getByLabelText("Scope")).toHaveValue("cedar");
-	fireEvent.click(screen.getByRole("button", { name: "Save correction" }));
-	await waitFor(() => expect(screen.queryByLabelText("Correct this fact")).not.toBeInTheDocument());
+	await waitFor(() => expect(dialog.getByRole("button", { name: "Save correction" })).not.toBeDisabled());
+	expect(dialog.getByLabelText("Fact")).toHaveValue("Fictional private correction");
+	expect(dialog.getByLabelText("Used for")).toHaveValue("cedar");
+	fireEvent.click(dialog.getByRole("button", { name: "Save correction" }));
+	await waitFor(() => expect(screen.queryByRole("dialog", { name: "Correct this fact" })).not.toBeInTheDocument());
 	expect(api.correctFact.mock.calls.map(([input]) => input)).toEqual(
 		Array.from({ length: 2 }, () => ({
 			id: fact.id,
@@ -258,20 +260,20 @@ it("discards cancelled and old-account resume reviews without saving or exposing
 			}),
 	);
 	const view = mount(<ResumeFacts />);
-	fireEvent.click(screen.getByRole("button", { name: "Pull facts from my resume" }));
+	// Choosing a resume reads it at once: the review has no separate button.
+	fireEvent.click(screen.getByRole("button", { name: "Pull from my resume" }));
 	await waitFor(() => expect(screen.getByRole("combobox", { name: "Resume" })).toBeEnabled());
 	fireEvent.change(screen.getByRole("combobox", { name: "Resume" }), { target: { value: "resume" } });
-	fireEvent.click(screen.getByRole("button", { name: "Review resume facts" }));
 	await waitFor(() => expect(api.proposeResumeFacts).toHaveBeenCalledTimes(1));
 	fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-	fireEvent.click(screen.getByRole("button", { name: "Pull facts from my resume" }));
+	fireEvent.click(screen.getByRole("button", { name: "Pull from my resume" }));
 	await act(async () => {
 		finish?.(review);
 	});
 	expect(screen.queryByDisplayValue("Private career excerpt")).toBeNull();
 	api.proposeResumeFacts.mockResolvedValue(review);
+	await waitFor(() => expect(screen.getByRole("combobox", { name: "Resume" })).toBeEnabled());
 	fireEvent.change(screen.getByRole("combobox", { name: "Resume" }), { target: { value: "resume" } });
-	fireEvent.click(screen.getByRole("button", { name: "Review resume facts" }));
 	await screen.findByDisplayValue("Private career excerpt");
 	api.userId = "another-account";
 	setAccountScope(api.userId);
@@ -285,7 +287,7 @@ it("discards cancelled and old-account resume reviews without saving or exposing
 		</QueryClientProvider>,
 	);
 	expect(screen.queryByDisplayValue("Private career excerpt")).toBeNull();
-	expect(screen.getByRole("button", { name: "Review resume facts" })).toBeDisabled();
+	expect(screen.getByRole("combobox", { name: "Resume" })).toHaveValue("");
 	expect(api.saveResumeFacts).not.toHaveBeenCalled();
 });
 
@@ -485,6 +487,7 @@ it("does not claim an Ask first privacy default when the saved memory setting fa
 
 it("saves only memory consent from Facts, preserving other cached preferences", async () => {
 	mount(<FactsPage highlight={undefined} />);
+	fireEvent.click(await screen.findByRole("button", { name: "Change" }));
 	fireEvent.click(await screen.findByRole("radio", { name: "Never" }));
 	await waitFor(() => expect(api.saveProfile).toHaveBeenCalledWith({ memoryMode: "off" }, expect.anything()));
 	expect(clients[0]?.getQueryData(["profile"])).toEqual({ ...profile(), memoryMode: "off" });
@@ -510,6 +513,7 @@ it.each([false, true])("serializes rapid memory choices, including an earlier fa
 				}),
 		);
 	mount(<FactsPage highlight={undefined} />);
+	fireEvent.click(await screen.findByRole("button", { name: "Change" }));
 	fireEvent.click(await screen.findByRole("radio", { name: "Automatically" }));
 	await waitFor(() => expect(api.saveProfile).toHaveBeenCalledTimes(1));
 	await act(async () => fireEvent.click(screen.getByRole("radio", { name: "Never" })));
@@ -595,7 +599,7 @@ it("preserves company recipients in copied offer questions", async () => {
 	const writeText = vi.fn().mockResolvedValue(undefined);
 	Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
 	mount(<OffersPage a="a" b="b" />);
-	fireEvent.click(await screen.findByRole("button", { name: "Copy questions" }));
+	fireEvent.click(await screen.findByRole("button", { name: "Copy all questions" }));
 	await waitFor(() => expect(writeText).toHaveBeenCalled());
 	const copied = writeText.mock.calls[0]?.[0] as string;
 	expect(copied).toContain("Is there a bonus, and what does it depend on? · Ask Acme");
@@ -774,8 +778,9 @@ it("filters facts by group, subgroups included, and adds new facts to the chosen
 	api.saveFact.mockResolvedValue(null);
 	mount(<FactsPage highlight={undefined} />);
 	const select = await screen.findByRole("combobox", { name: "Group" });
-	// The row's group label and the filter's option.
-	expect(screen.getAllByText("experience/acme")).toHaveLength(2);
+	// The filter's option, and the group in the row's quiet line.
+	expect(screen.getByRole("option", { name: "experience/acme" })).toBeTruthy();
+	expect(screen.getByText(/· experience\/acme/)).toBeTruthy();
 
 	fireEvent.change(select, { target: { value: "group:experience" } });
 	expect(screen.getByText("I ran the Acme migration.")).toBeTruthy();
@@ -787,7 +792,8 @@ it("filters facts by group, subgroups included, and adds new facts to the chosen
 	expect(screen.queryByText("I ran the Acme migration.")).toBeNull();
 
 	fireEvent.change(select, { target: { value: "group:experience/acme" } });
-	const input = screen.getByRole("textbox", { name: "New fact" });
+	fireEvent.click(screen.getByRole("button", { name: "Add a fact" }));
+	const input = screen.getByRole("textbox", { name: /New fact/ });
 	fireEvent.change(input, { target: { value: "I cut Acme's deploy time in half." } });
 	fireEvent.click(screen.getByRole("button", { name: "Add" }));
 	await waitFor(() => expect(api.saveFact).toHaveBeenCalled());
@@ -816,7 +822,7 @@ it("keeps archived facts out of the list until asked for, and restores one", asy
 	fireEvent.click(screen.getByRole("button", { name: /Archived 1/ }));
 	expect(screen.getByText("I used Perl in 2009.")).toBeTruthy();
 	expect(screen.queryByText("I mentor engineers.")).toBeNull();
-	expect(screen.getByText("Archived, never sent")).toBeTruthy();
+	expect(screen.getByText(/archived, never sent/)).toBeTruthy();
 	// What the server holds once the restore lands, for the refetch that follows it.
 	api.data.facts = [fact("live", "I mentor engineers.", "active"), fact("old", "I used Perl in 2009.", "active")];
 	fireEvent.click(screen.getByRole("button", { name: "Restore" }));
@@ -862,13 +868,10 @@ it("blocks invalid optional learning and skipped DST deadlines without losing th
 	fireEvent.click(screen.getByRole("button", { name: "Add offer" }));
 	await currencyPrefilled();
 	const learning = screen.getByLabelText("Learning budget");
-	fireEvent.click(screen.getByRole("button", { name: "More options" }));
 	fireEvent.change(learning, { target: { value: "95k" } });
 	expect(learning.getAttribute("aria-invalid")).not.toBe("true");
 	expect(screen.queryByText("Enter a full amount, such as 95000, or leave blank.")).toBeNull();
-	fireEvent.click(screen.getByRole("button", { name: "More options" }));
 	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
-	expect(screen.getByRole("button", { name: "More options" }).getAttribute("aria-expanded")).toBe("true");
 	expect(learning.getAttribute("aria-invalid")).toBe("true");
 	expect(api.createOffer).not.toHaveBeenCalled();
 	expect((learning as HTMLInputElement).value).toBe("95k");
@@ -949,7 +952,7 @@ it("moves an Applied job to Offer with Undo once its offer is saved, and keeps t
 			expect.objectContaining({
 				applications: [{ id: "job-a" }],
 				lane: expect.objectContaining({ category: "offer" }),
-				description: "Offer saved. Fieldnote moved to Offer.",
+				description: `Offer saved. ${isolate("Fieldnote")} moved to Offer.`,
 			}),
 		),
 	);
@@ -995,7 +998,7 @@ it("leads to adding an application when there is none, and opens Add offer in a 
 	expect(within(sheet).getByRole("button", { name: "Save offer" })).toBeDefined();
 });
 
-it("starts in the last offer's currency, keeps the rarer terms under More options and the timezone with the time", async () => {
+it("starts in the last offer's currency, keeps the rarer terms under More terms and the timezone with the time", async () => {
 	api.data.savedItems = [
 		{ id: "old", createdAt: new Date("2026-09-01"), data: { kind: "offer", currency: "USD" } },
 		{ id: "new", createdAt: new Date("2026-10-01"), data: { kind: "offer", currency: "GBP" } },
@@ -1018,7 +1021,7 @@ it("starts in the last offer's currency, keeps the rarer terms under More option
 	expect(currency.textContent).toContain("GBP");
 	expect(currency.getAttribute("placeholder")).toBeNull();
 	expect(currency.getAttribute("aria-describedby")).toBeTruthy();
-	expect(screen.getByRole("button", { name: "More options" }).getAttribute("aria-expanded")).toBe("false");
+	expect(screen.getByRole("button", { name: "More terms" }).getAttribute("aria-expanded")).toBe("false");
 	expect(screen.queryByText("Times are shown in Europe/Berlin.")).toBeNull();
 	fireEvent.change(screen.getByLabelText("Respond by"), { target: { value: "2026-11-02" } });
 	expect(screen.getByText("Times are shown in Europe/Berlin.")).toBeDefined();
@@ -1031,10 +1034,20 @@ it("starts in the last offer's currency, keeps the rarer terms under More option
 	});
 
 	fireEvent.click(screen.getByRole("button", { name: "Add offer" }));
-	fireEvent.click(screen.getByRole("button", { name: "Clear selection" }));
+	fireEvent.click(screen.getByRole("combobox", { name: "Currency" }));
+	fireEvent.click(await screen.findByRole("option", { name: /^USD$/ }));
 	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
-	expect(screen.getByRole("combobox", { name: "Currency" }).textContent).toContain("Select…");
+	await waitFor(() => expect(api.createOffer.mock.calls.at(-1)?.[0]).toMatchObject({ currency: "USD" }));
+});
+
+it("requires an explicit currency when no prior offer or salary preference supplies one", async () => {
+	api.data.savedItems = [];
+	api.data.profile = { minBase: { amount: null, currency: "", period: "year" } };
+	mount(<OfferEntry application={{ id: "job-a", company: "Acme", role: "Engineer" }} />);
+	fireEvent.click(screen.getByRole("button", { name: "Add offer" }));
+	fireEvent.click(screen.getByRole("button", { name: "Save offer" }));
 	expect(screen.getByLabelText("Currency").getAttribute("aria-invalid")).toBe("true");
+	expect(api.createOffer).not.toHaveBeenCalled();
 });
 
 it("waits for application metadata before offering an empty-account action", async () => {
@@ -1084,7 +1097,7 @@ it.each(["pending", "error"])("keeps saved offers visible while application meta
 	];
 	mount(<OffersPage a="retained" b={undefined} />);
 	await screen.findAllByText("Retained Co");
-	expect(screen.getByRole("button", { name: "Swap" })).toBeDefined();
+	expect(screen.getByRole("heading", { name: /Terms/ })).toBeDefined();
 	expect(screen.queryByText("No offers to compare yet")).toBeNull();
 	if (mode === "error") await screen.findByRole("alert");
 	api.data.applications = [{ id: "new-job", company: "New Terms Co", role: "Engineer", status: "offer" }];

@@ -10,6 +10,7 @@ export const applicationsRouter = {
 	bulkTrash: crudRouter.bulkTrash,
 	restore: crudRouter.restore,
 	purge: crudRouter.purge,
+	emptyTrash: crudRouter.emptyTrash,
 	packet: packetRouter,
 	lanes: applicationLanesRouter,
 	findPosting: crudRouter.findPosting,

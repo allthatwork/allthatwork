@@ -16,6 +16,7 @@ import { availableApplicationContext } from "../applications/access";
 import { activeApplications } from "../applications/access";
 import { syncFollowUp } from "../applications/follow-up";
 import { readOpenPosting, searchJobPostings } from "../applications/posting";
+import { applicationService } from "../applications/service";
 import { hasExcludedWord, passesScreen } from "../boards/screen";
 import { checkBoards, saveFoundRoles } from "../boards/service";
 import { lockUser } from "../documents/ownership";
@@ -918,10 +919,15 @@ async function sendPendingEmail() {
 				.from(tables.careerNotification)
 				.innerJoin(tables.careerJob, eq(tables.careerNotification.key, tables.careerJob.id))
 				.innerJoin(tables.careerSchedule, eq(tables.careerJob.scheduleId, tables.careerSchedule.id))
+				.innerJoin(tables.user, eq(tables.careerNotification.userId, tables.user.id))
 				.where(
 					and(
 						eq(tables.careerJob.status, "completed"),
 						eq(tables.careerSchedule.email, true),
+						// An owner who can't be emailed is skipped like a closed application, so their rows never use a
+						// tick's claims. Delivery resumes if they verify or the ban ends.
+						eq(tables.user.emailVerified, true),
+						sql`(${tables.user.banned} is not true or ${tables.user.banExpires} <= now())`,
 						sql`(${tables.careerNotification.applicationId} is null or exists (select 1 from application a where a.id = ${tables.careerNotification.applicationId} and a.user_id = ${tables.careerNotification.userId} and a.status <> 'closed' and a.trashed_at is null))`,
 						eq(tables.careerSchedule.enabled, true),
 						isNull(tables.careerNotification.emailedAt),
@@ -1069,6 +1075,9 @@ export async function runCareerJobs() {
 	await documentsService
 		.purgeExpiredTrash()
 		.catch((error: unknown) => console.error("[documents] Expired Trash purge failed", error));
+	await applicationService
+		.purgeExpiredTrash()
+		.catch((error: unknown) => console.error("[applications] Expired Trash purge failed", error));
 	// Released usernames are reserved for 30 days; older rows no longer matter.
 	await db
 		.delete(tables.releasedUsername)

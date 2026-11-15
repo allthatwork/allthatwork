@@ -56,8 +56,8 @@ describe("loadPublicWebPage", () => {
 			movedBy: "username",
 		});
 		const [query] = pg.queries;
-		expect(query?.text).toContain('"username_redirect"."username" = $5');
-		expect(query?.params[4]).toBe("jane");
+		expect(query?.text).toContain('"released_username"."username" = $4');
+		expect(query?.params[3]).toBe("jane");
 	});
 
 	it("moves a link with an old slug to the current address", async () => {

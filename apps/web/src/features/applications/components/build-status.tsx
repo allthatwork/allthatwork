@@ -37,10 +37,7 @@ export function BuildStatusControl({ application, className }: BuildStatusContro
 		return (
 			<span
 				title={t`Resume package built`}
-				className={cn(
-					"inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400",
-					className,
-				)}
+				className={cn("inline-flex items-center gap-1 text-[11px] font-medium text-success-text", className)}
 			>
 				<Icon name="check-circle" filled size={13} />
 				<Trans>Built</Trans>

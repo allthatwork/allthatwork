@@ -64,6 +64,33 @@ afterEach(() => {
 });
 
 describe("saving", () => {
+	it.each([true, false])("only promises offline device recovery when storage succeeds (%s)", async (writable) => {
+		const entries = new Map<string, string>();
+		vi.stubGlobal("window", {
+			localStorage: {
+				getItem: (key: string) => entries.get(key) ?? null,
+				setItem: (key: string, value: string) => {
+					if (!writable) throw new Error("Storage blocked");
+					entries.set(key, value);
+				},
+				removeItem: (key: string) => entries.delete(key),
+			},
+		});
+		vi.stubGlobal("navigator", { onLine: false });
+		store().edit({ content: "<p>Offline edit</p>" });
+		expect(await store().flush()).toBe(false);
+		expect(store().status).toBe(writable ? "offline" : "error");
+		expect(store().pending).toEqual({ content: "<p>Offline edit</p>" });
+		expect(mocks.update).not.toHaveBeenCalled();
+		if (writable)
+			expect([...entries.values()].some((raw) => JSON.parse(raw).pending.content === "<p>Offline edit</p>")).toBe(true);
+		vi.stubGlobal("navigator", { onLine: true });
+		mocks.update.mockResolvedValue({ ...letter, content: "<p>Offline edit</p>", revision: 2 });
+		expect(await store().flush()).toBe(true);
+		expect(store().status).toBe("saved");
+		expect(store().pending).toEqual({});
+	});
+
 	it.each(["success", "failure"])("pauses sender edits throughout a relink request on %s", async (result) => {
 		store().load({ ...letter, senderLinked: false });
 		const request = deferred<CoverLetter>();
@@ -126,6 +153,28 @@ describe("saving", () => {
 		await store().change(relink);
 		expect(mocks.update).toHaveBeenLastCalledWith(expect.objectContaining({ sender: { phone: "5550100" } }));
 		expect(store().letter?.style.basics).toEqual(letter.style.basics);
+	});
+
+	it("reports saved to a caller that waited while a follow-up save started", async () => {
+		store().load({ ...letter, senderLinked: false });
+		const request = deferred<CoverLetter>();
+		mocks.update
+			.mockReturnValueOnce(request.promise)
+			.mockImplementation(async () => ({ ...store().letter, revision: 3 }));
+		store().edit({ sender: { name: "Jordan" } });
+		const saving = store().flush();
+		store().edit({ sender: { location: "Berlin" } });
+		const waiting = store().flush();
+		request.resolve({
+			...letter,
+			senderLinked: false,
+			style: { ...letter.style, basics: { ...letter.style.basics, name: "Jordan" } },
+			revision: 2,
+		});
+		await expect(saving).resolves.toBe(true);
+		await expect(waiting).resolves.toBe(true);
+		expect(mocks.update).toHaveBeenCalledTimes(2);
+		expect(store().status).toBe("saved");
 	});
 
 	it("shows and saves the header details an unlinked letter edits, including leaving its photo off", async () => {
@@ -475,5 +524,31 @@ describe("drafts", () => {
 		await pending;
 		expect(mocks.draft).not.toHaveBeenCalled();
 		expect(store().draft).toEqual({ phase: "idle" });
+	});
+});
+
+describe("undo and redo", () => {
+	it("steps text edits back and forward, one step per field pause", () => {
+		vi.useFakeTimers();
+		try {
+			store().edit({ recipientName: "P" });
+			store().edit({ recipientName: "Priya" });
+			vi.advanceTimersByTime(1500);
+			store().edit({ recipientCompany: "Lumen" });
+			expect(store().undoStack).toHaveLength(2);
+
+			store().undo();
+			expect(store().letter?.recipientCompany).toBe("");
+			store().undo();
+			expect(store().letter?.recipientName).toBe("");
+			expect(store().undoStack).toHaveLength(0);
+
+			store().redo();
+			expect(store().letter?.recipientName).toBe("Priya");
+			store().edit({ greeting: "Hello," });
+			expect(store().redoStack).toHaveLength(0);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });

@@ -20,7 +20,6 @@ const databaseUrl = process.env.INTEGRATIONS_TEST_DATABASE_URL;
 // Real PostgreSQL, opt-in only, in a schema of its own built from the shipped migrations.
 describe.skipIf(!databaseUrl)("public addresses and old usernames", () => {
 	let service: typeof import("./service").resumeService;
-	let recordUsernameChange: typeof import("@reactive-resume/auth/username-redirect").recordUsernameChange;
 	let admin: Pool;
 	let pool: Pool;
 	const schemaName = `address_test_${randomUUID().replaceAll("-", "")}`;
@@ -44,7 +43,6 @@ describe.skipIf(!databaseUrl)("public addresses and old usernames", () => {
 			if (existsSync(file)) await pool.query((await readFile(file, "utf8")).replaceAll('"public".', ""));
 		}
 		service = (await import("./service")).resumeService;
-		recordUsernameChange = (await import("@reactive-resume/auth/username-redirect")).recordUsernameChange;
 	}, 30_000);
 
 	afterAll(async () => {
@@ -54,7 +52,7 @@ describe.skipIf(!databaseUrl)("public addresses and old usernames", () => {
 	});
 
 	beforeEach(async () => {
-		await pool.query('TRUNCATE "user" CASCADE');
+		await pool.query('TRUNCATE "user", "released_username" CASCADE');
 		await getDb()
 			.insert(tables.user)
 			.values(
@@ -119,41 +117,31 @@ describe.skipIf(!databaseUrl)("public addresses and old usernames", () => {
 		expect((await service.update({ id, userId: "alice", isPublic: true })).slug).toBe("my-portfolio");
 	});
 
-	it("finds a resume by the owner's old username for 30 days, and a real account's username wins", async () => {
+	it("finds a resume by the owner's old username for 30 days, and nobody else can take that name meanwhile", async () => {
 		const id = await create("Resume");
 		const { slug } = await service.update({ id, userId: "alice", isPublic: true });
-		await recordUsernameChange("alice", "alexandru");
+		// Upstream's trigger records the old name in released_username on every rename.
 		await getDb().update(tables.user).set({ username: "alexandru" }).where(eq(tables.user.id, "alice"));
 
 		await expect(visit("alice", slug)).resolves.toMatchObject({ id, username: "alexandru" });
 		await expect(visit("alexandru", slug)).resolves.toMatchObject({ id, username: "alexandru" });
-		const [redirect] = await getDb().select().from(tables.usernameRedirect);
-		expect(redirect).toMatchObject({ username: "alice", userId: "alice" });
-		expect(Math.round(((redirect?.expiresAt.getTime() ?? 0) - Date.now()) / 86_400_000)).toBe(30);
+		const [released] = await getDb().select().from(tables.releasedUsername);
+		expect(released).toMatchObject({ username: "alice", userId: "alice" });
 
-		// Changing back frees the name from the redirect: it's the account's own again.
-		await recordUsernameChange("alice", "alice");
-		expect((await getDb().select().from(tables.usernameRedirect)).map((entry) => entry.username)).toEqual([
-			"alexandru",
-		]);
+		// Another account can't claim the name while it's reserved.
+		await expect(
+			getDb().update(tables.user).set({ username: "alice" }).where(eq(tables.user.id, "bob")),
+		).rejects.toThrow();
+
+		// Changing back is the owner's right, and their old name is theirs again.
 		await getDb().update(tables.user).set({ username: "alice" }).where(eq(tables.user.id, "alice"));
+		await expect(visit("alice", slug)).resolves.toMatchObject({ id, username: "alice" });
 
-		// After 30 days the old name finds nothing: both the fork's redirect and upstream's released-name record (written
-		// by a database trigger on every username change) have run out.
-		await getDb()
-			.update(tables.usernameRedirect)
-			.set({ expiresAt: new Date(Date.now() - 1000) })
-			.where(eq(tables.usernameRedirect.username, "alexandru"));
+		// After 30 days the old name finds nothing.
 		await getDb()
 			.update(tables.releasedUsername)
 			.set({ releasedAt: new Date(Date.now() - 31 * 86_400_000) })
 			.where(eq(tables.releasedUsername.username, "alexandru"));
 		await expect(visit("alexandru", slug)).rejects.toMatchObject({ code: "NOT_FOUND" });
-
-		// Another account that takes a freed name gets its own links, not alice's.
-		await getDb()
-			.insert(tables.usernameRedirect)
-			.values({ username: "bob", userId: "alice", expiresAt: new Date(Date.now() + 86_400_000) });
-		await expect(visit("bob", slug)).rejects.toMatchObject({ code: "NOT_FOUND" });
 	});
 });

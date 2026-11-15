@@ -3,6 +3,7 @@ import type { AIProvider, AiVoiceOperation } from "@reactive-resume/ai/types";
 import type { DbOrTx } from "@reactive-resume/db/client";
 import { ORPCError } from "@orpc/client";
 import { and, asc, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { isAPIKeyOptional } from "@reactive-resume/ai/defaults";
 import { acceptsCustomReasoning, aiReasoningSchema } from "@reactive-resume/ai/reasoning";
 import { aiConfiguredModels } from "@reactive-resume/ai/task-models";
 import { aiProviderSchema } from "@reactive-resume/ai/types";
@@ -323,6 +324,9 @@ export const aiProvidersService = {
 		const reasoning = input.reasoning !== undefined ? input.reasoning : storedReasoning(existing.reasoning);
 		if (reasoning === "ultra" && !acceptsCustomReasoning(provider))
 			throw new ORPCError("BAD_REQUEST", { message: ULTRA_UNSUPPORTED });
+		// An update may omit the provider, so an empty key is checked against the one it ends up with.
+		if (nextApiKey === "" && !isAPIKeyOptional(provider))
+			throw new ORPCError("BAD_REQUEST", { message: "Enter an API key for this provider." });
 		const providerChanged = input.provider !== undefined && input.provider !== existing.provider;
 		const nextBaseUrl =
 			input.baseURL !== undefined || providerChanged
@@ -344,7 +348,7 @@ export const aiProvidersService = {
 			});
 		}
 
-		// On a new host the key is replaced even when empty (Ollama runs without one).
+		// On a new host the key is replaced even when empty (local servers may run without one).
 		const encrypted = nextApiKey || hostChanged ? encryptCredential(nextApiKey ?? "") : {};
 		const credentialChanged = !!nextApiKey;
 		// A model can refuse a reasoning setting, so a new one needs a fresh test too.
@@ -487,6 +491,10 @@ export const aiProvidersService = {
 				}
 			}
 
+			// An abandoned request says nothing about the provider: its saved state stays as it was. The test's own timeout
+			// is a result and is still recorded, because it does not abort the caller's signal.
+			if (!result.ok) input.signal?.throwIfAborted();
+
 			// A provider that answers "no" is a completed test, not a failed request: it comes back as
 			// data so the client can show why, instead of a generic transport error.
 			const [updated] = await db
@@ -518,6 +526,7 @@ export const aiProvidersService = {
 			return toResponse(await getOwnedProvider(input));
 		} catch (error) {
 			if (error instanceof ORPCError && error.code === "CONFLICT") throw error;
+			if (input.signal?.aborted) throw error;
 			// Only unexpected failures reach here now: provider-side outcomes come back as data above.
 			await db
 				.update(schema.aiProvider)

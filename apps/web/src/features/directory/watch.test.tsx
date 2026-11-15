@@ -221,7 +221,7 @@ describe("CompanyRow", () => {
 		expect(cached()?.jobs.watching[0]?.id).toBe("");
 		expect(api.toasts.at(-1)).toMatchObject({
 			title: "Watching Heliotrope",
-			description: "Its new roles show up in Career → Today.",
+			description: "Its new roles show up in Today.",
 		});
 		api.toasts.at(-1)?.actionProps?.onClick();
 		await waitFor(() => expect(cached()?.jobs.watching).toHaveLength(0));

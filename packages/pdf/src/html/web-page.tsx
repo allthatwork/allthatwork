@@ -1,6 +1,8 @@
 import type { PdfFontRequest } from "../hooks/use-register-fonts";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
+import { parse } from "node-html-parser";
 import { createElement } from "react";
+import { resolveFontSource } from "@reactive-resume/fonts/sources";
 import { parseResumeData } from "@reactive-resume/schema/resume/data";
 import { ResumeDocument } from "../document";
 import { loadRequestedIcons } from "../forme/icons";
@@ -20,6 +22,7 @@ export type ResumeWebPage = {
 export type RenderResumeWebPageInput = {
 	/** Already redacted for the viewer: the web page draws everything it's given, in the resume's own template. */
 	data: ResumeData;
+	fontMirrorUrl?: string | undefined;
 	imageUrl?: ((source: string) => string | undefined) | undefined;
 };
 
@@ -43,12 +46,12 @@ export function toWebLayout(data: ResumeData): ResumeData {
 	};
 }
 
-const fontFaces = (requests: readonly PdfFontRequest[]) =>
+const fontFaces = (requests: readonly PdfFontRequest[], fontMirrorUrl?: string) =>
 	requests
 		.filter((request) => request.src.startsWith("https://"))
 		.map(
 			(request) =>
-				`@font-face{font-family:"${request.family.replace(/["\\<>{};]/g, "")}";font-weight:${Number(request.weight) || 400};font-style:${request.italic ? "italic" : "normal"};font-display:swap;src:url("${encodeURI(request.src).replaceAll('"', "%22")}")}`,
+				`@font-face{font-family:"${request.family.replace(/["\\<>{};]/g, "")}";font-weight:${Number(request.weight) || 400};font-style:${request.italic ? "italic" : "normal"};font-display:swap;src:url("${new URL(resolveFontSource(request.src, fontMirrorUrl)).href.replace(/["<>\\]/g, (character) => `%${character.charCodeAt(0).toString(16)}`)}")}`,
 		)
 		.join("\n");
 
@@ -68,9 +71,18 @@ export async function renderResumeWebPage(input: RenderResumeWebPageInput): Prom
 	// Icons load on first use: a tree that asked for new ones is drawn again once they arrive.
 	if (await loadRequestedIcons()) tree = renderHostTree(element);
 	const { html, css } = toHtml(tree, { imageUrl: input.imageUrl });
+	const page = parse(html);
+	// Share can outline exactly the contact fields its privacy switch hides, without marking the website.
+	for (const header of page.querySelectorAll("[data-region=header]")) {
+		for (const contact of header.querySelectorAll('a[href^="mailto:"],a[href^="tel:"]'))
+			contact.setAttribute("data-contact-detail", "");
+		if (data.basics.location.trim())
+			for (const text of header.querySelectorAll(".t"))
+				if (text.textContent.trim() === data.basics.location.trim()) text.setAttribute("data-contact-detail", "");
+	}
 	return {
 		lang: data.metadata.page.locale,
-		html,
-		css: `${fontFaces(resumeFontRequests(data))}\n${css}`,
+		html: page.toString(),
+		css: `${fontFaces(resumeFontRequests(data), input.fontMirrorUrl)}\n${css}`,
 	};
 }

@@ -29,6 +29,7 @@ import {
 } from "@reactive-resume/ui/components/dropdown-menu";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
+import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
@@ -43,7 +44,7 @@ import {
 	hostname,
 	useShortDate,
 } from "./lists";
-import { PAGE_CLASS } from "@/components/layout/page";
+import { Page, PageBody, RootHeader } from "@/components/calm/page";
 import { getStageLabel } from "@/features/applications/stages";
 import { useCareerTime } from "@/features/career/shared";
 import { client, orpc } from "@/libs/orpc/client";
@@ -60,51 +61,50 @@ type DirectoryPageProps = DirectorySearch;
 export function DirectoryPage({ tab = "companies", company, contact }: DirectoryPageProps) {
 	const navigate = useNavigate();
 	return (
-		<div className={cn(PAGE_CLASS, "grid content-start gap-6")}>
-			<header className="grid gap-3">
-				<h1 className="font-display text-3xl font-medium">
-					<Trans>Directory</Trans>
-				</h1>
-				<p className="text-sm text-ink-2">
-					<Trans>Your companies and contacts, across every application.</Trans>
-				</p>
-				<nav aria-label={t`Directory`} className="flex gap-4 border-b border-line pb-3">
-					<Link
-						to="/dashboard/directory"
-						search={{ tab: "companies" }}
-						aria-current={tab === "companies" ? "page" : undefined}
-						className={tab === "companies" ? "font-semibold text-accent-text" : "text-ink-2"}
+		<Page>
+			{/* Full width (fork), like Documents and Applications. */}
+			<PageBody className="grid max-w-none content-start gap-6">
+				<div>
+					<RootHeader
+						title={<Trans>Directory</Trans>}
+						subtitle={<Trans>Your companies and contacts, across every application.</Trans>}
+					/>
+					<Tabs
+						value={tab}
+						onValueChange={(value) =>
+							void navigate({ to: "/dashboard/directory", search: { tab: value as "companies" | "contacts" } })
+						}
+						className="mt-5"
 					>
-						<Trans>Companies</Trans>
-					</Link>
-					<Link
-						to="/dashboard/directory"
-						search={{ tab: "contacts" }}
-						aria-current={tab === "contacts" ? "page" : undefined}
-						className={tab === "contacts" ? "font-semibold text-accent-text" : "text-ink-2"}
-					>
-						<Trans>Contacts</Trans>
-					</Link>
-				</nav>
-			</header>
-			{contact ? (
-				<ContactPage
-					key={contact}
-					id={contact}
-					onDeleted={() => navigate({ to: "/dashboard/directory", search: { tab: "contacts" } })}
-				/>
-			) : company ? (
-				<CompanyPage
-					key={company}
-					id={company}
-					onDeleted={() => navigate({ to: "/dashboard/directory", search: { tab: "companies" } })}
-				/>
-			) : tab === "companies" ? (
-				<CompaniesList />
-			) : (
-				<ContactsList />
-			)}
-		</div>
+						<TabsList variant="line" aria-label={t`Directory`} className="w-full justify-start">
+							<TabsTrigger value="companies">
+								<Trans>Companies</Trans>
+							</TabsTrigger>
+							<TabsTrigger value="contacts">
+								<Trans>Contacts</Trans>
+							</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				</div>
+				{contact ? (
+					<ContactPage
+						key={contact}
+						id={contact}
+						onDeleted={() => navigate({ to: "/dashboard/directory", search: { tab: "contacts" } })}
+					/>
+				) : company ? (
+					<CompanyPage
+						key={company}
+						id={company}
+						onDeleted={() => navigate({ to: "/dashboard/directory", search: { tab: "companies" } })}
+					/>
+				) : tab === "companies" ? (
+					<CompaniesList />
+				) : (
+					<ContactsList />
+				)}
+			</PageBody>
+		</Page>
 	);
 }
 

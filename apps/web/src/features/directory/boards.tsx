@@ -100,7 +100,7 @@ export function CompanyBoards({ companyId, companyName: name }: CompanyBoardsPro
 				<p className="text-sm text-ink-2">
 					<Trans>
 						Most companies list their jobs on Greenhouse, Ashby or Lever. Watch the company's page there, and its new
-						roles that match your Preferences show up in New roles on Career → Today.
+						roles that match your Preferences show up in New roles on Today.
 					</Trans>
 				</p>
 			</div>

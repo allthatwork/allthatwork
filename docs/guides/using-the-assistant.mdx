@@ -3,9 +3,9 @@ title: "Using the assistant"
 description: "Ask the AI assistant to improve your resume or cover letter, then review and accept or reject its proposed changes. Nothing changes until you accept."
 ---
 
-The assistant is an AI chat panel beside your document in the editor. It reads the resume or letter you have open, and the job posting when the document is linked to an application, then proposes changes for you to review. Text-only suggestions can be accepted individually; changes to fields, entries or sections are reviewed and accepted as one set. It never changes your document on its own.
+The assistant is an AI chat panel beside your document in the editor. It reads the resume or letter you have open, and the job posting when the document is linked to an application, then proposes changes for you to review. Text-only suggestions can be accepted individually; changes to fields, entries or sections are reviewed and accepted as one set. It never changes your document on its own. When you start from a base resume, the first accepted edit makes a copy and opens it with that edit applied. The original stays unchanged. An existing job copy is already separate and is edited in place, as are cover letters.
 
-**Prepare application** in Apply generates a combined review of pending tailoring proposals, a letter draft and answers for pasted form questions after one context disclosure. Each section needs approval; existing version guards and account-scoped draft recovery apply. See [Prepare the application together](/guides/writing-application-answers#prepare-the-application-together). Nothing is submitted to an employer.
+**Prepare drafts** in Apply generates a combined review of pending tailoring proposals, a letter draft and answers for pasted form questions after one context disclosure. Each section needs approval; existing version guards and account-scoped draft recovery apply. See [Prepare the application together](/guides/writing-application-answers#prepare-the-application-together). Nothing is submitted to an employer.
 
 ## Before you start
 
@@ -13,26 +13,25 @@ Connect an AI provider with your own API key. See [Connecting an AI provider](/g
 
 ## Open the assistant
 
-In the editor, select **Assistant** (the sparkle button) in the editor bar, just before **Share**, or press <kbd>⌘</kbd> <kbd>J</kbd> (<kbd>Ctrl</kbd> <kbd>J</kbd> on Windows and Linux). Press it again, or select **Close the assistant** (×) in the panel, to close it.
+In the editor, select **Assistant** (the sparkle button) in the editor bar, beside the clock button, or press <kbd>⌘</kbd> <kbd>J</kbd> (<kbd>Ctrl</kbd> <kbd>J</kbd> on Windows and Linux). Press it again, or select **Close the assistant** (×) in the panel, to close it.
 
-<Frame caption="Start with a suggestion or your own message. This example uses a fictional resume and a local demonstration provider.">
+<Frame caption="Review a pending edit on a fictional guest sample">
   <img
     src="/images/guides/career/chat-assistant.png"
-    alt="Assistant showing What should we work on, resume starter rows, the Fictional Cedar AI connection and stub model, document and Knowledge controls, an unsent message and its privacy disclosure"
+    alt="Assistant replacing the editor panel, with a pending summary edit on the fictional David Kowalski guest sample"
   />
 </Frame>
 
-On wide screens the assistant opens as a third column. On smaller laptops it takes the place of the left panel, on tablets it slides in as a drawer, and on phones it fills the screen.
+The assistant takes the current panel's place, keeping the page visible. Closing it returns to the panel you were using. On phones, it fills the screen.
 
 You can also reach it from elsewhere:
 
 - In the command bar (<kbd>⌘</kbd> <kbd>K</kbd>), type a question and choose **Ask the assistant**. Outside the editor, choose the document first. The question appears in its composer; review it and press send when ready. See [Using the command bar](/guides/using-the-command-bar).
 
 If no tested provider is enabled, the command bar names that requirement and opens provider setup in place. Closing or
-finishing setup keeps your question; choose Ask again to continue. Native Search uses the same setup-before-opening flow
-and leaves the question unsent in the named document.
+finishing setup keeps your question; choose Ask again to continue.
 
-For job search and interview coaching, open **Career → Coach**, or select **Open workspace** in an application and then **Ask the coach**. That coach works with your Knowledge and application context. This guide covers editing resumes and letters; [Career and Application Workspaces](/guides/career-overview) covers the career coach.
+For job search and interview coaching, open **Career → Coach**, or open an application and select **Ask the coach**. That coach works with your Knowledge and application context. This guide covers editing resumes and letters; [Career and Application Workspaces](/guides/career-overview) covers the career coach.
 
 Both chats start with **What should we work on?** and a list of suggestions. The connection menu names the connection
 and model in use. Context controls sit inside the message box, with a disclosure underneath explaining what goes with
@@ -90,10 +89,10 @@ A request involving fields, entries or sections appears as one card for the enti
   />
 </Frame>
 
-<Frame caption="A tailored edit on a fictional job copy, shown on the page and in the assistant. The posting chip and the disclosure under the message box show the posting is shared.">
+<Frame caption="Review a pending edit on a fictional guest sample">
   <img
     src="/images/guides/using-the-assistant/proposed-edit-on-page.webp"
-    alt="Resume editor for Game Developer Resume — Lumen Games, where the summary on the page shows the old text struck through and the new text below it, with a banner reading 1 proposed edit on this page · nothing changes until you accept. The Assistant panel shows the matching card with a cited passage, flagged details and Accept, Edit and Reject buttons, and chips for the resume, the Lumen Games posting and Use Knowledge above the message box"
+    alt="Assistant replacing the editor panel, with a pending summary edit on the fictional David Kowalski guest sample"
   />
 </Frame>
 
@@ -134,7 +133,7 @@ Before accepting resume edits, **Page fit** compares the printed page count befo
 
 When you refine a request ("Don't say last year, it was 2025"), the new suggestion replaces the earlier one for the same passage if you hadn't decided on it. The earlier card shows **Replaced by a newer suggestion**, so you don't have to reject it yourself.
 
-After you ask to **Tighten to one page**, the request tells the assistant how far the resume runs over, and its reply says how much its edits save. Wording alone often can't close a gap that comes from the layout. Once a set is applied and the resume still runs over, the card says by how much and offers **Fit to one page**, which adjusts the design. On mobile, use **Fit to one page** on the Page tab.
+After you ask to **Tighten to one page**, the request tells the assistant how far the resume runs over, and its reply says how much its edits save. Wording alone often can't close a gap that comes from the layout. Once a set is applied and the resume still runs over, the card says by how much and offers **Fit to one page**, which adjusts the design. On a phone, use **Fit to one page** on the Page tab.
 
 Accepted edits show **Applied** and the set's title changes to, for example, **1 of 1 applied**. They stay applied when you refine the wording yourself. If you change a passage yourself before deciding, its edit shows **Out of date: the text has changed since.** A pending structural set also becomes out of date when resume content or layout changes. Ask again to get a fresh suggestion.
 
@@ -153,17 +152,13 @@ Select **Edit** to change a text edit's new text in your own words before decidi
 
 Tailoring changes a copy of your resume made for that job, never the resume your other applications use. If the open resume isn't that copy, the assistant shows **Copy for this job** above the message box and won't propose edits that use the posting until you copy it, or leave the posting out. Edits it proposed with a posting can't be accepted on a resume that isn't that job's copy: copy the resume for the job and ask again there. Edits from older conversations that may have used a posting show as out of date and can't be applied anywhere; ask again on the resume you want to change.
 
-Tailoring started through MCP or the public API uses this same review flow. Its new copy starts unchanged, and its conversation holds pending proposals or questions. Review them here on web or mobile before accepting; **Undo** uses the normal editor history. This route sends the resume and posting without private notes, Knowledge or web access. If generation fails or is stopped, the unchanged copy remains in Documents so you can continue its conversation. Submitted application document links stay intact. The original `resumeId` and `name` response fields still identify the copy; they do not mean generated edits were accepted.
+Tailoring started through MCP or the public API uses this same review flow. Its new copy starts unchanged, and its conversation holds pending proposals or questions. Review them here before accepting; **Undo** uses the normal editor history. This route sends the resume and posting without private notes, Knowledge or web access. If generation fails or is stopped, the unchanged copy remains in Documents so you can continue its conversation. Submitted application document links stay intact. The original `resumeId` and `name` response fields still identify the copy; they do not mean generated edits were accepted.
 
 <Note>
   An older version of the app can't check these edits. A resume or letter with tailored edits it can't accept, or with
   wording you changed, refuses changes from an older version of the app, even ones typed by hand: that app shows a
-  version conflict and keeps its draft as a copy. Refresh the page, or update the mobile app, to keep editing that
-  document. Changes an older version kept on your device while offline are still treated as that version's after you
-  update: such a document refuses them the same way. On mobile, **This older draft needs review** offers **Keep both**
-  to save them as a separate document, or **Use saved version** to discard them and start from the server's copy. **Keep
-  mine** isn't available for that refusal. On the web, **Review saved version** leads to the existing recovery choices.
-  Documents without such edits work as before.
+  version conflict and keeps its draft as a copy. Refresh the page to keep editing that document. **Review saved
+  version** leads to the existing recovery choices. Documents without such edits work as before.
 </Note>
 
 When you tailor, the card can also show:
@@ -205,7 +200,7 @@ After answering, **Remember** opens a review of your answer for Knowledge. Edit 
   />
 </Frame>
 
-The same question cards appear in **Career → Coach** and **Ask the coach** inside an application workspace, on web and mobile. Only the latest reply can take an answer. Choices stay disabled while a reply is starting or reconnecting; **Stop** cancels that wait.
+The same question cards appear in **Career → Coach** and **Ask the coach** inside an application workspace. Only the latest reply can take an answer. Choices stay disabled while a reply is starting or reconnecting; **Stop** cancels that wait.
 
 If a question did not finish or could not be asked, send a new message to continue. If the provider fails after you answer, **Try again** keeps that answer and retries the reply. After reopening a conversation whose answer was already saved, send a new message instead.
 
@@ -218,7 +213,7 @@ If a question did not finish or could not be asked, send a new message to contin
 
 ## Choose what's shared with each message
 
-Above the message box, chips show what goes with your next message: the document, and the job posting when the document is linked to an application. Select the **×** on a chip to leave it out, including before your first message. A chip you left out stays as a dashed outline; select it to send that item again. Without the document, the assistant can't read or edit it for that message. The line under the box always says what will be sent and to which provider, names any attached files, and mentions earlier messages only once there are some. Nothing is sent until you press send. A long pasted message folds to its first lines in the conversation, with **Show all**. Before sending a long paste, **Attach a file instead** offers to upload those words as `message.txt`, using the existing destination approval. After a successful upload, the unchanged message box says **Read the attachment**; text you typed while it uploaded stays intact. A failed upload keeps your paste. Review the named file and disclosure, then press **Send** yourself. Removing the file releases its upload before the next message. Unsent uploads stay with their conversation. Reopening it on web or mobile restores their named chips, including an upload that finished while you changed accounts. Review or remove those files before sending; reopening never sends them to a provider.
+Above the message box, chips show what goes with your next message: the document, and the job posting when the document is linked to an application. Select the **×** on a chip to leave it out, including before your first message. A chip you left out stays as a dashed outline; select it to send that item again. Without the document, the assistant can't read or edit it for that message. The line under the box always says what will be sent and to which provider, names any attached files, and mentions earlier messages only once there are some. Nothing is sent until you press send. A long pasted message folds to its first lines in the conversation, with **Show all**. Before sending a long paste, **Attach a file instead** offers to upload those words as `message.txt`, using the existing destination approval. After a successful upload, the unchanged message box says **Read the attachment**; text you typed while it uploaded stays intact. A failed upload keeps your paste. Review the named file and disclosure, then press **Send** yourself. Removing the file releases its upload before the next message. Unsent uploads stay with their conversation. Reopening it restores their named chips, including an upload that finished while you changed accounts. Review or remove those files before sending; reopening never sends them to a provider.
 
 Removing either context chip also leaves earlier conversation history out of the next reply. Pending questions or approvals from a different context cannot resume; send a new message with your current choices.
 
@@ -254,7 +249,7 @@ On the web, the file stays in the box until removal is confirmed. Sending and fu
 
 ## Search the web
 
-If you connect an optional **Web access** service in Integrations, the assistant uses that selected service for search and enhanced reading. If your installation's administrator set up server search, the assistant searches with it instead, with or without a connection. **Web access** then says **Your server provides search for Applications and the assistant**, and, until you connect a service, **Test search** checks it. Without a connection, the assistant can read supplied public URLs with the built-in reader or work from text you paste. See [Assistant tools](/guides/ai-agent-tools#web-search-support).
+If you connect an optional **Web access** service in **Settings → AI → Web access**, the assistant uses that selected service for search and enhanced reading. If your installation's administrator set up server search, the assistant searches with it instead, with or without a connection. **Web access** then says **Your server provides search for Applications and the assistant**, and, until you connect a service, **Test search** checks it. Without a connection, the assistant can read supplied public URLs with the built-in reader or work from text you paste. See [Assistant tools](/guides/ai-agent-tools#web-search-support).
 
 You can also supply a public page URL: the assistant uses the selected reader or built-in reading. Page reading does not require a separate search account. Failed reading leads to pasted-text recovery; clipped or incomplete pages are identified before you rely on them.
 
@@ -270,7 +265,7 @@ In a resume conversation, a successfully read page offers **Save as a job…** b
 </Frame>
 
 To remove your saved web connection, select **Remove connection**, then confirm. **Keep connection** cancels
-without changing it. On the website and mobile apps, the confirmation explains that reconnecting needs your API
+without changing it. The confirmation explains that reconnecting needs your API
 key again. The built-in reader remains active after removal.
 
 <Frame caption="Removing a saved web connection asks first; this example uses fictional local credentials">
@@ -280,7 +275,7 @@ key again. The built-in reader remains active after removal.
   />
 </Frame>
 
-Before each search, a card shows the exact query. Select **Search the web** to send that query to your search service, or **Skip** to continue without it. Review it for private details before approving. This applies on web and mobile.
+Before each search, a card shows the exact query. Select **Search the web** to send that query to your search service, or **Skip** to continue without it. Review it for private details before approving.
 
 A direct OpenAI, Anthropic or Google Gemini connection can also retry a rejected-key or exhausted-quota search with its own search service. This may add AI requests and charges. The exact-query card still needs your approval; the retry adds no document or Knowledge context to that query. Selecting **Skip** prevents that search. Custom endpoints and compatible gateways are excluded, and unsupported models can still fail. Coach requires **Web research** on for the message. Scheduled discovery does not gain this fallback.
 
@@ -316,7 +311,7 @@ Each conversation belongs to one document. Opening the assistant continues that 
   />
 </Frame>
 
-Conversations are titled by the first set of edits the assistant proposed ("Tailor summary to payments roles"), or by your first message until there is one. A one-line preview of your original first message appears below the title on web and mobile, followed by the time and how many edits you accepted. This uses the saved message, without another AI request. An attachment-only opening has no message preview. While a conversation is open, its address is in the page's URL, so reloading the page reopens it. Conversations about your other documents appear under **Other documents**; opening one takes you to that document. To delete a conversation, hover over it, select **×**, then confirm. Its messages and attachments are deleted, but edits you accepted stay in your document.
+Conversations are titled by the first set of edits the assistant proposed ("Tailor summary to payments roles"), or by your first message until there is one. A one-line preview of your original first message appears below the title, followed by the time and how many edits you accepted. This uses the saved message, without another AI request. An attachment-only opening has no message preview. While a conversation is open, its address is in the page's URL, so reloading the page reopens it. Conversations about your other documents appear under **Other documents**; opening one takes you to that document. To delete a conversation, hover over it, select **×**, then confirm. Its messages and attachments are deleted, but edits you accepted stay in your document.
 
 On a locked document the assistant still answers questions and writes drafts, such as a follow-up email or interview notes, but proposes no edits. The note above the message box offers **Unlock**. A deleted document keeps its conversation read-only. Opening an old conversation link, including in a new tab, returns to Documents with a note explaining that the conversation is unavailable or its document was deleted. Reloading Documents doesn't repeat that note. If a provider is off, broken or deleted, history and pending edits stay readable. You can accept saved edits and undo document changes while sending pauses. Repair the connection through **Set up AI**, or choose another model and approve its destination. The app never moves a conversation automatically.
 

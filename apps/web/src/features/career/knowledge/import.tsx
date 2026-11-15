@@ -24,6 +24,7 @@ import {
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Spinner } from "@reactive-resume/ui/components/spinner";
 import { isPrivateGroup, nearestGroupSetting, normalizeFactText } from "@reactive-resume/utils/knowledge";
+import { KnowledgeFrame } from "./frame";
 import { ImportComparison } from "./import-comparison";
 import { ContactsImportReview, emptyContactsResult, saveReviewedContacts } from "./import-contacts";
 import { findImportDuplicates } from "./import-duplicates";
@@ -376,397 +377,402 @@ export function KnowledgeImportPage() {
 	}
 
 	return (
-		<section className="grid min-w-0 gap-5">
-			<header className="grid gap-2">
-				<h1 className="text-xl font-semibold">
-					<Trans>Import into Knowledge</Trans>
-				</h1>
-				<p className="max-w-2xl text-sm text-ink-2">
-					<Trans>Bring in a resume or LinkedIn data export, then choose and edit the facts you want to keep.</Trans>
-				</p>
-			</header>
-			<input
-				ref={input}
-				type="file"
-				className="sr-only"
-				aria-label={t`Choose a file to import`}
-				accept={ACCEPT}
-				disabled={busy || step === "options"}
-				onChange={(event) => {
-					const file = event.target.files?.[0];
-					if (file) void readFile(file);
-				}}
-			/>
-			<Dialog
-				open={step === "options"}
-				onOpenChange={(open) => {
-					if (!open) reset();
-				}}
-			>
-				<DialogContent className="sm:max-w-sm" showCloseButton={false}>
-					<DialogHeader>
-						<DialogTitle>
-							<Trans>LinkedIn export detected</Trans>
-						</DialogTitle>
-						<DialogDescription>
-							<Trans>What would you like to import?</Trans>
-						</DialogDescription>
-					</DialogHeader>
-					<div className="grid gap-3 py-1">
-						<label className="flex cursor-pointer items-center gap-3">
-							<input
-								type="checkbox"
-								className="size-4 accent-accent"
-								checked={importFacts}
-								onChange={(event) => setImportFacts(event.target.checked)}
-							/>
-							<span>{t`Import facts`}</span>
-						</label>
-						<label className="flex cursor-pointer items-center gap-3">
-							<input
-								type="checkbox"
-								className="size-4 accent-accent"
-								checked={importContacts}
-								onChange={(event) => setImportContacts(event.target.checked)}
-							/>
-							<span>{t`Import contacts`}</span>
-						</label>
-					</div>
-					<DialogFooter>
-						<Button variant="ghost" onClick={reset}>
-							<Trans>Cancel</Trans>
-						</Button>
-						<Button
-							disabled={!importFacts && !importContacts}
-							onClick={() => {
-								if (pending)
-									void readFile(pending.file, { facts: importFacts, contacts: importContacts }, pending.bytes);
-							}}
-						>
-							<Trans>Continue</Trans>
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-			{error && (
-				<div role="alert" className="rounded-lg border border-line p-4 text-sm">
-					{error}
-				</div>
-			)}
-			{(step === "choose" || step === "reading") && (
-				<>
-					<div
-						className="grid justify-items-center gap-4 rounded-xl border border-dashed border-line-2 p-8 text-center"
-						onDragOver={(event) => event.preventDefault()}
-						onDrop={(event) => {
-							event.preventDefault();
-							const file = event.dataTransfer.files[0];
-							if (file && !busy) void readFile(file);
-						}}
-					>
-						<Icon name="upload-simple" size={28} />
-						<p className="text-sm">
-							<Trans>PDF, Word, resume JSON or LinkedIn export (.zip)</Trans>
-						</p>
-						{step === "reading" ? (
-							<p role="status" className="flex items-center gap-2 text-sm">
-								<Spinner decorative className="size-4" />
-								{note}
-							</p>
-						) : (
-							<Button
-								onClick={() => {
-									if (input.current) {
-										input.current.value = "";
-										input.current.click();
-									}
-								}}
-							>
-								<Trans>Choose a file</Trans>
-							</Button>
-						)}
-						{step === "reading" && (
+		<KnowledgeFrame current="import">
+			<section className="grid min-w-0 gap-5 pt-6">
+				<header className="grid gap-2">
+					<h2 className="t-section-title">
+						<Trans>Import into Knowledge</Trans>
+					</h2>
+					<p className="max-w-2xl text-sm text-ink-2">
+						<Trans>Bring in a resume or LinkedIn data export, then choose and edit the facts you want to keep.</Trans>
+					</p>
+				</header>
+				<input
+					ref={input}
+					type="file"
+					className="sr-only"
+					aria-label={t`Choose a file to import`}
+					accept={ACCEPT}
+					disabled={busy || step === "options"}
+					onChange={(event) => {
+						const file = event.target.files?.[0];
+						if (file) void readFile(file);
+					}}
+				/>
+				<Dialog
+					open={step === "options"}
+					onOpenChange={(open) => {
+						if (!open) reset();
+					}}
+				>
+					<DialogContent className="sm:max-w-sm" showCloseButton={false}>
+						<DialogHeader>
+							<DialogTitle>
+								<Trans>LinkedIn export detected</Trans>
+							</DialogTitle>
+							<DialogDescription>
+								<Trans>What would you like to import?</Trans>
+							</DialogDescription>
+						</DialogHeader>
+						<div className="grid gap-3 py-1">
+							<label className="flex cursor-pointer items-center gap-3">
+								<input
+									type="checkbox"
+									className="size-4 accent-accent"
+									checked={importFacts}
+									onChange={(event) => setImportFacts(event.target.checked)}
+								/>
+								<span>{t`Import facts`}</span>
+							</label>
+							<label className="flex cursor-pointer items-center gap-3">
+								<input
+									type="checkbox"
+									className="size-4 accent-accent"
+									checked={importContacts}
+									onChange={(event) => setImportContacts(event.target.checked)}
+								/>
+								<span>{t`Import contacts`}</span>
+							</label>
+						</div>
+						<DialogFooter>
 							<Button variant="ghost" onClick={reset}>
 								<Trans>Cancel</Trans>
 							</Button>
-						)}
-					</div>
-					<div className="grid gap-2 text-sm text-ink-2">
-						<p>
-							<Trans>
-								LinkedIn exports and JSON are read in your browser. We read LinkedIn's profile files, and connections
-								can optionally be imported into Directory. Messages are ignored. Only selected facts and contacts are
-								saved to your account.
-							</Trans>
-						</p>
-						<p>
-							<Trans>
-								PDFs use your AI connection when available, or the browser reader otherwise. Word files need an AI
-								connection.
-							</Trans>
-						</p>
-						<p>
-							<Trans>Importing saves facts. To make a resume, use Documents.</Trans>
-						</p>
-					</div>
-					<AiProviderLoadState state={provider} />
-				</>
-			)}
-			{(step === "review" || step === "saving") && (
-				<>
-					<div className="grid gap-3 rounded-xl bg-sunken p-4">
-						<p className="text-sm font-medium break-all">{fileName}</p>
-						{importFacts && (
-							<>
-								<p className="text-sm text-ink-2">
-									<Trans>
-										Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden
-										resume entries start unchecked.
-									</Trans>
-								</p>
-								<p className="text-sm text-ink-2">
-									<Trans>
-										New facts follow their group's coaching and privacy settings. New groups start with coaching on.
-									</Trans>
-								</p>
-								<div className="flex flex-wrap items-center gap-3">
-									<Button
-										size="sm"
-										variant="secondary"
-										disabled={busy}
-										onClick={() => setRows((previous) => previous.map((row) => ({ ...row, selected: false })))}
-									>
-										<Trans>Clear selection</Trans>
-									</Button>
-									<Button
-										size="sm"
-										variant="ghost"
-										loading={checking}
-										disabled={busy || corrections.size > 0}
-										onClick={() => void recheck()}
-									>
-										<Trans>Recheck matches</Trans>
-									</Button>
-									<span className="text-sm" role="status">
-										{plural(chosen.length, { one: "# fact selected", other: "# facts selected" })}
-									</span>
-								</div>
-							</>
-						)}
-					</div>
-					{careerWarning && (
-						<p role="status" className="text-sm text-ink-2">
-							{careerWarning}
-						</p>
-					)}
-					{connectionsWarning && (
-						<p role="alert" className="text-sm">
-							{connectionsWarning}
-						</p>
-					)}
-					{connections && (
-						<section aria-labelledby="import-contacts" className="grid min-w-0 gap-4 rounded-xl border border-line p-4">
-							<h2 id="import-contacts" className="text-lg font-semibold">
-								<Trans>LinkedIn contacts</Trans>
-							</h2>
-							<p className="text-sm text-ink-2">
-								{plural(connections.connections.length, {
-									one: "# connection found in this export",
-									other: "# connections found in this export",
-								})}
-							</p>
-
-							{!!(
-								connections.skipped +
-								connections.duplicateRows +
-								connections.invalidEmails +
-								connections.invalidDates
-							) && (
-								<p className="text-xs text-ink-3">{t`${connections.skipped} invalid rows skipped; ${connections.duplicateRows} repeated profiles removed; ${connections.invalidEmails} invalid emails and ${connections.invalidDates} invalid connection dates left blank.`}</p>
-							)}
-							{importContacts && (
-								<ContactsImportReview file={connections} disabled={busy} onChange={setContactsSelection} />
-							)}
-						</section>
-					)}
-					{importFacts && (facts.isError || groups.isError) && (
-						<div role="alert" className="text-sm">
-							<Trans>Couldn't refresh Knowledge. Try again before saving.</Trans>
 							<Button
-								variant="ghost"
+								disabled={!importFacts && !importContacts}
 								onClick={() => {
-									void facts.refetch();
-									void groups.refetch();
+									if (pending)
+										void readFile(pending.file, { facts: importFacts, contacts: importContacts }, pending.bytes);
 								}}
 							>
-								<Trans>Try again</Trans>
+								<Trans>Continue</Trans>
 							</Button>
-						</div>
-					)}
-					{importFacts && (
-						<>
-							<section aria-labelledby="import-new-facts" className="grid min-w-0 gap-5">
-								<header className="grid gap-1">
-									<h2 id="import-new-facts" className="text-lg font-semibold">
-										<Trans>New facts</Trans>{" "}
-										<span className="text-sm font-normal text-ink-3">{rows.length - duplicateRows.length}</span>
-									</h2>
-									<p className="text-sm text-ink-2">
-										<Trans>
-											These facts have no close matches in Knowledge or earlier in this file. Edit the text and choose
-											what to save.
-										</Trans>
-									</p>
-								</header>
-								{grouped.size === 0 && (
-									<p className="rounded-lg bg-sunken p-4 text-sm text-ink-2">
-										{rows.length ? (
-											<Trans>All proposed facts have matches. Review them in Duplicates below.</Trans>
-										) : (
-											<Trans>No career facts were found in this export.</Trans>
-										)}
-									</p>
-								)}
-								{Array.from(grouped).map(([group, entries]) => (
-									<fieldset key={group} className="grid min-w-0 gap-3" disabled={busy}>
-										<legend className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
-											{entries[0] ? rowLabel(entries[0]) : group}
-											<span className="font-normal text-ink-3">{group}</span>
-											{isPrivateGroup(group, privateGroups) ? (
-												<span className="text-ink-2">
-													<Trans>Private</Trans>
-												</span>
-											) : nearestGroupSetting(group, settings) === "excluded" ? (
-												<span className="text-ink-2">
-													<Trans>Coaching off</Trans>
-												</span>
-											) : null}
-										</legend>
-										{entries.map((row) => (
-											<ImportRow
-												key={row.source.id}
-												row={row}
-												duplicate={duplicate(row)}
-												onChange={(change) => update(row.source.id, change)}
-											/>
-										))}
-									</fieldset>
-								))}
-							</section>
-							<section aria-labelledby="import-duplicates" className="grid min-w-0 gap-4 border-t border-line pt-6">
-								<header className="grid gap-1">
-									<h2 id="import-duplicates" className="text-lg font-semibold">
-										<Trans>Duplicates</Trans>{" "}
-										<span className="text-sm font-normal text-ink-3">{duplicateRows.length}</span>
-									</h2>
-									<p className="text-sm text-ink-2">
-										<Trans>
-											Compare facts with the same or similar wording. Edit either side, keep the other fact, or keep
-											both when they add different details.
-										</Trans>
-									</p>
-								</header>
-								{duplicateRows.length === 0 && (
-									<p className="rounded-lg bg-sunken p-4 text-sm text-ink-2">
-										<Trans>No duplicates found.</Trans>
-									</p>
-								)}
-								{duplicateRows.map((row) => (
-									<ImportComparison
-										key={row.source.id}
-										row={row}
-										matches={matches.get(row.source.id) ?? []}
-										known={byId}
-										imported={imported}
-										corrections={corrections}
-										corrected={corrected}
-										privateGroups={privateGroups}
-										busy={busy}
-										included={chosenIds.has(row.source.id)}
-										canInclude={
-											!duplicate(row) &&
-											!(matches.get(row.source.id) ?? []).some(
-												(match) =>
-													match.target === "import" &&
-													normalizeFactText(imported.get(match.id)?.text ?? "") === normalizeFactText(row.text),
-											)
-										}
-										onChange={update}
-										onChoose={(include) => chooseDuplicate(row, include)}
-										onEdit={editExisting}
-										onCorrect={(id, text) => changeCorrection(id, { text, error: "" })}
-										onSave={(id) => void saveCorrection(id)}
-										onCancel={cancelCorrection}
-									/>
-								))}
-							</section>
-						</>
-					)}
-					{chosen.length > 500 && (
-						<p role="alert" className="text-sm">
-							<Trans>Select up to 500 facts at a time.</Trans>
-						</p>
-					)}
-					<div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex flex-wrap items-center gap-3 rounded-xl border border-line bg-raised p-3 shadow-e1 sm:bottom-3">
-						<Button
-							disabled={!valid || busy || corrections.size > 0 || (importFacts && (facts.isError || groups.isError))}
-							loading={step === "saving"}
-							onClick={() => void save()}
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+				{error && (
+					<div role="alert" className="rounded-lg border border-line p-4 text-sm">
+						{error}
+					</div>
+				)}
+				{(step === "choose" || step === "reading") && (
+					<>
+						<div
+							className="grid justify-items-center gap-4 rounded-xl border border-dashed border-line-2 p-8 text-center"
+							onDragOver={(event) => event.preventDefault()}
+							onDrop={(event) => {
+								event.preventDefault();
+								const file = event.dataTransfer.files[0];
+								if (file && !busy) void readFile(file);
+							}}
 						>
-							{importContacts
-								? importFacts
-									? t`Import selected facts and contacts`
-									: t`Import selected contacts`
-								: chosen.length
-									? plural(chosen.length, { one: "Save # fact", other: "Save # facts" })
-									: t`Finish review`}
-						</Button>
-						<Button variant="ghost" disabled={busy || corrections.size > 0} onClick={reset}>
-							<Trans>Choose another file</Trans>
-						</Button>
-						{corrections.size > 0 && (
-							<p className="text-xs text-ink-3">
-								<Trans>Save or cancel your Knowledge corrections before finishing the review.</Trans>
+							<Icon name="upload-simple" size={28} />
+							<p className="text-sm">
+								<Trans>PDF, Word, resume JSON or LinkedIn export (.zip)</Trans>
+							</p>
+							{step === "reading" ? (
+								<p role="status" className="flex items-center gap-2 text-sm">
+									<Spinner decorative className="size-4" />
+									{note}
+								</p>
+							) : (
+								<Button
+									onClick={() => {
+										if (input.current) {
+											input.current.value = "";
+											input.current.click();
+										}
+									}}
+								>
+									<Trans>Choose a file</Trans>
+								</Button>
+							)}
+							{step === "reading" && (
+								<Button variant="ghost" onClick={reset}>
+									<Trans>Cancel</Trans>
+								</Button>
+							)}
+						</div>
+						<div className="grid gap-2 text-sm text-ink-2">
+							<p>
+								<Trans>
+									LinkedIn exports and JSON are read in your browser. We read LinkedIn's profile files, and connections
+									can optionally be imported into Directory. Messages are ignored. Only selected facts and contacts are
+									saved to your account.
+								</Trans>
+							</p>
+							<p>
+								<Trans>
+									PDFs use your AI connection when available, or the browser reader otherwise. Word files need an AI
+									connection.
+								</Trans>
+							</p>
+							<p>
+								<Trans>Importing saves facts. To make a resume, use Documents.</Trans>
+							</p>
+						</div>
+						<AiProviderLoadState state={provider} />
+					</>
+				)}
+				{(step === "review" || step === "saving") && (
+					<>
+						<div className="grid gap-3 rounded-xl bg-sunken p-4">
+							<p className="text-sm font-medium break-all">{fileName}</p>
+							{importFacts && (
+								<>
+									<p className="text-sm text-ink-2">
+										<Trans>
+											Review new facts first, then compare duplicates below. Possible duplicates start left out. Hidden
+											resume entries start unchecked.
+										</Trans>
+									</p>
+									<p className="text-sm text-ink-2">
+										<Trans>
+											New facts follow their group's coaching and privacy settings. New groups start with coaching on.
+										</Trans>
+									</p>
+									<div className="flex flex-wrap items-center gap-3">
+										<Button
+											size="sm"
+											variant="secondary"
+											disabled={busy}
+											onClick={() => setRows((previous) => previous.map((row) => ({ ...row, selected: false })))}
+										>
+											<Trans>Clear selection</Trans>
+										</Button>
+										<Button
+											size="sm"
+											variant="ghost"
+											loading={checking}
+											disabled={busy || corrections.size > 0}
+											onClick={() => void recheck()}
+										>
+											<Trans>Recheck matches</Trans>
+										</Button>
+										<span className="text-sm" role="status">
+											{plural(chosen.length, { one: "# fact selected", other: "# facts selected" })}
+										</span>
+									</div>
+								</>
+							)}
+						</div>
+						{careerWarning && (
+							<p role="status" className="text-sm text-ink-2">
+								{careerWarning}
 							</p>
 						)}
-					</div>
-				</>
-			)}
-			{step === "done" && (
-				<div className="grid justify-items-start gap-4 rounded-xl border border-line p-6" role="status">
-					<h2 className="font-semibold">
-						<Trans>Knowledge import complete</Trans>
-					</h2>
-					{importFacts &&
-						(note ? (
-							<p className="text-sm">{note}</p>
-						) : (
-							<>
-								<p>{t`${result?.results.filter((row) => row.status === "saved").length ?? 0} facts saved`}</p>
-								<p className="text-sm text-ink-2">{t`${rows.length - (result?.results.filter((row) => row.status === "saved").length ?? 0)} facts left out or already in Knowledge`}</p>
-								{corrected.size > 0 && (
-									<p className="text-sm text-ink-2">{t`${corrected.size} existing facts corrected`}</p>
+						{connectionsWarning && (
+							<p role="alert" className="text-sm">
+								{connectionsWarning}
+							</p>
+						)}
+						{connections && (
+							<section
+								aria-labelledby="import-contacts"
+								className="grid min-w-0 gap-4 rounded-xl border border-line p-4"
+							>
+								<h2 id="import-contacts" className="text-lg font-semibold">
+									<Trans>LinkedIn contacts</Trans>
+								</h2>
+								<p className="text-sm text-ink-2">
+									{plural(connections.connections.length, {
+										one: "# connection found in this export",
+										other: "# connections found in this export",
+									})}
+								</p>
+
+								{!!(
+									connections.skipped +
+									connections.duplicateRows +
+									connections.invalidEmails +
+									connections.invalidDates
+								) && (
+									<p className="text-xs text-ink-3">{t`${connections.skipped} invalid rows skipped; ${connections.duplicateRows} repeated profiles removed; ${connections.invalidEmails} invalid emails and ${connections.invalidDates} invalid connection dates left blank.`}</p>
 								)}
+								{importContacts && (
+									<ContactsImportReview file={connections} disabled={busy} onChange={setContactsSelection} />
+								)}
+							</section>
+						)}
+						{importFacts && (facts.isError || groups.isError) && (
+							<div role="alert" className="text-sm">
+								<Trans>Couldn't refresh Knowledge. Try again before saving.</Trans>
+								<Button
+									variant="ghost"
+									onClick={() => {
+										void facts.refetch();
+										void groups.refetch();
+									}}
+								>
+									<Trans>Try again</Trans>
+								</Button>
+							</div>
+						)}
+						{importFacts && (
+							<>
+								<section aria-labelledby="import-new-facts" className="grid min-w-0 gap-5">
+									<header className="grid gap-1">
+										<h2 id="import-new-facts" className="text-lg font-semibold">
+											<Trans>New facts</Trans>{" "}
+											<span className="text-sm font-normal text-ink-3">{rows.length - duplicateRows.length}</span>
+										</h2>
+										<p className="text-sm text-ink-2">
+											<Trans>
+												These facts have no close matches in Knowledge or earlier in this file. Edit the text and choose
+												what to save.
+											</Trans>
+										</p>
+									</header>
+									{grouped.size === 0 && (
+										<p className="rounded-lg bg-sunken p-4 text-sm text-ink-2">
+											{rows.length ? (
+												<Trans>All proposed facts have matches. Review them in Duplicates below.</Trans>
+											) : (
+												<Trans>No career facts were found in this export.</Trans>
+											)}
+										</p>
+									)}
+									{Array.from(grouped).map(([group, entries]) => (
+										<fieldset key={group} className="grid min-w-0 gap-3" disabled={busy}>
+											<legend className="mb-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
+												{entries[0] ? rowLabel(entries[0]) : group}
+												<span className="font-normal text-ink-3">{group}</span>
+												{isPrivateGroup(group, privateGroups) ? (
+													<span className="text-ink-2">
+														<Trans>Private</Trans>
+													</span>
+												) : nearestGroupSetting(group, settings) === "excluded" ? (
+													<span className="text-ink-2">
+														<Trans>Coaching off</Trans>
+													</span>
+												) : null}
+											</legend>
+											{entries.map((row) => (
+												<ImportRow
+													key={row.source.id}
+													row={row}
+													duplicate={duplicate(row)}
+													onChange={(change) => update(row.source.id, change)}
+												/>
+											))}
+										</fieldset>
+									))}
+								</section>
+								<section aria-labelledby="import-duplicates" className="grid min-w-0 gap-4 border-t border-line pt-6">
+									<header className="grid gap-1">
+										<h2 id="import-duplicates" className="text-lg font-semibold">
+											<Trans>Duplicates</Trans>{" "}
+											<span className="text-sm font-normal text-ink-3">{duplicateRows.length}</span>
+										</h2>
+										<p className="text-sm text-ink-2">
+											<Trans>
+												Compare facts with the same or similar wording. Edit either side, keep the other fact, or keep
+												both when they add different details.
+											</Trans>
+										</p>
+									</header>
+									{duplicateRows.length === 0 && (
+										<p className="rounded-lg bg-sunken p-4 text-sm text-ink-2">
+											<Trans>No duplicates found.</Trans>
+										</p>
+									)}
+									{duplicateRows.map((row) => (
+										<ImportComparison
+											key={row.source.id}
+											row={row}
+											matches={matches.get(row.source.id) ?? []}
+											known={byId}
+											imported={imported}
+											corrections={corrections}
+											corrected={corrected}
+											privateGroups={privateGroups}
+											busy={busy}
+											included={chosenIds.has(row.source.id)}
+											canInclude={
+												!duplicate(row) &&
+												!(matches.get(row.source.id) ?? []).some(
+													(match) =>
+														match.target === "import" &&
+														normalizeFactText(imported.get(match.id)?.text ?? "") === normalizeFactText(row.text),
+												)
+											}
+											onChange={update}
+											onChoose={(include) => chooseDuplicate(row, include)}
+											onEdit={editExisting}
+											onCorrect={(id, text) => changeCorrection(id, { text, error: "" })}
+											onSave={(id) => void saveCorrection(id)}
+											onCancel={cancelCorrection}
+										/>
+									))}
+								</section>
 							</>
-						))}
-					{importContacts && (
-						<>
-							<p className="text-sm">{t`${contactsResult.created} contacts created; ${contactsResult.updated} updated; ${contactsResult.unchanged} unchanged; ${contactsResult.skipped} skipped.`}</p>
-							<Link to="/dashboard/directory" search={{ tab: "contacts" }} className="text-sm underline">
-								<Trans>View contacts</Trans>
+						)}
+						{chosen.length > 500 && (
+							<p role="alert" className="text-sm">
+								<Trans>Select up to 500 facts at a time.</Trans>
+							</p>
+						)}
+						<div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex flex-wrap items-center gap-3 rounded-xl border border-line bg-raised p-3 shadow-e1 sm:bottom-3">
+							<Button
+								disabled={!valid || busy || corrections.size > 0 || (importFacts && (facts.isError || groups.isError))}
+								loading={step === "saving"}
+								onClick={() => void save()}
+							>
+								{importContacts
+									? importFacts
+										? t`Import selected facts and contacts`
+										: t`Import selected contacts`
+									: chosen.length
+										? plural(chosen.length, { one: "Save # fact", other: "Save # facts" })
+										: t`Finish review`}
+							</Button>
+							<Button variant="ghost" disabled={busy || corrections.size > 0} onClick={reset}>
+								<Trans>Choose another file</Trans>
+							</Button>
+							{corrections.size > 0 && (
+								<p className="text-xs text-ink-3">
+									<Trans>Save or cancel your Knowledge corrections before finishing the review.</Trans>
+								</p>
+							)}
+						</div>
+					</>
+				)}
+				{step === "done" && (
+					<div className="grid justify-items-start gap-4 rounded-xl border border-line p-6" role="status">
+						<h2 className="font-semibold">
+							<Trans>Knowledge import complete</Trans>
+						</h2>
+						{importFacts &&
+							(note ? (
+								<p className="text-sm">{note}</p>
+							) : (
+								<>
+									<p>{t`${result?.results.filter((row) => row.status === "saved").length ?? 0} facts saved`}</p>
+									<p className="text-sm text-ink-2">{t`${rows.length - (result?.results.filter((row) => row.status === "saved").length ?? 0)} facts left out or already in Knowledge`}</p>
+									{corrected.size > 0 && (
+										<p className="text-sm text-ink-2">{t`${corrected.size} existing facts corrected`}</p>
+									)}
+								</>
+							))}
+						{importContacts && (
+							<>
+								<p className="text-sm">{t`${contactsResult.created} contacts created; ${contactsResult.updated} updated; ${contactsResult.unchanged} unchanged; ${contactsResult.skipped} skipped.`}</p>
+								<Link to="/dashboard/directory" search={{ tab: "contacts" }} className="text-sm underline">
+									<Trans>View contacts</Trans>
+								</Link>
+							</>
+						)}
+						{importFacts && (
+							<Link to="/dashboard/career/knowledge/facts" className="text-sm underline">
+								<Trans>View facts</Trans>
 							</Link>
-						</>
-					)}
-					{importFacts && (
-						<Link to="/dashboard/career/knowledge/facts" className="text-sm underline">
-							<Trans>View facts</Trans>
-						</Link>
-					)}
-					<Button variant="secondary" onClick={reset}>
-						<Trans>Import another file</Trans>
-					</Button>
-				</div>
-			)}
-		</section>
+						)}
+						<Button variant="secondary" onClick={reset}>
+							<Trans>Import another file</Trans>
+						</Button>
+					</div>
+				)}
+			</section>
+		</KnowledgeFrame>
 	);
 }

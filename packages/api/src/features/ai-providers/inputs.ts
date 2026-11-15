@@ -1,4 +1,5 @@
 import z from "zod";
+import { isAPIKeyOptional } from "@reactive-resume/ai/defaults";
 import { acceptsCustomReasoning, aiReasoningSchema } from "@reactive-resume/ai/reasoning";
 import { aiProviderSchema } from "@reactive-resume/ai/types";
 
@@ -31,7 +32,7 @@ const providerFields = z.object({
 export const ULTRA_UNSUPPORTED = "Ultra effort is only available for OpenAI-compatible and OpenRouter connections.";
 
 export const providerInput = providerFields
-	.refine((input) => input.provider === "ollama" || input.apiKey.length > 0, {
+	.refine((input) => isAPIKeyOptional(input.provider) || input.apiKey.length > 0, {
 		message: "Enter an API key for this provider.",
 		path: ["apiKey"],
 	})
@@ -43,10 +44,6 @@ export const providerInput = providerFields
 export const updateProviderInput = providerFields
 	.partial()
 	.extend({ id: z.string(), enabled: z.boolean().optional() })
-	.refine((input) => input.apiKey === undefined || input.apiKey.length > 0 || input.provider === "ollama", {
-		message: "Enter an API key for this provider.",
-		path: ["apiKey"],
-	})
 	.refine((input) => Object.keys(input).some((key) => key !== "id"), {
 		message: "At least one field must be provided.",
 	});

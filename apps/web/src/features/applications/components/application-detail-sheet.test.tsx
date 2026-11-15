@@ -61,6 +61,7 @@ vi.mock("@tanstack/react-router", () => ({
 	Link: ({ children }: { children: ReactNode }) => <a href="#test-link">{children}</a>,
 	useNavigate: () => vi.fn(),
 	useRouter: () => ({ navigate: vi.fn() }),
+	useRouteContext: () => ({}),
 }));
 
 import { ApplicationDetailSheet } from "./application-detail-sheet";
@@ -159,7 +160,7 @@ it("marks a Saved job applied in one click, without a dialog", async () => {
 
 it("moves a Saved job to Applied from the stage stepper, without a dialog", async () => {
 	mount(saved);
-	const stages = await screen.findByRole("list", { name: "Stages" });
+	const stages = await screen.findByRole("list", { name: "Stage history" });
 	fireEvent.click(stages.querySelectorAll("button")[1] as HTMLButtonElement);
 	await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
 	expect(api.update.mock.calls[0]?.[0]).toEqual({ id: saved.id, status: "applied" });

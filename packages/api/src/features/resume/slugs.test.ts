@@ -53,10 +53,8 @@ describe("matchesUsername", () => {
 
 		expect(query.sql).toContain('"user"."username" = $1');
 		expect(query.sql).toContain('"released_username"."username" = $2');
-		expect(query.sql).toContain('"username_redirect"."username" = $3');
-		expect(query.sql).toContain('"username_redirect"."expires_at" > now()');
-		expect(query.sql).toContain('not exists (select 1 from "user" as taken where taken.username = $4)');
-		expect(query.params).toEqual(["old-name", "old-name", "old-name", "old-name"]);
+		expect(query.sql).not.toContain("username_redirect");
+		expect(query.params).toEqual(["old-name", "old-name"]);
 	});
 });
 

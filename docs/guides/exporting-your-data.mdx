@@ -18,10 +18,10 @@ description: "Download your account records, document history and referenced upl
   </Step>
 </Steps>
 
-<Frame caption="Export or delete your account data">
+<Frame caption="Account controls and your data">
   <img
     src="/images/guides/exporting-your-data/your-data-section.webp"
-    alt="Your data section listing documents, applications, Career data, version history and uploaded files, with Export and Delete account controls"
+    alt="Account settings for fictional Alex Morgan"
   />
 </Frame>
 
@@ -58,7 +58,7 @@ The archive doesn't include your password, passkeys, two-step verification codes
 
 ## Check file coverage before deleting an account
 
-The export reads at most **500 referenced stored files**, including failed attempts. Each file can be up to **8 MiB**, with **128 MiB of uploaded bytes** in total. The complete archive can contain up to **256 MiB before compression** and **50,000 entries**, including document and history records. These limits keep preparation bounded on web, native and self-hosted servers.
+The export reads at most **500 referenced stored files**, including failed attempts. Each file can be up to **8 MiB**, with **128 MiB of uploaded bytes** in total. The complete archive can contain up to **256 MiB before compression** and **50,000 entries**, including document and history records. These limits keep preparation bounded on hosted and self-hosted servers.
 
 Files that are missing, unreadable, too large, outside your account, from an external storage address, or beyond the read or byte budget appear in `upload-manifest.json` with a reason. Stale conversation file references are marked `not-live-attachment` and never read. If files were skipped, the app also shows a warning after the download or share. An archive that exceeds its overall size or entry limit fails visibly rather than downloading a partial set of records. Individual document exports contain only that resume or letter; they omit applications, Career data, feedback and AI content reports. Keep copies of all records you need before deleting your account. If the complete archive fails, do not treat individual exports as a full account backup.
 
@@ -101,9 +101,14 @@ Some things don't come back the way they were:
 - The versions saved when an application was sent aren't in the export, so applications keep their linked resume and letter but not those versions.
 - A job posting or search note longer than 20,000 characters, or a targeting note longer than 200,000, is cut to that length, the most an application keeps. The report says how many were cut.
 
-To restore a single resume or letter instead, extract the archive and import its JSON file from `resumes/` or `letters/`. See [Importing resumes](/guides/importing-resumes).
+<Tip>
+  To restore a resume or letter, extract the archive and import its individual JSON file from `resumes/` or `letters/`.
+  Resume content and design are restored as a new document; account settings, document sharing settings and application
+  links are not restored. The whole zip is an account backup, not a bulk-import file. You can also download one resume
+  as **JSON** from the arrow beside **Download PDF**. See [Importing resumes](/guides/importing-resumes).
+</Tip>
 
-On native mobile, **Export everything** shares the same zip, with the same files, so you can extract it and import individual resumes and letters the same way. **Export saved profile** under **Profile → Manage profile** shares only that record. Private profile exports do not import into a resume. These files contain personal information; choose their destination deliberately. Temporary mobile export files are removed on the next export, profile deletion, app startup, sign-out or session expiry. Signing into another account also clears them. Copies saved by a share recipient remain outside the app. MCP account export keeps file references only and excludes the private application profile and uploaded bytes. Use Settings → Account → Export everything for the full archive, or Settings → Profile for the private profile.
+MCP account export keeps file references only and excludes the private application profile and uploaded bytes. Use Settings → Account → Export everything for the full archive, or Settings → Application profile for the private profile.
 
 ## Related guides
 

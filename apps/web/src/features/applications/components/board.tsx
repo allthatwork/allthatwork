@@ -10,6 +10,7 @@ import {
 	defaultDropAnimationSideEffects,
 	PointerSensor,
 	pointerWithin,
+	useDndContext,
 	useDraggable,
 	useDroppable,
 	useSensor,
@@ -30,13 +31,15 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@reactive-resume/ui/components/dialog";
+import { IconButton } from "@reactive-resume/ui/components/icon-button";
 import { cn } from "@reactive-resume/utils/style";
 import { getCategoryLane } from "../lanes";
 import { sortApplications } from "../sort";
-import { CLOSED_REASONS, getClosedReasonLabel, getStageColor, getStageLabel } from "../stages";
+import { CLOSED_REASONS, getClosedReasonLabel, getStageLabel } from "../stages";
 import { useApplicationActions } from "../use-application-actions";
 import { useApplicationLanes } from "../use-application-lanes";
 import { ApplicationCard } from "./application-card";
+import { StageDot } from "@/components/calm/stage-dot";
 import { getEdgeFadeStyle, useScrollEdges } from "@/hooks/use-scroll-edges";
 import { dndContextProps } from "@/libs/dnd";
 import { DRAG_SETTLE } from "@/libs/motion";
@@ -55,6 +58,8 @@ type BoardProps = {
 	onColumnWidthChange: (width: number | null) => void;
 	onOpen: (application: ApplicationSummary) => void;
 	onTagSelect?: ((tag: string) => void) | undefined;
+	/** The + on the Saved column. */
+	onSaveJob?: (() => void) | undefined;
 };
 
 /** The gap between columns (`gap-3`), for the resize line's position. */
@@ -74,7 +79,8 @@ const dropSideEffects = defaultDropAnimationSideEffects({
  * Desktop and tablet only. The cards in each column follow the sort. The columns share the width evenly, at least 256px
  * each and never wider than with five showing, so a one-stage board keeps card-sized columns on the left, until the
  * line after any column is dragged: then every column takes that one width (256 to 640px), saved to the account.
- * Past the window's width the board scrolls sideways, with a fade on the side that has more.
+ * Past the window's width the board scrolls sideways, with a fade on the side that has more. A drag shows both ends: a
+ * dashed slot where the card was and a tinted one where it will land.
  */
 export function ApplicationBoard({
 	applications,
@@ -85,6 +91,7 @@ export function ApplicationBoard({
 	onColumnWidthChange,
 	onOpen,
 	onTagSelect,
+	onSaveJob,
 }: BoardProps) {
 	const { moveTo, close, update } = useApplicationActions();
 	// The board draws the six stages; a move lands in the stage's default lane, as the server does.
@@ -168,6 +175,7 @@ export function ApplicationBoard({
 						width={width}
 						onOpen={onOpen}
 						onTagSelect={onTagSelect}
+						onSaveJob={stage === "saved" ? onSaveJob : undefined}
 						handle={
 							<BoardResizeHandle
 								index={index}
@@ -192,13 +200,13 @@ export function ApplicationBoard({
 				{active ? <ApplicationCard application={active} dragging /> : null}
 			</DragOverlay>
 			<Dialog open={Boolean(closing)} onOpenChange={(open) => !open && setClosing(null)}>
-				<DialogContent closeLabel={t`Close`} className="sm:max-w-sm">
+				<DialogContent closeLabel={t`Close`}>
 					<DialogHeader>
 						<DialogTitle>
 							<Trans>Mark as closed</Trans>
 						</DialogTitle>
 						<DialogDescription>
-							{closing?.role} · {closing?.company}
+							{closing?.company} · {closing?.role}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="grid gap-2">
@@ -237,31 +245,55 @@ type ColumnProps = {
 	handle: ReactNode;
 	onOpen: (application: ApplicationSummary) => void;
 	onTagSelect?: ((tag: string) => void) | undefined;
+	onSaveJob?: (() => void) | undefined;
 };
 
-function Column({ stage, applications, stale, width, handle, onOpen, onTagSelect }: ColumnProps) {
-	const { setNodeRef, isOver } = useDroppable({ id: stage, data: { label: getStageLabel(stage) } satisfies DndLabel });
+const slotClassName = "shrink-0 rounded-lg outline-1 -outline-offset-1 outline-dashed";
+
+function Column({ stage, applications, stale, width, handle, onOpen, onTagSelect, onSaveJob }: ColumnProps) {
+	const label = getStageLabel(stage);
+	const { setNodeRef, isOver } = useDroppable({ id: stage, data: { label } satisfies DndLabel });
+	const { active } = useDndContext();
 	const [visible, setVisible] = useState(COLUMN_PAGE_SIZE);
 	const shown = applications.slice(0, visible);
 	const remaining = applications.length - shown.length;
+	// The card would land here: a tinted slot of its own height waits at the end of the column.
+	const landing = isOver && !!active && !applications.some((application) => application.id === active.id);
 
 	return (
 		<section
-			aria-label={getStageLabel(stage)}
+			aria-label={label}
 			style={width === undefined ? undefined : { width }}
 			className={cn(
-				"relative flex flex-col rounded-xl border bg-sunken transition-colors duration-quick",
+				"relative flex flex-col rounded-lg bg-sunken dark:shadow-[inset_0_0_0_1px_var(--line)]",
 				width === undefined ? "max-w-[calc((100%-48px)/5)] min-w-64 flex-1 basis-0" : "flex-none",
-				isOver ? "border-accent bg-accent-soft" : "border-transparent",
 			)}
 		>
 			{handle}
-			<h2 className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold">
-				<span aria-hidden="true" className="size-2 rounded-full" style={{ background: getStageColor(stage) }} />
-				{getStageLabel(stage)}
-				<span className="font-mono text-xs font-normal text-ink-3">{i18n.number(applications.length)}</span>
+			<h2
+				title={label}
+				className="flex min-w-0 flex-wrap items-center gap-2 px-3.5 pt-3.5 pb-2.5 text-sm font-semibold"
+			>
+				<StageDot status={stage}>{null}</StageDot>
+				{label}
+				{applications.length > 0 && (
+					<span className="font-mono text-xs font-medium text-ink-3">{i18n.number(applications.length)}</span>
+				)}
+				{onSaveJob && (
+					<IconButton
+						icon="plus"
+						size="icon-xs"
+						iconSize={16}
+						label={t`Save a job to ${label}`}
+						className="-my-1 ms-auto -me-0.5"
+						onClick={onSaveJob}
+					/>
+				)}
 			</h2>
-			<div ref={setNodeRef} className="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
+			<div
+				ref={setNodeRef}
+				className={cn("flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2", active && "pb-10")}
+			>
 				{shown.map((application) => (
 					<DraggableCard
 						key={application.id}
@@ -275,10 +307,17 @@ function Column({ stage, applications, stale, width, handle, onOpen, onTagSelect
 					<button
 						type="button"
 						onClick={() => setVisible((count) => count + COLUMN_PAGE_SIZE)}
-						className="rounded-lg border border-dashed border-line py-2 text-xs text-ink-3 transition-colors hover:bg-hover"
+						className="rounded-lg border border-dashed border-line-2 py-2 text-xs text-ink-3 transition-colors hover:bg-hover"
 					>
 						{t`Show ${i18n.number(Math.min(remaining, COLUMN_PAGE_SIZE))} more`}
 					</button>
+				)}
+				{landing && (
+					<div
+						aria-hidden="true"
+						className={cn(slotClassName, "bg-accent-soft outline-accent")}
+						style={{ height: active.rect.current.initial?.height ?? 118 }}
+					/>
 				)}
 			</div>
 		</section>
@@ -296,11 +335,12 @@ type DraggableCardProps = {
 function DraggableCard({ application, stale, onOpen, onTagSelect }: DraggableCardProps) {
 	const { setNodeRef, listeners, isDragging } = useDraggable({
 		id: application.id,
-		data: { label: [application.role, application.company].filter(Boolean).join(", ") } satisfies DndLabel,
+		data: { label: [application.company, application.role].filter(Boolean).join(", ") } satisfies DndLabel,
 	});
 
 	return (
-		<div ref={setNodeRef} {...listeners} className={cn(isDragging && "opacity-40")}>
+		// Where the card was stays marked while it's in the air.
+		<div ref={setNodeRef} {...listeners} className={cn(isDragging && cn(slotClassName, "outline-ink-3 *:invisible"))}>
 			<ApplicationCard
 				application={application}
 				onClick={() => onOpen(application)}

@@ -209,9 +209,9 @@ export async function recordSlugChange(
 }
 
 /**
- * Matches a resume owner by username, or by a previous one: upstream's released usernames (kept 30 days, and nobody
- * else can claim them meanwhile), and the fork's username redirects, which count only while no account holds that
- * name, so a real account's username always wins over someone's old one.
+ * Matches a resume owner by username, or by a previous one: upstream's released usernames, recorded by a trigger on
+ * every rename and kept 30 days, during which nobody else can claim them. The fork's own `username_redirect` did the
+ * same job until the v6.1.1 sync moved its rows here (migration `drop_username_redirect`).
  */
 export function matchesUsername(username: string) {
 	return or(
@@ -225,19 +225,6 @@ export function matchesUsername(username: string) {
 						eq(schema.releasedUsername.username, username),
 						eq(schema.releasedUsername.userId, schema.user.id),
 						gt(schema.releasedUsername.releasedAt, sql`now() - interval '30 days'`),
-					),
-				),
-		),
-		inArray(
-			schema.user.id,
-			db
-				.select({ id: schema.usernameRedirect.userId })
-				.from(schema.usernameRedirect)
-				.where(
-					and(
-						eq(schema.usernameRedirect.username, username),
-						gt(schema.usernameRedirect.expiresAt, sql`now()`),
-						sql`not exists (select 1 from "user" as taken where taken.username = ${username})`,
 					),
 				),
 		),

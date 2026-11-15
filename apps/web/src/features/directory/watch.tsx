@@ -119,7 +119,7 @@ export function WatchBox({ company }: WatchBoxProps) {
 		);
 		const id = toast.add({
 			title: t`Watching ${name}`,
-			description: t`Its new roles show up in Career → Today.`,
+			description: t`Its new roles show up in Today.`,
 			actionProps: {
 				children: t`Undo`,
 				onClick: () => {

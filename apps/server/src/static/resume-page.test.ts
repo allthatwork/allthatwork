@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vite-plus/test";
-import { WEB_PAGE_SCRIPT } from "@reactive-resume/pdf/web-page-document";
+import { PASSWORD_PAGE_SCRIPT, WEB_PAGE_SCRIPT } from "@reactive-resume/pdf/web-page-document";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
+import { APP_NAME } from "@reactive-resume/utils/brand";
 
 vi.mock("@reactive-resume/env/server", () => ({ env: { APP_URL: "https://resume.example" } }));
 
@@ -83,6 +84,26 @@ it("authorizes only the fixed application script, even if rendered content conta
 	expect(csp?.match(/script-src ([^;]*)/)?.[1]).not.toContain("'unsafe-inline'");
 });
 
+it("authorizes the password page's own script and shows the address, nothing about the owner", async () => {
+	const { loadPublicWebPage } = await import("@reactive-resume/api/features/resume/web-page");
+	vi.mocked(loadPublicWebPage).mockResolvedValue({ status: "password", locale: "en-US" } as never);
+	const { serveResumePage } = await import("./resume-page");
+	const response = await serveResumePage(
+		new Request("https://rxresu.me/ada/resume?wrong-password"),
+		{ username: "ada", slug: "resume" },
+		"test",
+	);
+	const hash = createHash("sha256").update(PASSWORD_PAGE_SCRIPT).digest("base64");
+	const html = await response.text();
+	expect(response.status).toBe(401);
+	expect(html).toContain(`<script>${PASSWORD_PAGE_SCRIPT}</script>`);
+	expect(response.headers.get("content-security-policy")).toContain(`'sha256-${hash}'`);
+	expect(html).toContain('<p class="address">resume.example/ada/resume</p>');
+	expect(html).toContain('<footer class="password-credit"><a href="https://resume.example">');
+	// The credit names this instance's product (fork).
+	expect(html).toContain(`Made with ${APP_NAME}`);
+});
+
 it("sends a mistyped app address to the app instead of saying a resume isn't shared (J2-16)", async () => {
 	const { loadPublicWebPage } = await import("@reactive-resume/api/features/resume/web-page");
 	vi.mocked(loadPublicWebPage).mockResolvedValue({ status: "unavailable" } as never);
@@ -157,7 +178,7 @@ it.each([
 
 		const html = await response.text();
 		expect(response.status).toBe(404);
-		expect(html).toMatch(/<a class="home" href="https:\/\/resume\.example\/">.*<\/a><\/main>/);
+		expect(html).toMatch(/<a class="rr-btn rr-secondary" href="https:\/\/resume\.example\/">.*<\/a><\/div><\/main>/);
 		expect(html).toContain(`lang="${expected}"`);
 		expect(response.headers.get("Cache-Control")).toBe("private, no-store");
 	},

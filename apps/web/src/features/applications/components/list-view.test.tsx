@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 	invalidate: vi.fn(),
 	setBuildStatus: vi.fn(),
 	moveWithUndo: vi.fn(),
+	trashWithUndo: vi.fn(),
 	logFollowUp: vi.fn(),
 }));
 vi.mock("@tanstack/react-router", () => ({
@@ -42,6 +43,7 @@ vi.mock("@/libs/orpc/client", () => ({
 vi.mock("../use-application-actions", () => ({
 	useInvalidateApplications: () => mocks.invalidate,
 	useMoveWithUndo: () => mocks.moveWithUndo,
+	useTrashWithUndo: () => mocks.trashWithUndo,
 	useApplicationActions: () => ({
 		setBuildStatus: mocks.setBuildStatus,
 		logFollowUp: { isPending: false, mutate: mocks.logFollowUp },

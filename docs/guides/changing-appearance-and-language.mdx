@@ -9,7 +9,7 @@ You can choose how the app looks and which language its menus and buttons use. T
 
 <Steps>
   <Step title="Open Preferences">
-    Select **Settings** in the sidebar, then **Preferences**. You can also open **Settings** from your account menu.
+    Select your name at the bottom of the sidebar to open **Settings**, then select **Preferences**.
   </Step>
 
   <Step title="Pick a theme under Appearance">
@@ -30,22 +30,21 @@ Under the theme tiles in **Settings → Preferences → Appearance**, choose the
 
 Each tile previews the palette in the current light or dark appearance. Like the theme, the palette is saved in this browser and applies at once.
 
-<Frame caption="The Preferences page">
+<Frame caption="Appearance, language and time live in Preferences">
   <img
     src="/images/guides/changing-appearance-and-language/preferences-page.png"
-    alt="Fictional Maya Chen account preferences with appearance, interface language and timezone settings"
+    alt="Preferences with Light, Dark and System appearance, language, timezone and keyboard controls"
   />
 </Frame>
 
 ### Other ways to switch
 
-- Select your name at the bottom of the sidebar, point to **Theme**, and choose **Light**, **Dark** or **System**.
 - Press <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd> on Windows and Linux), choose **Change theme to…**, then pick a theme.
 
-<Frame caption="Change appearance from the account menu">
+<Frame caption="Appearance, language and time live in Preferences">
   <img
     src="/images/guides/changing-appearance-and-language/account-menu-theme.webp"
-    alt="Preferences with Account, Profile, Preferences and AI & developer navigation, and the account Theme submenu"
+    alt="Preferences with Light, Dark and System appearance, language, timezone and keyboard controls"
   />
 </Frame>
 
@@ -55,10 +54,6 @@ On your first visit, the website follows your browser's preferred languages. It 
 
 After sign-in on a browser or device without a language choice, Reactive Resume restores your account's saved language.
 If the account has none, it follows the browser or device. Automatic choices don't replace your account language or become a local override.
-
-The Android and iPhone apps also restore your account language on an unconfigured device. Choosing **System** in Preferences
-explicitly follows that device instead. A switch between left-to-right and right-to-left languages shows a restart notice;
-the language changes immediately, and restarting applies the layout direction.
 
 <Frame caption="Account language restored in a fresh browser">
   <img
@@ -79,7 +74,7 @@ the language changes immediately, and restarting applies the layout direction.
 
 The page reloads in the new language. The choice is saved in this browser for a year, including after a browser restart. A language in the page address (`?locale=`) takes precedence.
 
-You can also change it from your name in the sidebar (**Language**), or with <kbd>⌘</kbd> <kbd>K</kbd> and **Change language to…**.
+You can also change it with <kbd>⌘</kbd> <kbd>K</kbd> and **Change language to…**.
 
 Before you sign in, choose a language on the homepage: the language name in the header and footer leads to the languages section, which lists every language in its own name. Each name opens the homepage in that language, and the choice carries over when you create an account.
 
@@ -90,7 +85,7 @@ Before you sign in, choose a language on the homepage: the language name in the 
   />
 </Frame>
 
-Account emails, such as email verification, password resets and email change approvals, use the language you last used Reactive Resume in, on the website or in the app. A new account starts in the language you signed up in. The links and how long they stay valid are the same in every language.
+Account emails, such as email verification, password resets and email change approvals, use the language you last used Reactive Resume in. A new account starts in the language you signed up in. The links and how long they stay valid are the same in every language.
 
 What you write keeps its own direction. In a right-to-left language such as Arabic, a German or English description, title or salary still reads left to right, each paragraph from its first letter, and Arabic text reads right to left inside an English interface.
 
@@ -103,12 +98,7 @@ Counts, page labels, dates and elapsed times follow the interface language's num
   />
 </Frame>
 
-The interface language doesn't translate your resume. Each resume has its own **Language** setting in the **Page** group of the editor's **Design** mode, which sets the section titles and date words on the page. A new resume starts in the interface language; **Resume language** at the top of **Write** shows it and changes it in one step. See [Set the language](/guides/selecting-page-format#set-the-language).
-
-<Tip>
-  Spotted a wrong or missing translation? Select **Help translate** under the language picker to suggest a fix on
-  Crowdin. See [Translations](/contributing/translations).
-</Tip>
+The interface language doesn't translate your resume. Each resume has its own **Language** setting in the **Page** group of the editor's **Design** mode, which sets the section titles and date words on the page. A new resume starts in the interface language; Open **Design → Page → Language** to change it. See [Set the language](/guides/selecting-page-format#set-the-language).
 
 ## Set your timezone
 
@@ -123,13 +113,13 @@ Go to **Settings → Preferences** and enter a number of pages under **Resume le
 Go to **Settings → Preferences → Reminders**. Changes are saved at once, on your account, so they apply on every device.
 
 - **Follow-up nudges**: when an application has been at **Applied** with no reply for **Days without a reply** (10 by default, up to 90), Applications shows a reminder above the list and the application's next step turns amber. Turn the switch off to stop both; the next step then just says how long ago you applied.
-- **Next interview**: the card at the top of **Career → Today** with your next interview and a countdown. Turn it off to hide the card. Interviews still show as each application's next step.
+- **Next interview**: the card at the top of **Today** with your next interview and a countdown. Turn it off to hide the card. Interviews still show as each application's next step.
 
-Follow-up dates you set yourself on an application aren't affected. Career schedules (new roles, interview briefings, follow-up reminders) each have their own switch in **Career → Today**.
+Follow-up dates you set yourself on an application aren't affected. Career schedules (new roles, interview briefings, follow-up reminders) each have their own switch in **Career → Schedules**.
 
 ## Reduce motion
 
-Reactive Resume has no motion switch of its own. It follows your operating system's reduced-motion setting: turn that on, and app content uses short opacity fades instead of slides or scaling. Spatial and layout movement stops; native sheets follow the platform's reduced-motion behavior. Loading spinners remain visible while work runs. Keyboard mode switches and controls intended to open instantly still do so.
+Reactive Resume has no motion switch of its own. It follows your operating system's reduced-motion setting: turn that on, and app content uses short opacity fades instead of slides or scaling. Spatial and layout movement stops. Loading spinners remain visible while work runs. Keyboard mode switches and controls intended to open instantly still do so.
 
 ## Related guides
 

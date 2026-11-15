@@ -21,17 +21,20 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@reactive-resume/ui/components/dropdown-menu";
 import { EmptyState } from "@reactive-resume/ui/components/empty-state";
 import { Icon } from "@reactive-resume/ui/components/icon";
-import { Input } from "@reactive-resume/ui/components/input";
+import { SegmentedControl, SegmentedControlItem } from "@reactive-resume/ui/components/segmented-control";
 import { Skeleton } from "@reactive-resume/ui/components/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
-import { FILL_SCREEN_ATTRIBUTE, PAGE_CLASS } from "@/components/layout/page";
+import { FilterField } from "@/components/calm/filter-bar";
+import { Page } from "@/components/calm/page";
+import { FILL_SCREEN_ATTRIBUTE } from "@/components/layout/page";
+import { PhoneHeaderActions } from "@/components/layout/phone-header-actions";
 import { takePostingCapture } from "@/features/applications/capture";
 import { AddApplicationDialog } from "@/features/applications/components/add-application-dialog";
 import { ApplicationDetailSheet } from "@/features/applications/components/application-detail-sheet";
@@ -72,6 +75,7 @@ import { useTabLabels } from "@/features/applications/use-tab-labels";
 import { useToolbarLines } from "@/features/applications/use-toolbar-lines";
 import { useCareerTime, useNow } from "@/features/career/shared";
 import { useShortcutSettings } from "@/features/keyboard-shortcuts/settings";
+import { useShortcutsPage } from "@/features/keyboard-shortcuts/store";
 import { toastError } from "@/libs/error-message";
 import { ENTER_CLASS } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
@@ -99,7 +103,7 @@ export const Route = createFileRoute("/dashboard/applications/")({
 	component: RouteComponent,
 	validateSearch: searchSchema,
 	search: { middlewares: [stripSearchParams(defaultSearch)] },
-	// Arrive with the list, as Documents does: a new account sees "Track your first job" at once, not a toolbar and a
+	// Arrive with the list, as Documents does: a new account sees "Follow each job from saved to offer" at once, not a toolbar and a
 	// skeleton that then vanish. The lanes come with it when they're quick, so rows first draw in the owner's lane order;
 	// slow or failing requests never hold the page (it shows the defaults and the lanes' own error). A failed list still
 	// renders the page, which shows its error and retry.
@@ -120,6 +124,7 @@ const NO_SNAPSHOT: ShownSnapshot = new Map();
 const NO_VIEW = { viewId: null, viewColumns: null };
 
 function RouteComponent() {
+	useShortcutsPage(t`Applications`);
 	const search = Route.useSearch();
 	const { view, create, applicationId } = search;
 	const navigate = useNavigate({ from: Route.fullPath });
@@ -190,7 +195,7 @@ function RouteComponent() {
 		{
 			enabled: characterShortcuts && Boolean(applications?.length),
 			target: pageRef,
-			meta: { name: t`Search applications` },
+			meta: { name: t`Filter applications` },
 		},
 	);
 
@@ -530,46 +535,59 @@ function RouteComponent() {
 	);
 
 	const viewTabs = (
-		<Tabs
+		<SegmentedControl
+			aria-label={t`View`}
 			value={shown}
 			onValueChange={(value) => {
 				setViewSwitched(true);
 				setSearch({ view: value as View });
 			}}
 		>
-			<TabsList aria-label={t`View`}>
-				{!phone && (
-					<TabsTrigger value="board" title={tabLabels ? undefined : t`Board`}>
-						<Icon name="kanban" size={18} />
-						<span className={cn(!tabLabels && "sr-only")}>
-							<Trans>Board</Trans>
-						</span>
-					</TabsTrigger>
-				)}
-				<TabsTrigger value="list" title={tabLabels ? undefined : t`List`}>
-					<Icon name="rows" size={18} />
+			{!phone && (
+				<SegmentedControlItem value="board" title={tabLabels ? undefined : t`Board`}>
+					<Icon name="kanban" />
 					<span className={cn(!tabLabels && "sr-only")}>
-						<Trans>List</Trans>
+						<Trans>Board</Trans>
 					</span>
-				</TabsTrigger>
-				<TabsTrigger value="insights" title={tabLabels ? undefined : t`Insights`}>
-					<Icon name="chart-line-up" size={18} />
-					<span className={cn(!tabLabels && "sr-only")}>
-						<Trans>Insights</Trans>
-					</span>
-				</TabsTrigger>
-				<TabsTrigger value="calendar" title={tabLabels ? undefined : t`Calendar`}>
-					<Icon name="calendar-dots" size={18} />
-					<span className={cn(!tabLabels && "sr-only")}>
-						<Trans>Calendar</Trans>
-					</span>
-				</TabsTrigger>
-			</TabsList>
-		</Tabs>
+				</SegmentedControlItem>
+			)}
+			<SegmentedControlItem value="list" title={tabLabels ? undefined : t`List`}>
+				<Icon name="list" />
+				<span className={cn(!tabLabels && "sr-only")}>
+					<Trans>List</Trans>
+				</span>
+			</SegmentedControlItem>
+			<SegmentedControlItem value="insights" title={tabLabels ? undefined : t`Insights`}>
+				<Icon name="chart-line-up" />
+				<span className={cn(!tabLabels && "sr-only")}>
+					<Trans>Insights</Trans>
+				</span>
+			</SegmentedControlItem>
+			<SegmentedControlItem value="calendar" title={tabLabels ? undefined : t`Calendar`}>
+				<Icon name="calendar-blank" />
+				<span className={cn(!tabLabels && "sr-only")}>
+					<Trans>Calendar</Trans>
+				</span>
+			</SegmentedControlItem>
+		</SegmentedControl>
+	);
+
+	const saveJobButton = (
+		<Button
+			variant="primary"
+			onClick={() => setAdding(true)}
+			aria-label={t`Save a job`}
+			className="max-sm:size-11 max-sm:p-0"
+		>
+			<Icon name="plus" />
+			<span className="max-sm:hidden">
+				<Trans>Save a job</Trans>
+			</span>
+		</Button>
 	);
 
 	return (
-		<div
+		<Page
 			ref={pageRef}
 			onClickCapture={(event) => {
 				const trigger =
@@ -578,12 +596,13 @@ function RouteComponent() {
 			}}
 			tabIndex={-1}
 			{...(fill ? { [FILL_SCREEN_ATTRIBUTE]: "" } : {})}
-			className={cn(PAGE_CLASS, fill ? "flex min-h-0 flex-1 basis-0 flex-col gap-5 pb-6" : "grid content-start gap-5")}
+			// Full width: Applications uses the whole content area, so it has no reading width (`PageBody`).
+			className={cn("gap-5 outline-none", fill ? "basis-0 pb-6" : "pb-24")}
 		>
 			{/* The title and, beside it, the views; the CSV menu and Save job on the other side. */}
 			<header ref={rowRef} className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap">
 				<div className="flex min-w-0 items-center gap-5">
-					<h1 ref={titleRef} className="shrink-0 font-display text-[30px] leading-9 font-medium whitespace-nowrap">
+					<h1 ref={titleRef} className="shrink-0 t-root-title whitespace-nowrap">
 						<Trans>Applications</Trans>
 					</h1>
 					{withViews && !phone && (
@@ -596,28 +615,33 @@ function RouteComponent() {
 					)}
 				</div>
 				<div ref={actionsRef} className="flex shrink-0 items-center gap-2">
+					{/* One More menu beside the one accent action: icon-only buttons are for back, close and more. */}
 					<DropdownMenu>
 						<DropdownMenuTrigger render={<Button size="icon" variant="secondary" aria-label={t`More`} />}>
-							<Icon name="dots-three" />
+							<Icon name="dots-three" size={20} />
 						</DropdownMenuTrigger>
-						<DropdownMenuContent align="end">
+						<DropdownMenuContent align="end" className="w-[212px]">
 							<HotkeysProvider scope={`${overlayScope}-more`} exclusive>
-								<DropdownMenuItem onClick={() => void navigate({ to: "/dashboard/applications/trash" })}>
-									<Trans>Trash</Trans>
-								</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => setImporting(true)}>
+									<Icon name="upload-simple" />
 									<Trans>Import from CSV…</Trans>
 								</DropdownMenuItem>
 								<DropdownMenuItem disabled={empty || !applications || exportLoading} onClick={() => void openExport()}>
+									<Icon name="download-simple" />
 									<Trans>Export to CSV…</Trans>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									onClick={() => void navigate({ to: "/dashboard/trash", search: { kind: "applications" } })}
+								>
+									<Icon name="trash" />
+									<Trans>Trash</Trans>
 								</DropdownMenuItem>
 							</HotkeysProvider>
 						</DropdownMenuContent>
 					</DropdownMenu>
-					<Button onClick={() => setAdding(true)}>
-						<Icon name="plus" />
-						<Trans>Save job</Trans>
-					</Button>
+					{!phone && saveJobButton}
+					<PhoneHeaderActions>{phone && saveJobButton}</PhoneHeaderActions>
 				</div>
 			</header>
 
@@ -631,43 +655,45 @@ function RouteComponent() {
 			)}
 
 			{isError && (
-				<div
-					role="alert"
-					className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line p-4"
-				>
-					<p className="text-sm text-danger-text">
-						<Trans>Couldn't load applications. Try again.</Trans>
+				<div role="alert" className="grid gap-3.5 rounded-xl border border-line p-5">
+					<p className="flex items-start gap-2.5 text-sm/5 text-ink">
+						<Icon name="warning-circle" size={20} className="shrink-0 text-warn-text" />
+						<Trans>Couldn't load this. Your saved data hasn't changed.</Trans>
 					</p>
-					<Button variant="secondary" disabled={isFetching} onClick={() => void refetch()}>
-						<Trans>Retry</Trans>
+					<Button
+						variant="secondary"
+						size="sm"
+						className="justify-self-start"
+						loading={isFetching}
+						onClick={() => void refetch()}
+					>
+						{isFetching ? <Trans>Retrying…</Trans> : <Trans>Try again</Trans>}
 					</Button>
 				</div>
 			)}
 
 			{lanes.error && (
-				<div
-					role="alert"
-					className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line p-4"
-				>
-					<p className="text-sm text-danger-text">
-						<Trans>Couldn't load your stages, so the standard ones are shown. Try again.</Trans>
+				<div role="alert" className="flex items-center gap-3 rounded-lg bg-warn-soft px-4 py-3.5 text-warn-text">
+					<Icon name="warning-circle" size={20} className="shrink-0" />
+					<p className="min-w-0 flex-1 text-sm/5">
+						<Trans>Couldn't load your stages, so the standard ones are shown.</Trans>
 					</p>
-					<Button variant="secondary" onClick={() => void lanes.refetch()}>
-						<Trans>Retry</Trans>
+					<Button variant="secondary" size="sm" className="shrink-0" onClick={() => void lanes.refetch()}>
+						<Trans>Try again</Trans>
 					</Button>
 				</div>
 			)}
 
 			{isError && !applications ? null : empty ? (
 				<EmptyState
-					title={<Trans>Track your first job</Trans>}
+					title={<Trans>Follow each job from saved to offer</Trans>}
 					description={
-						<Trans>Paste a job link. We'll save the posting so Check, the assistant and your letter can use it.</Trans>
+						<Trans>Paste a job link. The posting is kept, so Check, the assistant and your letter can use it.</Trans>
 					}
 					action={
 						<Button onClick={() => setAdding(true)}>
 							<Icon name="plus" />
-							<Trans>Save job</Trans>
+							<Trans>Save a job</Trans>
 						</Button>
 					}
 					secondary={
@@ -696,28 +722,18 @@ function RouteComponent() {
 							{shown !== "insights" && (
 								<>
 									{phone && <span className="basis-full" />}
-									<div
+									<FilterField
+										ref={searchRef}
+										label={t`Filter applications`}
+										placeholder={t`Search role, company or contact`}
+										{...(characterShortcuts && !phone ? { shortcut: "/" } : {})}
+										value={query}
+										onChange={(event) => setQuery(event.target.value)}
 										className={cn(
-											"relative",
+											"w-auto",
 											phone ? "min-w-0 flex-1 basis-0" : "max-w-[400px] min-w-[220px] flex-[4_1_220px]",
 										)}
-									>
-										<Icon
-											name="magnifying-glass"
-											size={18}
-											className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3"
-										/>
-										<Input
-											ref={searchRef}
-											type="search"
-											aria-keyshortcuts={characterShortcuts ? "/" : undefined}
-											aria-label={t`Search applications`}
-											placeholder={t`Search role, company or contact`}
-											value={query}
-											className="ps-8"
-											onChange={(event) => setQuery(event.target.value)}
-										/>
-									</div>
+									/>
 									{phone ? (
 										<PhoneFilters {...filterProps} trailing={<PhoneSortButton sort={sort} onChange={setSort} />} />
 									) : (
@@ -752,14 +768,15 @@ function RouteComponent() {
 					{isPending ? (
 						<ViewSkeleton view={shown} />
 					) : noMatches && shown !== "insights" ? (
-						<div className="grid justify-items-center gap-2 py-16 text-center">
-							<p className="text-sm font-medium">
-								<Trans>No applications match these filters.</Trans>
-							</p>
-							<Button size="sm" variant="secondary" onClick={() => setFilters(clearAll())}>
-								<Trans>Clear filters</Trans>
-							</Button>
-						</div>
+						<EmptyState
+							title={<Trans>No matching applications</Trans>}
+							description={<Trans>Try different words or clear your filters.</Trans>}
+							action={
+								<Button variant="secondary" onClick={() => setFilters(clearAll())}>
+									<Trans>Clear filters</Trans>
+								</Button>
+							}
+						/>
 					) : (
 						<div
 							key={shown}
@@ -796,18 +813,18 @@ function RouteComponent() {
 									onColumnWidthChange={(width) => updateLayout({ boardColumnWidth: width })}
 									onOpen={openApplication}
 									onTagSelect={filterByTag}
+									onSaveJob={() => setAdding(true)}
 								/>
 							)}
 							{shown === "insights" && (
 								// Insights counts every application: it doesn't follow the filters.
-								<ApplicationInsights applications={applications ?? []} onSaveJob={() => setAdding(true)} />
+								<ApplicationInsights applications={applications ?? []} />
 							)}
 							{shown === "calendar" && (
 								<ApplicationCalendar
 									compact={phone}
 									applications={matching}
 									allApplications={applications ?? []}
-									onOpen={openApplication}
 									onClearFilters={sameFilters(filters, clearAll()) ? undefined : () => setFilters(clearAll())}
 								/>
 							)}
@@ -896,7 +913,7 @@ function RouteComponent() {
 					}}
 				/>
 			</HotkeysProvider>
-		</div>
+		</Page>
 	);
 }
 

@@ -58,7 +58,7 @@ CUSTOM_DOMAIN_PROVIDER_SECRET=<a-generated-secret-of-at-least-32-characters>
 
 Use a hostname for `CUSTOM_DOMAIN_TARGET`, without a scheme, path or port. Generate the provider secret in your
 secret manager, pass it to both the app and proxy, and recreate the app. Both variables must be set before the
-custom-domain controls become available on web and mobile. Keep the secret out of URLs, public configuration and logs.
+custom-domain controls become available. Keep the secret out of URLs, public configuration and logs.
 
 ### Connect the reverse proxy
 
@@ -119,8 +119,7 @@ public resume addresses keep working. A hostname may remain in the app's cache f
 ## Upgrade an existing installation
 
 v6.0.7 adds a `custom_domain` table and the `show_in_search_engines`, `hide_contact_details` and `is_primary` resume
-columns. Back up your database, then start the new server so startup migrations run. Deploy the backend before
-mobile updates that use the new sharing controls.
+columns. Back up your database, then start the new server so startup migrations run.
 
 Existing resumes retain public/private status and download settings. Search indexing and contact hiding default
 to off, and no resume becomes primary automatically. Existing public addresses stay valid, including older

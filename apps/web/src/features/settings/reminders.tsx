@@ -18,7 +18,7 @@ type ReminderChange = { noReplyDays: number } | { interviewReminders: boolean };
 
 /**
  * Which built-in reminders the account gets: the follow-up nudge for applications with no reply (and after how many
- * days), and the next-interview card on Career → Today. Each change is saved at once.
+ * days), and the next-interview card on Today. Each change is saved at once.
  */
 export function RemindersSection() {
 	const id = useId();
@@ -88,7 +88,7 @@ export function RemindersSection() {
 				</div>
 				<SwitchRow
 					label={<Trans>Next interview</Trans>}
-					description={<Trans>Shows your next interview, with a countdown, at the top of Career → Today.</Trans>}
+					description={<Trans>Shows your next interview, with a countdown, at the top of Today.</Trans>}
 					checked={interviewReminders}
 					onCheckedChange={(checked) => void save({ interviewReminders: checked })}
 				/>
@@ -98,7 +98,7 @@ export function RemindersSection() {
 					<Trans>Enter a whole number of days from 1 to {NO_REPLY_DAYS.max}.</Trans>
 				) : (
 					<Trans>
-						Follow-up dates you set yourself still show. Career schedules have their own switches in Career → Today.
+						Follow-up dates you set yourself still show. Career schedules have their own switches in Career → Schedules.
 					</Trans>
 				)}
 			</p>

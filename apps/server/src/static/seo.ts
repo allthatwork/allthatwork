@@ -130,7 +130,7 @@ export function handleLlms() {
 		"- Sharing: private by default; a public link or a password-protected link, changeable at any time.",
 		"- AI: optional, with the user's own API key (OpenAI, Anthropic, Google Gemini, OpenRouter, Ollama and others). Nothing is sent to an AI service without one.",
 		"- Also includes: cover letters, a job application tracker, version history, passkeys and two-factor authentication.",
-		"- Languages: the interface is translated into more than 50 languages by volunteers on Crowdin.",
+		"- Languages: the interface is translated into more than 50 languages.",
 		"- Self-hosting: a Docker image, with PostgreSQL and local or S3-compatible storage.",
 		"",
 		"## Documentation",
@@ -148,7 +148,6 @@ export function handleLlms() {
 		"## Community",
 		"",
 		`- [Source code on GitHub](${APP_REPOSITORY_URL})`,
-		"- [Translations on Crowdin](https://crowdin.com/project/reactive-resume)",
 		"",
 	].join("\n");
 

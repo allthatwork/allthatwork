@@ -154,6 +154,12 @@ export const application = pg.pgTable(
 		}),
 		pg.index().on(t.userId, t.laneId),
 		pg.index().on(t.companyId),
+		// Deleting a resume, a letter or one of their versions looks these up; without an index each lookup reads
+		// every application.
+		pg.index().on(t.resumeId),
+		pg.index().on(t.coverLetterId),
+		pg.index().on(t.sentResumeVersionId),
+		pg.index().on(t.sentCoverLetterVersionId),
 	],
 );
 
