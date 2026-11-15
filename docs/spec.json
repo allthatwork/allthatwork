@@ -1,7 +1,7 @@
 {
 	"info": {
 		"title": "All That Work",
-		"version": "6.1.0",
+		"version": "6.1.1",
 		"description": "All That Work API. Mutations do not support Idempotency-Key. Do not automatically retry POST, PUT, PATCH or DELETE requests after a timeout: first read the resource to determine whether the operation succeeded. Existing enum values and response shapes are retained for compatibility.",
 		"license": {
 			"name": "MIT",
@@ -17211,7 +17211,7 @@
 					{
 						"lang": "bash",
 						"label": "cURL",
-						"source": "curl --request DELETE \"https://rxresu.me/api/openapi/applications/trash\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{}'"
+						"source": "curl --request DELETE \"https://allthat.work/api/openapi/applications/trash\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{}'"
 					}
 				]
 			}
@@ -168875,7 +168875,7 @@
 					{
 						"lang": "bash",
 						"label": "cURL",
-						"source": "curl --request POST \"https://rxresu.me/api/openapi/resumes/pdf-renders\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{}'"
+						"source": "curl --request POST \"https://allthat.work/api/openapi/resumes/pdf-renders\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{}'"
 					}
 				]
 			}
@@ -169657,7 +169657,7 @@
 					{
 						"lang": "bash",
 						"label": "cURL",
-						"source": "curl --request POST \"https://rxresu.me/api/openapi/cover-letters/pdf-renders\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"letter\": {\n    \"name\": \"<string>\",\n    \"recipient\": \"<string>\",\n    \"content\": \"<string>\",\n    \"style\": {\n      \"basics\": {\n        \"name\": \"<string>\",\n        \"headline\": \"<string>\",\n        \"email\": \"<string>\",\n        \"phone\": \"<string>\",\n        \"location\": \"<string>\",\n        \"website\": {\n          \"url\": \"<string>\",\n          \"label\": \"<string>\"\n        },\n        \"customFields\": [\n          {\n            \"id\": \"<string>\",\n            \"icon\": \"<string>\",\n            \"text\": \"<string>\",\n            \"link\": \"<string>\"\n          }\n        ]\n      },\n      \"picture\": {\n        \"hidden\": true,\n        \"fit\": \"cover\",\n        \"url\": \"<string>\",\n        \"size\": 123,\n        \"rotation\": 123,\n        \"aspectRatio\": 123,\n        \"borderRadius\": 123,\n        \"borderColor\": \"<string>\",\n        \"borderWidth\": 123,\n        \"shadowColor\": \"<string>\",\n        \"shadowWidth\": 123\n      },\n      \"metadata\": {\n        \"template\": \"azurill\",\n        \"page\": {\n          \"gapX\": 123,\n          \"gapY\": 123,\n          \"marginX\": 123,\n          \"marginY\": 123,\n          \"format\": \"a4\",\n          \"locale\": \"<string>\",\n          \"hideLinkUnderline\": true,\n          \"hideIcons\": true,\n          \"hideSectionIcons\": true\n        },\n        \"design\": {\n          \"level\": {\n            \"icon\": \"<string>\",\n            \"type\": \"hidden\"\n          },\n          \"colors\": {\n            \"primary\": \"<string>\",\n            \"text\": \"<string>\",\n            \"background\": \"<string>\"\n          }\n        },\n        \"typography\": {\n          \"body\": {\n            \"fontFamily\": \"<string>\",\n            \"fontWeights\": [\n              \"100\"\n            ],\n            \"fontSize\": 123,\n            \"lineHeight\": 123\n          },\n          \"heading\": {\n            \"fontFamily\": \"<string>\",\n            \"fontWeights\": [\n              \"100\"\n            ],\n            \"fontSize\": 123,\n            \"lineHeight\": 123\n          }\n        },\n        \"styleRules\": [\n          \"<string>\"\n        ]\n      },\n      \"sectionId\": \"<string>\",\n      \"itemId\": \"<string>\"\n    }\n  }\n}'"
+						"source": "curl --request POST \"https://allthat.work/api/openapi/cover-letters/pdf-renders\" --header \"x-api-key: <api-key>\" --header \"Content-Type: application/json\" --data '{\n  \"letter\": {\n    \"name\": \"<string>\",\n    \"recipient\": \"<string>\",\n    \"content\": \"<string>\",\n    \"style\": {\n      \"basics\": {\n        \"name\": \"<string>\",\n        \"headline\": \"<string>\",\n        \"email\": \"<string>\",\n        \"phone\": \"<string>\",\n        \"location\": \"<string>\",\n        \"website\": {\n          \"url\": \"<string>\",\n          \"label\": \"<string>\"\n        },\n        \"customFields\": [\n          {\n            \"id\": \"<string>\",\n            \"icon\": \"<string>\",\n            \"text\": \"<string>\",\n            \"link\": \"<string>\"\n          }\n        ]\n      },\n      \"picture\": {\n        \"hidden\": true,\n        \"fit\": \"cover\",\n        \"url\": \"<string>\",\n        \"size\": 123,\n        \"rotation\": 123,\n        \"aspectRatio\": 123,\n        \"borderRadius\": 123,\n        \"borderColor\": \"<string>\",\n        \"borderWidth\": 123,\n        \"shadowColor\": \"<string>\",\n        \"shadowWidth\": 123\n      },\n      \"metadata\": {\n        \"template\": \"azurill\",\n        \"page\": {\n          \"gapX\": 123,\n          \"gapY\": 123,\n          \"marginX\": 123,\n          \"marginY\": 123,\n          \"format\": \"a4\",\n          \"locale\": \"<string>\",\n          \"hideLinkUnderline\": true,\n          \"hideIcons\": true,\n          \"hideSectionIcons\": true\n        },\n        \"design\": {\n          \"level\": {\n            \"icon\": \"<string>\",\n            \"type\": \"hidden\"\n          },\n          \"colors\": {\n            \"primary\": \"<string>\",\n            \"text\": \"<string>\",\n            \"background\": \"<string>\"\n          }\n        },\n        \"typography\": {\n          \"body\": {\n            \"fontFamily\": \"<string>\",\n            \"fontWeights\": [\n              \"100\"\n            ],\n            \"fontSize\": 123,\n            \"lineHeight\": 123\n          },\n          \"heading\": {\n            \"fontFamily\": \"<string>\",\n            \"fontWeights\": [\n              \"100\"\n            ],\n            \"fontSize\": 123,\n            \"lineHeight\": 123\n          }\n        },\n        \"styleRules\": [\n          \"<string>\"\n        ]\n      },\n      \"sectionId\": \"<string>\",\n      \"itemId\": \"<string>\"\n    }\n  }\n}'"
 					}
 				]
 			}

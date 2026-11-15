@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vite-plus/test";
 import { PASSWORD_PAGE_SCRIPT, WEB_PAGE_SCRIPT } from "@reactive-resume/pdf/web-page-document";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
+import { APP_NAME } from "@reactive-resume/utils/brand";
 
 vi.mock("@reactive-resume/env/server", () => ({ env: { APP_URL: "https://resume.example" } }));
 
@@ -99,7 +100,8 @@ it("authorizes the password page's own script and shows the address, nothing abo
 	expect(response.headers.get("content-security-policy")).toContain(`'sha256-${hash}'`);
 	expect(html).toContain('<p class="address">resume.example/ada/resume</p>');
 	expect(html).toContain('<footer class="password-credit"><a href="https://resume.example">');
-	expect(html).toContain("Made with Reactive Resume");
+	// The credit names this instance's product (fork).
+	expect(html).toContain(`Made with ${APP_NAME}`);
 });
 
 it("sends a mistyped app address to the app instead of saying a resume isn't shared (J2-16)", async () => {

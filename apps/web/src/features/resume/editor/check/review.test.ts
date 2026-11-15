@@ -8,7 +8,7 @@ const passage = (id: string, chars: number): Passage => {
 	return {
 		id,
 		target: { sectionId: "experience", itemId: "e1", field: "description" },
-		location: `Experience · ${id}`,
+		location: `Experience › ${id}`,
 		html: `<li><p>${text}</p></li>`,
 		text,
 	};
@@ -36,7 +36,7 @@ describe("writing review passages", () => {
 			],
 			reviewPassages(all),
 		);
-		expect(proposals.map((proposal) => proposal.location)).toEqual(["Experience · short"]);
+		expect(proposals.map((proposal) => proposal.location)).toEqual(["Experience › short"]);
 		expect(notes).toEqual([expect.objectContaining({ note: "Too long.", location: "Experience", quote: "" })]);
 	});
 });

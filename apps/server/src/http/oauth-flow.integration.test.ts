@@ -357,7 +357,8 @@ describe.skipIf(!databaseURL)("MCP OAuth flow with PostgreSQL", () => {
 			.select({ skipConsent: schema.oauthClient.skipConsent })
 			.from(schema.oauthClient)
 			.where(eq(schema.oauthClient.clientId, clientId));
-		expect(row?.skipConsent).toBe(false);
+		// The fork never marks a client trusted, so the column stays empty; either way consent isn't skipped.
+		expect(row?.skipConsent).not.toBe(true);
 
 		const verifier = randomBytes(32).toString("base64url");
 		const authorize = await handleAuth(
@@ -450,7 +451,8 @@ describe.skipIf(!databaseURL)("MCP OAuth flow with PostgreSQL", () => {
 			.select({ skipConsent: schema.oauthClient.skipConsent })
 			.from(schema.oauthClient)
 			.where(eq(schema.oauthClient.clientId, clientId));
-		expect(row?.skipConsent).toBe(false);
+		// The fork never marks a client trusted, so the column stays empty; either way consent isn't skipped.
+		expect(row?.skipConsent).not.toBe(true);
 	}, 30_000);
 
 	it("refuses authorization without a resource, reporting to the registered callback only", async () => {

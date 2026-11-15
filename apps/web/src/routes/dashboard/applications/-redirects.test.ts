@@ -23,13 +23,13 @@ vi.mock("@/features/career/shared", () => ({ useCareerTime: () => ({}), useNow: 
 
 type RouteOptions = {
 	validateSearch: { parse: (search: unknown) => unknown };
-	beforeLoad: (context: never) => unknown;
+	beforeLoad?: (context: never) => unknown;
 };
 
 async function destination(search: Record<string, unknown>) {
 	const { options } = Route as unknown as { options: RouteOptions };
 	try {
-		options.beforeLoad({ search: options.validateSearch.parse(search) } as never);
+		options.beforeLoad?.({ search: options.validateSearch.parse(search) } as never);
 	} catch (thrown) {
 		if (!isRedirect(thrown)) throw thrown;
 		const { to, params, search, replace } = thrown.options;
@@ -38,13 +38,9 @@ async function destination(search: Record<string, unknown>) {
 	return null;
 }
 
-it("sends the old one-application address to that application's page, details open", async () => {
-	expect(await destination({ applicationId: "app-1", view: "board" })).toEqual({
-		to: "/dashboard/applications/$applicationId/{-$tab}",
-		params: { applicationId: "app-1" },
-		search: { details: true },
-		replace: true,
-	});
+// Upstream sends ?applicationId to the application's page; the fork opens the details sheet on the list instead.
+it("keeps the one-application address on the list, where it opens the details sheet", async () => {
+	expect(await destination({ applicationId: "app-1", view: "board" })).toBeNull();
 });
 
 it("keeps the list where no application is named", async () => {
