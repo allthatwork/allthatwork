@@ -1,4 +1,5 @@
 import type { ModelCallOptions } from "./request-limits";
+import type { AiUsage } from "./usage";
 import type { AiReasoning } from "@reactive-resume/ai/reasoning";
 import type { AIProvider } from "@reactive-resume/ai/types";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
@@ -30,12 +31,14 @@ import { aiReasoningSchema } from "@reactive-resume/ai/reasoning";
 import { buildAiExtractionTemplate } from "@reactive-resume/ai/resume/extraction-template";
 import { sanitizeAndParseResumeJson } from "@reactive-resume/ai/resume/sanitize";
 import { AI_PROVIDER_DEFAULT_BASE_URLS, AI_PROVIDER_DISPLAY_NAMES, aiProviderSchema } from "@reactive-resume/ai/types";
-import { ZipEntryTooLargeError, unzipEntries } from "@reactive-resume/import/zip";
-import { decodeEntities } from "../web-access/builtin";
+import { extractDocxText } from "@reactive-resume/import/docx-text";
+import { withLinkTargets } from "@reactive-resume/import/review";
+import { extractPdf } from "../resume/pdf-analysis";
 import { isDirectOpenAIProvider } from "./capabilities";
 import { aiDeadline } from "./generate-json";
 import { sdkCallSettings } from "./request-limits";
-import { aiTransport, resolveAiBaseUrl } from "./url-policy";
+import { resolveAiBaseUrl } from "./url-policy";
+import { aiUsageTransport } from "./usage";
 
 const aiExtractionTemplate = buildAiExtractionTemplate();
 
@@ -77,6 +80,7 @@ type GetModelInput = {
 	reasoning?: AiReasoning | null | undefined;
 	/** The connection's context window in tokens, when it has one. Ollama loads the model with it. */
 	contextTokens?: number | null | undefined;
+	usage: AiUsage;
 };
 
 const MAX_AI_FILE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -96,9 +100,6 @@ const TEST_CONNECTION_TIMEOUT_MS = z.coerce
 	.max(MAX_ABORT_SIGNAL_TIMEOUT_MS)
 	.catch(30_000)
 	.parse(process.env.AI_TEST_TIMEOUT_MS?.trim() || undefined);
-const DOCX_DOCUMENT_XML_PATH = "word/document.xml";
-// Resume bodies are kilobytes; this leaves room for long documents without trusting the archive's declared size.
-const MAX_DOCX_DOCUMENT_XML_BYTES = 20 * 1024 * 1024;
 
 /**
  * Sends the connection's reasoning setting with every call: the AI SDK translates the standard levels for each
@@ -160,7 +161,7 @@ export function getModel(input: GetModelInput) {
 function createModel(input: GetModelInput) {
 	const { provider, model, apiKey } = input;
 	const baseURL = resolveAiBaseUrl(input);
-	const settings = { apiKey, baseURL, ...aiTransport() };
+	const settings = { apiKey, baseURL, ...aiUsageTransport(input.usage, provider, model) };
 
 	return match(provider)
 		.with("openai", () => createOpenAI(settings).chat(model))
@@ -184,7 +185,7 @@ function createModel(input: GetModelInput) {
 			const ollama = createOllama({
 				name: "ollama",
 				baseURL,
-				...aiTransport(),
+				fetch: settings.fetch,
 				...(apiKey ? { headers: { Authorization: `Bearer ${apiKey}` } } : {}),
 			});
 
@@ -199,7 +200,11 @@ export function getAgentModel(input: GetModelInput) {
 	// Direct OpenAI assistants use Responses for reasoning with function tools.
 	return withReasoning(
 		input,
-		createOpenAI({ apiKey: input.apiKey, baseURL: resolveAiBaseUrl(input), ...aiTransport() }).responses(input.model),
+		createOpenAI({
+			apiKey: input.apiKey,
+			baseURL: resolveAiBaseUrl(input),
+			...aiUsageTransport(input.usage, input.provider, input.model),
+		}).responses(input.model),
 	);
 }
 
@@ -220,7 +225,7 @@ export const fileInputSchema = z.object({
 
 type TestConnectionInput = z.infer<typeof aiCredentialsSchema>;
 
-type TestConnectionResult = { ok: true } | { ok: false; message: string };
+type TestConnectionResult = { ok: true } | { ok: false; message: string; kind: string };
 
 const NETWORK_ERROR_CODES = new Set([
 	"ECONNREFUSED",
@@ -275,6 +280,21 @@ function redactApiKey(message: string, apiKey: string): string {
 	return message.replaceAll(apiKey, "***");
 }
 
+function testFailureKind(error: unknown): string {
+	if (isTimeout(error) || findNetworkErrorCode(error)) return "network";
+	if (LoadAPIKeyError.isInstance(error)) return "auth";
+	if (NoSuchModelError.isInstance(error)) return "model";
+	if (error instanceof Error && error.message === "INVALID_AI_BASE_URL") return "url";
+	if (APICallError.isInstance(error)) {
+		if (error.statusCode === 401 || error.statusCode === 403) return "auth";
+		if (error.statusCode === 404) return "model";
+		if (error.statusCode === 429) return "rate-limit";
+		if (error.statusCode === 405) return "url";
+		if ((error.statusCode ?? 0) >= 500) return "server";
+	}
+	return "unknown";
+}
+
 function describeTestConnectionFailure(input: TestConnectionInput, error: unknown): string {
 	const provider = AI_PROVIDER_DISPLAY_NAMES[input.provider];
 	const endpoint = input.baseURL.trim() || AI_PROVIDER_DEFAULT_BASE_URLS[input.provider];
@@ -296,6 +316,12 @@ function describeTestConnectionFailure(input: TestConnectionInput, error: unknow
 
 	if (APICallError.isInstance(error)) {
 		const status = error.statusCode;
+		// No status: the request never got an answer ("Cannot connect to API: bad port"), so the provider didn't reject
+		// anything. Say it couldn't be reached, as for a network error.
+		if (status === undefined)
+			return endpoint
+				? `Could not reach ${endpoint}. Check that the base URL is correct and the service is running.`
+				: `${provider} could not be reached. Check that the base URL is correct and the service is running.`;
 
 		if (status === 401 || status === 403) return `${provider} rejected the API key. Check the key and test again.`;
 		if (status === 404)
@@ -305,7 +331,7 @@ function describeTestConnectionFailure(input: TestConnectionInput, error: unknow
 			return `${provider} reported a server error (${status}). This is a problem on the provider's side. Try again later.`;
 		}
 
-		return `${provider} rejected the test request${status === undefined ? "" : ` (${status})`}: ${redactApiKey(error.message, input.apiKey)}`;
+		return `${provider} rejected the test request (${status}): ${redactApiKey(error.message, input.apiKey)}`;
 	}
 
 	if (error instanceof Error && error.message) {
@@ -315,7 +341,9 @@ function describeTestConnectionFailure(input: TestConnectionInput, error: unknow
 	return `${provider} couldn't be tested and reported no reason. Try again.`;
 }
 
-export async function testConnection(input: TestConnectionInput): Promise<TestConnectionResult> {
+export async function testConnection(
+	input: TestConnectionInput & { signal?: AbortSignal | undefined; usage: AiUsage },
+): Promise<TestConnectionResult> {
 	const RESPONSE_OK = "1";
 	const provider = AI_PROVIDER_DISPLAY_NAMES[input.provider];
 
@@ -335,11 +363,15 @@ export async function testConnection(input: TestConnectionInput): Promise<TestCo
 					: TEST_CONNECTION_MAX_OUTPUT_TOKENS,
 			// A connection test must not silently multiply its own wait by retrying behind the user.
 			maxRetries: 0,
-			abortSignal: AbortSignal.timeout(TEST_CONNECTION_TIMEOUT_MS),
+			abortSignal: aiDeadline(
+				input.signal
+					? AbortSignal.any([input.signal, AbortSignal.timeout(TEST_CONNECTION_TIMEOUT_MS)])
+					: AbortSignal.timeout(TEST_CONNECTION_TIMEOUT_MS),
+			),
 			messages: [{ role: "user", content: `Respond only with the single character: ${RESPONSE_OK}` }],
 		});
 	} catch (error) {
-		return { ok: false, message: describeTestConnectionFailure(input, error) };
+		return { ok: false, message: describeTestConnectionFailure(input, error), kind: testFailureKind(error) };
 	}
 
 	if (result.text.trim() === RESPONSE_OK) return { ok: true };
@@ -347,23 +379,28 @@ export async function testConnection(input: TestConnectionInput): Promise<TestCo
 	if (result.finishReason === "length") {
 		return {
 			ok: false,
+			kind: "model",
 			message: `${provider} is reachable, but the model returned too much text during the test. Try a model that follows short instructions.`,
 		};
 	}
 
 	return {
 		ok: false,
+		kind: "model",
 		message: `${provider} is reachable, but the model replied with unexpected output instead of a simple confirmation. Try another model.`,
 	};
 }
 
 type ParsePdfInput = z.infer<typeof aiCredentialsSchema> & {
+	usage: AiUsage;
 	file: z.infer<typeof fileInputSchema>;
+	signal?: AbortSignal | undefined;
 };
 
 type BuildResumeParsingMessagesInput = {
 	userPrompt: string;
 	file: z.infer<typeof fileInputSchema>;
+	signal?: AbortSignal | undefined;
 	mediaType: string;
 };
 
@@ -413,58 +450,48 @@ async function parsePdf(input: ParsePdfInput, options?: ModelCallOptions): Promi
 		}),
 	}).catch((error: unknown) => logAndRethrow("Failed to generate the text with the model", error));
 
-	return parseAndValidateResumeJson(result.text);
+	return withLinkTargets(
+		parseAndValidateResumeJson(result.text),
+		await pdfLinks(input.file, options?.signal ?? input.signal),
+	);
+}
+
+/**
+ * The addresses behind a PDF's links ("LinkedIn" linking to the profile): a model reading the page sees only the
+ * words. Best effort; an unreadable file still imports.
+ */
+async function pdfLinks(file: z.infer<typeof fileInputSchema>, signal?: AbortSignal) {
+	try {
+		const raw = await extractPdf(
+			new File([Buffer.from(file.data, "base64")], file.name, { type: "application/pdf" }),
+			signal,
+			0,
+		);
+		return raw.links.flatMap((link) => (link.url ? [link.url] : []));
+	} catch {
+		return [];
+	}
 }
 
 type ParseDocxInput = z.infer<typeof aiCredentialsSchema> & {
+	usage: AiUsage;
 	file: z.infer<typeof fileInputSchema>;
+	signal?: AbortSignal | undefined;
 	mediaType: "application/msword" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 };
 
-function readDocumentXml(data: string): string {
-	let entries: Record<string, Uint8Array>;
-	try {
-		entries = unzipEntries(
-			Buffer.from(data, "base64"),
-			(name) => name === DOCX_DOCUMENT_XML_PATH,
-			MAX_DOCX_DOCUMENT_XML_BYTES,
-		);
-	} catch (error) {
-		if (error instanceof ZipEntryTooLargeError) throw new Error("DOCX document content is too large.");
-		throw new Error("Invalid DOCX archive.");
-	}
-	const xml = entries[DOCX_DOCUMENT_XML_PATH];
-	if (!xml) throw new Error("DOCX document content not found.");
-	return new TextDecoder().decode(xml);
-}
+/** A Word file's text, page headers and footers included (see `@reactive-resume/import/docx-text`). */
+export const extractDocxTextFromBytes = extractDocxText;
 
-function extractDocxText(file: z.infer<typeof fileInputSchema>): string {
-	const documentXml = readDocumentXml(file.data);
-	// ponytail: minimal OOXML body-text extraction; add a DOCX parser dependency if tracked changes matter.
-	const text = decodeEntities(
-		// `[^<>]` keeps each match from scanning past the next tag, so malformed markup costs linear time.
-		documentXml
-			.replace(/<w:tab\b[^<>]*\/>/g, "\t")
-			.replace(/<w:br\b[^<>]*\/>/g, "\n")
-			.replace(/<\/w:p>/g, "\n")
-			.replace(/<[^<>]*>/g, ""),
-	)
-		.replace(/\r/g, "")
-		.split("\n")
-		.map((line) => line.trimEnd())
-		.join("\n")
-		.replace(/\n{3,}/g, "\n\n")
-		.trim();
-
-	if (!text) throw new Error("DOCX document content is empty.");
-	return text;
+function docxFileText(file: z.infer<typeof fileInputSchema>): string {
+	return extractDocxText(Buffer.from(file.data, "base64"));
 }
 
 async function parseDocx(input: ParseDocxInput, options?: ModelCallOptions): Promise<ResumeData> {
 	const model = getModel(input);
 	const messages =
 		input.mediaType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-			? buildResumeParsingTextMessages({ userPrompt: docxParserUserPrompt, text: extractDocxText(input.file) })
+			? buildResumeParsingTextMessages({ userPrompt: docxParserUserPrompt, text: docxFileText(input.file) })
 			: buildResumeParsingMessages({
 					userPrompt: docxParserUserPrompt,
 					file: input.file,

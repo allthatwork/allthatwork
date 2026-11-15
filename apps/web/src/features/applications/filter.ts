@@ -40,6 +40,8 @@ export type FilterContext = {
 	now: Date;
 	/** Days at Applied before "no reply"; 0 never flags it. Pass `useNoReplyDays()`. */
 	noReplyDays: number;
+	/** The account's timezone, for date-only follow-ups. */
+	timeZone?: string;
 };
 
 /** Free-text values (Found by, Found on, lanes, tags) match ignoring case and outer spaces. */
@@ -58,9 +60,12 @@ export const letterLinked = (application: ApplicationSummary) =>
 	Boolean(application.coverLetterId || application.coverLetterUrl);
 
 /** What needs the user on this application: a reply that's late, a follow-up that's due, an interview, open questions. */
-export function attentionOf(application: ApplicationSummary, { now, noReplyDays }: FilterContext): AttentionKind[] {
+export function attentionOf(
+	application: ApplicationSummary,
+	{ now, noReplyDays, timeZone }: FilterContext,
+): AttentionKind[] {
 	const kinds: AttentionKind[] = [];
-	const step = getNextStep(application, { now, noReplyDays });
+	const step = getNextStep(application, now, timeZone, undefined, noReplyDays);
 	if (step.kind === "no-reply") kinds.push("no-reply");
 	if (step.kind === "follow-up" && step.overdue) kinds.push("follow-up");
 	if (step.kind === "interview") kinds.push("interview");

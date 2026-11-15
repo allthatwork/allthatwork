@@ -4,8 +4,14 @@ import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { QRCodeSVG } from "qrcode.react";
-import { useState } from "react";
-import { formatTimeSince, publicResumeUrl, summarizeViews } from "@reactive-resume/resume/sharing";
+import { useRef, useState } from "react";
+import {
+	formatTimeSince,
+	publicResumeUrl,
+	shareListState,
+	shortLinkOpens,
+	summarizeViews,
+} from "@reactive-resume/resume/sharing";
 import { Button, buttonVariants } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
@@ -13,17 +19,20 @@ import { Separator } from "@reactive-resume/ui/components/separator";
 import { SwitchRow } from "@reactive-resume/ui/components/switch";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { APP_NAME } from "@reactive-resume/utils/brand";
+import { downloadWithAnchor } from "@reactive-resume/utils/file";
 import { isRandomSlug } from "@reactive-resume/utils/string";
 import { cn } from "@reactive-resume/utils/style";
 import { AddressField } from "./address-field";
 import { CopyLinkButton } from "./copy-link-button";
 import { CustomDomainField } from "./custom-domain-field";
+import { FeedbackLinksSection } from "./feedback-links";
 import { useShareOrigin } from "./use-share-origin";
 import { templates } from "@/dialogs/resume/template/data";
 import {
 	useCurrentResume,
 	useIsResumeLocked,
 	usePatchResume,
+	saveResumeMetadata,
 	useResumeData,
 	useUpdateResumeData,
 } from "@/features/resume/builder/draft";
@@ -131,6 +140,9 @@ export function SharePanel() {
 
 			<Separator />
 			<ViewsAndDownloads isPublic={isPublic} />
+
+			<Separator />
+			<FeedbackLinksSection resumeId={resume.id} />
 		</div>
 	);
 }
@@ -138,6 +150,7 @@ export function SharePanel() {
 type ShareSettings = {
 	isPublic?: boolean;
 	showDownloadButtons?: boolean;
+	allowWordDownload?: boolean;
 	showInSearchEngines?: boolean;
 	hideContactDetails?: boolean;
 	isPrimary?: boolean;
@@ -154,23 +167,23 @@ type ShareSetting = ReturnType<typeof useShareSetting>;
  */
 function useShareSetting() {
 	const resume = useCurrentResume();
-	const patchResume = usePatchResume();
 	const queryClient = useQueryClient();
-	const { mutateAsync: updateResume, isPending } = useMutation(orpc.resume.update.mutationOptions());
+	const options = orpc.resume.update.mutationOptions();
+	const { mutateAsync: updateResume, isPending } = useMutation({
+		...options,
+		mutationFn: (value) =>
+			saveResumeMetadata(value.id, (expectedUpdatedAt, options) =>
+				orpc.resume.update.call({ ...value, expectedUpdatedAt }, options),
+			),
+	});
 
 	const update = async (settings: ShareSettings) => {
 		try {
 			const updated = await updateResume({ id: resume.id, ...settings });
-			patchResume((draft) => {
-				draft.isPublic = updated.isPublic;
-				draft.showDownloadButtons = updated.showDownloadButtons;
-				draft.showInSearchEngines = updated.showInSearchEngines;
-				draft.hideContactDetails = updated.hideContactDetails;
-				draft.isPrimary = updated.isPrimary;
-				draft.slug = updated.slug;
-			});
 			// Another resume may have handed over its primary role.
-			if (settings.isPrimary) void queryClient.invalidateQueries({ queryKey: orpc.resume.list.key() });
+			if (settings.isPrimary || updated.isPrimary !== resume.isPrimary)
+				void queryClient.invalidateQueries({ queryKey: orpc.resume.list.key() });
+			// The saved resume: publishing may have given it a new random address (fork), which the toast names.
 			return updated;
 		} catch (error) {
 			toastShareError(error);
@@ -187,21 +200,31 @@ type AddressesSectionProps = { origin: string; username: string; setting: ShareS
 function AddressesSection({ origin, username, setting }: AddressesSectionProps) {
 	const resume = useCurrentResume();
 	const { flags } = useRouteContext({ strict: false });
+	const { data: resumes, isPending, isError } = useQuery(orpc.resume.list.queryOptions());
+	const current = resumes?.find((item) => item.isPrimary && item.id !== resume.id);
+	const listState = shareListState({ isPending, isError });
 	const shortLink = publicResumeUrl(origin, { username, slug: resume.slug, isPrimary: true });
+	// The short link opens the primary resume only while it's published; at any other time it would copy a dead link.
+	const opens = shortLinkOpens({
+		isPrimary: resume.isPrimary ?? false,
+		isPublic: resume.isPublic ?? false,
+		listState,
+		otherPrimaryIsPublic: current?.isPublic,
+	});
 
 	return (
 		<>
 			<Separator />
 			<section aria-labelledby="share-addresses-title" className="grid gap-3">
 				<h3 id="share-addresses-title" className="text-sm font-semibold">
-					<Trans>Short link and domain</Trans>
+					{flags?.customDomains ? <Trans>Short link and domain</Trans> : <Trans>Short link</Trans>}
 				</h3>
-				<PrimaryRow setting={setting} />
+				<PrimaryRow setting={setting} current={current} listState={listState} domains={flags?.customDomains ?? false} />
 				<div className="flex items-center gap-1.5">
 					<span className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-ink-2" dir="ltr">
 						{shortLink.replace(/^https?:\/\//, "")}
 					</span>
-					<CopyLinkButton url={shortLink} className="h-8 gap-1.5" />
+					<CopyLinkButton url={shortLink} disabled={!opens} className="h-8 gap-1.5" />
 				</div>
 				{flags?.customDomains && <CustomDomainField suggest={flags.olacvSuggestion ?? false} />}
 			</section>
@@ -239,12 +262,22 @@ function NewAddressButton({ setting: { update, isPending } }: ShareSettingProps)
 	);
 }
 
-/** The primary resume opens at the account's short link and custom domain. Only a published resume can be primary. */
-function PrimaryRow({ setting: { update, isPending } }: ShareSettingProps) {
+type PrimaryRowProps = ShareSettingProps & {
+	/** The account's other primary resume, when another one holds the role. */
+	current: { name: string; isPublic: boolean } | undefined;
+	/** Whether the resume list that finds the other primary has loaded. */
+	listState: "pending" | "error" | "ready";
+	/** Whether this server offers custom domains: without them, the copy names only the short link. */
+	domains: boolean;
+};
+
+/**
+ * The primary resume opens at the account's short link and custom domain. Only a published resume can be primary;
+ * nothing becomes primary by itself.
+ */
+function PrimaryRow({ setting: { update, isPending }, current, listState, domains }: PrimaryRowProps) {
 	const resume = useCurrentResume();
 	const confirm = useConfirm();
-	const { data: resumes } = useQuery(orpc.resume.list.queryOptions());
-	const current = resumes?.find((item) => item.isPrimary && item.id !== resume.id);
 	const isPublic = resume.isPublic ?? false;
 
 	const setPrimary = async (checked: boolean) => {
@@ -267,11 +300,29 @@ function PrimaryRow({ setting: { update, isPending } }: ShareSettingProps) {
 			description={
 				resume.isPrimary
 					? isPublic
-						? t`Your short link and custom domain open this resume.`
-						: t`Your short link and custom domain say this resume isn't shared until you publish it again.`
-					: current
-						? t`Your short link and custom domain open “${current.name}”.`
-						: t`Publish this resume to open it at your short link and custom domain.`
+						? domains
+							? t`Your short link and custom domain open this resume.`
+							: t`Your short link opens this resume.`
+						: domains
+							? t`Your short link and custom domain say this resume isn't shared until you publish it again.`
+							: t`Your short link says this resume isn't shared until you publish it again.`
+					: listState === "pending"
+						? t`Checking which resume opens your short link…`
+						: listState === "error"
+							? t`Couldn't check which resume opens your short link. Reload the page and try again.`
+							: current
+								? current.isPublic
+									? domains
+										? t`Your short link and custom domain open “${current.name}”.`
+										: t`Your short link opens “${current.name}”.`
+									: domains
+										? t`Your short link and custom domain point to “${current.name}”, which isn't published.`
+										: t`Your short link points to “${current.name}”, which isn't published.`
+								: isPublic
+									? domains
+										? t`Turn this on to open this resume at your short link and custom domain.`
+										: t`Turn this on to open this resume at your short link.`
+									: `${domains ? t`Publish this resume to open it at your short link and custom domain.` : t`Publish this resume to open it at your short link.`} ${t`If another resume holds Primary, turn it on for this one instead.`}`
 			}
 			className="items-start py-0"
 		/>
@@ -330,7 +381,7 @@ function PrivacySettings({ setting: { update, isPending } }: ShareSettingProps) 
 				disabled={disabled}
 				onCheckedChange={(checked) => void update({ hideContactDetails: checked })}
 				label={t`Hide contact details`}
-				description={t`Your email, phone, location and other header details, and references' phone numbers, are left out of the web page, its PDF and search results.`}
+				description={t`Your email, phone, location and extra header fields, and references' phone numbers, are left out of the web page, its PDF and search results. Your website stays.`}
 				className="items-start py-0"
 			/>
 			<SwitchRow
@@ -356,6 +407,14 @@ function PrivacySettings({ setting: { update, isPending } }: ShareSettingProps) 
 				label={t`Visitors can download the PDF`}
 				className="py-0"
 			/>
+			<SwitchRow
+				checked={resume.allowWordDownload === true}
+				disabled={disabled}
+				onCheckedChange={(checked) => void update({ allowWordDownload: checked })}
+				label={t`Visitors can download Word`}
+				description={t`Off by default. Shares an editable Word file with the same visible content as your web page. Layout is simplified.`}
+				className="items-start py-0"
+			/>
 		</section>
 	);
 }
@@ -366,17 +425,25 @@ function PasswordRow() {
 	const patchResume = usePatchResume();
 	const confirm = useConfirm();
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const { mutateAsync: setPassword } = useMutation(orpc.resume.setPassword.mutationOptions());
-	const { mutateAsync: removePassword } = useMutation(orpc.resume.removePassword.mutationOptions());
+	// Like the switches: through the autosave owner, so the next autosave builds on the password's revision.
+	const setPassword = (password: string) =>
+		saveResumeMetadata(resume.id, (expectedUpdatedAt, options) =>
+			orpc.resume.setPassword.call({ id: resume.id, password, expectedUpdatedAt }, options),
+		);
+	const removePassword = () =>
+		saveResumeMetadata(resume.id, (expectedUpdatedAt, options) =>
+			orpc.resume.removePassword.call({ id: resume.id, expectedUpdatedAt }, options),
+		);
 
 	const turnOff = async () => {
 		const confirmed = await confirm(t`Remove the password?`, {
 			description: t`Anyone with the link will be able to view your resume.`,
 			confirmText: t`Remove password`,
+			cancelText: t`Keep password`,
 		});
 		if (!confirmed) return;
 		try {
-			await removePassword({ id: resume.id });
+			await removePassword();
 			patchResume((draft) => {
 				draft.hasPassword = false;
 			});
@@ -404,7 +471,7 @@ function PasswordRow() {
 				<ResumePasswordDialog
 					onClose={() => setDialogOpen(false)}
 					onSubmit={async (password) => {
-						await setPassword({ id: resume.id, password });
+						await setPassword(password);
 						patchResume((draft) => {
 							draft.hasPassword = true;
 						});
@@ -416,7 +483,39 @@ function PasswordRow() {
 	);
 }
 
+/** The QR code is for print (a card, a paper resume): it saves as SVG for print, or PNG for anything else. */
 function QrCodeButton({ url }: { url: string }) {
+	const svgRef = useRef<SVGSVGElement>(null);
+	const svgBlob = () => {
+		const svg = svgRef.current;
+		return svg ? new Blob([new XMLSerializer().serializeToString(svg)], { type: "image/svg+xml" }) : null;
+	};
+	const saveSvg = () => {
+		const blob = svgBlob();
+		if (blob) downloadWithAnchor(blob, "resume-qr-code.svg");
+	};
+	const failed = () => toast.add({ type: "error", description: t`Couldn't save the QR code as PNG. Try SVG instead.` });
+	const savePng = () => {
+		const blob = svgBlob();
+		if (!blob) return failed();
+		const source = URL.createObjectURL(blob);
+		const image = new Image();
+		image.onload = () => {
+			// Four times the on-screen size, so it stays sharp when printed.
+			const canvas = document.createElement("canvas");
+			canvas.width = canvas.height = 704;
+			const context = canvas.getContext("2d");
+			context?.drawImage(image, 0, 0, canvas.width, canvas.height);
+			URL.revokeObjectURL(source);
+			canvas.toBlob((png) => (png ? downloadWithAnchor(png, "resume-qr-code.png") : failed()), "image/png");
+		};
+		image.onerror = () => {
+			URL.revokeObjectURL(source);
+			failed();
+		};
+		image.src = source;
+	};
+
 	return (
 		<Popover>
 			<PopoverTrigger
@@ -427,8 +526,18 @@ function QrCodeButton({ url }: { url: string }) {
 					</Button>
 				}
 			/>
-			<PopoverContent className="w-auto p-4">
-				<QRCodeSVG value={url} size={176} marginSize={2} title={t`QR code for ${url}`} />
+			<PopoverContent className="grid w-auto gap-3 p-4">
+				<QRCodeSVG ref={svgRef} value={url} size={176} marginSize={2} title={t`QR code for ${url}`} />
+				<div className="flex gap-1">
+					<Button variant="ghost" size="sm" className="flex-1" onClick={savePng}>
+						<Icon name="arrow-down" size={16} />
+						<Trans>Save PNG</Trans>
+					</Button>
+					<Button variant="ghost" size="sm" className="flex-1" onClick={saveSvg}>
+						<Icon name="arrow-down" size={16} />
+						<Trans>Save SVG</Trans>
+					</Button>
+				</div>
 			</PopoverContent>
 		</Popover>
 	);
@@ -463,11 +572,11 @@ function ViewsAndDownloads({ isPublic }: { isPublic: boolean }) {
 					<dl className="grid grid-cols-2 gap-2.5">
 						<Stat value={summary.views} label={t`views · 30 days`} />
 						<Stat value={summary.downloads} label={t`downloads`} />
-						<Stat value={lastView} label={t`since last view`} />
+						<Stat value={lastView} label={t`since last counted view`} />
 					</dl>
 					<div
 						role="img"
-						aria-label={t`Daily views over 30 days, peak ${summary.peak}`}
+						aria-label={t`Daily views over 30 days, peak ${i18n.number(summary.peak)}`}
 						className="flex h-14 items-end gap-[3px] pt-1"
 					>
 						{summary.bars.map((bar) => (
@@ -478,7 +587,7 @@ function ViewsAndDownloads({ isPublic }: { isPublic: boolean }) {
 							/>
 						))}
 					</div>
-					<div className="flex justify-between font-mono text-[11px] font-medium text-ink-3">
+					<div className="flex justify-between font-mono text-xs font-medium text-ink-3">
 						<span>
 							{firstDay
 								? new Date(`${firstDay}T00:00:00`).toLocaleDateString(i18n.locale, { month: "short", day: "numeric" })
@@ -496,18 +605,26 @@ function ViewsAndDownloads({ isPublic }: { isPublic: boolean }) {
 					</Trans>
 				</p>
 			)}
-			<p className="text-xs text-ink-3">
-				<Trans>Download totals can include repeat clicks.</Trans>
-			</p>
+			{isPublic && (
+				<p className="text-xs text-ink-3">
+					<Trans>Each visitor counts once an hour.</Trans>
+				</p>
+			)}
 		</section>
 	);
 }
 
-function Stat({ value, label }: { value: number | string; label: string }) {
+type StatProps = { value: number | string; label: string };
+
+function Stat({ value, label }: StatProps) {
+	const { i18n } = useLingui();
 	return (
 		<div className="flex flex-col-reverse gap-0.5">
 			<dt className="text-xs text-ink-3">{label}</dt>
-			<dd className="font-display text-[26px] leading-[30px] font-medium">{value}</dd>
+			{/* Lining figures: in the display face an old-style "1" reads as "l". */}
+			<dd className="font-display text-[26px] leading-[30px] tabular-nums [font-variant-numeric:lining-nums_tabular-nums]">
+				{typeof value === "number" ? i18n.number(value) : value}
+			</dd>
 		</div>
 	);
 }

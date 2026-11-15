@@ -22,9 +22,15 @@ export async function ownedFactIds(reader: DbOrTx, userId: string, answers: { fa
 /**
  * Copies the workspace's written answers into Saved as an "Application answers" item: what was sent with it. Skips
  * when none are written or when the application already has one. Callers hold the application row in the same
- * transaction and decide when it was sent.
+ * transaction and decide when it was sent; call it after `recordSentResume`, so the submission review it records
+ * links to these answers.
  */
-export async function snapshotSentAnswers(client: DbOrTx, userId: string, applicationId: string): Promise<void> {
+export async function snapshotSentAnswers(
+	client: DbOrTx,
+	userId: string,
+	applicationId: string,
+	{ linkReview = true }: { linkReview?: boolean } = {},
+): Promise<void> {
 	const [existing] = await client
 		.select({ id: schema.careerArtifact.id })
 		.from(schema.careerArtifact)
@@ -37,20 +43,32 @@ export async function snapshotSentAnswers(client: DbOrTx, userId: string, applic
 		);
 	if (existing) return;
 	const [workspace] = await client
-		.select({ data: schema.careerWorkspace.data })
+		.select({ data: schema.careerWorkspace.data, submissionReview: schema.careerWorkspace.submissionReview })
 		.from(schema.careerWorkspace)
 		.where(and(eq(schema.careerWorkspace.applicationId, applicationId), eq(schema.careerWorkspace.userId, userId)));
 	const answers = careerWorkspaceSchema
 		.parse({ ...EMPTY_WORKSPACE, ...workspace?.data })
 		.answers.filter((answer) => answer.answer.trim());
 	if (!answers.length) return;
-	await client.insert(schema.careerArtifact).values({
-		userId,
-		applicationId,
-		interviewId: null,
-		title: "Application answers",
-		data: { kind: "answers", answers },
-		evidence: { factIds: await ownedFactIds(client, userId, answers), storyIds: [] },
-		inputVersion: createHash("sha256").update(JSON.stringify(answers)).digest("hex"),
-	});
+	const [snapshot] = await client
+		.insert(schema.careerArtifact)
+		.values({
+			userId,
+			applicationId,
+			interviewId: null,
+			title: "Application answers",
+			data: { kind: "answers", answers },
+			evidence: { factIds: await ownedFactIds(client, userId, answers), storyIds: [] },
+			inputVersion: createHash("sha256").update(JSON.stringify(answers)).digest("hex"),
+		})
+		.returning({ id: schema.careerArtifact.id });
+	// The submission review recorded for this send points at these answers, as an explicit submission's does.
+	if (linkReview && snapshot && workspace?.submissionReview && !workspace.submissionReview.answerVersionId)
+		await client
+			.update(schema.careerWorkspace)
+			.set({
+				submissionReview: { ...workspace.submissionReview, answerVersionId: snapshot.id },
+				updatedAt: sql`${schema.careerWorkspace.updatedAt}`,
+			})
+			.where(and(eq(schema.careerWorkspace.applicationId, applicationId), eq(schema.careerWorkspace.userId, userId)));
 }

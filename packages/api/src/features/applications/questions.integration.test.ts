@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as tables from "@reactive-resume/db/schema";
@@ -126,4 +127,26 @@ suite("Targeting questions shared by topic", () => {
 			"answered",
 		]);
 	});
+
+	it("records when it was sent on the one-click Mark as applied, and keeps that time", async () => {
+		const id = await applications.create({ userId, company: "Sentinel", role: "SRE" });
+		expect((await getSubmittedAt(id)) ?? null).toBeNull();
+		const before = Date.now();
+		await applications.update({ userId, id, status: "applied" });
+		const sent = await getSubmittedAt(id);
+		expect(sent?.getTime()).toBeGreaterThanOrEqual(before);
+		// Moving it on, or back, never moves the recorded time.
+		await applications.update({ userId, id, status: "interview" });
+		await applications.update({ userId, id, status: "saved" });
+		expect((await getSubmittedAt(id))?.getTime()).toBe(sent?.getTime());
+	});
+
+	async function getSubmittedAt(id: string) {
+		if (!fixture.db) throw new Error("Test database unavailable");
+		const [row] = await fixture.db
+			.select({ submittedAt: tables.application.submittedAt })
+			.from(tables.application)
+			.where(eq(tables.application.id, id));
+		return row?.submittedAt;
+	}
 });

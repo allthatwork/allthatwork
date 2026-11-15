@@ -227,7 +227,8 @@ suite("Directory migration and account boundaries", () => {
 			otherId,
 			accountImportDto.run.input.parse({ area: "directory", mode: "append", ...source }),
 		);
-		const oldContact = source.contacts[0];
+		// The export has no fixed row order: read back the contact that got the note.
+		const oldContact = source.contacts.find((contact) => contact.id === first.id);
 		if (!oldContact) throw new Error("Missing exported contact");
 		const mapped = result.ids.contact?.[oldContact.id];
 		expect(mapped).toBeTruthy();
@@ -598,6 +599,40 @@ suite("Directory migration and account boundaries", () => {
 		});
 		// Another account's watches and counts never show.
 		expect((await service.companies({ userId: otherId })).every((row) => row.jobs.watching.length === 0)).toBe(true);
+	});
+
+	it("leaves trashed applications out of counts, company and person pages, and found boards", async () => {
+		const add = async (role: string, sourceUrl?: string) => {
+			const id = await applications.create({
+				userId,
+				company: "Tessera Labs",
+				role,
+				...(sourceUrl ? { sourceUrl } : {}),
+				contacts: [contactSchema.parse({ name: "Ines Varga", type: "Recruiter" })],
+			});
+			await applications.addInterview({
+				userId,
+				id,
+				at: "2026-11-01T10:00:00Z",
+				...interviewDetailsSchema.parse({ kind: "screening", participants: [{ name: "Ines Varga" }] }),
+			});
+			return id;
+		};
+		await add("Live role");
+		const trashed = await add("Trashed role", "https://job-boards.greenhouse.io/tessera/jobs/9");
+		await applications.delete({ userId, id: trashed });
+
+		const company = (await service.companies({ userId })).find((row) => row.name === "Tessera Labs");
+		if (!company) throw new Error("Missing company");
+		expect(company).toMatchObject({ applicationCount: 1, jobs: { found: null } });
+		expect((await service.company({ userId, id: company.id })).applications.map((row) => row.role)).toEqual([
+			"Live role",
+		]);
+		const person = (await service.contacts({ userId, query: "Ines" }))[0];
+		if (!person) throw new Error("Missing contact");
+		const page = await service.contact({ userId, id: person.id });
+		expect(page.applications.map((row) => row.role)).toEqual(["Live role"]);
+		expect(page.interviews.map((row) => row.role)).toEqual(["Live role"]);
 	});
 
 	it("round-trips first and last name through an export, and reads an older export's name as the first name", async () => {

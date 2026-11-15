@@ -46,7 +46,7 @@ export function ReasoningField({ provider, value, onChange }: ReasoningFieldProp
 	const effort = thinking && efforts.includes(value) ? value : lastEffort;
 
 	return (
-		<fieldset className="grid gap-1 sm:col-span-2">
+		<fieldset className="grid gap-1">
 			<legend className="mb-1 text-sm font-medium">
 				<Trans>Reasoning</Trans>
 			</legend>

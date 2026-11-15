@@ -23,13 +23,15 @@ import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { toast } from "@reactive-resume/ui/components/toast";
-import { interviewKindOf } from "../../interviews";
+import { showInterviewCancellation } from "../../calendar";
+import { interviewKindOf, interviewTypeLabel } from "../../interviews";
 import { getCategoryLane, getLaneLabel, isCurrentLaneEvent } from "../../lanes";
 import { useInvalidateApplications } from "../../use-application-actions";
 import { useApplicationLanes } from "../../use-application-lanes";
 import { useCareerTime } from "@/features/career/shared";
 import { useClosingValue } from "@/hooks/use-closing-value";
 import { useConfirm } from "@/hooks/use-confirm";
+import { getAccountGeneration } from "@/libs/auth/account-scope";
 import { orpc } from "@/libs/orpc/client";
 
 const byNewest = (a: ApplicationTimelineEntry, b: ApplicationTimelineEntry) =>
@@ -50,7 +52,7 @@ type ActivityProps = {
  * date (and a note's text) or deletes it; the entry that anchors the current stage can't be deleted.
  */
 export function Activity({ application, onOpenInterview }: ActivityProps) {
-	const { format } = useCareerTime();
+	const { format, day } = useCareerTime();
 	const invalidate = useInvalidateApplications();
 	const confirm = useConfirm();
 	const { lanes } = useApplicationLanes();
@@ -86,6 +88,7 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 			month: "short",
 			day: "numeric",
 			// Stage and note entries are whole days, stored at noon UTC.
+			// The locale's clock, like the workspace and calendar, so one interview reads the same everywhere.
 			...(withTime ? { hour: "2-digit", minute: "2-digit" } : { timeZone: "UTC" }),
 		});
 
@@ -95,9 +98,24 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 			const lane = lanes.find((item) => item.id === entry.laneId && item.category === entry.stage);
 			const fallback = getCategoryLane(lanes, entry.stage);
 			const label = lane ? getLaneLabel(lane) : (entry.laneLabel ?? getLaneLabel(fallback));
-			return { dot: (lane ?? fallback).color, text: t`Moved to ${label}` };
+			return {
+				dot: (lane ?? fallback).color,
+				text: entry.dateUnknown ? `${t`Imported`} · ${label}` : t`Moved to ${label}`,
+			};
 		}
-		if (entry.type === "note") return { dot: "var(--ink-3)", text: entry.text };
+		if (entry.type === "note")
+			return {
+				dot: "var(--ink-3)",
+				text: entry.followedUp
+					? entry.followedUp.kind === "reply"
+						? entry.text === "Replied" || entry.text === t`Replied`
+							? t`Replied`
+							: `${t`Replied`} · ${entry.text}`
+						: entry.text === "Followed up" || entry.text === t`Followed up`
+							? t`Followed up`
+							: `${t`Followed up`} · ${entry.text}`
+					: entry.text,
+			};
 		const kind = interviewKindOf(entry.kind);
 		return { dot: kind?.color ?? "var(--ink-3)", text: t`${kind?.label ?? entry.kind} interview` };
 	};
@@ -121,16 +139,19 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 				}}
 			>
 				<Input
-					aria-label={t`Add a note`}
-					placeholder={t`Add a note…`}
+					aria-label={t`Log an update`}
+					placeholder={t`Log an update…`}
 					value={note}
 					disabled={addNote.isPending}
 					onChange={(event) => setNote(event.target.value)}
 				/>
 				<Button type="submit" variant="secondary" disabled={!note.trim() || addNote.isPending}>
-					<Trans>Add</Trans>
+					<Trans>Log</Trans>
 				</Button>
 			</form>
+			<p className="text-xs text-ink-3">
+				<Trans>Dated updates. For things to remember and share with the coach, use Notes.</Trans>
+			</p>
 
 			<ol className="grid">
 				{sorted.map((entry) => {
@@ -151,7 +172,9 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 								<span className="min-w-0 flex-1 break-words whitespace-pre-wrap">{text}</span>
 							)}
 							<span className="shrink-0 text-xs leading-5 text-ink-3">
-								{formatDate(entry.at, entry.type === "interview")}
+								{entry.type === "stage" && entry.dateUnknown
+									? t`Not recorded`
+									: formatDate(entry.at, entry.type === "interview" || (entry.type === "note" && !!entry.followedUp))}
 							</span>
 							<DropdownMenu>
 								<DropdownMenuTrigger
@@ -176,7 +199,7 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 											onClick={() =>
 												setEditing({
 													entry,
-													date: dateInputValue(entry.at),
+													date: entry.type === "stage" && entry.dateUnknown ? "" : dateInputValue(entry.at),
 													text: entry.type === "note" ? entry.text : "",
 												})
 											}
@@ -188,11 +211,29 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 										variant="destructive"
 										disabled={entry.id === anchorId}
 										onClick={async () => {
-											const confirmed = await confirm(t`Delete this entry?`, {
-												description: t`It's removed from the timeline for good.`,
-												confirmText: t`Delete entry`,
-											});
-											if (confirmed) deleteEntry.mutate({ id: application.id, entryId: entry.id });
+											// An interview is named, and leaving the calendar too.
+											const interview = entry.type === "interview" ? entry : null;
+											const kind = interview ? interviewTypeLabel(interview.kind) : "";
+											const date = interview ? day(new Date(interview.at)) : "";
+											const generation = getAccountGeneration();
+											const confirmed = await confirm(
+												interview ? t`Delete the ${kind} interview on ${date}?` : t`Delete this entry?`,
+												{
+													description: interview
+														? t`It's removed from this application. Download a cancellation afterward to update your calendar.`
+														: t`It's removed from the timeline for good.`,
+													confirmText: interview ? t`Delete interview` : t`Delete entry`,
+												},
+											);
+											if (confirmed && generation === getAccountGeneration())
+												deleteEntry.mutate(
+													{ id: application.id, entryId: entry.id },
+													{
+														onSuccess: () => {
+															if (interview) showInterviewCancellation(application, interview, generation);
+														},
+													},
+												);
 										}}
 									>
 										<Trans>Delete…</Trans>
@@ -209,7 +250,7 @@ export function Activity({ application, onOpenInterview }: ActivityProps) {
 				onOpenChange={(open) => !open && setEditing(null)}
 				onOpenChangeComplete={onEditOpenChangeComplete}
 			>
-				<DialogContent className="sm:max-w-sm">
+				<DialogContent closeLabel={t`Close`} className="sm:max-w-sm">
 					<DialogHeader>
 						<DialogTitle>
 							{shownEdit?.entry.type === "note" ? <Trans>Edit note</Trans> : <Trans>Edit date</Trans>}

@@ -142,6 +142,8 @@ const ownSegments = [
 	"node_modules",
 	"@[a-z-]+",
 	"__[^/]*",
+	// A feedback link's page (`/feedback/<id>~<signature>`) is the app's.
+	"feedback/[^/]*~[^/]*",
 ].join("|");
 
 const serverPaths = [

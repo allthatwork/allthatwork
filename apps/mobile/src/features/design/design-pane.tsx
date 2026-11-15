@@ -1,5 +1,6 @@
 import type { AdvancedId } from "./advanced";
 import type { PickerSpec } from "./picker";
+import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState } from "react";
 import { I18nManager, Pressable, View, useWindowDimensions } from "react-native";
@@ -20,13 +21,12 @@ import { Picker } from "./picker";
 import { TemplatePreviewCaption } from "./preview-caption";
 import { ColorGroup, EntriesGroup, PageGroup, TypeGroup } from "./style-groups";
 import { TemplateGroup, useSheetScroll } from "./template-group";
-import { client } from "@/api/client";
 import { useSession } from "@/auth/session";
-import { useResumeStore } from "@/draft";
 import { nativeEnvironment } from "@/draft/native";
+import { setResumeLocked } from "@/features/share/revision";
 import { ResumePage } from "@/preview/page";
 import { useIsTablet } from "@/shell/use-is-tablet";
-import { Banner, IconButton, Skeleton, Text, haptics, showToast, useReducedMotion, useTheme } from "@/ui";
+import { Banner, IconButton, ListRow, Skeleton, Text, haptics, showToast, useReducedMotion, useTheme } from "@/ui";
 import { useKeyboardScrollSpace } from "@/ui/keyboard";
 
 type Tab = "template" | "entries" | "type" | "color" | "page";
@@ -71,16 +71,13 @@ export function DesignPane({ id }: { id: string }) {
 	};
 	const pop = () => setStack((value) => value.slice(0, -1));
 	const pick = (spec: PickerSpec) => push({ kind: "picker", spec });
-	const unlock = async () => {
-		await client.documents.setLocked({ type: "resume", id, isLocked: false });
-		await useResumeStore.getState().open(id);
-	};
+	const unlock = () => setResumeLocked(id, false);
 
 	const titles: Record<AdvancedId, string> = {
 		typography: t`Typography`,
 		colours: t`Design`,
 		page: t`Page`,
-		layout: t`Layout`,
+		layout: t`Pages and sections`,
 		styles: t`Custom styles`,
 	};
 	const tabs: { id: Tab; label: string }[] = [
@@ -137,6 +134,14 @@ export function DesignPane({ id }: { id: string }) {
 		return (
 			<View style={{ gap: space.s6 }}>
 				<PageGroup {...props} />
+				{/* Each page's sections, beside the page settings: adding a page shouldn't need Advanced. */}
+				<ListRow
+					title={t`Pages and sections`}
+					subtitle={plural(props.data.metadata.layout.pages.length, { one: "# page", other: "# pages" })}
+					leading="square-split-horizontal"
+					chevron
+					onPress={() => push({ kind: "advanced", id: "layout" })}
+				/>
 				<View style={{ height: 1, backgroundColor: colors.line }} />
 				<AdvancedGroup
 					{...props}

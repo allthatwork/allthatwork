@@ -2,12 +2,9 @@ import type { EditorSelection } from "./store";
 import type { PageMap, PageMapNode } from "@reactive-resume/pdf/page-map";
 import type { MouseEvent } from "react";
 import { Trans } from "@lingui/react/macro";
-import { entryHeaderOf } from "@reactive-resume/schema/resume/data";
-import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
 import { isSameSelection, useEditorStore } from "./store";
-import { getSectionType } from "./write/model";
-import { useCurrentBuilderResumeSelector, useUpdateResumeData } from "@/features/resume/builder/draft";
+import { useEditorMode } from "./use-editor-mode";
 
 type PageOverlayProps = {
 	pageIndex: number;
@@ -31,18 +28,14 @@ const readSelection = (element: HTMLElement): EditorSelection | null => {
 
 /**
  * Pointer layer over one rendered page: hovering a block tints it, clicking selects its entry, and the
- * selected block gets an accent outline with an "Editing" tag. On an Experience or Education entry the tag
- * also offers "Swap rows", the Design panel's row order.
+ * selected block gets an accent outline with an "Editing" tag. (Row order is a resume-wide choice: it lives in
+ * Design → Entries, not on one entry's tag.)
  */
 export function PageOverlay({ pageIndex, pageMap, onSelect }: PageOverlayProps) {
 	const selection = useEditorStore((state) => state.selection);
 	const styleHighlight = useEditorStore((state) => state.styleHighlight);
-	const updateResumeData = useUpdateResumeData();
-	const swappable = useCurrentBuilderResumeSelector((resume) => {
-		if (resume.isLocked || selection?.kind !== "item") return false;
-		const type = getSectionType(resume.data, selection.sectionId);
-		return type === "experience" || type === "education";
-	});
+	// Only Write edits the entry: Design and Check keep the outline but say nothing about editing.
+	const [mode] = useEditorMode();
 	const page = pageMap?.pages[pageIndex];
 	if (!pageMap || !page || page.width <= 0 || page.height <= 0) return null;
 
@@ -77,15 +70,6 @@ export function PageOverlay({ pageIndex, pageMap, onSelect }: PageOverlayProps) 
 		if (next) onSelect(next);
 	};
 
-	const swapRows = () =>
-		updateResumeData(
-			(draft) => {
-				const entry = entryHeaderOf(draft.metadata.design);
-				draft.metadata.design.entry = { ...entry, lead: entry.lead === "role" ? "organization" : "role" };
-			},
-			{ newStep: true },
-		);
-
 	return (
 		<>
 			{/* A pointer shortcut, hidden from assistive tech: the panel selects the same entries by keyboard. */}
@@ -112,32 +96,22 @@ export function PageOverlay({ pageIndex, pageMap, onSelect }: PageOverlayProps) 
 					/>
 				))}
 			</div>
-			{/* The tag sits outside the hidden layer so its button is reachable; clicks elsewhere on it fall through. */}
-			{selected.map((node) => (
-				<div
-					key={`tag:${node.key}:${node.y}`}
-					className="pointer-events-none absolute max-sm:hidden"
-					style={boxOf(node)}
-				>
-					<div className="absolute start-1 -top-2 flex gap-1 text-[8px] leading-3 font-semibold">
-						<span aria-hidden="true" className="rounded-md bg-accent px-1 text-on-accent">
-							<Trans>Editing</Trans>
-						</span>
-						{swappable && (
-							<button
-								type="button"
-								onClick={swapRows}
-								// The canvas reads a press outside an entry as "tapped the page" and closes the tablet drawer.
-								onPointerDown={(event) => event.stopPropagation()}
-								className="pointer-events-auto flex cursor-pointer items-center gap-0.5 rounded-md bg-raised px-1 text-accent-text ring-1 ring-accent transition-colors duration-quick ring-inset hover:bg-accent-soft"
-							>
-								<Icon name="arrows-down-up" size={9} />
-								<Trans>Swap rows</Trans>
-							</button>
-						)}
+			{/* The tag is in the app's language and direction, not the resume's. */}
+			{mode === "write" &&
+				selected.map((node) => (
+					<div
+						key={`tag:${node.key}:${node.y}`}
+						className="pointer-events-none absolute max-sm:hidden"
+						style={boxOf(node)}
+					>
+						{/* On the outline's lower end, clear of the section heading that sits right above an entry. */}
+						<div className="absolute end-1 -bottom-2 flex gap-1 text-xs leading-4 font-semibold">
+							<span aria-hidden="true" className="rounded-md bg-accent px-1 text-on-accent">
+								<Trans>Editing</Trans>
+							</span>
+						</div>
 					</div>
-				</div>
-			))}
+				))}
 		</>
 	);
 }

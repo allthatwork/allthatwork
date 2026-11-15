@@ -1,93 +1,40 @@
 import type { ApplicationSummary } from "./types";
-import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
+import type { ApplicationStageSource, NextStep } from "@reactive-resume/schema/applications/next-step";
+export type { NextStep, OfferHint } from "@reactive-resume/schema/applications/next-step";
 import type { IconName } from "@reactive-resume/ui/components/icon";
 import { plural, t } from "@lingui/core/macro";
 import { useRouteContext } from "@tanstack/react-router";
 import { NO_REPLY_DAYS } from "@reactive-resume/utils/reminders";
-import { interviewKindOf, isInterview } from "./interviews";
-import { isCanonicalStageEvent, isCurrentLaneEvent } from "./lanes";
+import { interviewKindOf } from "./interviews";
+import { isCurrentLaneEvent } from "./lanes";
 import { getClosedReasonLabel } from "./stages";
 
-const DAY_MS = 86_400_000;
-
-type NextStepSource = Pick<ApplicationSummary, "status" | "activity" | "followUpAt" | "followUpNote" | "appliedAt">;
-type StageSource = Pick<ApplicationSummary, "status" | "activity" | "appliedAt"> & {
+type StageSource = ApplicationStageSource & {
 	laneId?: string | null | undefined;
 };
 
-/**
- * What an application needs next, derived rather than stored: the earliest interview still to come, else the
- * follow-up date, else how long it has been waiting. Closed applications need nothing.
- */
-export type NextStep =
-	| { kind: "interview"; interview: InterviewTimelineEntry; at: Date }
-	| { kind: "follow-up"; at: Date; note: string; overdue: boolean }
-	| { kind: "no-reply"; days: number }
-	| { kind: "waiting"; days: number }
-	| { kind: "not-applied" }
-	| { kind: "closed" };
+export {
+	getNextStep,
+	needsAttention,
+	needsFollowUp,
+	nextStepSortKey,
+	compareNextStepSortKeys,
+} from "@reactive-resume/schema/applications/next-step";
 
-/** The latest matching stage entry's date, or when the application was added. */
-function since(application: StageSource, matches: (entry: ApplicationSummary["activity"][number]) => boolean): Date {
-	const entries = application.activity.filter(matches).map((entry) => new Date(entry.at).getTime());
-	return new Date(entries.length > 0 ? Math.max(...entries) : new Date(application.appliedAt).getTime());
-}
-
-const daysBetween = (from: Date, to: Date) => Math.max(0, Math.floor((to.getTime() - from.getTime()) / DAY_MS));
-
-/** Whole days the application has spent in its current lane. */
-export const daysInLane = (application: StageSource, now = new Date()) =>
-	daysBetween(
-		since(application, (entry) => isCurrentLaneEvent(entry, application)),
-		now,
-	);
-
-/** Whole days since the application entered its current stage; moving between lanes of that stage doesn't count. */
-const daysInStage = (application: StageSource, now: Date) =>
-	daysBetween(
-		since(
-			application,
-			(entry) => entry.type === "stage" && entry.stage === application.status && isCanonicalStageEvent(entry),
-		),
-		now,
-	);
-
-/** The account's days without a reply before a follow-up is suggested (Settings → Preferences); 0 means never. */
+/** The account's days without a reply before a follow-up is suggested (Settings → Preferences); 0 means never. Pass it to `getNextStep`. */
 export function useNoReplyDays() {
 	const { session } = useRouteContext({ strict: false });
 	return session?.user.noReplyDays ?? NO_REPLY_DAYS.default;
 }
 
-type NextStepOptions = {
-	now?: Date;
-	/** Days at Applied before "no reply" is suggested; 0 never suggests it. Pass `useNoReplyDays()`. */
-	noReplyDays?: number;
+/** Whole days in the current lane, including lane-only moves. */
+export const daysInLane = (application: StageSource, now = new Date()) => {
+	const entry = application.activity
+		.filter((entry) => isCurrentLaneEvent(entry, application))
+		.toSorted((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())[0];
+	if (entry?.type === "stage" && entry.dateUnknown) return null;
+	return Math.max(0, Math.floor((now.getTime() - new Date(entry?.at ?? application.appliedAt).getTime()) / 86_400_000));
 };
-
-export function getNextStep(
-	application: NextStepSource,
-	{ now = new Date(), noReplyDays = NO_REPLY_DAYS.default }: NextStepOptions = {},
-): NextStep {
-	if (application.status === "closed") return { kind: "closed" };
-
-	const upcoming = application.activity
-		.filter(isInterview)
-		.map((interview) => ({ interview, at: new Date(interview.at) }))
-		.filter(({ interview, at }) => at.getTime() + interview.durationMinutes * 60_000 >= now.getTime())
-		.sort((a, b) => a.at.getTime() - b.at.getTime())[0];
-	if (upcoming) return { kind: "interview", ...upcoming };
-
-	if (application.followUpAt) {
-		const at = new Date(application.followUpAt);
-		return { kind: "follow-up", at, note: application.followUpNote ?? "", overdue: at.getTime() < now.getTime() };
-	}
-
-	if (application.status === "saved") return { kind: "not-applied" };
-
-	const days = daysInStage(application, now);
-	if (application.status === "applied" && noReplyDays > 0 && days >= noReplyDays) return { kind: "no-reply", days };
-	return { kind: "waiting", days };
-}
 
 export type NextStepText = { icon: IconName; title: string; sub: string; tone: "normal" | "warn" | "muted" };
 
@@ -96,8 +43,8 @@ const formatWhen = (date: Date, locale: string, timeZone: string, withTime: bool
 		weekday: "short",
 		day: "numeric",
 		month: "short",
-		// Follow-ups retain the browser-local calendar date used by their date-only editor.
-		...(withTime ? { timeZone, hour: "2-digit", minute: "2-digit" } : {}),
+		timeZone,
+		...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
 	});
 
 /** How a next step reads in the list, on cards and in the detail sheet. */
@@ -118,6 +65,22 @@ export function describeNextStep(
 				tone: "normal",
 			};
 		}
+		case "offer":
+			return step.respondBy
+				? {
+						icon: step.overdue ? "clock" : "calendar-dot",
+						title: t`Reply to the offer`,
+						sub: t`By ${formatWhen(step.respondBy, locale, timeZone, true)}`,
+						tone: step.overdue ? "warn" : "normal",
+					}
+				: step.terms
+					? { icon: "scales", title: t`Decide on the offer`, sub: t`Compare it with your other offers`, tone: "normal" }
+					: {
+							icon: "scales",
+							title: t`Add the offer's terms`,
+							sub: t`Pay, deadline and conditions, so you can compare and decide`,
+							tone: "normal",
+						};
 		case "follow-up":
 			return {
 				icon: step.overdue ? "clock" : "calendar-dot",
@@ -128,7 +91,13 @@ export function describeNextStep(
 		case "no-reply":
 			return {
 				icon: "clock",
-				title: plural(step.days, { one: "No reply in # day", other: "No reply in # days" }),
+				title:
+					step.after === "interview"
+						? plural(step.days, {
+								one: "No word since your interview # day ago",
+								other: "No word since your interview # days ago",
+							})
+						: plural(step.days, { one: "No reply in # day", other: "No reply in # days" }),
 				sub: t`A short follow-up is usually fine now`,
 				tone: "warn",
 			};
@@ -137,18 +106,44 @@ export function describeNextStep(
 				? {
 						icon: "hourglass",
 						title:
-							step.days === 0
-								? t`Applied today`
-								: plural(step.days, { one: "Applied # day ago", other: "Applied # days ago" }),
+							step.days === null
+								? t`Waiting to hear back`
+								: step.days === 0
+									? t`Applied today`
+									: plural(step.days, { one: "Applied # day ago", other: "Applied # days ago" }),
 						sub: "",
 						tone: "normal",
 					}
 				: {
 						icon: "hourglass",
 						title: t`Waiting to hear back`,
-						sub: plural(step.days, { one: "For # day", other: "For # days" }),
+						sub:
+							step.days === null
+								? ""
+								: step.days === 0
+									? t`Since today`
+									: plural(step.days, { one: "For # day", other: "For # days" }),
 						tone: "normal",
 					};
+		case "interview-feedback":
+			return {
+				icon: "hourglass",
+				title: t`Waiting for interview feedback`,
+				sub:
+					step.days === null
+						? ""
+						: step.days === 0
+							? t`Since today`
+							: plural(step.days, { one: "For # day", other: "For # days" }),
+				tone: "normal",
+			};
+		case "no-interview":
+			return {
+				icon: "calendar-dot",
+				title: t`No interview scheduled`,
+				sub: t`Add the date when you have it`,
+				tone: "normal",
+			};
 		case "not-applied":
 			return { icon: "bookmark-simple", title: t`Not applied yet`, sub: "", tone: "muted" };
 		case "closed":

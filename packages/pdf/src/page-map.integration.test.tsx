@@ -4,15 +4,127 @@ import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { Template } from "@reactive-resume/schema/templates";
 import { describe, expect, it } from "vite-plus/test";
 import * as forme from "@formepdf/core";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { act } from "react";
 import { sampleResumeData } from "@reactive-resume/schema/resume/sample";
 import { renderResume } from "./forme/render";
-import { extractPageMap, parseResumeNodeKey } from "./page-map";
+import { extractPageMap, measureOverflow, parseResumeNodeKey } from "./page-map";
 
 // The sample's picture points at a web path that doesn't exist in Node; hide it so renders stay quiet.
 const data: ResumeData = { ...sampleResumeData, picture: { ...sampleResumeData.picture, hidden: true } };
 
 const renderPageMap = async (template: Template): Promise<PageMap> =>
 	(await renderResume(forme, { data, template })).pageMap;
+
+describe("authored page overflow", () => {
+	it.each(["onyx", "rhyhorn", "lapras", "porygon"] as const)(
+		"maps the sample's early spill pages in %s",
+		async (template) => {
+			const rendered = await act(() => renderResume(forme, { data, template }));
+			const pageMap = rendered.pageMap;
+			const overflow = measureOverflow(data, { pageMap, pageCount: pageMap.pages.length });
+			expect(pageMap.pages).toHaveLength(5);
+			expect(overflow?.spills.map(({ authoredPage, pages }) => ({ authoredPage, pages }))).toEqual([
+				{ authoredPage: 1, pages: [2] },
+				{ authoredPage: 2, pages: [4] },
+			]);
+			expect(overflow?.spills[0]?.lines).toBeGreaterThan(0);
+			const loading = getDocument({ data: rendered.pdf.slice(), useSystemFonts: true });
+			try {
+				const pdf = await loading.promise;
+				const lineHeight = data.metadata.typography.body.fontSize * data.metadata.typography.body.lineHeight;
+				for (const spill of overflow?.spills ?? []) {
+					let height = 0;
+					for (const number of spill.pages) {
+						const page = await pdf.getPage(number);
+						const baselines = (await page.getTextContent()).items.flatMap((item) =>
+							"str" in item && item.str.trim() ? [item.transform[5] as number] : [],
+						);
+						height += Math.max(...baselines) - Math.min(...baselines) + lineHeight;
+					}
+					// PDF text baselines independently bound the visible content; the chip is approximate to one line.
+					expect(Math.abs((spill.lines ?? 0) - Math.round(height / lineHeight))).toBeLessThanOrEqual(1);
+				}
+			} finally {
+				await loading.destroy();
+			}
+		},
+	);
+
+	it("counts each spill's extent once, excludes the next authored page, and tolerates a missing map", () => {
+		const boxes: [number, number, number, number][] = [
+			[0, 1, 20, 600],
+			[1, 1, 20, 150],
+			[1, 1, 30, 100],
+			[2, 2, 20, 600],
+			[3, 2, 20, 195],
+			[4, 3, 20, 500],
+		];
+		const pageMap: PageMap = {
+			pages: Array.from({ length: 5 }, () => ({ width: 600, height: 800 })),
+			nodes: boxes.map(([page, authoredPage, y, height]) => ({
+				kind: "section" as const,
+				sectionId: "experience",
+				key: `page-${authoredPage}/region-main/section-experience`,
+				page,
+				x: 20,
+				y,
+				width: 500,
+				height,
+			})),
+		};
+		expect(measureOverflow(data, { pageMap, pageCount: 5 })).toEqual({
+			authored: 3,
+			target: 3,
+			pageCount: 5,
+			spills: [
+				{ authoredPage: 1, pages: [2], lines: 10 },
+				{ authoredPage: 2, pages: [4], lines: 13 },
+			],
+		});
+		expect(measureOverflow(data, { pageMap, pageCount: 3 })).toBeNull();
+		expect(measureOverflow(data, { pageMap: undefined, pageCount: 5 })).toEqual({
+			authored: 3,
+			target: 3,
+			pageCount: 5,
+			spills: [],
+		});
+	});
+
+	// The fork's resume length (Settings → Preferences): the last authored page may run on to that many pages in all.
+	it("lets the last authored page use the account's resume length", () => {
+		const onePage: ResumeData = {
+			...data,
+			metadata: {
+				...data.metadata,
+				layout: { ...data.metadata.layout, pages: data.metadata.layout.pages.slice(0, 1) },
+			},
+		};
+		const pageMap: PageMap = {
+			pages: Array.from({ length: 3 }, () => ({ width: 600, height: 800 })),
+			nodes: [0, 1, 2].map((page) => ({
+				kind: "section" as const,
+				sectionId: "experience",
+				key: "page-1/region-main/section-experience",
+				page,
+				x: 20,
+				y: 20,
+				width: 500,
+				height: 150,
+			})),
+		};
+		expect(measureOverflow(onePage, { pageMap, pageCount: 3 }, 2)).toEqual({
+			authored: 1,
+			target: 2,
+			pageCount: 3,
+			spills: [{ authoredPage: 1, pages: [3], lines: expect.any(Number) }],
+		});
+		expect(measureOverflow(onePage, { pageMap, pageCount: 3 }, 3)).toBeNull();
+		expect(measureOverflow(onePage, { pageMap, pageCount: 3 })?.spills).toEqual([
+			{ authoredPage: 1, pages: [2, 3], lines: expect.any(Number) },
+		]);
+	});
+});
 
 describe("parseResumeNodeKey", () => {
 	it("reads headers, sections and items, and ignores deeper nodes", () => {

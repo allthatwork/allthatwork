@@ -1,12 +1,13 @@
 import type { Application, ApplicationSummary } from "./types";
-import type { RouterInput } from "@/api/client";
+import type { RouterInput, RouterOutput } from "@/api/client";
+import type { DeferredFetch } from "@reactive-resume/utils/deferred-request";
 import type { ListViewToken } from "react-native";
 import { t } from "@lingui/core/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
 import { applicationLanesQueryOptions } from "./lane-queries";
 import { resolveLane } from "./lanes";
-import { client, orpc } from "@/api/client";
+import { client, orpc, prepareRpc } from "@/api/client";
 import { getAccountScope, getServer, useSession } from "@/auth/session";
 import { syncReminders } from "@/features/reminders";
 import { showToast } from "@/ui";
@@ -20,6 +21,8 @@ export const applicationsListQueryOptions = (server = getServer(), scope = getAc
 	return { ...options, queryKey: [...options.queryKey, server] };
 };
 export const applicationsListQueryKey = (server = getServer()) => applicationsListQueryOptions(server).queryKey;
+/** The server and account a stage baseline belongs to (moves and single writes use the same one). */
+export const stageScope = () => `${getServer()}:${getAccountScope() ?? ""}`;
 export const applicationDetailQueryOptions = (id: string, server = getServer()) => {
 	const options = orpc.applications.getById.queryOptions({
 		input: { id },
@@ -40,10 +43,13 @@ function getInitialApplicationDetail(summary: ApplicationSummary | undefined) {
 		: undefined;
 }
 
-export function useApplications() {
+export function useApplications(enabled = true) {
 	const session = useSession();
 	const queryClient = useQueryClient();
-	const query = useQuery({ ...applicationsListQueryOptions(session.server), enabled: session.status === "signed-in" });
+	const query = useQuery({
+		...applicationsListQueryOptions(session.server),
+		enabled: enabled && session.status === "signed-in",
+	});
 
 	useEffect(() => {
 		if (!query.data || session.status !== "signed-in") return;
@@ -116,8 +122,10 @@ export function useInvalidateApplications() {
 	return async () => {
 		await Promise.all([
 			queryClient.invalidateQueries({ queryKey: orpc.applications.key() }),
-			queryClient.invalidateQueries({ queryKey: orpc.documents.list.key() }),
-			queryClient.invalidateQueries({ queryKey: ["applications-prior-no-response"] }),
+			queryClient.invalidateQueries({ queryKey: orpc.documents.key() }),
+			queryClient.invalidateQueries({ queryKey: orpc.career.key() }),
+			queryClient.invalidateQueries({ queryKey: orpc.agent.key() }),
+			queryClient.invalidateQueries({ queryKey: ["applications-prior-outcomes"] }),
 		]);
 	};
 }
@@ -125,10 +133,9 @@ export function useInvalidateApplications() {
 export function useApplicationMutations() {
 	const invalidate = useInvalidateApplications();
 	const queryClient = useQueryClient();
-	// Settlement refetches authoritative state, including after a lost reply or optimistic rollback.
-	const onSettled = () => {
-		void invalidate();
-	};
+	// Settlement refetches authoritative state, including after a lost reply or optimistic rollback. Returned, so a
+	// mutation stays pending until that state is back: controls disabled while pending never act on a stale list.
+	const onSettled = () => invalidate();
 	// Deleted or closed applications need nothing, so their reminders on this device go (syncing to no targets).
 	const cancelReminders = (ids: string[]) => {
 		for (const id of ids) void syncReminders(id, []).catch(() => {});
@@ -192,19 +199,27 @@ export function useApplicationMutations() {
 		onSettled,
 	});
 	const remove = useMutation({
-		...orpc.applications.delete.mutationOptions(),
+		...orpc.applications.trash.mutationOptions(),
+		mutationFn: (input: RouterInput["applications"]["trash"]) =>
+			client.applications.trash(input, { context: { scope: scope ?? undefined } }),
 		onSuccess: (_data, input) => {
 			cancelReminders([input.id]);
 		},
 		onSettled,
 	});
-	const bulkUpdate = useMutation({
+	const bulkUpdateOptions = (defer?: DeferredFetch) => ({
 		...orpc.applications.bulkUpdate.mutationOptions(),
 		mutationFn: async (input: RouterInput["applications"]["bulkUpdate"]) => {
 			await ensureLaneWrite(input);
-			return client.applications.bulkUpdate(input, { context: { scope: scope ?? undefined } });
+			return client.applications.bulkUpdate(input, {
+				context: { scope: scope ?? undefined, ...(defer ? { defer } : {}) },
+			});
 		},
-		onSuccess: async (data, input) => {
+		onSuccess: async (
+			data: RouterOutput["applications"]["bulkUpdate"],
+			input: RouterInput["applications"]["bulkUpdate"],
+		) => {
+			if (scope !== getAccountScope()) return;
 			const metadata = queryClient.getQueryData(applicationLanesQueryOptions(server, scope).queryKey);
 			const category = input.status ?? metadata?.pipeline.lanes.find((lane) => lane.id === input.laneId)?.category;
 			// A successful receipt for every requested row plus an immutable target category confirms closure.
@@ -212,7 +227,6 @@ export function useApplicationMutations() {
 				cancelReminders(input.ids);
 				return;
 			}
-			if (scope !== getAccountScope()) return;
 			// Bulk's count is not evidence of each row's canonical status. Read the authoritative result.
 			try {
 				await queryClient.cancelQueries({ queryKey: applicationsListQueryKey(server) });
@@ -230,13 +244,35 @@ export function useApplicationMutations() {
 		},
 		onSettled,
 	});
+	const bulkUpdate = useMutation(bulkUpdateOptions());
+	const prepareBulkUpdate = (input: RouterInput["applications"]["bulkUpdate"]) =>
+		prepareRpc(
+			(value, { context }) =>
+				queryClient.getMutationCache().build(queryClient, bulkUpdateOptions(context.defer)).execute(value),
+			input,
+		);
 	const bulkDelete = useMutation({
-		...orpc.applications.bulkDelete.mutationOptions(),
+		...orpc.applications.bulkTrash.mutationOptions(),
+		mutationFn: (input: RouterInput["applications"]["bulkTrash"]) =>
+			client.applications.bulkTrash(input, { context: { scope: scope ?? undefined } }),
 		onSuccess: (_data, input) => {
 			cancelReminders(input.ids);
 		},
 		onSettled,
 	});
 	const importCsv = useMutation({ ...orpc.applications.import.mutationOptions(), onSettled });
-	return { create, update, remove, bulkUpdate, bulkDelete, importCsv };
+	const logFollowUp = useMutation({
+		...orpc.applications.logFollowUp.mutationOptions(),
+		mutationFn: (input: RouterInput["applications"]["logFollowUp"]) =>
+			client.applications.logFollowUp(input, { context: { scope: scope ?? undefined } }),
+		onSuccess: () => {
+			if (scope === getAccountScope()) showToast({ message: t`Followed up` });
+		},
+		onError: () => {
+			if (scope === getAccountScope())
+				showToast({ message: t`Couldn't log the follow-up. Check the timeline before trying again.` });
+		},
+		onSettled,
+	});
+	return { create, update, remove, bulkUpdate, prepareBulkUpdate, bulkDelete, importCsv, logFollowUp };
 }

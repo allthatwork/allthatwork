@@ -5,6 +5,7 @@ import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useId, useState } from "react";
+import { aiModelForTask } from "@reactive-resume/ai/task-models";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
@@ -33,7 +34,18 @@ export function useKnowledgeBudget() {
 	const catalog = useQuery(modelSuggestionsQuery);
 	// The list is in the server's automatic order, so the first usable connection is the one actions use.
 	const provider = usableProviders[0] ?? null;
-	const listed = provider ? contextWindow(catalog.data, provider.provider, provider.model) : null;
+	// Knowledge goes with application actions on the connection's model and with the Coach and Assistant on its capable
+	// model (Task models in AI settings). The meter checks the model with the smaller window, or one models.dev doesn't list.
+	const windows = provider
+		? [...new Set([provider.model, aiModelForTask(provider, "capable")])].map((model) => ({
+				model,
+				tokens: contextWindow(catalog.data, provider.provider, model),
+			}))
+		: [];
+	const unlisted = windows.find((entry) => entry.tokens === null);
+	const smallest = windows.toSorted((a, b) => (a.tokens ?? 0) - (b.tokens ?? 0))[0];
+	const measured = unlisted ?? smallest;
+	const listed = unlisted ? null : (smallest?.tokens ?? null);
 	const contextTokens = provider?.contextTokens ?? listed;
 
 	const queries = [facts, stories, limits];
@@ -41,6 +53,7 @@ export function useKnowledgeBudget() {
 		return {
 			budget: null,
 			provider,
+			model: measured?.model ?? null,
 			isError: queries.some((query) => query.isError) || knowledge.isError,
 			retry: () => {
 				queries.forEach((query) => void query.refetch());
@@ -58,6 +71,8 @@ export function useKnowledgeBudget() {
 			contextTokens,
 		}),
 		provider,
+		/** The model the context window belongs to. */
+		model: measured?.model ?? provider?.model ?? null,
 		/** Where the context window came from: set by hand, models.dev, or unknown. */
 		contextSource: provider?.contextTokens ? "manual" : listed ? "catalog" : "unknown",
 		isError: false,
@@ -133,7 +148,7 @@ export function BudgetMeter({ showSettingsLink = false, bare = false }: BudgetMe
 					<ContextLine
 						providerId={provider.id}
 						managed={provider.managed}
-						model={provider.model}
+						model={state.model ?? provider.model}
 						tokens={budget.tokens.context}
 						source={state.contextSource}
 					/>

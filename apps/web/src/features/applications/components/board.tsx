@@ -1,4 +1,5 @@
 import type { ApplicationSummary } from "../types";
+import type { DndLabel } from "@/libs/dnd";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import type { ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ApplicationSort } from "@reactive-resume/schema/applications/filters";
@@ -14,6 +15,7 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
+import { i18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useReducedMotion } from "motion/react";
@@ -36,6 +38,7 @@ import { useApplicationActions } from "../use-application-actions";
 import { useApplicationLanes } from "../use-application-lanes";
 import { ApplicationCard } from "./application-card";
 import { getEdgeFadeStyle, useScrollEdges } from "@/hooks/use-scroll-edges";
+import { dndContextProps } from "@/libs/dnd";
 import { DRAG_SETTLE } from "@/libs/motion";
 
 type BoardProps = {
@@ -51,6 +54,7 @@ type BoardProps = {
 	/** Saves a dragged width; null goes back to sharing the board evenly. */
 	onColumnWidthChange: (width: number | null) => void;
 	onOpen: (application: ApplicationSummary) => void;
+	onTagSelect?: ((tag: string) => void) | undefined;
 };
 
 /** The gap between columns (`gap-3`), for the resize line's position. */
@@ -80,6 +84,7 @@ export function ApplicationBoard({
 	columnWidth,
 	onColumnWidthChange,
 	onOpen,
+	onTagSelect,
 }: BoardProps) {
 	const { moveTo, close, update } = useApplicationActions();
 	// The board draws the six stages; a move lands in the stage's default lane, as the server does.
@@ -146,7 +151,13 @@ export function ApplicationBoard({
 	};
 
 	return (
-		<DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+		<DndContext
+			{...dndContextProps(false)}
+			sensors={sensors}
+			collisionDetection={pointerWithin}
+			onDragStart={onDragStart}
+			onDragEnd={onDragEnd}
+		>
 			<div ref={scrollerRef} style={getEdgeFadeStyle(edges)} className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-3">
 				{stages.map((stage, index) => (
 					<Column
@@ -156,6 +167,7 @@ export function ApplicationBoard({
 						stale={stale}
 						width={width}
 						onOpen={onOpen}
+						onTagSelect={onTagSelect}
 						handle={
 							<BoardResizeHandle
 								index={index}
@@ -180,10 +192,10 @@ export function ApplicationBoard({
 				{active ? <ApplicationCard application={active} dragging /> : null}
 			</DragOverlay>
 			<Dialog open={Boolean(closing)} onOpenChange={(open) => !open && setClosing(null)}>
-				<DialogContent className="sm:max-w-sm">
+				<DialogContent closeLabel={t`Close`} className="sm:max-w-sm">
 					<DialogHeader>
 						<DialogTitle>
-							<Trans>Close application</Trans>
+							<Trans>Mark as closed</Trans>
 						</DialogTitle>
 						<DialogDescription>
 							{closing?.role} · {closing?.company}
@@ -224,10 +236,11 @@ type ColumnProps = {
 	/** The resize line in the gap after the column. */
 	handle: ReactNode;
 	onOpen: (application: ApplicationSummary) => void;
+	onTagSelect?: ((tag: string) => void) | undefined;
 };
 
-function Column({ stage, applications, stale, width, handle, onOpen }: ColumnProps) {
-	const { setNodeRef, isOver } = useDroppable({ id: stage });
+function Column({ stage, applications, stale, width, handle, onOpen, onTagSelect }: ColumnProps) {
+	const { setNodeRef, isOver } = useDroppable({ id: stage, data: { label: getStageLabel(stage) } satisfies DndLabel });
 	const [visible, setVisible] = useState(COLUMN_PAGE_SIZE);
 	const shown = applications.slice(0, visible);
 	const remaining = applications.length - shown.length;
@@ -246,7 +259,7 @@ function Column({ stage, applications, stale, width, handle, onOpen }: ColumnPro
 			<h2 className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold">
 				<span aria-hidden="true" className="size-2 rounded-full" style={{ background: getStageColor(stage) }} />
 				{getStageLabel(stage)}
-				<span className="font-mono text-xs font-normal text-ink-3">{applications.length}</span>
+				<span className="font-mono text-xs font-normal text-ink-3">{i18n.number(applications.length)}</span>
 			</h2>
 			<div ref={setNodeRef} className="flex min-h-24 flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2">
 				{shown.map((application) => (
@@ -255,6 +268,7 @@ function Column({ stage, applications, stale, width, handle, onOpen }: ColumnPro
 						application={application}
 						stale={stale.has(application.id)}
 						onOpen={onOpen}
+						onTagSelect={onTagSelect}
 					/>
 				))}
 				{remaining > 0 && (
@@ -263,7 +277,7 @@ function Column({ stage, applications, stale, width, handle, onOpen }: ColumnPro
 						onClick={() => setVisible((count) => count + COLUMN_PAGE_SIZE)}
 						className="rounded-lg border border-dashed border-line py-2 text-xs text-ink-3 transition-colors hover:bg-hover"
 					>
-						{t`Show ${Math.min(remaining, COLUMN_PAGE_SIZE)} more`}
+						{t`Show ${i18n.number(Math.min(remaining, COLUMN_PAGE_SIZE))} more`}
 					</button>
 				)}
 			</div>
@@ -275,16 +289,25 @@ type DraggableCardProps = {
 	application: ApplicationSummary;
 	stale: boolean;
 	onOpen: (application: ApplicationSummary) => void;
+	onTagSelect?: ((tag: string) => void) | undefined;
 };
 
 // Re-renders with every drag context change; the closure here stays stable, so the card itself doesn't.
-
-function DraggableCard({ application, stale, onOpen }: DraggableCardProps) {
-	const { setNodeRef, listeners, isDragging } = useDraggable({ id: application.id });
+function DraggableCard({ application, stale, onOpen, onTagSelect }: DraggableCardProps) {
+	const { setNodeRef, listeners, isDragging } = useDraggable({
+		id: application.id,
+		data: { label: [application.role, application.company].filter(Boolean).join(", ") } satisfies DndLabel,
+	});
 
 	return (
 		<div ref={setNodeRef} {...listeners} className={cn(isDragging && "opacity-40")}>
-			<ApplicationCard application={application} onClick={() => onOpen(application)} withMenu stale={stale} />
+			<ApplicationCard
+				application={application}
+				onClick={() => onOpen(application)}
+				onTagSelect={onTagSelect}
+				withMenu
+				stale={stale}
+			/>
 		</div>
 	);
 }

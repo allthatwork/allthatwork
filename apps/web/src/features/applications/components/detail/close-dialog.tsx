@@ -1,5 +1,5 @@
 import type { ApplicationLane } from "../../lanes";
-import type { ApplicationClosedReason } from "@reactive-resume/schema/applications/data";
+import type { ApplicationClosedReason, ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useId, useState } from "react";
@@ -20,6 +20,8 @@ import { CLOSED_REASONS, getClosedReasonLabel } from "../../stages";
 
 type CloseDialogProps = {
 	open: boolean;
+	/** Where the application stands now: closing from Offer is usually accepting it, so that's the default there. */
+	status?: ApplicationStatus | undefined;
 	onOpenChange: (open: boolean) => void;
 	/** Active lanes; custom Closed lanes among them can be chosen. */
 	lanes: readonly ApplicationLane[];
@@ -27,20 +29,27 @@ type CloseDialogProps = {
 	onClose: (lane: ApplicationLane | null, reason: ApplicationClosedReason | undefined) => void;
 };
 
-/** "Close this application": one reason, kept for Insights, and the Closed lane when there's more than one. */
-export function CloseDialog({ open, onOpenChange, lanes, onClose }: CloseDialogProps) {
+/** "Mark as closed": one reason, kept for Insights, and the Closed lane when there's more than one. */
+export function CloseDialog({ open, status, onOpenChange, lanes, onClose }: CloseDialogProps) {
 	const id = useId();
-	const [reason, setReason] = useState<ApplicationClosedReason>("not-selected");
+	const initialReason: ApplicationClosedReason = status === "offer" ? "accepted" : "not-selected";
+	const [reason, setReason] = useState<ApplicationClosedReason>(initialReason);
+	// Each opening starts from the stage's default, not from the last choice.
+	const [wasOpen, setWasOpen] = useState(open);
+	if (open !== wasOpen) {
+		setWasOpen(open);
+		if (open) setReason(initialReason);
+	}
 	const [laneId, setLaneId] = useState("");
 	const custom = lanes.filter((lane) => lane.category === "closed" && !lane.systemKey);
 	const lane = custom.find((item) => item.id === laneId) ?? null;
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-sm">
+			<DialogContent closeLabel={t`Close`} className="sm:max-w-sm">
 				<DialogHeader>
 					<DialogTitle>
-						<Trans>Close this application</Trans>
+						<Trans>Mark as closed</Trans>
 					</DialogTitle>
 					<DialogDescription>
 						<Trans>The reason is kept for Insights. Linked documents aren't touched.</Trans>
@@ -93,7 +102,7 @@ export function CloseDialog({ open, onOpenChange, lanes, onClose }: CloseDialogP
 							onOpenChange(false);
 						}}
 					>
-						<Trans>Close application</Trans>
+						<Trans>Mark as closed</Trans>
 					</Button>
 				</DialogFooter>
 			</DialogContent>

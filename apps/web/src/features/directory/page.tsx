@@ -717,7 +717,7 @@ function CompanyEditor({ open, company, onClose }: CompanyEditorProps) {
 				if (!value) onClose();
 			}}
 		>
-			<DialogContent className="max-w-lg">
+			<DialogContent closeLabel={t`Close`} className="max-w-lg">
 				<DialogHeader>
 					<DialogTitle>{company ? t`Edit company` : t`Add company`}</DialogTitle>
 				</DialogHeader>
@@ -798,7 +798,7 @@ function ContactEditor({ open, contact, companyId, onClose }: ContactEditorProps
 				if (!value) onClose();
 			}}
 		>
-			<DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
+			<DialogContent closeLabel={t`Close`} className="max-h-[90vh] max-w-xl overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>{contact ? t`Edit contact` : t`Add contact`}</DialogTitle>
 				</DialogHeader>

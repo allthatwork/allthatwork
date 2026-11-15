@@ -11,18 +11,22 @@ import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { aiLimitsSchema, EMPTY_WORKSPACE, offerTermsSchema } from "@reactive-resume/schema/career";
 import { useDebouncedSave } from "../hooks";
+import { pendingCommits } from "../pending-commits";
 import { ApplyTab } from "./apply";
 import { DebriefTab } from "./debrief";
 import { FitTab } from "./fit";
 import { MessagesTab } from "./messages";
 import { PractiseTab } from "./practise";
 import { SavedTab } from "./saved";
+import { invalidateAccountScope, setAccountScope } from "@/libs/auth/account-scope";
 
 const api = vi.hoisted(() => ({
 	data: {} as Record<string, unknown>,
 	save: vi.fn(),
 	submit: vi.fn(),
 	generate: vi.fn(),
+	apply: vi.fn(),
+	logReply: vi.fn(),
 	invalidate: vi.fn(),
 	speak: vi.fn(),
 	userId: "workspace-user",
@@ -35,27 +39,53 @@ vi.mock("@/libs/orpc/client", () => {
 		key: () => [name],
 		queryKey: () => [name],
 		queryOptions: () => ({ queryKey: [name], queryFn: async () => api.data[name], staleTime: Infinity }),
+		mutationKey: () => [name],
 		mutationOptions: () => ({ mutationFn: mutation }),
 	});
 	return {
 		orpc: {
+			documents: { list: endpoint("documents"), linkApplication: endpoint("linkApplication") },
+			applications: {
+				getById: endpoint("application"),
+				listSummary: endpoint("applications"),
+				list: endpoint("applications"),
+				update: endpoint("updateApplication"),
+				logReply: endpoint("logReply", api.logReply),
+				lanes: { get: endpoint("lanes") },
+			},
+			coverLetters: { create: endpoint("createLetter") },
 			career: {
+				answers: {
+					list: endpoint("reviewedAnswers"),
+					save: endpoint("saveAnswer"),
+					reuse: endpoint("reuseAnswer"),
+					delete: endpoint("deleteAnswer"),
+				},
+				stories: endpoint("stories"),
 				workspace: endpoint("workspace"),
 				savedItems: endpoint("savedItems"),
+				schedules: endpoint("schedules"),
 				facts: endpoint("facts"),
+				fitEvidence: endpoint("fitEvidence"),
 				aiLimits: endpoint("aiLimits"),
 				saveWorkspace: endpoint("saveWorkspace", api.save),
 				submitApplication: endpoint("submit", api.submit),
+				applyReply: endpoint("applyReply", api.apply),
+				undoReply: endpoint("undoReply"),
 				generate: endpoint("generate", api.generate),
 				deleteSavedItem: endpoint("delete"),
 				forgetFact: endpoint("forgetFact"),
 				saveFact: endpoint("saveFact"),
 			},
 		},
-		client: { career: { voice: { speak: api.speak } } },
+		client: {
+			career: { generate: api.generate, voice: { speak: api.speak } },
+			applications: { logReply: api.logReply },
+		},
 	};
 });
 vi.mock("@tanstack/react-router", () => ({
+	useNavigate: () => vi.fn(),
 	useRouteContext: () => ({ session: { user: { id: api.userId, timezone: "UTC" } } }),
 	Link: ({ children }: { children: ReactNode }) => <a href="#test-link">{children}</a>,
 }));
@@ -65,12 +95,14 @@ vi.mock("@/features/settings/integrations/hooks/use-has-usable-ai-provider", () 
 		isLoading: false,
 	}),
 }));
-vi.mock("@/features/applications/use-application-actions", () => ({
+vi.mock("@/features/applications/use-application-actions", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/features/applications/use-application-actions")>()),
 	useInvalidateApplications: () => api.invalidate,
 }));
 vi.mock("../coach-thread", () => ({
 	useCoachKnowledge: () => ({
 		stories: api.stories,
+		allStories: api.stories,
 		loaded: !api.knowledgeError,
 		isError: api.knowledgeError,
 		retry: api.retryKnowledge,
@@ -81,7 +113,24 @@ vi.mock("../shared", async (importOriginal) => ({
 	CollapseRow: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 	Swap: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
-vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() } }));
+vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn(), close: vi.fn() } }));
+// The library's own review flow is proven in answer-library.test.tsx; here it only hands back a reviewed answer.
+vi.mock("./answer-library", () => ({
+	AnswerLibrary: ({
+		current,
+		onUse,
+	}: {
+		current?: { id: string };
+		onUse: (value: { question: string; answer: string; factIds: string[] }) => void;
+	}) => (
+		<button
+			type="button"
+			onClick={() => onUse({ question: "Describe your project", answer: "Reviewed answer", factIds: [] })}
+		>
+			Use a saved answer for {current?.id ?? "a new question"}
+		</button>
+	),
+}));
 
 const application: Application = {
 	id: "workspace-application",
@@ -105,6 +154,7 @@ const application: Application = {
 	activity: [],
 	appliedAt: new Date("2026-10-08T12:00:00Z"),
 	createdAt: new Date("2026-10-08T12:00:00Z"),
+	replyVersion: "review-token",
 	updatedAt: new Date("2026-10-08T12:00:00Z"),
 	resumeId: null,
 	jobDescription: null,
@@ -147,6 +197,7 @@ const item = (id: string, data: SavedItem["data"]): SavedItem =>
 		data,
 		evidence: { factIds: [], storyIds: [] },
 		userId: "workspace-user",
+		replyVersion: "review-token",
 		updatedAt: new Date("2026-10-08T12:00:00Z"),
 		jobId: null,
 		inputVersion: "input-version",
@@ -202,9 +253,14 @@ function mount(children: ReactNode) {
 beforeEach(() => {
 	vi.clearAllMocks();
 	api.data = {
+		stories: [],
+		lanes: [],
 		workspace: structuredClone(EMPTY_WORKSPACE),
 		savedItems: [],
 		facts: [],
+		documents: [],
+		reviewedAnswers: [],
+		fitEvidence: { usable: true },
 		aiLimits: aiLimitsSchema.parse({}),
 	};
 	api.userId = "workspace-user";
@@ -212,11 +268,14 @@ beforeEach(() => {
 	api.knowledgeError = false;
 	api.save.mockResolvedValue(EMPTY_WORKSPACE);
 	api.submit.mockResolvedValue(undefined);
+	api.logReply.mockReset().mockResolvedValue(undefined);
+	setAccountScope("workspace-user");
 	sessionStorage.clear();
 	localStorage.clear();
 	i18n.loadAndActivate({ locale: "en-US", messages: {} });
 });
 afterEach(() => {
+	pendingCommits.clear();
 	cleanup();
 	clients.splice(0).forEach((client) => client.clear());
 	vi.useRealTimers();
@@ -241,6 +300,7 @@ it("submits the visible draft immediately and pauses autosave until submission f
 		applicationId: application.id,
 		answers: [{ ...answer, answer: "Latest answer typed before clicking" }],
 		expectedAnswers: [answer],
+		expectedDocuments: { resumeId: null, coverLetterId: null },
 	});
 	await act(async () => {
 		await vi.advanceTimersByTimeAsync(3000);
@@ -249,24 +309,6 @@ it("submits the visible draft immediately and pauses autosave until submission f
 	await act(async () => {
 		submission.resolve();
 	});
-});
-
-it("keeps only the content checks once the application is applied, however it was marked", async () => {
-	// Marked from the board or the details sheet: the stored ticks never included the submission items.
-	api.data.workspace = { ...EMPTY_WORKSPACE, checklist: [0] };
-	mount(<ApplyTab {...props} application={{ ...application, status: "applied" }} />);
-	expect(screen.queryByRole("button", { name: "Mark as applied" })).toBeNull();
-	expect(screen.queryByText("Mark the application as applied to keep the versions you sent.")).toBeNull();
-	const progress = screen.getByRole("progressbar", { name: "Checklist progress" });
-	expect(progress).toHaveAttribute("aria-valuenow", "1");
-	expect(progress).toHaveAttribute("aria-valuemax", "3");
-});
-
-it("leaves the last checklist item undone while the application is saved, whatever is stored", async () => {
-	api.data.workspace = { ...EMPTY_WORKSPACE, checklist: [4] };
-	mount(<ApplyTab {...props} />);
-	expect(screen.getByRole("button", { name: "Mark as applied" })).toBeEnabled();
-	expect(screen.getByRole("progressbar", { name: "Checklist progress" })).toHaveAttribute("aria-valuenow", "0");
 });
 
 it("blocks submission until an over-limit draft is shortened", async () => {
@@ -339,6 +381,133 @@ it("retains edited replies across navigation while saved versions keep the gener
 	expect(screen.getByRole("textbox", { name: "Suggested reply · edit before sending" })).toHaveValue("Original reply");
 });
 
+it("highlights localized reply placeholders without blocking Copy, and logs only the explicit action", async () => {
+	const writeText = vi.fn().mockResolvedValue(undefined);
+	vi.stubGlobal("navigator", { clipboard: { writeText } });
+	api.data.savedItems = [reply()];
+	mount(<MessagesTab {...props} application={{ ...application, status: "applied" }} />);
+	const editor = screen.getByRole("textbox", { name: "Suggested reply · edit before sending" });
+	fireEvent.change(editor, { target: { value: "Available [Datum und Uhrzeit 1] or [slot 2]." } });
+	expect(screen.getByRole("status")).toHaveTextContent("[Datum und Uhrzeit 1] · [slot 2]");
+	fireEvent.click(screen.getByRole("button", { name: "Copy reply" }));
+	await waitFor(() => expect(writeText).toHaveBeenCalledWith("Available [Datum und Uhrzeit 1] or [slot 2]."));
+	expect(api.logReply).not.toHaveBeenCalled();
+	fireEvent.change(editor, { target: { value: "Available Tuesday at 14:00." } });
+	expect(screen.queryByText("Replace these placeholders before sending:")).not.toBeInTheDocument();
+	fireEvent.click(screen.getByRole("button", { name: "Copy and log as replied" }));
+	await waitFor(() => expect(api.logReply).toHaveBeenCalledTimes(1));
+	expect(writeText).toHaveBeenLastCalledWith("Available Tuesday at 14:00.");
+	expect(api.logReply.mock.calls[0]?.[0]).toEqual({
+		id: application.id,
+		expectedVersion: "review-token",
+	});
+	await waitFor(() => expect(api.invalidate).toHaveBeenCalledWith(application.id));
+});
+
+it("keeps Copy available and disables explicit logging on an older server", async () => {
+	const writeText = vi.fn().mockResolvedValue(undefined);
+	vi.stubGlobal("navigator", { clipboard: { writeText } });
+	api.data.savedItems = [reply()];
+	const { replyVersion: _replyVersion, ...older } = application;
+	mount(<MessagesTab {...props} application={{ ...older, status: "applied" }} />);
+	expect(screen.getByRole("button", { name: "Copy and log as replied" })).toBeDisabled();
+	expect(screen.getByText(/Update the server to enable reply logging/)).toBeVisible();
+	fireEvent.click(screen.getByRole("button", { name: "Copy reply" }));
+	await waitFor(() => expect(writeText).toHaveBeenCalledWith("Original reply"));
+	expect(api.logReply).not.toHaveBeenCalled();
+});
+
+it("disables empty-draft logging while preserving ordinary Copy", async () => {
+	const writeText = vi.fn().mockResolvedValue(undefined);
+	vi.stubGlobal("navigator", { clipboard: { writeText } });
+	api.data.savedItems = [reply()];
+	mount(<MessagesTab {...props} application={{ ...application, status: "applied" }} />);
+	const editor = screen.getByRole("textbox", { name: "Suggested reply · edit before sending" });
+	for (const text of ["", " \n\t"]) {
+		fireEvent.change(editor, { target: { value: text } });
+		const log = screen.getByRole("button", { name: "Copy and log as replied" });
+		expect(log).toBeDisabled();
+		fireEvent.click(log);
+		expect(api.logReply).not.toHaveBeenCalled();
+	}
+	expect(writeText).not.toHaveBeenCalled();
+	fireEvent.click(screen.getByRole("button", { name: "Copy reply" }));
+	await waitFor(() => expect(writeText).toHaveBeenCalledWith(" \n\t"));
+	expect(api.logReply).not.toHaveBeenCalled();
+});
+
+it("explains a known reply-log refusal without inventing a conflict reason", async () => {
+	const { ORPCError } = await import("@orpc/client");
+	const { toast } = await import("@reactive-resume/ui/components/toast");
+	vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+	api.logReply.mockRejectedValueOnce(new ORPCError("BAD_REQUEST"));
+	api.data.savedItems = [reply()];
+	mount(<MessagesTab {...props} application={{ ...application, status: "applied" }} />);
+	fireEvent.click(screen.getByRole("button", { name: "Copy and log as replied" }));
+	await waitFor(() =>
+		expect(toast.add).toHaveBeenCalledWith({
+			type: "error",
+			description: "Reply copied. Nothing was logged. Review the application before logging again.",
+		}),
+	);
+	expect(api.invalidate).toHaveBeenCalledWith(application.id);
+});
+
+it("explains a known reply-log conflict and refreshes the application", async () => {
+	const { ORPCError } = await import("@orpc/client");
+	const { toast } = await import("@reactive-resume/ui/components/toast");
+	vi.stubGlobal("navigator", { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+	api.logReply.mockRejectedValueOnce(new ORPCError("CONFLICT"));
+	api.data.savedItems = [reply()];
+	mount(<MessagesTab {...props} application={{ ...application, status: "applied" }} />);
+	fireEvent.click(screen.getByRole("button", { name: "Copy and log as replied" }));
+	await waitFor(() =>
+		expect(toast.add).toHaveBeenCalledWith({
+			type: "error",
+			description: "Reply copied. Nothing was logged because the application changed. Review it again before logging.",
+		}),
+	);
+	expect(api.invalidate).toHaveBeenCalledWith(application.id);
+});
+
+it("warns and refreshes the application when logging is uncertain after copying succeeds", async () => {
+	const writeText = vi.fn().mockResolvedValue(undefined);
+	vi.stubGlobal("navigator", { clipboard: { writeText } });
+	api.logReply.mockRejectedValueOnce(new Error("Lost response"));
+	api.data.savedItems = [reply()];
+	mount(<MessagesTab {...props} application={{ ...application, status: "applied" }} />);
+	fireEvent.click(screen.getByRole("button", { name: "Copy and log as replied" }));
+	const { toast } = await import("@reactive-resume/ui/components/toast");
+	await waitFor(() =>
+		expect(toast.add).toHaveBeenCalledWith({
+			type: "error",
+			description: "Reply copied. Logging wasn't confirmed. Check the timeline before trying again.",
+		}),
+	);
+	expect(writeText).toHaveBeenCalledWith("Original reply");
+	expect(api.logReply).toHaveBeenCalledTimes(1);
+	expect(api.invalidate).toHaveBeenCalledWith(application.id);
+});
+
+it("does not log after failed clipboard access, duplicate presses or an account switch during copying", async () => {
+	const writeText = vi.fn().mockRejectedValueOnce(new Error("Denied"));
+	vi.stubGlobal("navigator", { clipboard: { writeText } });
+	api.data.savedItems = [reply()];
+	mount(<MessagesTab {...props} application={{ ...application, status: "applied" }} />);
+	const button = screen.getByRole("button", { name: "Copy and log as replied" });
+	fireEvent.click(button);
+	await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+	expect(api.logReply).not.toHaveBeenCalled();
+	const pending = deferred<void>();
+	writeText.mockReturnValueOnce(pending.promise);
+	fireEvent.click(button);
+	fireEvent.click(button);
+	expect(writeText).toHaveBeenCalledTimes(2);
+	invalidateAccountScope();
+	await act(async () => pending.resolve());
+	expect(api.logReply).not.toHaveBeenCalled();
+});
+
 it("retains the practice answer after leaving, without exposing it to another signed-in account", () => {
 	const first = mount(<PractiseTab {...props} />);
 	fireEvent.change(screen.getByRole("textbox", { name: "Your answer" }), {
@@ -395,7 +564,11 @@ it("sums up Fit as a match: supported counts fully, partly half, missing nothing
 const draftButton = (question: string) => {
 	const card = screen.getByRole("textbox", { name: question }).closest("section");
 	if (!card) throw new Error(`No card for ${question}`);
-	return within(card).getAllByRole("button").at(-1) as HTMLElement;
+	// Stop sits after the Draft button while a draft runs (GenerateNotice).
+	return within(card)
+		.getAllByRole("button")
+		.filter((button) => button.textContent !== "Stop")
+		.at(-1) as HTMLElement;
 };
 
 it("keeps one question's draft from showing the other questions as busy", async () => {
@@ -435,7 +608,7 @@ it("shows a drafted answer that lands after leaving the tab when you come back",
 	await act(async () => draft.resolve({ item: null, answer: { text: "Drafted while away", factIds: [] } }));
 	view.rerender(<ApplyTab {...props} />);
 	expect(await screen.findByText("Drafted while away")).toBeInTheDocument();
-	fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+	fireEvent.click(screen.getByRole("button", { name: "Reject" }));
 	await waitFor(() => expect(screen.queryByText("Drafted while away")).not.toBeInTheDocument());
 });
 
@@ -581,7 +754,7 @@ it("stops question playback and releases its audio when leaving Practise", async
 	expect(revoke).toHaveBeenCalledWith("blob:question");
 });
 
-it("keeps Saved offer provenance neutral for both manual and older offer shapes", async () => {
+it("keeps Saved offer provenance neutral", async () => {
 	api.data.savedItems = [
 		item("Written offer", {
 			kind: "offer",
@@ -589,8 +762,376 @@ it("keeps Saved offer provenance neutral for both manual and older offer shapes"
 		}),
 	];
 	mount(<SavedTab {...props} />);
-	expect(await screen.findByText("Saved items for Harbor, newest first.")).toBeTruthy();
+	expect(await screen.findByText("Library items for Harbor, newest first.")).toBeTruthy();
 	expect(screen.queryByText(/coach wrote/)).toBeNull();
 	expect(screen.queryByText(/used the message/)).toBeNull();
 	expect(screen.getByRole("link", { name: "Open in Offers" })).toBeTruthy();
+});
+
+it("keeps an unacknowledged message across pagehide and requires review after reopening against newer server state", async () => {
+	const view = mount(<MessagesTab {...props} />);
+	const field = await screen.findByRole("textbox", { name: `Paste a message from ${props.application.company}` });
+	fireEvent.change(field, { target: { value: "Durable employer message" } });
+	expect(localStorage.getItem(`career-draft:${api.userId}:message:${props.application.id}`)).toBe(
+		JSON.stringify("Durable employer message"),
+	);
+	window.dispatchEvent(new Event("pagehide"));
+	await waitFor(() => expect(api.save).toHaveBeenCalled());
+	view.unmount();
+	localStorage.setItem(
+		`career-draft:${api.userId}:message:${props.application.id}`,
+		JSON.stringify("Unacknowledged older text"),
+	);
+	api.save.mockClear();
+	api.data.workspace = { ...EMPTY_WORKSPACE, message: "Newer server text" };
+	mount(<MessagesTab {...props} />);
+	expect(await screen.findByRole("button", { name: "Save recovered draft" })).toBeTruthy();
+	expect(screen.getByRole("textbox", { name: `Paste a message from ${props.application.company}` })).toHaveValue(
+		"Unacknowledged older text",
+	);
+	window.dispatchEvent(new Event("pagehide"));
+	expect(api.save).not.toHaveBeenCalled();
+	fireEvent.click(screen.getByRole("button", { name: "Use saved version" }));
+	expect(screen.getByRole("textbox", { name: `Paste a message from ${props.application.company}` })).toHaveValue(
+		"Newer server text",
+	);
+});
+
+it("commits a typed question on Draft and measures the proposal against the question's limit", async () => {
+	const answer = { id: "answer", question: "", answer: "", factIds: [] as string[] };
+	api.data.workspace = { ...EMPTY_WORKSPACE, answers: [answer] };
+	api.generate.mockResolvedValue({
+		item: null,
+		answer: { text: "one two three", factIds: [], note: "Check the ownership claim." },
+	});
+	mount(<ApplyTab {...props} />);
+	fireEvent.change(screen.getByRole("textbox", { name: "Question from the form" }), {
+		target: { value: "Describe reliability (150 words max)" },
+	});
+	await act(async () => {
+		fireEvent.click(screen.getByRole("button", { name: "Draft" }));
+	});
+	expect(api.save.mock.calls.at(-1)?.[0]).toMatchObject({
+		answers: [expect.objectContaining({ question: "Describe reliability (150 words max)" })],
+	});
+	expect(api.generate).toHaveBeenCalledWith(
+		expect.objectContaining({
+			task: { task: "answer", question: "Describe reliability (150 words max)", answer: "" },
+		}),
+		expect.anything(),
+	);
+	expect(await screen.findByText("Check before accepting: Check the ownership claim.")).toBeTruthy();
+	expect(screen.getByText("3 of 150 words")).toBeTruthy();
+});
+
+it("confirms a Saved-to-Interview move as one change before anything is written", async () => {
+	api.data.savedItems = [
+		item("Invite", {
+			kind: "reply",
+			title: "They're inviting you to the next round",
+			message: "We'd like to invite you to the next round.",
+			asks: [],
+			unconfirmed: [],
+			reply: "",
+			changes: [{ type: "stage", stage: "interview" }],
+			offer: null,
+			applied: null,
+		}),
+	];
+	api.apply.mockResolvedValue(undefined);
+	mount(<MessagesTab {...props} />);
+	expect(await screen.findByText("Mark as applied and move to Interview")).toBeTruthy();
+	fireEvent.click(screen.getByRole("button", { name: "Apply 1 change" }));
+	// Nothing is sent until the receipt is confirmed.
+	expect(api.apply).not.toHaveBeenCalled();
+	expect(await screen.findByText("Mark as applied and move it?")).toBeTruthy();
+	fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+	expect(api.apply).not.toHaveBeenCalled();
+	fireEvent.click(screen.getByRole("button", { name: "Apply 1 change" }));
+	fireEvent.click(await screen.findByRole("button", { name: "Mark as applied and move" }));
+	await waitFor(() => expect(api.apply).toHaveBeenCalledTimes(1));
+	expect(api.apply.mock.calls[0]?.[0]).toMatchObject({
+		id: "Invite",
+		changes: [0],
+		submission: {
+			answers: [],
+			expectedAnswers: [],
+			expectedDocuments: { resumeId: null, coverLetterId: null },
+		},
+	});
+});
+
+it("shows every extracted offer term before applying, including deadline, bonus, equity and start", async () => {
+	api.data.savedItems = [
+		item("Offer", {
+			kind: "reply",
+			title: "They sent an offer",
+			message: "We are pleased to offer you the role. Let us know by 20 November.",
+			asks: [],
+			unconfirmed: [],
+			reply: "",
+			changes: [{ type: "offer" }],
+			offer: offerTermsSchema.parse({
+				version: "written",
+				currency: "EUR",
+				period: "year",
+				base: 82000,
+				variable: 8200,
+				variableConditions: "10% of base",
+				equity: "0.05% over four years",
+				location: "Berlin",
+				respondBy: "2026-11-20T16:00:00.000Z",
+				startDate: "2027-01-04",
+			}),
+			applied: null,
+		}),
+	];
+	mount(<MessagesTab {...props} />);
+	const details = await screen.findByText(/Opens in Career → Offers/);
+	expect(details.textContent).toContain("Base €82,000 per year");
+	expect(details.textContent).toContain("Bonus €8,200 (10% of base)");
+	expect(details.textContent).toContain("Equity 0.05% over four years");
+	expect(details.textContent).toContain("Starts");
+	expect(details.textContent).toContain("Jan");
+	expect(details.textContent).toContain("Respond by");
+});
+
+it.each(["answer", "factIds"] as const)(
+	"Tighten Undo refuses an authoritative %s correction after refetch",
+	async (field) => {
+		const { toast } = await import("@reactive-resume/ui/components/toast");
+		const original = { id: "answer", question: "Why this role?", answer: "Original authored answer.", factIds: [] };
+		api.data.workspace = { ...EMPTY_WORKSPACE, answers: [original] };
+		api.data.reviewedAnswers = [];
+		api.generate.mockResolvedValueOnce({ answer: { text: "Accepted answer.", factIds: ["accepted-proof"] } });
+		const view = mount(<ApplyTab {...props} />);
+		fireEvent.click(screen.getByRole("button", { name: "Tighten" }));
+		await waitFor(() => expect(screen.getByRole("button", { name: "Accept" })).toBeVisible());
+		fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+		await waitFor(() => expect(api.save).toHaveBeenCalled());
+		const later = { ...original, answer: "Accepted answer.", factIds: ["accepted-proof"] };
+		if (field === "answer") later.answer = "Later device correction. Keep this.";
+		else later.factIds = ["later-proof"];
+		await act(async () => view.queryClient.setQueryData(["workspace"], { ...EMPTY_WORKSPACE, answers: [later] }));
+		const undo = vi.mocked(toast.add).mock.calls.findLast(([value]) => value.description === "Answer replaced")?.[0]
+			.actionProps?.onClick;
+		expect(undo).toBeTypeOf("function");
+		api.save.mockClear();
+		await act(async () => undo?.({} as never));
+		expect(api.save).not.toHaveBeenCalled();
+		expect(view.queryClient.getQueryData<CareerWorkspace>(["workspace"])?.answers).toEqual([later]);
+	},
+);
+
+it("Tighten Undo keeps local typing and pins an unchanged inverse to accepted text and fact IDs", async () => {
+	const { toast } = await import("@reactive-resume/ui/components/toast");
+	const original = {
+		id: "answer",
+		question: "Why this role?",
+		answer: "Original authored answer.",
+		factIds: ["old-proof"],
+		aiOperationIds: ["prior-op"],
+	};
+	api.data.workspace = { ...EMPTY_WORKSPACE, answers: [original] };
+	api.data.reviewedAnswers = [];
+	api.generate.mockResolvedValueOnce({
+		answer: { text: "Accepted answer.", factIds: ["accepted-proof"], aiOperationIds: ["next-op"] },
+	});
+	mount(<ApplyTab {...props} />);
+	fireEvent.click(screen.getByRole("button", { name: "Tighten" }));
+	await waitFor(() => expect(screen.getByRole("button", { name: "Accept" })).toBeVisible());
+	fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+	await waitFor(() => expect(api.save).toHaveBeenCalled());
+	expect(api.save.mock.calls[0]?.[0]).toMatchObject({ answers: [{ aiOperationIds: ["prior-op", "next-op"] }] });
+	const undo = vi.mocked(toast.add).mock.calls.findLast(([value]) => value.description === "Answer replaced")?.[0]
+		.actionProps?.onClick;
+	expect(undo).toBeTypeOf("function");
+	api.save.mockClear();
+	fireEvent.change(screen.getByRole("textbox", { name: "Why this role?" }), {
+		target: { value: "Later local typing." },
+	});
+	await act(async () => undo?.({} as never));
+	expect(api.save).not.toHaveBeenCalled();
+	expect(screen.getByRole("textbox", { name: "Why this role?" })).toHaveValue("Later local typing.");
+	fireEvent.change(screen.getByRole("textbox", { name: "Why this role?" }), { target: { value: "Accepted answer." } });
+	await act(async () => undo?.({} as never));
+	expect(api.save.mock.calls[0]?.[0]).toMatchObject({
+		answers: [original],
+		expected: {
+			answers: [
+				{
+					...original,
+					answer: "Accepted answer.",
+					factIds: ["accepted-proof"],
+					aiOperationIds: ["prior-op", "next-op"],
+				},
+			],
+		},
+	});
+});
+
+it("omits absent review subjects and empty answer actions without moving manual indices", async () => {
+	mount(<ApplyTab {...props} />);
+	await screen.findByRole("heading", { name: "Review checks" });
+	expect(within(document.querySelector("#application-readiness") as HTMLElement).getAllByRole("checkbox")).toHaveLength(
+		1,
+	);
+	expect(screen.queryByRole("button", { name: "Copy answers" })).toBeNull();
+	fireEvent.click(screen.getByRole("checkbox", { name: "Submit through the employer's application page yourself." }));
+	await waitFor(() =>
+		expect(api.save.mock.calls[0]?.[0]).toMatchObject({ checklist: [3], expected: { checklist: [] } }),
+	);
+});
+
+it.each(["recorded", "legacy", "first version", "saved version"] as const)(
+	"shows honest read-only %s review without unfinished progress",
+	async (kind) => {
+		const answers = [{ id: "answer", question: "Why?", answer: "Current draft", factIds: [] }];
+		api.data.workspace = {
+			...EMPTY_WORKSPACE,
+			answers,
+			checklist: [0],
+			submissionReview:
+				kind === "legacy"
+					? null
+					: {
+							at: "2026-11-03T10:00:00Z",
+							checklist: [1],
+							documents: false,
+							answers: true,
+							answerVersionId: "first answers",
+						},
+		};
+		mount(
+			<ApplyTab
+				{...props}
+				version={
+					kind === "saved version" || kind === "first version"
+						? item(kind === "first version" ? "first answers" : "old answers", {
+								kind: "answers",
+								answers: [{ question: "Why?", answer: "Old version" }],
+							})
+						: undefined
+				}
+			/>,
+		);
+		await screen.findByText(
+			kind === "recorded" || kind === "first version"
+				? "Review checks recorded at first submission."
+				: "Historical review checks unavailable.",
+		);
+		const checks = within(document.querySelector("#application-readiness") as HTMLElement).queryAllByRole("checkbox");
+		expect(checks).toHaveLength(kind === "recorded" || kind === "first version" ? 2 : 0);
+		if (kind === "recorded" || kind === "first version") {
+			expect((checks[0] as HTMLInputElement).getAttribute("aria-checked")).toBe("true");
+			for (const check of checks) expect(check.getAttribute("aria-disabled")).toBe("true");
+		}
+		expect(screen.queryByRole("button", { name: "Mark as applied" })).toBeNull();
+		expect(document.querySelector("#application-readiness")?.textContent).not.toMatch(/\d+ of \d+/);
+	},
+);
+
+it("offers answer actions immediately for an unsaved draft and hides them when cleared", async () => {
+	const answers = [{ id: "first", question: "Why this role?", answer: "", factIds: [] }];
+	api.data.workspace = { ...EMPTY_WORKSPACE, answers };
+	const saving = deferred<CareerWorkspace>();
+	api.save.mockReturnValue(saving.promise);
+	mount(<ApplyTab {...props} />);
+	const input = await screen.findByRole("textbox", { name: "Why this role?" });
+	expect(screen.queryByRole("button", { name: "Copy answers" })).toBeNull();
+	fireEvent.change(input, { target: { value: "First local answer" } });
+	expect(screen.getByRole("button", { name: "Copy answers" })).toBeEnabled();
+	expect(screen.getByRole("button", { name: "Download" })).toBeEnabled();
+	fireEvent.blur(input);
+	await waitFor(() => expect(api.save).toHaveBeenCalled());
+	// The pending network save never returned; visibility still follows local text.
+	fireEvent.change(input, { target: { value: "   " } });
+	expect(screen.queryByRole("button", { name: "Copy answers" })).toBeNull();
+	expect(screen.queryByRole("button", { name: "Download" })).toBeNull();
+});
+
+it.each(["first receipt", "legacy"] as const)("opens the correct recorded answers for %s", async (kind) => {
+	const first = {
+		...item("first", { kind: "answers", answers: [{ question: "Why?", answer: "First submission" }] }),
+		submission: true,
+	};
+	const later = {
+		...item("later", { kind: "answers", answers: [{ question: "Why?", answer: "Later submission" }] }),
+		submission: true,
+	};
+	api.data.savedItems = [later, first];
+	api.data.workspace = {
+		...EMPTY_WORKSPACE,
+		answers: [{ id: "draft", question: "Why?", answer: "Current draft", factIds: [] }],
+		submissionReview:
+			kind === "legacy"
+				? null
+				: { at: "2026-11-03T10:00:00Z", checklist: [1], documents: false, answers: true, answerVersionId: first.id },
+	};
+	const go = vi.fn();
+	mount(<ApplyTab {...props} application={{ ...application, status: "applied" }} go={go} />);
+	fireEvent.click(await screen.findByRole("button", { name: "View recorded answers" }));
+	expect(go).toHaveBeenCalledWith("apply", { version: kind === "legacy" ? later.id : first.id });
+});
+
+it("keeps approved practice generation running when its tab unmounts", async () => {
+	const pending = deferred<{ item: null }>();
+	api.generate.mockReturnValueOnce(pending.promise);
+	const view = mount(<PractiseTab {...props} />);
+	fireEvent.change(screen.getByRole("textbox", { name: "Your answer" }), {
+		target: { value: "I coordinated the fictional recovery." },
+	});
+	fireEvent.click(screen.getByRole("button", { name: "Get feedback" }));
+	await waitFor(() => expect(api.generate).toHaveBeenCalledTimes(1));
+	const signal = api.generate.mock.calls[0]?.[1]?.signal as AbortSignal;
+	expect(signal).toBeDefined();
+	view.unmount();
+	expect(signal.aborted).toBe(false);
+	await act(async () => pending.resolve({ item: null }));
+});
+
+// J2-18: a bulk move chosen while a message's stage change is on its way starts from the stage that change saved.
+it("makes a later bulk move wait for a message's stage change and start from what it saved", async () => {
+	const { stageBaselinesFor } = await import("@reactive-resume/schema/applications/stage-baselines");
+	const { STAGE_SCOPE } = await import("@/features/applications/use-application-actions");
+	const answer = deferred<unknown>();
+	api.apply.mockReturnValueOnce(answer.promise);
+	const message = reply();
+	if (message.data.kind !== "reply") throw new Error("Expected a reply");
+	message.data.changes = [{ type: "stage", stage: "interview" }];
+	api.data.savedItems = [message];
+	const applied = { ...application, status: "applied" as const };
+	const { queryClient } = mount(<MessagesTab {...props} application={applied} />);
+	fireEvent.click(screen.getByRole("button", { name: "Apply 1 change" }));
+	await waitFor(() => expect(api.apply).toHaveBeenCalled());
+	const bulk = stageBaselinesFor(queryClient).begin(STAGE_SCOPE, new Map([[application.id, applied]]));
+	const saved = { status: "interview", laneId: null, closedReason: null, stageEntryId: "message-stage" } as const;
+	answer.resolve({ stages: [{ id: application.id, ...saved }] });
+	expect(await bulk.baselines.get(application.id)).toEqual(saved);
+});
+
+// A recovered draft pauses autosave until the user chooses; using a reviewed answer is that choice.
+it("resumes autosave after a reviewed answer replaces a recovered draft", async () => {
+	const answer = { id: "project", question: "Describe your project", answer: "I wrote a checklist.", factIds: [] };
+	api.data.workspace = { ...EMPTY_WORKSPACE, answers: [answer] };
+	api.save.mockImplementation(async (input: { answers: unknown[] }) => ({
+		...EMPTY_WORKSPACE,
+		answers: input.answers,
+	}));
+	localStorage.setItem(
+		`career-draft:workspace-user:answer:${application.id}:project`,
+		JSON.stringify("Recovered answer"),
+	);
+	mount(<ApplyTab {...props} />);
+	expect(screen.getByRole("button", { name: "Save recovered draft" })).toBeVisible();
+	fireEvent.click(screen.getByRole("button", { name: "Use a saved answer for project" }));
+	await waitFor(() => expect(api.save).toHaveBeenCalled());
+	await waitFor(() => expect(screen.queryByRole("button", { name: "Save recovered draft" })).toBeNull());
+	api.save.mockClear();
+	const field = screen.getByRole("textbox", { name: "Describe your project" });
+	fireEvent.change(field, { target: { value: "A later edit" } });
+	fireEvent.blur(field);
+	await waitFor(() =>
+		expect(api.save.mock.lastCall?.[0]).toMatchObject({ answers: [{ id: "project", answer: "A later edit" }] }),
+	);
 });

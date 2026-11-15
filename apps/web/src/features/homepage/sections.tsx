@@ -3,15 +3,15 @@ import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@reactive-resume/ui/components/icon";
-import { Label } from "@reactive-resume/ui/components/label";
-import { supportedLocales } from "@reactive-resume/utils/locale";
+import { getLanguageName, isRTL, supportedLocales } from "@reactive-resume/utils/locale";
 import { cn } from "@reactive-resume/utils/style";
 import { prefersReducedMotion, SCENE, useLanding } from "./scroll";
-import { CtaLink, Doodle, labelClass } from "./ui";
+import { CtaLink, SignInLink, Doodle, labelClass } from "./ui";
 import { RollingNumber } from "@/components/ui/rolling-number";
 import { LocaleCombobox } from "@/features/locale/combobox";
+import { localeMap } from "@/libs/locale";
 import { orpc } from "@/libs/orpc/client";
 
 const crowdinUrl = "https://crowdin.com/project/reactive-resume";
@@ -23,16 +23,23 @@ const smallestTotalShown = 100;
 /** 08 Numbers: the live community totals, side by side, each figure over what it counts. */
 export function Numbers() {
 	const inView = useLanding((state) => state.numbersInView);
-	const { data } = useQuery(orpc.statistics.getTotals.queryOptions({ staleTime: statisticsStaleTime }));
-	const { data: stars } = useQuery(
-		orpc.statistics.github.getStarCount.queryOptions({ staleTime: statisticsStaleTime }),
-	);
+	const totals = useQuery(orpc.statistics.getTotals.queryOptions({ staleTime: statisticsStaleTime }));
+	const starCount = useQuery(orpc.statistics.github.getStarCount.queryOptions({ staleTime: statisticsStaleTime }));
+	const { data } = totals;
+	const stars = starCount.data;
+	// A proof section shows proof or nothing: a total that failed to load is dropped, not left as a dash.
 	const rows = [
-		{ label: t`People using it`, detail: t`writing, tailoring and sending`, value: data?.users },
-		{ label: t`Resumes created`, detail: t`and counting`, value: data?.resumes },
-		{ label: t`Stars on GitHub`, detail: t`from developers who back it`, value: stars },
-	].filter((row) => row.value == null || row.value >= smallestTotalShown);
-	if (rows.length === 0) return null;
+		{
+			label: t`People using it`,
+			detail: t`writing, tailoring and sending`,
+			value: data?.users,
+			failed: totals.isError,
+		},
+		{ label: t`Resumes created`, detail: t`and counting`, value: data?.resumes, failed: totals.isError },
+		{ label: t`Stars on GitHub`, detail: t`from developers who back it`, value: stars, failed: starCount.isError },
+	].filter((row) => !row.failed && (row.value == null || row.value >= smallestTotalShown));
+	// One number alone (often the stars the header already shows) isn't company: show none.
+	if (rows.length < 2) return null;
 
 	return (
 		<section
@@ -99,7 +106,6 @@ const words = [
 /** 09 Languages. The word turns over every 1.9s while the section is near; it can be paused. */
 export function Languages() {
 	const { i18n } = useLingui();
-	const languageId = useId();
 	const languageCount = i18n.number(supportedLocales.length);
 	const near = useLanding((state) => state.activeScene >= SCENE.numbers && state.activeScene <= SCENE.faq);
 	const reducedMotion = useLanding((state) => state.reducedMotion);
@@ -116,6 +122,7 @@ export function Languages() {
 
 	return (
 		<section
+			id="languages"
 			data-scene={SCENE.languages}
 			aria-labelledby="languages-title"
 			className="relative flex flex-col items-center gap-[22px] overflow-hidden px-(--gutter) py-[14vh] text-center"
@@ -158,7 +165,7 @@ export function Languages() {
 					type="button"
 					onClick={() => setPaused((value) => !value)}
 					aria-label={paused ? t`Play the list of languages` : t`Pause the list of languages`}
-					className="grid size-6 place-items-center rounded-sm text-ink-3 transition-colors hover:bg-hover hover:text-ink motion-reduce:hidden"
+					className="touch-target relative grid size-6 place-items-center rounded-sm text-ink-3 transition-colors hover:bg-hover hover:text-ink motion-reduce:hidden"
 				>
 					<Icon name={paused ? "play" : "pause"} size={16} filled />
 				</button>
@@ -172,11 +179,102 @@ export function Languages() {
 					{t`Help translate it into yours.`}
 				</a>
 			</p>
-			<div className="grid w-full max-w-80 gap-1.5 text-start">
-				<Label htmlFor={languageId}>{t`Change language`}</Label>
-				<LocaleCombobox id={languageId} />
-			</div>
+			<LanguageIndex />
 		</section>
+	);
+}
+
+/**
+ * The homepage in `locale`, back at the Languages scene, keeping the rest of the address. English is named too, so
+ * it overrides a saved choice; the server points its canonical address at the plain one.
+ */
+function languageHref(locale: string) {
+	const url = new URL(typeof window === "undefined" ? "/" : window.location.href, "https://localhost");
+	url.searchParams.set("locale", locale);
+	return `/?${url.searchParams}#languages`;
+}
+
+type LanguageDoorwayProps = { className?: string; nameClassName?: string; story?: boolean };
+
+/** Home uses its Languages scene; standalone pages can change language even when a resume replaces the home. */
+export function LanguageDoorway({ className, nameClassName, story = true }: LanguageDoorwayProps) {
+	const { i18n } = useLingui();
+	const name = getLanguageName(i18n.locale, i18n.locale, false);
+	const content = (
+		<>
+			<Icon name="translate" size={16} />
+			<span lang={i18n.locale} className={nameClassName}>
+				{name}
+			</span>
+		</>
+	);
+	if (!story)
+		return (
+			<LocaleCombobox
+				render={(props) => (
+					<button
+						{...props}
+						type="button"
+						aria-label={t`Change language`}
+						title={t`Change language`}
+						className={cn("touch-target relative flex items-center", props.className, className)}
+					>
+						{content}
+					</button>
+				)}
+			/>
+		);
+	return (
+		<a href="#languages" title={t`Change language`} className={cn("flex items-center", className)}>
+			{content}
+		</a>
+	);
+}
+
+/**
+ * Every language the app speaks, each in its own name and script, as plain links to the page in that language. They
+ * work before the app's script runs, and the server stores the choice (`?locale=`) for sign-up and the app.
+ */
+function LanguageIndex() {
+	const { i18n } = useLingui();
+
+	return (
+		<nav aria-labelledby="languages-title" className="max-w-[46em] min-[1280px]:max-w-[68em]">
+			<ul className="font-display text-[clamp(17px,1.4vw,21px)] leading-normal text-balance text-ink-2">
+				{supportedLocales.map((locale, index) => {
+					const name = getLanguageName(locale);
+					const dir = isRTL(locale) ? "rtl" : undefined;
+					return (
+						<li key={locale} className="inline">
+							{/* Each name keeps its separator, so a line never starts with one; lines break between names. */}
+							<span className="whitespace-nowrap">
+								{locale === i18n.locale ? (
+									<span lang={locale} dir={dir} aria-current="page" className="text-accent-text italic">
+										{name}
+									</span>
+								) : (
+									<a
+										href={languageHref(locale)}
+										hrefLang={locale}
+										lang={locale}
+										dir={dir}
+										title={i18n._(localeMap[locale])}
+										className="touch-target relative inline-block py-1.5 underline-offset-[3px] transition-colors duration-quick hover:text-ink hover:underline focus-visible:text-ink focus-visible:underline"
+									>
+										{name}
+									</a>
+								)}
+								{index < supportedLocales.length - 1 && (
+									<span aria-hidden="true" className="px-1.5 text-ink-3">
+										·
+									</span>
+								)}
+							</span>{" "}
+						</li>
+					);
+				})}
+			</ul>
+		</nav>
 	);
 }
 
@@ -232,6 +330,7 @@ export function Closing() {
 				{t`Start from scratch or import what you have. It takes a few minutes, and you can come back to it anytime.`}
 			</p>
 			<CtaLink size="closing" />
+			<SignInLink />
 		</section>
 	);
 }

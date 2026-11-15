@@ -1,23 +1,30 @@
 import type { ResumeUpdatedEvent } from "./events";
 import type { DbOrTx } from "@reactive-resume/db/client";
 import type { JsonPatchOperation } from "@reactive-resume/resume/patch";
+import type { ProposalApplications } from "@reactive-resume/resume/proposals";
 import type { ResumeData } from "@reactive-resume/schema/resume/data";
 import type { Locale } from "@reactive-resume/utils/locale";
 import { ORPCError } from "@orpc/client";
 import { compare, hash } from "bcryptjs";
-import { and, arrayContains, asc, desc, eq, gte, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, arrayContains, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { match } from "ts-pattern";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { detachEmbeddedLetters } from "@reactive-resume/resume/cover-letter";
-import { applyResumePatches, ResumePatchError } from "@reactive-resume/resume/patch";
+import { applyResumePatches, describeResumePatchError, ResumePatchError } from "@reactive-resume/resume/patch";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { isValidSlug } from "@reactive-resume/schema/resume/slug";
 import { generateId, isRandomSlug } from "@reactive-resume/utils/string";
 import { consumeResumePasswordLimit } from "../../middleware/rate-limit";
+import {
+	assertCurrentClientWrite,
+	CurrentClientRequired,
+	saveProposalApplications,
+} from "../agent/proposal-applications";
+import { assertAiOperations, readAiUsage } from "../ai/usage";
 import { adoptEmbeddedLetters } from "../cover-letters/embedded";
-import { lockUser } from "../documents/ownership";
-import { getStorageService } from "../storage/service";
+import { idInUse, lockUser } from "../documents/ownership";
+import { enqueueStorageCleanup, reportStorageCleanupSummary, runStorageCleanup } from "../storage/cleanup";
 import { grantResumeAccess, hasResumeAccess } from "./access";
 import {
 	assertCanView,
@@ -28,7 +35,7 @@ import {
 } from "./access-policy";
 import { publishResumeUpdated } from "./events";
 import { parseStoredResumeData, parseWritableResumeData } from "./resume-data-validation";
-import { checkSlug, findFreeRandomSlug, findResume, recordSlugChange } from "./slugs";
+import { checkSlug, findFreeRandomSlug, findResume, followNameWithSlug, recordSlugChange } from "./slugs";
 import {
 	deleteVersion,
 	getVersion,
@@ -44,6 +51,33 @@ function resumeVersionConflict(updatedAt: Date) {
 		status: 409,
 		message: "The resume changed after this patch was generated. Read the resume again and regenerate the patch.",
 		data: { updatedAt: updatedAt.toISOString() },
+	});
+}
+
+/**
+ * An older app tried to change a resume holding assistant edits it could apply wrongly (see assertCurrentClientWrite).
+ * Nothing it sent is written. The resume's version moves on, so a draft it kept to resend later conflicts too, and the
+ * app answers with its usual version-conflict path: keep the draft as a copy, reload this resume.
+ */
+async function refuseOlderClient(input: { id: string; userId: string }) {
+	const [touched] = await db
+		.update(schema.resume)
+		.set({ updatedAt: new Date() })
+		.where(activeResumeWhere(input.id, input.userId))
+		.returning({ updatedAt: schema.resume.updatedAt });
+	if (!touched) return new ORPCError("NOT_FOUND");
+	await notifyResumeUpdated({
+		type: "resume.updated",
+		resumeId: input.id,
+		userId: input.userId,
+		updatedAt: touched.updatedAt.toISOString(),
+		mutation: "update",
+	});
+	return new ORPCError("RESUME_VERSION_CONFLICT", {
+		status: 409,
+		message:
+			"This resume has assistant edits this version of the app can't check. Refresh or update the app, then make the change again.",
+		data: { updatedAt: touched.updatedAt.toISOString(), reason: "CURRENT_CLIENT_REQUIRED" },
 	});
 }
 
@@ -100,6 +134,7 @@ const activeUnlockedResumeWhere = (id: string, userId: string) =>
 /** The fields a resume read or write returns to its owner. */
 /** The Share settings every read of a resume carries. */
 const shareColumns = {
+	allowWordDownload: schema.resume.allowWordDownload,
 	showInSearchEngines: schema.resume.showInSearchEngines,
 	hideContactDetails: schema.resume.hideContactDetails,
 	isPrimary: schema.resume.isPrimary,
@@ -112,6 +147,7 @@ const resumeColumns = {
 	slug: schema.resume.slug,
 	tags: schema.resume.tags,
 	data: schema.resume.data,
+	aiOperationIds: schema.resume.aiOperationIds,
 	isPublic: schema.resume.isPublic,
 	isLocked: schema.resume.isLocked,
 	showDownloadButtons: schema.resume.showDownloadButtons,
@@ -120,6 +156,16 @@ const resumeColumns = {
 	hasPassword: sql<boolean>`${schema.resume.password} IS NOT NULL`,
 };
 
+const RESUME_AI_ACTIONS = [
+	"import-pdf",
+	"import-docx",
+	"writing-review",
+	"improve",
+	"assistant",
+	"career-chat",
+	"tailor-resume",
+] as const;
+
 async function applyResumePatchTx(
 	client: DbOrTx,
 	input: {
@@ -127,6 +173,8 @@ async function applyResumePatchTx(
 		userId: string;
 		operations: JsonPatchOperation[];
 		expectedUpdatedAt?: Date;
+		proposalApplications?: ProposalApplications;
+		proposalSafety?: "v1";
 	},
 ) {
 	const [existing] = await client
@@ -143,6 +191,11 @@ async function applyResumePatchTx(
 	if (!existing) throw new ORPCError("NOT_FOUND");
 	if (existing.isLocked) throw new ORPCError("RESUME_LOCKED", { status: 403 });
 	assertResumeVersion(existing.updatedAt, input.expectedUpdatedAt);
+	await assertCurrentClientWrite(client, {
+		userId: input.userId,
+		document: { kind: "resume", id: input.id },
+		proposalSafety: input.proposalSafety,
+	});
 
 	input.operations.forEach(assertValidPatchPointers);
 
@@ -155,7 +208,7 @@ async function applyResumePatchTx(
 		if (error instanceof ResumePatchError) {
 			throw new ORPCError("INVALID_PATCH_OPERATIONS", {
 				status: 400,
-				message: error.message,
+				message: describeResumePatchError(error),
 				data: { code: error.code, index: error.index, operation: error.operation },
 			});
 		}
@@ -187,6 +240,13 @@ async function applyResumePatchTx(
 		if (input.expectedUpdatedAt) throw resumeVersionConflict(existing.updatedAt);
 		throw new ORPCError("NOT_FOUND");
 	}
+	const sourceIds = await saveProposalApplications(client, {
+		userId: input.userId,
+		document: { kind: "resume", id: input.id },
+		applications: input.proposalApplications,
+		conflict: () => resumeVersionConflict(existing.updatedAt),
+	});
+	if (sourceIds !== undefined) resume.aiOperationIds = sourceIds;
 
 	// Checkpoint every patch (AI/API edit) atomically within the same transaction as the edit.
 	// ponytail: a multi-patch agent turn writes one row per patch; 90-day retention bounds it.
@@ -194,6 +254,7 @@ async function applyResumePatchTx(
 		resumeId: resume.id,
 		userId: input.userId,
 		data: resume.data,
+		aiOperationIds: resume.aiOperationIds,
 		kind: "ai",
 	});
 
@@ -352,6 +413,7 @@ function toSharedResumeResponse(
 		isPublic: boolean;
 		isLocked: boolean;
 		showDownloadButtons: boolean;
+		allowWordDownload: boolean;
 		showInSearchEngines: boolean;
 		hideContactDetails: boolean;
 		isPrimary: boolean;
@@ -370,6 +432,7 @@ function toSharedResumeResponse(
 		isPublic: resume.isPublic,
 		isLocked: resume.isLocked,
 		showDownloadButtons: resume.showDownloadButtons,
+		allowWordDownload: resume.allowWordDownload,
 		hasPassword,
 	};
 }
@@ -384,30 +447,61 @@ async function notifyResumeUpdated(event: ResumeUpdatedEvent) {
 
 // One conditional UPDATE skips locked rows atomically; only a miss pays for the read that says why.
 // Resumes in Trash miss both the update and the fallback read (activeResumeWhere), throwing NOT_FOUND without leaking lock state.
-async function updateResumePassword(input: { id: string; userId: string; password: string | null }) {
-	const owned = activeResumeWhere(input.id, input.userId);
-	const [resume] = await db
-		.update(schema.resume)
-		.set({ password: input.password })
-		.where(activeUnlockedResumeWhere(input.id, input.userId))
-		.returning({ id: schema.resume.id, updatedAt: schema.resume.updatedAt });
-
-	if (!resume) {
-		const [existing] = await db.select({ id: schema.resume.id }).from(schema.resume).where(owned);
-		throw existing ? new ORPCError("RESUME_LOCKED", { status: 403 }) : new ORPCError("NOT_FOUND");
-	}
-
+/**
+ * Writes fields next to the data (lock, password, linked application) and answers with the accepted revision, so an
+ * open editor builds its next autosave on it instead of conflicting with it. With `expectedUpdatedAt` the write is
+ * conditional like `update`: a revision the caller hasn't seen returns RESUME_VERSION_CONFLICT.
+ */
+export async function writeResumeFields(input: {
+	id: string;
+	userId: string;
+	set: Partial<typeof schema.resume.$inferInsert>;
+	/** Refuse on a locked resume (everything but the lock itself). */
+	unlockedOnly: boolean;
+	expectedUpdatedAt?: Date | undefined;
+	mutation: ResumeUpdatedEvent["mutation"];
+	/** Runs first in the same transaction, such as taking the account lock that keeps lock order with other writes. */
+	before?: (tx: DbOrTx) => Promise<unknown>;
+}) {
+	const write = async (tx: DbOrTx) => {
+		await input.before?.(tx);
+		const [existing] = await tx
+			.select({ isLocked: schema.resume.isLocked, updatedAt: schema.resume.updatedAt })
+			.from(schema.resume)
+			.where(activeResumeWhere(input.id, input.userId))
+			.for("update");
+		if (!existing) throw new ORPCError("NOT_FOUND");
+		if (input.unlockedOnly && existing.isLocked) throw new ORPCError("RESUME_LOCKED", { status: 403 });
+		assertResumeVersion(existing.updatedAt, input.expectedUpdatedAt);
+		// Each revision is later than the last, even in the same millisecond, so a stale revision can't match it.
+		const updatedAt = new Date(Math.max(Date.now(), existing.updatedAt.getTime() + 1));
+		const [updated] = await tx
+			.update(schema.resume)
+			.set({ ...input.set, updatedAt })
+			.where(activeResumeWhere(input.id, input.userId))
+			.returning(resumeColumns);
+		if (!updated) throw new ORPCError("NOT_FOUND");
+		return updated;
+	};
+	const resume = await db.transaction(write);
 	await notifyResumeUpdated({
 		type: "resume.updated",
 		resumeId: resume.id,
 		userId: input.userId,
 		updatedAt: resume.updatedAt.toISOString(),
-		mutation: "password",
+		mutation: input.mutation,
 	});
+	return resume;
 }
 
 let unusedHash: Promise<string> | undefined;
 const unusedPasswordHash = () => (unusedHash ??= hash(generateId(), 10));
+
+/** Every storage prefix owned by one resume. Shared account pictures stay outside them. */
+const resumeStorageKeys = (userId: string, resumeId: string) => [
+	`uploads/${userId}/screenshots/${resumeId}`,
+	`uploads/${userId}/pdfs/${resumeId}`,
+];
 
 export const resumeService = {
 	tags,
@@ -428,6 +522,7 @@ export const resumeService = {
 				resumeId: input.resumeId,
 				userId: input.userId,
 				data: current.data,
+				aiOperationIds: current.aiOperationIds,
 				kind: "named",
 				name: input.name,
 			});
@@ -435,7 +530,7 @@ export const resumeService = {
 
 		// Non-destructive restore: writes the snapshot's data back through the normal update path, so
 		// prior versions remain and the restore is itself just another (snapshot-able, undoable) change.
-		restore: async (input: { resumeId: string; versionId: string; userId: string }) => {
+		restore: async (input: { resumeId: string; versionId: string; userId: string; proposalSafety?: "v1" }) => {
 			// Check lock state before loading or validating historical data so locked resumes fail without expensive work.
 			const current = await resumeService.getById({ id: input.resumeId, userId: input.userId });
 			if (current.isLocked) throw new ORPCError("RESUME_LOCKED", { status: 403 });
@@ -443,25 +538,34 @@ export const resumeService = {
 			const version = await getVersion(input);
 
 			// Capture the pre-restore state first so the restore itself is undoable.
+			// A named version's name goes with both snapshots, so History says which version was restored.
+			const restoredName = version.name || undefined;
 			await writeVersion(db, {
 				resumeId: input.resumeId,
 				userId: input.userId,
 				data: current.data,
+				aiOperationIds: current.aiOperationIds,
 				kind: "before-restore",
+				...(restoredName ? { name: restoredName } : {}),
 			});
 
 			const updated = await resumeService.update({
 				id: input.resumeId,
 				userId: input.userId,
 				data: version.data,
+				aiOperationIds: version.aiOperationIds,
+				expectedUpdatedAt: current.updatedAt,
 				skipAutoSnapshot: true,
+				...(input.proposalSafety ? { proposalSafety: input.proposalSafety } : {}),
 			});
 
 			await writeVersion(db, {
 				resumeId: input.resumeId,
 				userId: input.userId,
 				data: updated.data,
+				aiOperationIds: updated.aiOperationIds,
 				kind: "restored",
+				...(restoredName ? { name: restoredName } : {}),
 			});
 
 			return updated;
@@ -498,8 +602,8 @@ export const resumeService = {
 					.exhaustive(),
 			),
 
-	getById: async (input: { id: string; userId: string }) => {
-		const [resume] = await db
+	getById: async (input: { id: string; userId: string }, reader: DbOrTx = db) => {
+		const [resume] = await reader
 			.select({ ...resumeColumns, applicationId: schema.resume.applicationId })
 			.from(schema.resume)
 			// Read-only and owner-scoped, so resumes in Trash stay readable for their thumbnails; writes reject them.
@@ -508,7 +612,11 @@ export const resumeService = {
 		if (!resume) throw new ORPCError("NOT_FOUND");
 
 		// Clients get the current data shape (structured dates and their text in step), not the stored one.
-		return { ...resume, data: parseStoredResumeData(resume.data) };
+		return {
+			...resume,
+			data: parseStoredResumeData(resume.data),
+			aiUsage: await readAiUsage(input.userId, resume.aiOperationIds, reader),
+		};
 	},
 
 	getBySlug: async (input: {
@@ -572,24 +680,30 @@ export const resumeService = {
 		/** A random address, unique among the user's resumes, when omitted: one made from the name could be guessed. */
 		slug?: string;
 		tags: string[];
-		locale: Locale;
+		locale?: Locale;
 		data?: ResumeData;
+		aiOperationIds?: string[];
 		/** The first version in History: "created", or "import" for an imported document. */
 		origin?: "created" | "import";
 		/** The name follows the headline until someone renames the resume. */
 		autoName?: boolean;
+		/** More writes that must land with the resume or not at all, in its transaction. */
+		inTransaction?: (tx: DbOrTx, id: string) => Promise<void>;
 	}) => {
 		const id = input.id ?? generateId();
 		const data = parseWritableResumeData(structuredClone(input.data ?? defaultResumeData));
-		data.metadata.page.locale = input.locale;
+		if (input.locale) data.metadata.page.locale = input.locale;
 
 		if (input.slug !== undefined && !isValidSlug(input.slug)) {
 			throw new ORPCError("INVALID_SLUG", { status: 400 });
 		}
 
 		try {
+			// A random address, since one made from the name could be guessed (fork). It never follows the name.
 			const slug = input.slug ?? (await findFreeRandomSlug(db, input.userId));
 			await db.transaction(async (tx) => {
+				if (input.aiOperationIds?.length) await lockUser(tx, input.userId);
+				await assertAiOperations(input.userId, input.aiOperationIds ?? [], RESUME_AI_ACTIONS, tx);
 				// The resume row comes first: letters an imported file carried are saved linked to it.
 				const stored = structuredClone(data);
 				detachEmbeddedLetters(stored);
@@ -602,14 +716,20 @@ export const resumeService = {
 					tags: input.tags,
 					userId: input.userId,
 					data: stored,
+					aiOperationIds: [...new Set(input.aiOperationIds ?? [])],
 				});
 				await adoptEmbeddedLetters(tx, { userId: input.userId, resumeId: id, resumeName: input.name, data });
+				await input.inTransaction?.(tx, id);
 			});
 
 			// History is never empty: its first entry is where the document came from (best effort).
-			await writeVersion(db, { resumeId: id, userId: input.userId, data, kind: input.origin ?? "created" }).catch(
-				(error: unknown) => console.warn("Failed to save the first version:", error),
-			);
+			await writeVersion(db, {
+				resumeId: id,
+				userId: input.userId,
+				data,
+				aiOperationIds: input.aiOperationIds ?? [],
+				kind: input.origin ?? "created",
+			}).catch((error: unknown) => console.warn("Failed to save the first version:", error));
 
 			await notifyResumeUpdated({
 				type: "resume.updated",
@@ -628,6 +748,9 @@ export const resumeService = {
 			if (constraint === "resume_slug_user_id_unique") {
 				throw new ORPCError("RESUME_SLUG_ALREADY_EXISTS", { status: 400 });
 			}
+			// Only a client-chosen ID can collide: another press of the same request got there first, or the ID is taken.
+			// Expected, so it's answered, not logged with the resume's contents.
+			if (input.id && constraint === "resume_pkey") throw idInUse();
 
 			console.error("Couldn't create the resume. Try again.:", error);
 			throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Couldn't create the resume. Try again." });
@@ -641,10 +764,12 @@ export const resumeService = {
 		slug?: string;
 		tags?: string[];
 		data?: ResumeData;
+		aiOperationIds?: string[];
 		isPublic?: boolean;
 		/** A fresh random address; the old one, and any it redirected from, stop working at once. */
 		randomSlug?: boolean;
 		showDownloadButtons?: boolean;
+		allowWordDownload?: boolean;
 		showInSearchEngines?: boolean;
 		hideContactDetails?: boolean;
 		isPrimary?: boolean;
@@ -652,9 +777,14 @@ export const resumeService = {
 		skipAutoSnapshot?: boolean;
 		/** The editor visit this save belongs to; its autosaves share one version. */
 		sessionId?: string;
+		proposalApplications?: ProposalApplications;
+		proposalSafety?: "v1";
 	}) => {
+		if (input.aiOperationIds !== undefined && input.data === undefined)
+			throw new ORPCError("BAD_REQUEST", { message: "Save AI request sources with the reviewed resume content." });
 		const resume = await db
 			.transaction(async (tx) => {
+				if (input.aiOperationIds?.length) await lockUser(tx, input.userId);
 				const [existing] = await tx
 					.select({
 						name: schema.resume.name,
@@ -673,6 +803,14 @@ export const resumeService = {
 				if (!existing) throw new ORPCError("NOT_FOUND");
 				if (existing.isLocked) throw new ORPCError("RESUME_LOCKED", { status: 403 });
 				assertResumeVersion(existing.updatedAt, input.expectedUpdatedAt);
+				if (input.aiOperationIds !== undefined)
+					await assertAiOperations(input.userId, input.aiOperationIds, RESUME_AI_ACTIONS, tx);
+				if (input.data !== undefined)
+					await assertCurrentClientWrite(tx, {
+						userId: input.userId,
+						document: { kind: "resume", id: input.id },
+						proposalSafety: input.proposalSafety,
+					});
 
 				// Going public with an address made from a name (not one the owner set) gets a random one, since a name and
 				// a number are easy to guess; so does asking for a fresh one. Neither leaves a redirect, or the old address
@@ -713,15 +851,24 @@ export const resumeService = {
 					existing.autoName && input.name === undefined && normalizedData
 						? normalizedData.basics.headline.trim().slice(0, 100) || undefined
 						: undefined;
+				const nextName = input.name ?? followedName;
+				if (nextName !== undefined && nextName !== existing.name && input.slug === undefined)
+					await followNameWithSlug(tx, { userId: input.userId, resumeId: input.id, name: nextName });
+				// Nothing becomes primary by itself (fork): the short link opens a resume only when the owner picks it.
 				const updateData: Partial<typeof schema.resume.$inferSelect> = {
+					...(input.proposalApplications && Object.keys(input.proposalApplications).length
+						? { updatedAt: new Date() }
+						: {}),
 					...(input.name !== undefined ? { name: input.name, autoName: false } : {}),
 					...(followedName ? { name: followedName } : {}),
 					...(fresh ? { slug: fresh, slugChosen: false } : {}),
 					...(renamed ? { slug: input.slug, slugChosen: true } : {}),
 					...(input.tags !== undefined ? { tags: input.tags } : {}),
 					...(normalizedData ? { data: normalizedData } : {}),
+					...(input.aiOperationIds !== undefined ? { aiOperationIds: [...new Set(input.aiOperationIds)] } : {}),
 					...(input.isPublic !== undefined ? { isPublic: input.isPublic } : {}),
 					...(input.showDownloadButtons !== undefined ? { showDownloadButtons: input.showDownloadButtons } : {}),
+					...(input.allowWordDownload !== undefined ? { allowWordDownload: input.allowWordDownload } : {}),
 					...(input.showInSearchEngines !== undefined ? { showInSearchEngines: input.showInSearchEngines } : {}),
 					...(input.hideContactDetails !== undefined ? { hideContactDetails: input.hideContactDetails } : {}),
 					...(input.isPrimary !== undefined ? { isPrimary: input.isPrimary } : {}),
@@ -753,13 +900,30 @@ export const resumeService = {
 					.returning(resumeColumns);
 
 				if (!updated) throw new ORPCError("NOT_FOUND");
+				const sourceIds = await saveProposalApplications(tx, {
+					userId: input.userId,
+					document: { kind: "resume", id: input.id },
+					applications: input.proposalApplications,
+					conflict: () => resumeVersionConflict(existing.updatedAt),
+				});
+				if (sourceIds !== undefined) updated.aiOperationIds = sourceIds;
 				return updated;
 			})
-			.catch((error: unknown) => {
+			.catch(async (error: unknown) => {
+				if (error instanceof CurrentClientRequired) throw await refuseOlderClient(input);
 				if (error instanceof ORPCError) throw error;
 
 				if (uniqueConstraint(error) === "resume_slug_user_id_unique") {
 					throw new ORPCError("RESUME_SLUG_ALREADY_EXISTS", { status: 400 });
+				}
+
+				// A concurrent first publish or explicit Make primary took the role as this one tried to. Nothing is
+				// written; the owner can act again (the retry then takes the role over from that resume).
+				if (uniqueConstraint(error) === "resume_primary_unique") {
+					throw new ORPCError("RESUME_PRIMARY_CONFLICT", {
+						status: 409,
+						message: "Another resume became the primary one at the same time. Try again.",
+					});
 				}
 
 				console.error("Couldn't update the resume. Try again.:", error);
@@ -772,6 +936,7 @@ export const resumeService = {
 				resumeId: resume.id,
 				userId: input.userId,
 				data: resume.data,
+				aiOperationIds: resume.aiOperationIds,
 				...(input.sessionId ? { sessionId: input.sessionId } : {}),
 			});
 		}
@@ -784,11 +949,22 @@ export const resumeService = {
 			mutation: "update",
 		});
 
-		return resume;
+		return { ...resume, aiUsage: await readAiUsage(input.userId, resume.aiOperationIds) };
 	},
 
-	patch: async (input: { id: string; userId: string; operations: JsonPatchOperation[]; expectedUpdatedAt?: Date }) => {
-		const resume = await db.transaction((tx) => applyResumePatchTx(tx, input));
+	patch: async (input: {
+		id: string;
+		userId: string;
+		operations: JsonPatchOperation[];
+		expectedUpdatedAt?: Date;
+		proposalApplications?: ProposalApplications;
+		proposalSafety?: "v1";
+	}) => {
+		const resume = await db
+			.transaction((tx) => applyResumePatchTx(tx, input))
+			.catch(async (error: unknown) => {
+				throw error instanceof CurrentClientRequired ? await refuseOlderClient(input) : error;
+			});
 
 		await notifyResumeUpdated({
 			type: "resume.updated",
@@ -803,26 +979,25 @@ export const resumeService = {
 
 	patchInTransaction: applyResumePatchTx,
 
-	setLocked: async (input: { id: string; userId: string; isLocked: boolean }) => {
-		const [resume] = await db
-			.update(schema.resume)
-			.set({ isLocked: input.isLocked })
-			.where(activeResumeWhere(input.id, input.userId))
-			.returning({ id: schema.resume.id, updatedAt: schema.resume.updatedAt });
-
-		if (!resume) throw new ORPCError("NOT_FOUND");
-
-		await notifyResumeUpdated({
-			type: "resume.updated",
-			resumeId: resume.id,
+	setLocked: (input: { id: string; userId: string; isLocked: boolean; expectedUpdatedAt?: Date | undefined }) =>
+		writeResumeFields({
+			id: input.id,
 			userId: input.userId,
-			updatedAt: resume.updatedAt.toISOString(),
+			set: { isLocked: input.isLocked },
+			unlockedOnly: false,
+			expectedUpdatedAt: input.expectedUpdatedAt,
 			mutation: "lock",
-		});
-	},
+		}),
 
-	setPassword: async (input: { id: string; userId: string; password: string }) =>
-		updateResumePassword({ ...input, password: await hash(input.password, 10) }),
+	setPassword: async (input: { id: string; userId: string; password: string; expectedUpdatedAt?: Date | undefined }) =>
+		writeResumeFields({
+			id: input.id,
+			userId: input.userId,
+			set: { password: await hash(input.password, 10) },
+			unlockedOnly: true,
+			expectedUpdatedAt: input.expectedUpdatedAt,
+			mutation: "password",
+		}),
 
 	verifyPassword: async (input: {
 		slug: string;
@@ -852,7 +1027,15 @@ export const resumeService = {
 		return true;
 	},
 
-	removePassword: (input: { id: string; userId: string }) => updateResumePassword({ ...input, password: null }),
+	removePassword: (input: { id: string; userId: string; expectedUpdatedAt?: Date | undefined }) =>
+		writeResumeFields({
+			id: input.id,
+			userId: input.userId,
+			set: { password: null },
+			unlockedOnly: true,
+			expectedUpdatedAt: input.expectedUpdatedAt,
+			mutation: "password",
+		}),
 
 	/**
 	 * With `trashedBefore`, deletes only if the resume is still in Trash since before then (Trash expiry): a resume
@@ -875,16 +1058,17 @@ export const resumeService = {
 			if (resume.isLocked && !input.trashedBefore) throw new ORPCError("RESUME_LOCKED", { status: 403 });
 
 			await tx.delete(schema.resume).where(target);
+			await enqueueStorageCleanup(tx, input.userId, resumeStorageKeys(input.userId, input.id));
 			return true;
 		});
 		if (!deleted) return;
 
-		// Clean up storage files after the DB transaction succeeds
-		const storageService = getStorageService();
-		await Promise.allSettled([
-			storageService.delete(`uploads/${input.userId}/screenshots/${input.id}`),
-			storageService.delete(`uploads/${input.userId}/pdfs/${input.id}`),
-		]);
+		await runStorageCleanup({
+			storageKeys: resumeStorageKeys(input.userId, input.id),
+			limit: 2,
+		})
+			.then(reportStorageCleanupSummary)
+			.catch((error: unknown) => console.warn("Failed to run resume storage cleanup now; it will retry.", error));
 
 		await notifyResumeUpdated({
 			type: "resume.updated",
@@ -893,5 +1077,53 @@ export const resumeService = {
 			updatedAt: new Date().toISOString(),
 			mutation: "delete",
 		});
+	},
+
+	/**
+	 * Permanently deletes a batch of this account's trashed resumes in one statement. `ids` narrows it to selected
+	 * documents; `trashedBefore` keeps a resume restored by another request. Cleanup jobs are written in the same
+	 * transaction; a bounded immediate pass runs after commit and the scheduler retries anything still pending.
+	 */
+	deleteTrashedMany: async (input: { userId: string; ids?: readonly string[]; trashedBefore?: Date }) => {
+		const target = and(
+			eq(schema.resume.userId, input.userId),
+			isNotNull(schema.resume.trashedAt),
+			input.ids ? inArray(schema.resume.id, [...input.ids]) : undefined,
+			input.trashedBefore ? lt(schema.resume.trashedAt, input.trashedBefore) : undefined,
+		);
+		const ids = await db.transaction(async (tx) => {
+			await lockUser(tx, input.userId);
+			const rows = await tx.delete(schema.resume).where(target).returning({ id: schema.resume.id });
+			const deleted = rows.map((row) => row.id);
+			await enqueueStorageCleanup(
+				tx,
+				input.userId,
+				deleted.flatMap((id) => resumeStorageKeys(input.userId, id)),
+			);
+			return deleted;
+		});
+		if (ids.length === 0) return 0;
+
+		const cleanupKeys = ids.flatMap((id) => resumeStorageKeys(input.userId, id));
+		await runStorageCleanup({ storageKeys: cleanupKeys.slice(0, 200), limit: 200 })
+			.then(reportStorageCleanupSummary)
+			.catch((error: unknown) => console.warn("Failed to run Trash storage cleanup now; it will retry.", error));
+
+		const chunkSize = 100;
+		for (let start = 0; start < ids.length; start += chunkSize) {
+			const chunk = ids.slice(start, start + chunkSize);
+			await Promise.allSettled(
+				chunk.map((id) =>
+					notifyResumeUpdated({
+						type: "resume.updated",
+						resumeId: id,
+						userId: input.userId,
+						updatedAt: new Date().toISOString(),
+						mutation: "delete",
+					}),
+				),
+			);
+		}
+		return ids.length;
 	},
 };

@@ -25,25 +25,26 @@ describe("getPublicResumeCardData", () => {
 		const data = structuredClone(sampleResumeData);
 		data.basics.name = "";
 		data.summary.hidden = true;
-		// Columns in select order: data, hideContactDetails, isPrimary, customDomain.
-		pg.rows = [[data, false, false, null]];
+		// Columns in select order: data, hideContactDetails, isPrimary, customDomain, username.
+		pg.rows = [[data, false, false, null, "jane"]];
 
 		const card = await getPublicResumeCardData({ username: "jane", slug: "resume" });
 
 		const [query] = pg.queries;
-		// $3 to $5 are the username and its redirect lookup (the fork keeps old usernames working for 30 days).
-		expect(query?.text).toContain('"resume"."is_public" = $6');
-		expect(query?.params[5]).toBe(true);
+		// $3 to $6 are the username, upstream's released usernames and the fork's username redirects (30 days each).
+		expect(query?.text).toContain('"resume"."is_public" = $7');
+		expect(query?.params[6]).toBe(true);
 		expect(query?.text).toContain('"resume"."password" is null');
 		expect(query?.text).toContain('"resume"."trashed_at" is null');
 		expect(card?.data.summary.content).toBe("");
 		expect(card?.data.basics.headline).toBe(data.basics.headline);
+		expect(card?.isReleasedUsername).toBe(false);
 	});
 
 	it("matches renamed slugs via resumeSlugRedirect when redirect is active", async () => {
 		const data = structuredClone(sampleResumeData);
 		data.basics.name = "Jane Doe";
-		pg.rows = [[data, false, false, null]];
+		pg.rows = [[data, false, false, null, "jane"]];
 
 		const card = await getPublicResumeCardData({ username: "jane", slug: "old-slug" });
 
@@ -51,16 +52,22 @@ describe("getPublicResumeCardData", () => {
 		expect(query?.text).toContain('"resume_slug_redirect"');
 		expect(query?.text).toContain('"resume_slug_redirect"."expires_at" > now()');
 		expect(query?.text).toContain('"resume_slug_redirect"."user_id" = "resume"."user_id"');
-		expect(query?.text).toContain('order by "user"."username" = $7 desc, "resume"."slug" = $8 desc');
+		expect(query?.text).toContain('order by "user"."username" = $8 desc, "resume"."slug" = $9 desc');
 		expect(query?.params[0]).toBe("old-slug");
 		expect(query?.params[1]).toBe("old-slug");
 		expect(query?.params[2]).toBe("jane");
-		expect(query?.params[7]).toBe("old-slug");
+		expect(query?.params[8]).toBe("old-slug");
 		expect(card?.data.basics.name).toBe("Jane Doe");
 	});
 
 	it("returns null when redirect or resume does not exist", async () => {
 		const card = await getPublicResumeCardData({ username: "jane", slug: "missing-slug" });
 		expect(card).toBeNull();
+	});
+
+	it("identifies a card resolved through a released username", async () => {
+		pg.rows = [[structuredClone(sampleResumeData), false, false, null, "new-jane"]];
+		const card = await getPublicResumeCardData({ username: "jane", slug: "resume" });
+		expect(card?.isReleasedUsername).toBe(true);
 	});
 });

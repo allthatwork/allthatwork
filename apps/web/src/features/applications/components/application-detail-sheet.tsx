@@ -7,7 +7,8 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
+import { applicationSentAt } from "@reactive-resume/schema/applications/outcomes";
 import { Button } from "@reactive-resume/ui/components/button";
 import {
 	DropdownMenu,
@@ -22,7 +23,7 @@ import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@reactive-res
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
-import { getCategoryLane, getDisplayLane, getLaneLabel, getNextLane } from "../lanes";
+import { getCategoryLane, getDisplayLane, getLaneLabel, getNextLane, getStageDisplay } from "../lanes";
 import { daysInLane } from "../next-step";
 import { applicationDetailQueryOptions, applicationsListQueryOptions, getInitialApplicationDetail } from "../queries";
 import { getClosedReasonLabel } from "../stages";
@@ -46,6 +47,7 @@ import { orpc } from "@/libs/orpc/client";
 
 type DetailSheetProps = {
 	application: ApplicationSummary | null;
+	returnFocus: (id: string) => HTMLElement | null;
 	onOpenChange: (open: boolean) => void;
 	onEditDetails: (application: Application) => void;
 };
@@ -54,7 +56,8 @@ type DetailSheetProps = {
  * One application, 480px from the right (full screen on phones): the stage stepper with Move to next, the next
  * step, what was sent, the key facts, notes and activity. Close application… takes a reason; Delete is in ⋯.
  */
-export function ApplicationDetailSheet({ application, onOpenChange, onEditDetails }: DetailSheetProps) {
+export function ApplicationDetailSheet({ application, onOpenChange, onEditDetails, returnFocus }: DetailSheetProps) {
+	const contentRef = useRef<HTMLDivElement>(null);
 	const phone = useBreakpoint() === "mobile";
 	// Closing keeps the last application on screen until the sheet has slid away.
 	const [shown, onOpenChangeComplete] = useClosingValue(application);
@@ -71,6 +74,13 @@ export function ApplicationDetailSheet({ application, onOpenChange, onEditDetail
 	return (
 		<Sheet open={Boolean(application)} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
 			<SheetContent
+				ref={contentRef}
+				initialFocus={() =>
+					contentRef.current?.querySelector<HTMLElement>(
+						current ? '[data-slot="sheet-title"]' : '[data-slot="sheet-close"]',
+					) ?? false
+				}
+				finalFocus={() => (shown ? returnFocus(shown.id) : null) ?? false}
 				side={phone ? "bottom" : "right"}
 				closeLabel={t`Close`}
 				className={cn("gap-0", phone ? "h-svh" : "data-[side=right]:sm:max-w-[480px]")}
@@ -85,7 +95,9 @@ export function ApplicationDetailSheet({ application, onOpenChange, onEditDetail
 					/>
 				) : (
 					<div className="grid gap-2 p-5">
-						<SheetTitle>{shown?.role}</SheetTitle>
+						<SheetTitle tabIndex={-1} dir="auto">
+							{shown?.role}
+						</SheetTitle>
 						<SheetDescription aria-live="polite">
 							{isError ? t`Couldn't load this. Your saved data hasn't changed.` : t`Loading…`}
 						</SheetDescription>
@@ -114,7 +126,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 	const { data: applications = [] } = useQuery(applicationsListQueryOptions());
 	const { data: profile } = useQuery(orpc.career.profile.queryOptions());
 	const confirm = useConfirm();
-	const { moveTo, close, remove } = useApplicationActions();
+	const { moveTo, close, remove, logFollowUp } = useApplicationActions();
 	const { lanes, active } = useApplicationLanes();
 	const [interview, setInterview] = useState<{ open: boolean; entry: InterviewTimelineEntry | null }>({
 		open: false,
@@ -125,18 +137,45 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 	const current = getDisplayLane(lanes, application);
 	const steps = active.filter((lane) => lane.category !== "closed");
 	const next = getNextLane(lanes, current);
-	const reached = steps.findIndex((lane) => lane.id === current.id);
-	const since = daysInLane(application);
+	const stage = getStageDisplay(lanes, application);
 	const closed = application.status === "closed";
-	// One click everywhere, Mark as applied included: a move out of Saved saves the written answers on the server.
+	// An accepted offer keeps its pipeline filled through Offer: it was won, not lost.
+	const reached = stage.accepted
+		? steps.findLastIndex((lane) => lane.category === "offer")
+		: steps.findIndex((lane) => lane.id === current.id);
+	const since = daysInLane(application);
+	// One click everywhere, Mark as applied included: a move out of Saved saves the written answers on the server and
+	// records the submission.
 	const goTo = (lane: ApplicationLane) => {
-		if (lane.id !== current.id) moveTo(application, lane);
+		if (lane.id === current.id) return;
+		// Moving to Interview usually means one is being set up: once the move is saved, offer to schedule it, unless
+		// one already is.
+		const scheduled = application.activity.some(
+			(entry) => entry.type === "interview" && new Date(entry.at).getTime() > Date.now(),
+		);
+		moveTo(
+			application,
+			lane,
+			undefined,
+			lane.category === "interview" && !scheduled
+				? () =>
+						toast.add({
+							description: t`Moved to ${getLaneLabel(lane)}.`,
+							actionProps: {
+								children: t`Schedule it`,
+								onClick: () => setInterview({ open: true, entry: null }),
+							},
+						})
+				: undefined,
+		);
 	};
 
 	const onDelete = async () => {
-		const confirmed = await confirm(t`Delete this application?`, {
-			description: t`“${application.role} · ${application.company}” and its timeline are deleted permanently. This can't be undone.`,
-			confirmText: t`Delete application`,
+		const confirmed = await confirm(t`Move to Trash`, {
+			description: t`Applications and their timelines can be restored from Trash.`,
+			confirmText: t`Move to Trash`,
+			cancelText: t`Keep application`,
+			variant: "danger",
 		});
 		if (!confirmed) return;
 		remove.mutate({ id: application.id }, { onSuccess: onDeleted });
@@ -145,7 +184,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 	return (
 		<>
 			<div className="min-h-0 flex-1 overflow-y-auto">
-				<header className="grid gap-4 border-b border-line px-5 pt-5 pb-4">
+				<header className="sticky top-0 z-10 grid gap-4 border-b border-line bg-raised px-5 pt-5 pb-4 [@media(max-height:500px)]:static">
 					<div className="flex items-start gap-3 pe-8">
 						<span
 							aria-hidden="true"
@@ -154,7 +193,9 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 							{application.company.slice(0, 1).toUpperCase()}
 						</span>
 						<div className="grid min-w-0 flex-1 gap-0.5">
-							<SheetTitle className="font-display text-[22px] leading-7 font-medium">{application.role}</SheetTitle>
+							<SheetTitle tabIndex={-1} dir="auto" className="font-display text-[22px] leading-7">
+								{application.role}
+							</SheetTitle>
 							<SheetDescription className="text-sm text-ink-2">
 								{application.companyId ? (
 									<Link
@@ -162,10 +203,10 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 										search={{ tab: "companies", company: application.companyId }}
 										className="hover:underline"
 									>
-										{application.company}
+										<bdi>{application.company}</bdi>
 									</Link>
 								) : (
-									application.company
+									<bdi>{application.company}</bdi>
 								)}
 								{application.location && ` · ${application.location}`}
 							</SheetDescription>
@@ -187,7 +228,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 								<DropdownMenuSeparator />
 								<DropdownMenuItem variant="destructive" onClick={onDelete}>
 									<Icon name="trash" size={18} />
-									<Trans>Delete…</Trans>
+									<Trans>Move to Trash</Trans>
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -212,11 +253,13 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 										>
 											<span
 												className="h-1.5 rounded-sm transition-colors duration-standard"
-												style={{ background: !closed && index <= reached ? lane.color : "var(--line)" }}
+												style={{
+													background: (!closed || stage.accepted) && index <= reached ? lane.color : "var(--line)",
+												}}
 											/>
 											<span
 												className={cn(
-													"truncate text-[11px]",
+													"truncate text-xs",
 													lane.id === current.id ? "font-semibold text-ink" : "text-ink-3",
 												)}
 											>
@@ -229,12 +272,13 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 						</ol>
 						<div className="flex flex-wrap items-center justify-between gap-2">
 							<span className="flex min-w-0 items-center gap-1.5 text-sm">
-								<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: current.color }} />
-								<strong className="truncate font-semibold">{getLaneLabel(current)}</strong>
+								<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: stage.color }} />
+								{stage.accepted && <Icon name="check" size={16} className="shrink-0 text-accent-text" />}
+								<strong className="truncate font-semibold">{stage.label}</strong>
 								<span className="shrink-0 text-ink-3">
-									{closed && application.closedReason ? (
+									{stage.accepted ? null : closed && application.closedReason ? (
 										<>· {getClosedReasonLabel(application.closedReason)}</>
-									) : (
+									) : since === null ? null : (
 										<>
 											· <Plural value={since} _0="since today" one="for # day" other="for # days" />
 										</>
@@ -260,6 +304,15 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 						application={application}
 						onScheduleInterview={(entry) => setInterview({ open: true, entry })}
 					/>
+					{!closed && application.status !== "saved" && (
+						<Button
+							variant="secondary"
+							disabled={logFollowUp.isPending}
+							onClick={() => logFollowUp.mutate({ id: application.id })}
+						>
+							<Trans>Followed up</Trans>
+						</Button>
+					)}
 					<SentDocuments application={application} disabled={remove.isPending} />
 					<Facts
 						application={application}
@@ -284,7 +337,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 				{!closed ? (
 					<>
 						<Button variant="secondary" onClick={() => setClosing(true)}>
-							<Trans>Close application…</Trans>
+							<Trans>Mark as closed…</Trans>
 						</Button>
 						{application.sourceUrl && (
 							<Button
@@ -308,6 +361,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 
 			<CloseDialog
 				open={closing}
+				status={application.status}
 				onOpenChange={setClosing}
 				lanes={active}
 				onClose={(lane, reason) => (lane ? moveTo(application, lane, reason) : reason && close(application, reason))}
@@ -332,11 +386,13 @@ function Facts({ application, locale, foundOn, foundBy }: FactsProps) {
 		onSuccess: () => invalidate(application.id),
 		onError: () => toast.add({ type: "error", description: t`Couldn't save the change. Try again.` }),
 	});
-	const applied = new Date(application.appliedAt).toLocaleDateString(locale, {
-		month: "short",
-		day: "numeric",
-		year: "numeric",
-	});
+	const applied = applicationSentAt(application)
+		? new Date(application.appliedAt).toLocaleDateString(locale, {
+				month: "short",
+				day: "numeric",
+				year: "numeric",
+			})
+		: t`Not recorded`;
 
 	return (
 		<dl className="grid grid-cols-2 gap-x-4 gap-y-3">
@@ -369,7 +425,7 @@ function Facts({ application, locale, foundOn, foundBy }: FactsProps) {
 				</dt>
 				<dd className="min-w-0">
 					<Contacts
-						contacts={application.contacts}
+						application={application}
 						disabled={update.isPending}
 						onChange={(contacts) => update.mutate({ id: application.id, contacts })}
 					/>

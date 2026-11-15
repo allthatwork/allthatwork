@@ -59,7 +59,8 @@ export const defaultResumeData: ResumeData = {
 			pages: [
 				{
 					fullWidth: false,
-					main: ["profiles", "summary", "education", "experience", "projects", "volunteer", "references"],
+					// Career narrative leads; Profiles stays in main so one-column imports retain it.
+					main: ["summary", "experience", "education", "projects", "volunteer", "references", "profiles"],
 					sidebar: ["skills", "certifications", "awards", "languages", "interests", "publications"],
 				},
 			],

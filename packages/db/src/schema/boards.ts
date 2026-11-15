@@ -95,5 +95,5 @@ export const companyBoard = pg.pgTable(
 		/** Roles open at this moment landed in New roles once; later runs bring only roles first seen after it. */
 		confirmedAt: pg.timestamp("confirmed_at", { withTimezone: true }).notNull().defaultNow(),
 	},
-	(t) => [pg.uniqueIndex().on(t.userId, t.companyId, t.boardId), pg.index().on(t.boardId)],
+	(t) => [pg.uniqueIndex().on(t.userId, t.companyId, t.boardId), pg.index().on(t.boardId), pg.index().on(t.companyId)],
 );

@@ -69,7 +69,7 @@ export function ManageViewsSheet({
 				onOpenChange(next);
 			}}
 		>
-			<SheetContent side={phone ? "bottom" : "right"} className="gap-0 sm:max-w-[440px]">
+			<SheetContent closeLabel={t`Close`} side={phone ? "bottom" : "right"} className="gap-0 sm:max-w-[440px]">
 				<div className={cn("grid gap-1 pe-14 pb-3.5", phone ? "ps-4 pt-1.5" : "ps-6 pt-5")}>
 					<SheetTitle className="text-[22px] leading-7">
 						<Trans>Views</Trans>

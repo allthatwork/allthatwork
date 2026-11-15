@@ -230,7 +230,7 @@ describe.skipIf(!databaseUrl)("job board checks", () => {
 		await expect(boards.company("bob", "alice-linear")).rejects.toMatchObject({ code: "NOT_FOUND" });
 		await expect(boards.unwatch("alice", bobs.watched[0]?.id ?? "")).rejects.toMatchObject({ code: "NOT_FOUND" });
 		const [aliceRole] = await jobs.opportunities("alice");
-		await jobs.dismissOpportunity("bob", aliceRole?.id ?? "");
+		await expect(jobs.dismissOpportunity("bob", aliceRole?.id ?? "")).rejects.toMatchObject({ code: "NOT_FOUND" });
 		expect(await jobs.opportunities("alice")).toHaveLength(3);
 		expect((await boards.exportData("bob")).map((row) => row.companyId)).toEqual(["bob-linear"]);
 	});

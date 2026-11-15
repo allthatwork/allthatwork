@@ -8,12 +8,11 @@ import * as Clipboard from "expo-clipboard";
 import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
 import { View } from "react-native";
-import { publicResumeUrl } from "@reactive-resume/resume/sharing";
+import { publicResumeUrl, shareListState, shortLinkOpens } from "@reactive-resume/resume/sharing";
 import { CustomDomain } from "./custom-domain";
-import { flushResume } from "./document";
+import { setResumePassword } from "./revision";
 import { client, orpc } from "@/api/client";
 import { useResumeStore } from "@/draft";
-import { resume as draftResume } from "@/draft/runtime";
 import { Banner, Button, ConfirmDialog, ListGroup, ListRow, Sheet, Switch, TextField, showToast, useTheme } from "@/ui";
 
 type WebPageSettingsProps = {
@@ -36,14 +35,24 @@ export function WebPageSettings({ resume, offline, username, origin, flags, oper
 	const { t } = useLingui();
 	const { space } = useTheme();
 	const updateData = useResumeStore((state) => state.update);
+	// Without custom domains on this server, the copy names only the short link.
+	const domains = flags?.customDomains ?? false;
 	const list = useQuery({ ...orpc.resume.list.queryOptions(), enabled: !offline });
 	const [dialog, setDialog] = useState<"primary" | "password" | "remove-password" | null>(null);
 	const [password, setPassword] = useState("");
 	const [confirmation, setConfirmation] = useState("");
 	const disabled = resume.isLocked || offline || operations.busy;
 	const otherPrimary = list.data?.find((item) => item.isPrimary && item.id !== resume.id);
+	const listState = offline ? "offline" : shareListState(list);
 	const searchBlocked = !resume.isPublic || resume.hasPassword;
 	const shortLink = username ? publicResumeUrl(origin, { username, slug: resume.slug, isPrimary: true }) : undefined;
+	// The short link opens the primary resume only while it's published; at any other time it would copy a dead link.
+	const opens = shortLinkOpens({
+		isPrimary: resume.isPrimary,
+		isPublic: resume.isPublic,
+		listState,
+		otherPrimaryIsPublic: otherPrimary?.isPublic,
+	});
 
 	const preview = () =>
 		operations.run(async () => {
@@ -60,10 +69,7 @@ export function WebPageSettings({ resume, offline, username, origin, flags, oper
 	const savePassword = async (remove = false) => {
 		if (!remove && (password.length < 6 || password.length > 64 || password !== confirmation)) return;
 		const success = await operations.run(async () => {
-			await flushResume(resume.id);
-			if (remove) await client.resume.removePassword({ id: resume.id });
-			else await client.resume.setPassword({ id: resume.id, password });
-			await draftResume.refresh();
+			await setResumePassword(resume.id, remove ? null : password);
 		});
 		if (success) closePassword();
 	};
@@ -78,17 +84,35 @@ export function WebPageSettings({ resume, offline, username, origin, flags, oper
 				onPress={() => void preview()}
 			/>
 
-			<ListGroup title={t`Short link and domain`}>
+			<ListGroup title={domains ? t`Short link and domain` : t`Short link`}>
 				<ListRow
 					title={t`Primary resume`}
 					subtitle={
 						resume.isPrimary
 							? resume.isPublic
-								? t`Your short link and custom domain open this resume.`
-								: t`Your short link and custom domain say this resume isn't shared until you publish it again.`
-							: otherPrimary
-								? t`Your short link and custom domain open “${otherPrimary.name}”.`
-								: t`Publish this resume to open it at your short link and custom domain.`
+								? domains
+									? t`Your short link and custom domain open this resume.`
+									: t`Your short link opens this resume.`
+								: domains
+									? t`Your short link and custom domain say this resume isn't shared until you publish it again.`
+									: t`Your short link says this resume isn't shared until you publish it again.`
+							: listState === "pending"
+								? t`Checking which resume opens your short link…`
+								: listState === "error"
+									? t`Couldn't check which resume opens your short link. Reopen Share to try again.`
+									: otherPrimary
+										? otherPrimary.isPublic
+											? domains
+												? t`Your short link and custom domain open “${otherPrimary.name}”.`
+												: t`Your short link opens “${otherPrimary.name}”.`
+											: domains
+												? t`Your short link and custom domain point to “${otherPrimary.name}”, which isn't published.`
+												: t`Your short link points to “${otherPrimary.name}”, which isn't published.`
+										: resume.isPublic
+											? domains
+												? t`Turn this on to open this resume at your short link and custom domain.`
+												: t`Turn this on to open this resume at your short link.`
+											: `${domains ? t`Publish this resume to open it at your short link and custom domain.` : t`Publish this resume to open it at your short link.`} ${t`If another resume holds Primary, turn it on for this one instead.`}`
 					}
 					trailing={
 						<Switch
@@ -105,7 +129,7 @@ export function WebPageSettings({ resume, offline, username, origin, flags, oper
 					<ListRow
 						title={shortLink.replace(/^https?:\/\//, "")}
 						leading="link-simple-horizontal"
-						disabled={offline}
+						disabled={offline || !opens}
 						onPress={() =>
 							void operations.run(async () => {
 								await Clipboard.setStringAsync(shortLink);
@@ -161,7 +185,7 @@ export function WebPageSettings({ resume, offline, username, origin, flags, oper
 				/>
 				<ListRow
 					title={t`Hide contact details`}
-					subtitle={t`Your email, phone, location and other header details, and references' phone numbers, are left out of the web page, its PDF and search results.`}
+					subtitle={t`Your email, phone, location and extra header fields, and references' phone numbers, are left out of the web page, its PDF and search results. Your website stays.`}
 					trailing={
 						<Switch
 							label={t`Hide contact details`}
@@ -199,6 +223,18 @@ export function WebPageSettings({ resume, offline, username, origin, flags, oper
 							value={resume.showDownloadButtons}
 							disabled={disabled}
 							onValueChange={(value) => void save({ showDownloadButtons: value })}
+						/>
+					}
+				/>
+				<ListRow
+					title={t`Visitors can download Word`}
+					subtitle={t`Off by default. Shares an editable Word file with the same visible content as your web page. Layout is simplified.`}
+					trailing={
+						<Switch
+							label={t`Visitors can download Word`}
+							value={resume.allowWordDownload === true}
+							disabled={disabled}
+							onValueChange={(value) => void save({ allowWordDownload: value })}
 						/>
 					}
 				/>
@@ -262,6 +298,7 @@ export function WebPageSettings({ resume, offline, username, origin, flags, oper
 				title={t`Remove the password?`}
 				message={t`Anyone with the link will be able to view your resume.`}
 				confirmLabel={t`Remove password`}
+				cancelLabel={t`Keep password`}
 				onCancel={() => setDialog(null)}
 				onConfirm={() => {
 					setDialog(null);

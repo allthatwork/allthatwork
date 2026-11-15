@@ -1,15 +1,23 @@
+import type { ApplicationLane } from "../lanes";
 import type { ApplicationSummary } from "../types";
+import { i18n } from "@lingui/core";
 import { plural, t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import { useRef } from "react";
+import { APPLICATION_STATUSES } from "@reactive-resume/schema/applications/data";
 import { Button } from "@reactive-resume/ui/components/button";
+import { EmptyState } from "@reactive-resume/ui/components/empty-state";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Skeleton } from "@reactive-resume/ui/components/skeleton";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { APP_NAME } from "@reactive-resume/utils/brand";
-import { computeInsights, computeOutcomes, computeTimeline } from "../insights";
-import { getStageColor, getStageLabel } from "../stages";
+import { fitLabel } from "@reactive-resume/utils/string";
+import { resolveExportTokens } from "../flow-tokens";
+import { computeInsights, computeOutcomes, computeTimeline, countSources } from "../insights";
+import { getCategoryDisplay } from "../lanes";
+import { getStageColor } from "../stages";
+import { useApplicationLanes } from "../use-application-lanes";
 import { stagger } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
 
@@ -27,9 +35,15 @@ export function InsightsSkeleton() {
 	);
 }
 
-export function ApplicationInsights({ applications }: { applications: ApplicationSummary[] }) {
-	const { data } = useQuery(orpc.applications.stats.queryOptions({}));
+type ApplicationInsightsProps = {
+	applications: ApplicationSummary[];
+	onSaveJob: () => void;
+	onClearFilters?: (() => void) | undefined;
+};
+
+export function ApplicationInsights({ applications, onSaveJob, onClearFilters }: ApplicationInsightsProps) {
 	const { data: documents } = useQuery(orpc.documents.list.queryOptions({ input: { trashed: false } }));
+	const { lanes } = useApplicationLanes();
 
 	// A resume is tailored for an application when it was made for it (Copy for a job).
 	const madeFor = new Map(
@@ -40,20 +54,46 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 	);
 
 	// Sending history includes applications that later closed, and excludes jobs never sent.
-	const timeline = computeTimeline(applications);
+	const timeline = computeTimeline(applications, i18n.locale);
 	const maxWeek = Math.max(1, ...timeline.map((bucket) => bucket.count));
 
-	if (!data) return <InsightsSkeleton />;
-
-	const insights = computeInsights(data.byStage);
-	const maxSource = Math.max(1, ...data.bySource.map((s) => s.count));
+	const insights = computeInsights(
+		APPLICATION_STATUSES.map((status) => ({
+			status,
+			count: applications.filter((application) => application.status === status).length,
+		})),
+		i18n.locale,
+	);
+	const sources = countSources(applications);
+	const maxSource = Math.max(1, ...sources.map((s) => s.count));
 	const widest = Math.max(1, ...outcomes.funnel.map((row) => row.reached));
 
 	if (outcomes.sent === 0) {
 		return (
-			<p className="py-16 text-center text-sm text-ink-2">
-				<Trans>Once you've sent a few applications, this shows how far they get and how quickly people reply.</Trans>
-			</p>
+			<EmptyState
+				title={<Trans>No replies to chart yet</Trans>}
+				description={
+					onClearFilters ? (
+						<Trans>Try different words or clear your filters.</Trans>
+					) : (
+						<Trans>
+							Once you've sent a few applications, this shows how far they get and how quickly people reply.
+						</Trans>
+					)
+				}
+				action={
+					onClearFilters ? (
+						<Button variant="secondary" onClick={onClearFilters}>
+							<Trans>Clear filters</Trans>
+						</Button>
+					) : (
+						<Button onClick={onSaveJob}>
+							<Icon name="plus" />
+							<Trans>Save job</Trans>
+						</Button>
+					)
+				}
+			/>
 		);
 	}
 
@@ -64,29 +104,28 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 					<Trans>How far applications get</Trans>
 				</h2>
 				<ol className="grid gap-2">
-					{outcomes.funnel.map((row, index) => (
-						<li key={row.status} className="grid grid-cols-[92px_minmax(0,1fr)_32px] items-center gap-3 text-sm">
-							<span className="flex items-center gap-1.5 text-ink-2">
-								<span
-									aria-hidden="true"
-									className="size-2 rounded-sm"
-									style={{ background: getStageColor(row.status) }}
-								/>
-								{getStageLabel(row.status)}
-							</span>
-							<span className="h-5 overflow-hidden rounded bg-sunken">
-								<span
-									className="block h-full origin-left rounded transition-[scale] delay-(--stagger) duration-emphasized ease-enter motion-reduce:delay-0 rtl:origin-right starting:scale-x-0"
-									style={{
-										...stagger(index),
-										width: `${(row.reached / widest) * 100}%`,
-										background: getStageColor(row.status),
-									}}
-								/>
-							</span>
-							<span className="text-end font-display text-base tabular-nums">{row.reached}</span>
-						</li>
-					))}
+					{outcomes.funnel.map((row, index) => {
+						const stage = getCategoryDisplay(lanes, row.status);
+						return (
+							<li key={row.status} className="grid grid-cols-[8rem_minmax(0,1fr)_2rem] items-center gap-3 text-sm">
+								<span className="flex min-w-0 items-center gap-1.5 text-ink-2">
+									<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: stage.color }} />
+									<span className="truncate">{stage.label}</span>
+								</span>
+								<span className="h-5 overflow-hidden rounded bg-sunken">
+									<span
+										className="block h-full origin-left rounded transition-[scale] delay-(--stagger) duration-emphasized ease-enter motion-reduce:delay-0 rtl:origin-right starting:scale-x-0"
+										style={{
+											...stagger(index),
+											width: `${(row.reached / widest) * 100}%`,
+											background: stage.color,
+										}}
+									/>
+								</span>
+								<span className="text-end font-display text-base tabular-nums">{i18n.number(row.reached)}</span>
+							</li>
+						);
+					})}
 				</ol>
 				<p className="text-xs text-ink-3">
 					<Trans>Counts every application that reached each stage, including ones now closed.</Trans>
@@ -95,15 +134,15 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 
 			<div className="grid gap-4 sm:grid-cols-2">
 				<div className="rounded-xl border border-line p-5">
-					<div className="font-display text-[34px] leading-10 font-medium">
-						{Math.round((outcomes.heardBack / outcomes.sent) * 100)}%
+					<div className="font-display text-[34px] leading-10">
+						{i18n.number(Math.round((outcomes.heardBack / outcomes.sent) * 100))}%
 					</div>
 					<div className="text-sm text-ink-2">
 						<Trans>heard back</Trans>
 					</div>
 				</div>
 				<div className="rounded-xl border border-line p-5">
-					<div className="font-display text-[34px] leading-10 font-medium">
+					<div className="font-display text-[34px] leading-10">
 						{outcomes.medianDaysToReply === null ? (
 							"—"
 						) : (
@@ -121,17 +160,25 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 					<h2 id="insights-tailored" className="text-sm font-semibold">
 						<Trans>Tailored vs. base resume</Trans>
 					</h2>
-					<p className="text-sm leading-6 text-ink-2">
-						<Trans>
-							{outcomes.tailored.replied} of {outcomes.tailored.sent} tailored applications got a reply;{" "}
-							{outcomes.base.replied} of {outcomes.base.sent} sent with another resume.
-						</Trans>{" "}
-						{outcomes.tailored.sent + outcomes.base.sent < 10 && <Trans>Small numbers, but worth noticing.</Trans>}
-					</p>
+					{/* A comparison needs a few of each: "0 of 0" compares nothing. */}
+					{outcomes.tailored.sent >= 3 && outcomes.base.sent >= 3 ? (
+						<p className="text-sm leading-6 text-ink-2">
+							<Trans>
+								{i18n.number(outcomes.tailored.replied)} of {i18n.number(outcomes.tailored.sent)} tailored applications
+								got a reply; {i18n.number(outcomes.base.replied)} of {i18n.number(outcomes.base.sent)} sent with another
+								resume.
+							</Trans>{" "}
+							{outcomes.tailored.sent + outcomes.base.sent < 10 && <Trans>Small numbers, but worth noticing.</Trans>}
+						</p>
+					) : (
+						<p className="text-sm leading-6 text-ink-2">
+							<Trans>Not enough applications to compare yet: this needs 3 of each.</Trans>
+						</p>
+					)}
 				</section>
 			)}
 
-			<PipelineFlow insights={insights} />
+			<PipelineFlow insights={insights} lanes={lanes} />
 
 			<div className="grid gap-4 lg:grid-cols-2">
 				{/* application velocity over time */}
@@ -142,11 +189,13 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 					<p className="mt-0.5 text-xs text-ink-3">
 						<Trans>Applications sent per week (last 8 weeks)</Trans>
 					</p>
-					<div className="mt-4 flex items-end gap-2">
+					<div className="mt-4 flex items-end gap-2 overflow-x-auto">
 						{timeline.map((bucket, index) => (
 							<div key={bucket.label} className="flex flex-1 flex-col items-center gap-1">
 								<div className="flex h-28 w-full flex-col justify-end">
-									<span className="mb-1 text-center text-[10px] text-ink-3 tabular-nums">{bucket.count || ""}</span>
+									<span className="mb-1 text-center text-xs text-ink-3 tabular-nums">
+										{bucket.count ? i18n.number(bucket.count) : ""}
+									</span>
 									<div
 										className="w-full origin-bottom rounded-t bg-accent transition-[scale] delay-(--stagger) duration-emphasized ease-enter motion-reduce:delay-0 starting:scale-y-0"
 										style={{
@@ -155,7 +204,7 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 										}}
 									/>
 								</div>
-								<span className="text-[10px] text-ink-3 tabular-nums">{bucket.label}</span>
+								<span className="text-xs text-ink-3 tabular-nums">{bucket.label}</span>
 							</div>
 						))}
 					</div>
@@ -170,12 +219,12 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 						<Trans>Count by source</Trans>
 					</p>
 					<div className="mt-4 flex flex-col gap-3">
-						{data.bySource.length === 0 ? (
+						{sources.length === 0 ? (
 							<p className="text-sm text-ink-3">
 								<Trans>No source data yet.</Trans>
 							</p>
 						) : (
-							data.bySource.map((row, index) => (
+							sources.map((row, index) => (
 								<div key={row.source} className="flex items-center gap-3 text-xs">
 									<span className="w-28 shrink-0 truncate font-medium">{row.source}</span>
 									<div className="h-2.5 flex-1 overflow-hidden rounded-sm bg-sunken">
@@ -184,7 +233,7 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 											style={{ ...stagger(index), width: `${Math.max((row.count / maxSource) * 100, 3)}%` }}
 										/>
 									</div>
-									<span className="w-6 text-right text-ink-3">{row.count}</span>
+									<span className="w-6 text-end text-ink-3">{i18n.number(row.count)}</span>
 								</div>
 							))
 						)}
@@ -195,12 +244,8 @@ export function ApplicationInsights({ applications }: { applications: Applicatio
 	);
 }
 
-// Vibrant, dark-mode palette for the pipeline snapshot — brighter than the muted board stage
-// colors so the chart pops both on screen (preview) and in the exported PNG.
-const FLOW_COLORS = ["#a5b4fc", "#818cf8", "#22d3ee", "#fbbf24", "#34d399"];
-const FLOW_BG = "#0a0a0f";
-const FLOW_REJECTED = "#fb7185";
 const FLOW_FONT = "var(--font-ui)";
+const FLOW_LABEL_MAX = 18;
 
 function toBase64(buffer: ArrayBuffer): string {
 	const bytes = new Uint8Array(buffer);
@@ -251,10 +296,15 @@ async function uiFontFace(): Promise<string | null> {
 	return null;
 }
 
-// A funnel-flow snapshot (the shareable picture). Hand-drawn SVG with inline fills so it exports to
-// PNG without any library. Rendered dark + vibrant so the on-screen preview matches the export;
-// the "All That Work" mark is injected only when exporting.
-function PipelineFlow({ insights }: { insights: ReturnType<typeof computeInsights> }) {
+// A funnel-flow snapshot (the shareable picture). Hand-drawn SVG on the theme surface, with inline stage tokens
+// resolved for the PNG export; the "All That Work" mark is injected only when exporting.
+function PipelineFlow({
+	insights,
+	lanes,
+}: {
+	insights: ReturnType<typeof computeInsights>;
+	lanes: readonly ApplicationLane[];
+}) {
 	const svgRef = useRef<SVGSVGElement>(null);
 	const W = 800;
 	const H = 340;
@@ -267,10 +317,11 @@ function PipelineFlow({ insights }: { insights: ReturnType<typeof computeInsight
 	const maxReached = Math.max(1, ...insights.funnel.map((f) => f.reached));
 
 	const bars = insights.funnel.map((f, i) => {
+		const display = getCategoryDisplay(lanes, f.status);
 		const h = Math.max((f.reached / maxReached) * maxBarH, 4);
 		const x = padX + slotW * i + slotW / 2 - barW / 2;
 		const yTop = midY - h / 2;
-		return { ...f, color: FLOW_COLORS[i] ?? f.color, x, yTop, h, cx: x + barW / 2 };
+		return { ...f, ...display, x, yTop, h, cx: x + barW / 2 };
 	});
 
 	const exportPng = async () => {
@@ -280,6 +331,8 @@ function PipelineFlow({ insights }: { insights: ReturnType<typeof computeInsight
 		const clone = svg.cloneNode(true) as SVGSVGElement;
 		clone.style.fontFamily = getComputedStyle(svg).fontFamily;
 		for (const el of clone.querySelectorAll<SVGElement>("[data-export-only]")) el.style.display = "";
+		// The clone is rasterized outside the document, so its tokens need concrete values.
+		resolveExportTokens(clone);
 		// Inline the UI font so the rasterized PNG uses the same type as the app.
 		const fontFace = await uiFontFace();
 		if (fontFace) {
@@ -297,8 +350,6 @@ function PipelineFlow({ insights }: { insights: ReturnType<typeof computeInsight
 			canvas.height = H * scale;
 			const ctx = canvas.getContext("2d");
 			if (!ctx) return;
-			ctx.fillStyle = FLOW_BG;
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
 			ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
 			const link = document.createElement("a");
 			link.download = "pipeline-flow.png";
@@ -321,94 +372,98 @@ function PipelineFlow({ insights }: { insights: ReturnType<typeof computeInsight
 				</Button>
 			</div>
 
-			<svg
-				ref={svgRef}
-				viewBox={`0 0 ${W} ${H}`}
-				className="mt-3 w-full rounded-xl"
-				style={{ fontFamily: FLOW_FONT }}
-				role="img"
-				aria-label={t`Pipeline flow`}
-			>
-				<defs>
+			{/* Below ~600px the labels shrink past reading size, so phones scroll the chart sideways instead. */}
+			<div className="mt-3 overflow-x-auto">
+				<svg
+					ref={svgRef}
+					viewBox={`0 0 ${W} ${H}`}
+					className="w-full min-w-[600px] rounded-xl"
+					style={{ fontFamily: FLOW_FONT }}
+					role="img"
+					aria-label={t`Pipeline flow`}
+				>
+					<defs>
+						{bars.slice(0, -1).map((bar, i) => {
+							const next = bars[i + 1];
+							if (!next) return null;
+							return (
+								<linearGradient key={`grad-${bar.status}`} id={`flow-grad-${i}`} x1="0" y1="0" x2="1" y2="0">
+									<stop offset="0%" stopColor={bar.color} />
+									<stop offset="100%" stopColor={next.color} />
+								</linearGradient>
+							);
+						})}
+					</defs>
+
+					<rect x={0} y={0} width={W} height={H} rx={6} fill="var(--surface)" />
+
+					<text x={padX} y={40} fontSize={17} fontWeight={700} fill="var(--ink)">
+						{t`Job search pipeline`}
+					</text>
+					<text x={padX} y={60} fontSize={12} fill="var(--ink-3)">
+						{plural(insights.total, { one: "# active application", other: "# active applications" })}
+					</text>
+					{insights.closed > 0 && (
+						<g>
+							<circle cx={W - padX - 96} cy={54} r={4} fill={getStageColor("closed")} />
+							<text x={W - padX - 86} y={58} fontSize={12} fill="var(--ink-2)">
+								{t`${i18n.number(insights.closed)} closed`}
+							</text>
+						</g>
+					)}
+
+					{/* connecting bands — drawn center-to-center so they pass *behind* the bars (rendered
+				    next, on top), leaving a single continuous flow with no seam at each stage. */}
 					{bars.slice(0, -1).map((bar, i) => {
 						const next = bars[i + 1];
 						if (!next) return null;
+						const x1 = bar.cx;
+						const x2 = next.cx;
+						const cxa = (x1 + x2) / 2;
 						return (
-							<linearGradient key={`grad-${bar.label}`} id={`flow-grad-${i}`} x1="0" y1="0" x2="1" y2="0">
-								<stop offset="0%" stopColor={bar.color} />
-								<stop offset="100%" stopColor={next.color} />
-							</linearGradient>
+							<path
+								key={`band-${bar.status}`}
+								d={`M${x1},${bar.yTop} C${cxa},${bar.yTop} ${cxa},${next.yTop} ${x2},${next.yTop} L${x2},${next.yTop + next.h} C${cxa},${next.yTop + next.h} ${cxa},${bar.yTop + bar.h} ${x1},${bar.yTop + bar.h} Z`}
+								fill={`url(#flow-grad-${i})`}
+								opacity={0.32}
+							/>
 						);
 					})}
-				</defs>
 
-				<rect x={0} y={0} width={W} height={H} rx={16} fill={FLOW_BG} />
-
-				<text x={padX} y={40} fontSize={17} fontWeight={700} fill="#fafafa">
-					{t`Job search pipeline`}
-				</text>
-				<text x={padX} y={60} fontSize={12} fill="#71717a">
-					{plural(insights.total, { one: "# active application", other: "# active applications" })}
-				</text>
-				{insights.closed > 0 && (
-					<g>
-						<circle cx={W - padX - 96} cy={54} r={4} fill={FLOW_REJECTED} />
-						<text x={W - padX - 86} y={58} fontSize={12} fill="#a1a1aa">
-							{t`${insights.closed} closed`}
-						</text>
-					</g>
-				)}
-
-				{/* connecting bands — drawn center-to-center so they pass *behind* the bars (rendered
-				    next, on top), leaving a single continuous flow with no seam at each stage. */}
-				{bars.slice(0, -1).map((bar, i) => {
-					const next = bars[i + 1];
-					if (!next) return null;
-					const x1 = bar.cx;
-					const x2 = next.cx;
-					const cxa = (x1 + x2) / 2;
-					return (
-						<path
-							key={`band-${bar.label}`}
-							d={`M${x1},${bar.yTop} C${cxa},${bar.yTop} ${cxa},${next.yTop} ${x2},${next.yTop} L${x2},${next.yTop + next.h} C${cxa},${next.yTop + next.h} ${cxa},${bar.yTop + bar.h} ${x1},${bar.yTop + bar.h} Z`}
-							fill={`url(#flow-grad-${i})`}
-							opacity={0.32}
-						/>
-					);
-				})}
-
-				{/* bars + labels */}
-				{bars.map((bar, i) => (
-					<g key={`bar-${bar.label}`}>
-						<rect x={bar.x} y={bar.yTop} width={barW} height={bar.h} rx={6} fill={bar.color} />
-						<text x={bar.cx} y={bar.yTop - 10} textAnchor="middle" fontSize={15} fontWeight={700} fill="#fafafa">
-							{bar.reached}
-						</text>
-						<text x={bar.cx} y={H - 42} textAnchor="middle" fontSize={12} fontWeight={500} fill="#e4e4e7">
-							{bar.label}
-						</text>
-						{i > 0 && (
-							<text x={bar.cx} y={H - 26} textAnchor="middle" fontSize={11} fill={bar.color}>
-								{bar.conv}
+					{/* bars + labels */}
+					{bars.map((bar, i) => (
+						<g key={`bar-${bar.status}`}>
+							<rect x={bar.x} y={bar.yTop} width={barW} height={bar.h} rx={6} fill={bar.color} />
+							<text x={bar.cx} y={bar.yTop - 10} textAnchor="middle" fontSize={15} fontWeight={700} fill="var(--ink)">
+								{i18n.number(bar.reached)}
 							</text>
-						)}
-					</g>
-				))}
+							<text x={bar.cx} y={H - 42} textAnchor="middle" fontSize={12} fontWeight={500} fill="var(--ink-2)">
+								{fitLabel(bar.label, FLOW_LABEL_MAX)}
+							</text>
+							{i > 0 && (
+								<text x={bar.cx} y={H - 26} textAnchor="middle" fontSize={11} fill={bar.color}>
+									{bar.conv}
+								</text>
+							)}
+						</g>
+					))}
 
-				{/* export-only watermark: the All That Work wordmark, bottom-right, 8px from each edge. */}
-				<text
-					data-export-only
-					style={{ display: "none" }}
-					x={W - 8}
-					y={H - 8}
-					textAnchor="end"
-					fill="#FAFAFA"
-					fontFamily={FLOW_FONT}
-					fontSize={14}
-				>
-					{APP_NAME}
-				</text>
-			</svg>
+					{/* export-only watermark: the app's name, bottom-right, 8px from each edge, in the theme's ink so it reads on
+				    the light and dark surface alike. */}
+					<text
+						data-export-only
+						style={{ display: "none" }}
+						x={W - 8}
+						y={H - 8}
+						textAnchor="end"
+						fill="var(--ink)"
+						fontFamily={FLOW_FONT}
+						fontSize={14}
+					>
+						{APP_NAME}
+					</text>
+				</svg>
+			</div>
 		</div>
 	);
 }

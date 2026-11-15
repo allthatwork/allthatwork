@@ -4,6 +4,8 @@ import webPageCatalog from "./web-page-catalog.json";
 /** The interface text on a web page, in English; `web-page-catalog.json` translates it (`pnpm pdf:translations`). */
 const ENGLISH = {
 	downloadPdf: "Download PDF",
+	download: "Download",
+	downloadWord: "Download Word",
 	share: "Share",
 	linkCopied: "Link copied",
 	credit: "Made with Reactive Resume, free and open source",
@@ -14,6 +16,9 @@ const ENGLISH = {
 	wrongPassword: "That password isn't correct. Check it with the resume owner and try again.",
 	unavailableTitle: "This resume isn't shared right now.",
 	unavailableHint: "If someone sent you this link, ask them for a new one.",
+	home: "Go to Reactive Resume",
+	ownerUnavailableHint: "Only you can see this address. Publish it in Share.",
+	ownerPublish: "Open Share",
 };
 
 export type WebPageMessages = typeof ENGLISH;

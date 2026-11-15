@@ -1,6 +1,16 @@
+// @vitest-environment happy-dom
 import type { Application, ApplicationSummary } from "./types";
 import { describe, expect, it, vi } from "vite-plus/test";
+import { i18n } from "@lingui/core";
 import { QueryClient, QueryObserver } from "@tanstack/react-query";
+import { prepareRequest } from "@reactive-resume/utils/deferred-request";
+import { withQueryUndo } from "@/features/career/shared";
+import { setAccountScope } from "@/libs/auth/account-scope";
+
+const undoNotices = vi.hoisted(() => [] as { type?: string; actionProps?: { onClick: () => void } }[]);
+vi.mock("@reactive-resume/ui/components/toast", () => ({
+	toast: { add: (notice: (typeof undoNotices)[number]) => undoNotices.push(notice), close: vi.fn() },
+}));
 
 const mocks = vi.hoisted(() => ({
 	query: (key: readonly unknown[]) => ({
@@ -110,43 +120,78 @@ describe("application detail cache hydration", () => {
 		await refresh;
 		expect(client.getQueryData<Application>(key)?.notes).toBe("refreshed");
 	});
+});
 
-	it("shows stale initial detail immediately, refreshes once, then reuses fetched cache", async () => {
-		const client = new QueryClient();
-		const key = applicationDetailQueryKey("a");
-		const initial = detail("2026-10-01T00:00:00Z", "initial");
-		hydrateApplicationDetail(client, summary(initial));
-		let calls = 0;
-		const observer = new QueryObserver<Application>(client, {
-			queryKey: key,
-			staleTime: 60_000,
-			queryFn: async () => {
-				calls += 1;
-				return detail("2026-10-02T00:00:00Z", "refreshed");
-			},
-		});
-		const seen: string[] = [];
-		const unsubscribe = observer.subscribe((result) => {
-			if (result.data) seen.push(result.data.notes ?? "");
-		});
-		await new Promise((resolve) => setTimeout(resolve, 0));
-		expect(seen[0]).toBe("initial");
-		expect(calls).toBe(1);
-		expect(client.getQueryData<Application>(key)?.notes).toBe("refreshed");
-		unsubscribe();
-		observer.destroy();
-
-		const second = new QueryObserver<Application>(client, {
-			queryKey: key,
-			staleTime: 60_000,
-			queryFn: async () => {
-				calls += 1;
-				return detail("2026-10-03T00:00:00Z", "unexpected");
-			},
-		});
-		second.subscribe(() => undefined);
-		await new Promise((resolve) => setTimeout(resolve, 0));
-		expect(calls).toBe(1);
-		second.destroy();
+it("Undo canonical read survives fresher application-list hydration without a spurious Retry", async () => {
+	i18n.loadAndActivate({ locale: "en", messages: {} });
+	setAccountScope("alice");
+	undoNotices.length = 0;
+	const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+	const key = applicationDetailQueryKey("a");
+	const old = detail("2026-10-01T00:00:00Z", "old");
+	const fresh = detail("2026-10-02T00:00:00Z", "canonical");
+	let releaseDetail!: (value: Application) => void;
+	const detailGate = new Promise<Application>((resolve) => {
+		releaseDetail = resolve;
 	});
+	let releaseList!: () => void;
+	const listGate = new Promise<void>((resolve) => {
+		releaseList = resolve;
+	});
+	let detailStarted = false;
+	client.setQueryDefaults(key, {
+		queryFn: () => {
+			detailStarted = true;
+			return detailGate;
+		},
+	});
+	client.setQueryData(key, old);
+	let refreshing = false;
+	const listOptions = {
+		queryKey: ["application-list"],
+		staleTime: Infinity,
+		queryFn: async () => {
+			if (!refreshing) return summary(old);
+			await listGate;
+			// The list's real consumer hydrates refreshed embedded full detail.
+			hydrateApplicationDetail(client, summary(fresh));
+			return summary(fresh);
+		},
+	};
+	await client.fetchQuery(listOptions);
+	const stop = new QueryObserver(client, listOptions).subscribe(() => {});
+	refreshing = true;
+	let hidden = false;
+	try {
+		const prepared = prepareRequest((defer) => defer(() => Promise.resolve(new Response())));
+		withQueryUndo({
+			queryClient: client,
+			queryKey: key,
+			description: "Removed fictional contact",
+			errorMessage: "Try again",
+			prepare: () => prepared,
+			hide: () => {
+				hidden = true;
+			},
+			restore: () => {
+				hidden = false;
+			},
+		});
+		await prepared;
+		const undo = undoNotices[0]?.actionProps;
+		if (!undo) throw new Error("Missing Undo");
+		undo.onClick();
+		await vi.waitFor(() => expect(detailStarted).toBe(true));
+		releaseList();
+		await Promise.resolve();
+		releaseDetail(fresh);
+		await vi.waitFor(() => expect(hidden).toBe(false));
+		expect(client.getQueryData<Application>(key)?.notes).toBe("canonical");
+		expect(undoNotices.filter((notice) => notice.type === "error")).toEqual([]);
+	} finally {
+		releaseList();
+		releaseDetail(fresh);
+		stop();
+		client.clear();
+	}
 });

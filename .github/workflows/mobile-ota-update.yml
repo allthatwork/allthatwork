@@ -95,4 +95,4 @@ jobs:
 
       - name: Publish production OTA update
         working-directory: apps/mobile
-        run: eas update --channel production --environment production --message "Docker $COMMIT_SHA" --upload-source-maps --non-interactive
+        run: eas update --channel production --environment production --message "Docker $COMMIT_SHA" --non-interactive

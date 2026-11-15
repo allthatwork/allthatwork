@@ -8,6 +8,7 @@ import { resumePatchOperationsSchema } from "@reactive-resume/ai/tools/resume-to
 import { applicationDto } from "@reactive-resume/api/dto/application";
 import { coverLetterDto } from "@reactive-resume/api/dto/cover-letter";
 import { resumeDto } from "@reactive-resume/api/dto/resume";
+import { aiOperationIdsSchema, aiUsageSummarySchema } from "@reactive-resume/schema/ai-usage";
 import {
 	applicationStatusSchema,
 	interviewDetailsSchema,
@@ -22,6 +23,8 @@ import { MCP_TOOL_NAME as T } from "./mcp-tool-names";
 export const PARITY_TOOL_DESCRIPTIONS: Record<string, string> = {
 	"applications.updateQuestion":
 		"Answer, set aside or reopen one of an application's targeting questions (from read_application's targetingQuestions). Save the answer as a Knowledge fact with api_career_save_fact first and pass its id as factId. Answering or setting a question aside does the same to open questions with its topic on the user's other applications; reopening affects this application only.",
+	"auth.exportData":
+		"Export account document and Career records with file references only. Private application profile and uploaded bytes are excluded from MCP results; export the profile in Settings → Profile, or download files with Export everything in Settings → Account.",
 	"applications.lanes.get":
 		"Read the account's ordered application stages and settings revision, including retired stages for history. Initializes missing default stages idempotently. Use returned lane IDs to select custom stages when creating or moving applications; category retains canonical workflow meaning.",
 	"applications.lanes.create":
@@ -44,6 +47,8 @@ export const PARITY_TOOL_DESCRIPTIONS: Record<string, string> = {
 		"Read an owned conversation, messages and attachments. If its active run is stale, clear the dead run claim and settle its streaming message state before returning. Does not start generation or call an AI provider.",
 	"agent.threads.start":
 		"Start a document, application, or general career conversation using a tested saved AI provider. For scope=document, choose exactly one resumeId or coverLetterId. For scope=application, provide applicationId. For scope=career, omit document and application IDs.",
+	"career.suggestTargetRoles":
+		"Requires recipientVersion from aiProviders.list, disclosed with provider/model/origin before explicit user approval. Changed configuration returns CONFLICT without transmission; refresh and reconfirm. Send explicitly selected resume and opted-in shared Knowledge to the named AI connection for unsaved editable target roles. Requires user context consent. Never uses suggestions in searches or schedules before review and save.",
 	"career.profile":
 		"Read the user's career preferences: target roles, locations, what matters, minimum base salary, office days, notice period, timezone and memory mode (ask, auto or off).",
 	"career.saveProfile":
@@ -353,6 +358,8 @@ export const TOOL_META = withAnnotationTitles({
 					.describe(
 						"updatedAt from the latest read_resume. Rejects changes when document has changed since that read.",
 					),
+				proposalApplications: resumeDto.patch.input.shape.proposalApplications,
+				proposalSafety: resumeDto.patch.input.shape.proposalSafety,
 			}),
 		),
 		annotations: { ...WRITE_NON_IDEMPOTENT, destructiveHint: true, openWorldHint: true },
@@ -678,7 +685,7 @@ export const TOOL_META = withAnnotationTitles({
 	[T.deleteApplication]: {
 		title: "Delete Application",
 		description:
-			"Permanently delete one job application and its owned uploaded documents that no remaining application references, removing those authenticated file URLs.",
+			"Move one job application to Trash, retaining its timeline, relationships and uploaded files. Restore it using api_applications_list_trash and api_applications_restore. Permanent removal requires api_applications_purge with the listed Trash timestamp.",
 		outputSchema: messageOutput,
 		inputSchema: wireInput(z.strictObject({ id: applicationIdSchema })),
 		annotations: WRITE_DESTRUCTIVE,
@@ -694,7 +701,7 @@ export const TOOL_META = withAnnotationTitles({
 	[T.bulkDeleteApplications]: {
 		title: "Bulk Delete Applications",
 		description:
-			"Permanently delete multiple applications and their owned uploaded documents that no remaining application references, removing those authenticated file URLs.",
+			"Move multiple applications to Trash, retaining their timelines, relationships and uploaded files. Restore from Trash after reload.",
 		outputSchema: toWireObjectSchema(applicationDto.bulkDelete.output),
 		inputSchema: wireInput(applicationDto.bulkDelete.input.strict()),
 		annotations: WRITE_DESTRUCTIVE,
@@ -755,7 +762,7 @@ export const TOOL_META = withAnnotationTitles({
 	[T.scoreApplicationMatch]: {
 		title: "Score Application Match",
 		description:
-			"Send the full linked resume and job description to your configured AI provider to score their match. Requires an enabled, tested default AI provider, a linked resume, and a job description. Overwrites the application's saved match score and AI metadata.",
+			"Send the full linked resume and job description to your configured AI provider to score their match. The score is an AI editing aid for finding gaps, not a hiring probability or a guarantee that an applicant tracking system accepts the resume. Requires an enabled, tested default AI provider, a linked resume, and a job description. Overwrites the application's saved match score and AI metadata.",
 		outputSchema: z.object({
 			score: z.number().int().min(0).max(100),
 			gaps: z.array(z.string()).max(8),
@@ -767,16 +774,22 @@ export const TOOL_META = withAnnotationTitles({
 	[T.tailorResumeForApplication]: {
 		title: "Tailor Resume For Application",
 		description:
-			"Send the full linked resume and job description to your configured AI provider to rewrite the summary in a new private resume copy. Requires an enabled, tested default AI provider, a linked resume, and a job description. Replaces the application's resume link with the new copy and adds a timeline note; the original resume is unchanged.",
-		outputSchema: z.object({ resumeId: z.string(), name: z.string() }),
+			"Create an unchanged private resume copy for the owned application and ask the existing assistant for truthful tailoring proposals. Sends the resume and posting, without private notes, Knowledge or web access, to the configured provider's capable model. Requires an enabled, tested default provider, linked resume and posting. Existing resumeId/name fields remain; reviewRequired:true means no generated edits have been applied. The returned conversation contains pending propose_edits results, clarifying questions and original provider/model/request references. generationStatus:interrupted means the reply did not finish; the unchanged copy remains available, and any returned conversation can be continued with api_agent_messages_send. Submitted application document links are preserved; eligible saved applications link to the copy. Show proposals, citations, unsupported claims and requirement gaps to the user before applying accepted edits with apply_resume_patch, passing proposalApplications { editId: true } and proposalSafety v1. A structural set (target resume/data) must match snapshot.after as a whole. Record rejections with api_agent_messages_set_edit_status. Never apply generated content automatically or claim the application was submitted.",
+		outputSchema: toWireObjectSchema(applicationDto.tailorResume.output),
 		inputSchema: wireInput(z.strictObject({ id: applicationIdSchema })),
 		annotations: { ...WRITE_NON_IDEMPOTENT, destructiveHint: true, openWorldHint: true },
 	},
 	[T.draftApplicationMessage]: {
 		title: "Draft Application Message",
 		description:
-			"Send application context and the full linked resume, when available, to your configured AI provider to draft a cover letter or recruiter follow-up. Requires an enabled, tested default AI provider. Cover-letter mode saves a new cover letter and returns text plus coverLetterId; follow-up mode returns text without saving it. Neither mode sends a message to a recruiter.",
-		outputSchema: z.object({ text: z.string(), coverLetterId: z.string().optional() }),
+			"Draft a cover letter or recruiter follow-up with your enabled, tested default AI provider. Cover-letter mode uses the same draft owner and letter-language rules as the app, sending the posting and linked resume text rather than resume design or private notes. It returns text, coverLetterId, reviewRequired:true and recorded aiOperationIds/aiUsage; the new linked letter body is empty. Show the draft to the user and obtain approval before saving its body with update_cover_letter, passing the returned aiOperationIds and the letter's current expectedRevision. Never save generated text automatically. Existing text/coverLetterId fields remain available; reviewRequired explicitly identifies unaccepted body text. Follow-up mode sends application context and the full linked resume, then returns text without creating a letter or logging a reply. Neither mode sends anything to an employer.",
+		outputSchema: z.object({
+			text: z.string(),
+			coverLetterId: z.string().optional(),
+			reviewRequired: z.literal(true).optional(),
+			aiOperationIds: aiOperationIdsSchema.optional(),
+			aiUsage: aiUsageSummarySchema.nullable().optional(),
+		}),
 		inputSchema: wireInput(z.strictObject({ id: applicationIdSchema, kind: z.enum(["cover-letter", "follow-up"]) })),
 		annotations: { ...WRITE_NON_IDEMPOTENT, openWorldHint: true },
 	},

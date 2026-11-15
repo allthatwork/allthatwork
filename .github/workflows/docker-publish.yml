@@ -436,7 +436,8 @@ jobs:
           cosign sign --yes --new-bundle-format=false --use-signing-config=false "$DOCKER_IMAGE@$DIGEST"
           docker buildx imagetools inspect "$DOCKER_IMAGE:${{ steps.published.outputs.final_tag }}"
 
-      - name: Deploy production stack
+      # Updates only the app service. Postgres, Redis and storage keep running; refresh them with a manual `up`.
+      - name: Deploy production app
         id: deploy
         if: ${{ needs.plan.outputs.release == 'true' && steps.version.outputs.prerelease != 'true' && env.DEPLOY == 'true' }}
         uses: appleboy/ssh-action@v1
@@ -446,7 +447,35 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           script: |
             cd docker
-            ./manage_stack.sh up reactive_resume
+            ./manage_stack.sh app reactive_resume
+
+      - name: Wait for healthy production version
+        if: ${{ needs.plan.outputs.release == 'true' && steps.version.outputs.prerelease != 'true' && (env.DEPLOY == 'true' || env.PURGE_CLOUDFLARE == 'true') }}
+        timeout-minutes: 16
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          COMMIT_SHA: ${{ steps.version.outputs.sha }}
+        run: |
+          set -euo pipefail
+          matches=0
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error --max-time 10 \
+              -H 'Cache-Control: no-cache' "https://rxresu.me/api/health?revision=$COMMIT_SHA&probe=$attempt" \
+              | jq --exit-status --arg version "$VERSION" --arg sha "$COMMIT_SHA" \
+                '.service == "reactive-resume" and .status == "healthy" and .version == $version and .revision == $sha' > /dev/null; then
+              matches=$((matches + 1))
+              if [[ "$matches" -ge 3 ]]; then
+                echo "Production is healthy at version $VERSION ($COMMIT_SHA)."
+                exit 0
+              fi
+            else
+              matches=0
+            fi
+            echo "Waiting for healthy version $VERSION ($COMMIT_SHA): probe $attempt/60, $matches/3 consecutive matches."
+            sleep 5
+          done
+          echo "::error::Production did not become healthy at version $VERSION ($COMMIT_SHA); cache purge withheld."
+          exit 1
 
       - name: Purge production Cloudflare cache
         if: ${{ needs.plan.outputs.release == 'true' && steps.version.outputs.prerelease != 'true' && env.PURGE_CLOUDFLARE == 'true' }}

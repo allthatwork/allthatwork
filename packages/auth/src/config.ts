@@ -1,7 +1,13 @@
-import type { User } from "better-auth";
-import type { GenericOAuthConfig, GenericOAuthUserInfo } from "better-auth/plugins";
+import type { BetterAuthPlugin, User } from "better-auth";
+import type {
+	AnonymousOptions,
+	GenericOAuthConfig,
+	GenericOAuthUserInfo,
+	UserWithAnonymous,
+} from "better-auth/plugins";
 import type { JWTPayload } from "jose";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { isDeepStrictEqual } from "node:util";
 import { apiKey } from "@better-auth/api-key";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import { dash } from "@better-auth/infra";
@@ -9,35 +15,79 @@ import { oauthProvider } from "@better-auth/oauth-provider";
 import { passkey } from "@better-auth/passkey";
 import { compare, hash } from "bcryptjs";
 import { APIError, betterAuth } from "better-auth";
-import { createAuthMiddleware } from "better-auth/api";
-import { deleteSessionCookie, setSessionCookie } from "better-auth/cookies";
+import {
+	addOAuthServerContext,
+	createAuthMiddleware,
+	getOAuthState,
+	getSessionFromCtx,
+	isAPIError,
+} from "better-auth/api";
+import { deleteSessionCookie, parseCookies, parseSetCookieHeader, setSessionCookie } from "better-auth/cookies";
 import { admin, anonymous, jwt, openAPI } from "better-auth/plugins";
 import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { twoFactor } from "better-auth/plugins/two-factor";
 import { username } from "better-auth/plugins/username";
-import { and, eq, gt, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import { createLocalJWKSet, jwtVerify } from "jose";
-import { createElement } from "react";
 import { createDefaultOwnedApplicationLanes, MAX_APPLICATION_LANES } from "@reactive-resume/db/application-lanes";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
-import { ResetPasswordEmail, VerifyEmail, VerifyEmailChange } from "@reactive-resume/email/templates/auth";
+import {
+	confirmNewEmail,
+	resetPasswordEmail,
+	verifyEmail,
+	verifyEmailChange,
+} from "@reactive-resume/email/templates/auth";
 import { sendEmail } from "@reactive-resume/email/transport";
 import { env } from "@reactive-resume/env/server";
 import { applicationsLayoutSchema } from "@reactive-resume/schema/applications/layout";
 import { APP_NAME } from "@reactive-resume/utils/brand";
+import { defaultLocale, isLocale, localeSchema } from "@reactive-resume/utils/locale";
 import { rateLimitConfig } from "@reactive-resume/utils/rate-limit";
 import { NO_REPLY_DAYS, noReplyDaysSchema } from "@reactive-resume/utils/reminders";
 import { RESUME_PAGES, resumePagesSchema } from "@reactive-resume/utils/resume-pages";
 import { generateId, toUsername } from "@reactive-resume/utils/string";
 import { timezoneSchema } from "@reactive-resume/utils/timezone";
 import { isAllowedOAuthRedirectUri } from "@reactive-resume/utils/url-security.node";
-import { createGithubProfileMapper, createProfileMapper, isUsernameReserved } from "./oauth-profile";
+import { generateBackupCodes } from "./backup-codes";
+import {
+	allocateUniqueUsername,
+	createGithubProfileMapper,
+	createProfileMapper,
+	isUsernameReserved,
+} from "./oauth-profile";
 import { authRateLimitStorage } from "./rate-limit";
 import { getTrustedOrigins } from "./trusted-origins";
 import { recordUsernameChange } from "./username-redirect";
 
+/** Better Auth's verification tokens carry `updateTo` when they move the account to a new address. */
+export function isEmailChangeToken(token: string): boolean {
+	try {
+		const payload = token.split(".")[1];
+		if (!payload) return false;
+		const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { updateTo?: unknown };
+		return typeof claims.updateTo === "string" && claims.updateTo.length > 0;
+	} catch {
+		return false;
+	}
+}
+
 const authBaseUrl = env.APP_URL;
+
+/** The interface language a request was made in: the app keeps it in the `locale` cookie. */
+function requestLocale(headers: Headers | undefined) {
+	const locale = parseCookies(headers?.get("cookie") ?? "").get("locale");
+	return isLocale(locale) ? locale : undefined;
+}
+
+/**
+ * Account emails use the account's language, then the language of the request that sent them (an account from before
+ * the app stored one), then English. Only the text changes: the link, its expiry and who receives it don't.
+ */
+function accountEmailLocale(user: User, request: Request | undefined) {
+	const saved = (user as User & { locale?: unknown }).locale;
+	return isLocale(saved) ? saved : (requestLocale(request?.headers) ?? defaultLocale);
+}
 const isRateLimitEnabled = process.env.NODE_ENV === "production" && !env.FLAG_DISABLE_API_RATE_LIMIT;
 
 const oauthAudienceBase = authBaseUrl.replace(/\/$/, "");
@@ -50,16 +100,25 @@ const OAUTH_AUDIENCES = [
 	`${oauthAudienceBase}/mcp`,
 	`${oauthAudienceBase}/mcp/`,
 ];
+const oauthIssuer = `${authBaseUrl}/api/auth`;
+const missingResourceDescription = `Send resource=${oauthAudienceBase}; see /.well-known/oauth-protected-resource.`;
 
 export async function verifyOAuthToken(token: string): Promise<JWTPayload> {
 	// Use the same in-process verification on Docker and Vercel. Access tokens must
 	// identify a live client/grant and cannot use proof binding without a DPoP proof.
 	const { payload } = await jwtVerify(token, createLocalJWKSet(await auth.api.getJwks()), {
-		issuer: `${authBaseUrl}/api/auth`,
+		issuer: oauthIssuer,
 		audience: OAUTH_AUDIENCES,
 		requiredClaims: ["sub", "exp", "iat", "azp"],
 	});
-	if (payload.cnf || typeof payload.sub !== "string" || typeof payload.azp !== "string") {
+	if (payload.cnf) throw new APIError("UNAUTHORIZED", { message: "Invalid bearer token." });
+	await validateOAuthGrant(payload);
+	return payload;
+}
+
+/** The provider already verified signatures; all token consumers must also check the live grant. */
+async function validateOAuthGrant(payload: JWTPayload) {
+	if (typeof payload.sub !== "string" || typeof payload.azp !== "string") {
 		throw new APIError("UNAUTHORIZED", { message: "Invalid bearer token." });
 	}
 	const [client] = await db
@@ -102,7 +161,77 @@ export async function verifyOAuthToken(token: string): Promise<JWTPayload> {
 	) {
 		throw new APIError("UNAUTHORIZED", { message: "OAuth access has been revoked. Reconnect the application." });
 	}
-	return payload;
+}
+
+/**
+ * Without `resource` the provider issues an opaque token that no API accepts, so the request is refused.
+ * As RFC 6749 §4.1.2.1 requires, the error goes to the client's callback only when the client is enabled
+ * and the callback matches its registration exactly. Returns that callback, or null to answer directly.
+ */
+async function missingResourceRedirect(params: Record<string, unknown> | undefined) {
+	const clientId = typeof params?.client_id === "string" ? params.client_id : undefined;
+	const redirectUri = typeof params?.redirect_uri === "string" ? params.redirect_uri : undefined;
+	if (!clientId || !redirectUri) return null;
+	const [client] = await db
+		.select({ redirectUris: schema.oauthClient.redirectUris, disabled: schema.oauthClient.disabled })
+		.from(schema.oauthClient)
+		.where(eq(schema.oauthClient.clientId, clientId))
+		.limit(1);
+	if (!client || client.disabled || !client.redirectUris.includes(redirectUri)) return null;
+	const target = new URL(redirectUri);
+	target.searchParams.append("error", "invalid_target");
+	target.searchParams.append("error_description", missingResourceDescription);
+	if (typeof params?.state === "string") target.searchParams.append("state", params.state);
+	target.searchParams.append("iss", oauthIssuer);
+	return target.toString();
+}
+
+type Database = typeof db;
+type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+
+/** Marks a grant's stored refresh and access tokens revoked, so they stop working with or without the consent row. */
+async function revokeGrantTokens(executor: Database | Transaction, userId: string, clientId: string) {
+	const revoked = new Date();
+	await executor
+		.update(schema.oauthRefreshToken)
+		.set({ revoked })
+		.where(and(eq(schema.oauthRefreshToken.clientId, clientId), eq(schema.oauthRefreshToken.userId, userId)));
+	await executor
+		.update(schema.oauthAccessToken)
+		.set({ revoked })
+		.where(and(eq(schema.oauthAccessToken.clientId, clientId), eq(schema.oauthAccessToken.userId, userId)));
+}
+
+// A consent this new was just granted, not an earlier one whose scopes were changed.
+const FRESH_GRANT_MS = 60_000;
+
+/**
+ * After a reconnect, refresh tokens from before it stop working. A refresh racing an earlier disconnect could leave
+ * one unrevoked; it would otherwise mint tokens for the new grant. An existing grant re-approved keeps its tokens.
+ */
+async function revokeTokensFromBeforeGrant(oauthQuery: string, headers: Headers | undefined) {
+	const clientId = new URLSearchParams(oauthQuery).get("client_id");
+	if (!clientId) return;
+	const session = await auth.api.getSession({ headers: headers ?? new Headers(), query: { disableCookieCache: true } });
+	if (!session) return;
+	const [consent] = await db
+		.select({ createdAt: schema.oauthConsent.createdAt })
+		.from(schema.oauthConsent)
+		.where(and(eq(schema.oauthConsent.clientId, clientId), eq(schema.oauthConsent.userId, session.user.id)))
+		.limit(1);
+	if (!consent?.createdAt || Date.now() - consent.createdAt.getTime() > FRESH_GRANT_MS) return;
+	const revoked = new Date();
+	await db
+		.update(schema.oauthRefreshToken)
+		.set({ revoked })
+		.where(
+			and(
+				eq(schema.oauthRefreshToken.clientId, clientId),
+				eq(schema.oauthRefreshToken.userId, session.user.id),
+				lt(schema.oauthRefreshToken.createdAt, consent.createdAt),
+				isNull(schema.oauthRefreshToken.revoked),
+			),
+		);
 }
 
 export function isCustomOAuthProviderEnabled() {
@@ -158,6 +287,7 @@ type WithoutEndpointMetadata<TPlugin> = TPlugin extends { endpoints: infer TEndp
 export type AccountLinkHook = (params: {
 	fromUserId: string;
 	toUserId: string;
+	excludedStoragePrefixes: string[];
 }) => Promise<(() => Promise<void>) | void>;
 
 let accountLinkHook: AccountLinkHook | undefined;
@@ -165,16 +295,6 @@ let accountLinkHook: AccountLinkHook | undefined;
 /** Sets the one account-link hook; no argument clears it. */
 export function setAccountLinkHook(hook?: AccountLinkHook): void {
 	accountLinkHook = hook;
-}
-
-/** Cleans up outside the database after Better Auth deletes a user (guest cleanup after linking, admin removal). */
-export type UserDeleteHook = (userId: string) => Promise<void>;
-
-let userDeleteHook: UserDeleteHook | undefined;
-
-/** Sets the one user-delete hook; no argument clears it. */
-export function setUserDeleteHook(hook?: UserDeleteHook): void {
-	userDeleteHook = hook;
 }
 
 export async function linkAnonymousAccount({
@@ -196,6 +316,39 @@ export async function linkAnonymousAccount({
 				.for("no key update");
 			if (!owner) throw new APIError("NOT_FOUND", { message: "The account is unavailable." });
 		}
+
+		const careerProfiles = await tx
+			.select()
+			.from(schema.careerProfile)
+			.where(inArray(schema.careerProfile.userId, [fromUserId, toUserId]));
+		const guestCareerProfile = careerProfiles.find((profile) => profile.userId === fromUserId);
+		const accountCareerProfile = careerProfiles.find((profile) => profile.userId === toUserId);
+		// Neither authored preferences nor memory consent can be silently replaced during sign-in.
+		if (
+			guestCareerProfile &&
+			accountCareerProfile &&
+			!isDeepStrictEqual(guestCareerProfile.data, accountCareerProfile.data)
+		)
+			throw new APIError("CONFLICT", {
+				message:
+					"Guest and account Career preferences differ. Your guest work is unchanged. Match Career preferences and Knowledge memory settings in both accounts before trying again.",
+			});
+
+		const profiles = await tx
+			.select()
+			.from(schema.applicationProfile)
+			.where(inArray(schema.applicationProfile.userId, [fromUserId, toUserId]));
+		const sourceProfile = profiles.find((profile) => profile.userId === fromUserId);
+		if (sourceProfile && profiles.some((profile) => profile.userId === toUserId))
+			throw new APIError("CONFLICT", {
+				message:
+					"Both accounts have a private application profile. Export and delete one profile in Settings → Account before linking, so neither is silently overwritten.",
+			});
+		if (sourceProfile)
+			await tx
+				.update(schema.applicationProfile)
+				.set({ userId: toUserId, revision: generateId() })
+				.where(eq(schema.applicationProfile.userId, fromUserId));
 		const sourceLanes = await tx
 			.select()
 			.from(schema.applicationLane)
@@ -240,15 +393,45 @@ export async function linkAnonymousAccount({
 		const rewriteUploadsUrl = (column: unknown) =>
 			sql`case when ${column} is not null then replace(${column}, 'uploads/' || ${fromUserId} || '/', 'uploads/' || ${toUserId} || '/') else null end`;
 
+		// A guest who published has an auto-claimed primary resume. The target account may already have one, and an
+		// account holds at most one (`resume_primary_unique`), so the move drops the guest's role first. The role is
+		// restored below only when the target has none: the guest's work must never displace the target's primary.
+		const [guestPrimary] = await tx
+			.select({ id: schema.resume.id })
+			.from(schema.resume)
+			.where(and(eq(schema.resume.userId, fromUserId), eq(schema.resume.isPrimary, true)))
+			.for("update");
 		// An existing account may already use a slug; suffix the guest's copy to keep (user, slug) unique.
 		await tx
 			.update(schema.resume)
 			.set({
 				userId: toUserId,
 				slug: sql`case when exists (select 1 from resume r where r.user_id = ${toUserId} and r.slug = resume.slug) then resume.slug || '-' || right(resume.id, 6) else resume.slug end`,
+				isPrimary: false,
 				data: rewriteUploadsJson(schema.resume.data),
 			})
 			.where(eq(schema.resume.userId, fromUserId));
+		// Keep the guest's published resume as the target's primary when the target has none. Its own savepoint keeps
+		// the link intact if another writer claims the role at the same moment; that writer's primary then wins.
+		if (guestPrimary) {
+			try {
+				await tx.transaction((savepoint) =>
+					savepoint
+						.update(schema.resume)
+						.set({ isPrimary: true })
+						.where(
+							and(
+								eq(schema.resume.id, guestPrimary.id),
+								eq(schema.resume.userId, toUserId),
+								sql`not exists (select 1 from resume r where r.user_id = ${toUserId} and r.is_primary)`,
+							),
+						),
+				);
+			} catch (error) {
+				if ((error as { cause?: { constraint?: string } } | null)?.cause?.constraint !== "resume_primary_unique")
+					throw error;
+			}
+		}
 
 		await tx
 			.update(schema.resumeVersion)
@@ -298,6 +481,41 @@ export async function linkAnonymousAccount({
 				.where(and(eq(schema.application.id, application.id), eq(schema.application.userId, fromUserId)));
 		}
 
+		const sourceAnswers = await tx.select().from(schema.careerAnswer).where(eq(schema.careerAnswer.userId, fromUserId));
+		const targetAnswers = await tx.select().from(schema.careerAnswer).where(eq(schema.careerAnswer.userId, toUserId));
+		if (sourceAnswers.some((answer) => targetAnswers.some((target) => target.duplicateKey === answer.duplicateKey)))
+			throw new APIError("CONFLICT", {
+				message:
+					"Both accounts have duplicate saved application answers. Export and delete one copy before linking, so neither is silently overwritten.",
+			});
+		// Preserve wording; the Knowledge facts the answers cite move with them below.
+		await tx
+			.update(schema.careerAnswer)
+			.set({ userId: toUserId, updatedAt: schema.careerAnswer.updatedAt })
+			.where(eq(schema.careerAnswer.userId, fromUserId));
+
+		// The guest was invited to build Knowledge like any user: facts, stories and the career profile move too. A fact
+		// the account already holds from the same source stays the account's; the guest's copy goes with the guest.
+		await tx
+			.update(schema.careerFact)
+			.set({ userId: toUserId })
+			.where(
+				and(
+					eq(schema.careerFact.userId, fromUserId),
+					sql`not exists (select 1 from career_fact f where f.user_id = ${toUserId} and f.source_key = career_fact.source_key)`,
+				),
+			);
+		await tx.update(schema.careerStory).set({ userId: toUserId }).where(eq(schema.careerStory.userId, fromUserId));
+		await tx
+			.update(schema.careerProfile)
+			.set({ userId: toUserId })
+			.where(
+				and(
+					eq(schema.careerProfile.userId, fromUserId),
+					sql`not exists (select 1 from career_profile p where p.user_id = ${toUserId})`,
+				),
+			);
+
 		await tx
 			.delete(schema.resumeSlugRedirect)
 			.where(
@@ -312,8 +530,25 @@ export async function linkAnonymousAccount({
 			.set({ userId: toUserId })
 			.where(eq(schema.resumeSlugRedirect.userId, fromUserId));
 
+		// Feedback links move with their resumes, so links already sent keep working and their comments stay together.
+		await tx
+			.update(schema.feedbackLink)
+			.set({ userId: toUserId, snapshot: rewriteUploadsJson(schema.feedbackLink.snapshot) })
+			.where(eq(schema.feedbackLink.userId, fromUserId));
+		await tx
+			.update(schema.feedbackComment)
+			.set({ userId: toUserId })
+			.where(eq(schema.feedbackComment.userId, fromUserId));
+		await tx.update(schema.feedbackEvent).set({ userId: toUserId }).where(eq(schema.feedbackEvent.userId, fromUserId));
+
 		// Ownership updates lock document rows, so guest saves cannot add uncopied references during copying.
-		return accountLinkHook?.({ fromUserId, toUserId });
+		const hook = accountLinkHook;
+		if (!hook) return;
+		const erasures = await tx
+			.select({ storageKey: schema.storageCleanupJob.storageKey })
+			.from(schema.storageCleanupJob)
+			.where(eq(schema.storageCleanupJob.ownerId, fromUserId));
+		return hook({ fromUserId, toUserId, excludedStoragePrefixes: erasures.map(({ storageKey }) => storageKey) });
 	});
 
 	try {
@@ -322,6 +557,122 @@ export async function linkAnonymousAccount({
 		console.warn("Failed to clean up linked account resources:", error);
 	}
 }
+
+type GuestLink = Parameters<NonNullable<AnonymousOptions["onLinkAccount"]>>[0];
+
+async function moveGuestWork({ anonymousUser, newUser, ctx }: GuestLink): Promise<void> {
+	try {
+		await linkAnonymousAccount({
+			fromUserId: anonymousUser.user.id,
+			toUserId: newUser.user.id,
+		});
+	} catch (error) {
+		// Better Auth sets the new session cookie before this runs. A failed transfer must leave the
+		// guest accessible, and must not expose a usable credential-session cookie on the error reply.
+		deleteSessionCookie(ctx);
+		await setSessionCookie(ctx, anonymousUser, undefined, {
+			maxAge: Math.max(0, Math.floor((anonymousUser.session.expiresAt.getTime() - Date.now()) / 1000)),
+		});
+		await ctx.context.internalAdapter.deleteSession(newUser.session.token).catch(() => {});
+		if (isAPIError(error)) throw error;
+		// Better Auth keeps these cookies only on an APIError reply; any other error drops them.
+		console.error("Failed to move guest work to account %s:", newUser.user.id, error);
+		throw new APIError("INTERNAL_SERVER_ERROR", {
+			message: "The guest work could not be moved to this account. Try again.",
+		});
+	}
+}
+
+// Better Auth 1.7 keeps this name internal to its two-factor plugin.
+const TWO_FACTOR_COOKIE = "two_factor";
+const guestLinkIdentifier = (userId: string, challenge: string) => `guest-link:${userId}:${challenge}`;
+const isTwoFactorVerification = (path: string | undefined) =>
+	path === "/two-factor/verify-totp" || path === "/two-factor/verify-backup-code" || path === "/two-factor/verify-otp";
+
+/** Read before a verification request runs; it carries the guest through to that request's after-hook. */
+type GuestHandoff = { userId: string; challengeId: string; guestId: string };
+
+// The anonymous plugin moves guest work only when a sign-in reply sets a session. With two-step verification,
+// the password step sets none and the verification step is outside the plugin's matcher. This plugin stores the
+// guest's id server-side, keyed by the account and the signed, single-use two-factor challenge, and moves the
+// work when that challenge succeeds for that account.
+const twoFactorGuestLink = {
+	id: "two-factor-guest-link",
+	hooks: {
+		before: [
+			{
+				matcher: (ctx) => isTwoFactorVerification(ctx.path),
+				handler: createAuthMiddleware(async (ctx) => {
+					// Read the handoff before the endpoint accepts the challenge. Both expire together, so a challenge the
+					// endpoint accepts had a live handoff here, even if the deadline passes while its session is created.
+					const challengeId = await ctx.getSignedCookie(
+						ctx.context.createAuthCookie(TWO_FACTOR_COOKIE).name,
+						ctx.context.secret,
+					);
+					if (!challengeId) return;
+					const internal = ctx.context.internalAdapter;
+					// These lookups return expired rows too.
+					const challenge = await internal.findVerificationValue(challengeId);
+					if (!challenge || challenge.expiresAt <= new Date()) return;
+					const link = await internal.findVerificationValue(guestLinkIdentifier(challenge.value, challengeId));
+					if (!link || link.expiresAt <= new Date()) return;
+					const guestHandoff: GuestHandoff = { userId: challenge.value, challengeId, guestId: link.value };
+					return { context: { context: { guestHandoff } } };
+				}),
+			},
+		],
+		after: [
+			{
+				matcher: (ctx) => ctx.path === "/sign-in/email" || ctx.path === "/sign-in/username",
+				handler: createAuthMiddleware(async (ctx) => {
+					const cookieName = ctx.context.createAuthCookie(TWO_FACTOR_COOKIE).name;
+					// Our own reply's signed value: `<identifier>.<signature>`, URL-encoded.
+					const signed = parseSetCookieHeader(ctx.context.responseHeaders?.get("set-cookie") ?? "").get(cookieName);
+					const challengeId = signed && decodeURIComponent(signed.value).split(".")[0];
+					if (!challengeId) return;
+					const challenge = await ctx.context.internalAdapter.findVerificationValue(challengeId);
+					if (!challenge) return;
+					const guest = await getSessionFromCtx(ctx, { disableRefresh: true });
+					if (!guest?.user.isAnonymous) return;
+					await ctx.context.internalAdapter.createVerificationValue({
+						identifier: guestLinkIdentifier(challenge.value, challengeId),
+						value: guest.user.id,
+						expiresAt: challenge.expiresAt,
+					});
+				}),
+			},
+			{
+				matcher: (ctx) => isTwoFactorVerification(ctx.path),
+				handler: createAuthMiddleware(async (ctx) => {
+					const { guestHandoff: handoff } = ctx.context as { guestHandoff?: GuestHandoff };
+					const newUser = ctx.context.newSession;
+					if (!handoff || newUser?.user.id !== handoff.userId) return;
+					const internal = ctx.context.internalAdapter;
+					// The endpoint consumes the challenge, atomically, before it signs in. A challenge still stored means
+					// this request did not accept it; one gone means this request was its only acceptance.
+					if (await internal.findVerificationValue(handoff.challengeId)) return;
+					// The anonymous plugin's schema adds this column; the adapter types only the core user.
+					const user = (await internal.findUserById(handoff.guestId)) as UserWithAnonymous | null;
+					if (!user?.isAnonymous) return;
+					// Like the anonymous plugin, only a guest that can still sign in is linked, and kept on failure.
+					const [session] = await internal.listSessions(user.id, { onlyActiveSessions: true });
+					if (!session) return;
+					try {
+						await moveGuestWork({ anonymousUser: { user, session }, newUser, ctx });
+						await internal.deleteUser(user.id).catch((error: unknown) => {
+							ctx.context.logger.error("Failed to delete the linked guest account", { userId: user.id, error });
+						});
+					} finally {
+						// The consumed challenge prevents replay; expiring bookkeeping must not undo a transfer or its recovery.
+						await internal
+							.deleteVerificationByIdentifier(guestLinkIdentifier(handoff.userId, handoff.challengeId))
+							.catch(() => ctx.context.logger.warn("Failed to clean up completed guest-link marker"));
+					}
+				}),
+			},
+		],
+	},
+} satisfies BetterAuthPlugin;
 
 const getAuthConfig = () => {
 	const authConfigs: GenericOAuthConfig[] = [];
@@ -372,11 +723,25 @@ const getAuthConfig = () => {
 		databaseHooks: {
 			user: {
 				create: {
-					// Guests sign in without a username. The tail of a UUIDv7 is random; its head is a timestamp.
-					before: (user) => {
-						if (!user.isAnonymous) return Promise.resolve(undefined);
+					before: async (user, context) => {
+						// New accounts inherit the device timezone from the auth request, so interview times,
+						// reminders and schedules are right from the first use. Social callbacks don't carry the
+						// header; the sign-in hook stores the validated zone in the signed OAuth state.
+						const fromHeader = timezoneSchema.safeParse(context?.headers?.get("x-client-timezone"));
+						// Direct calls outside an auth request have no OAuth state to read.
+						const oauthState = context ? await getOAuthState().catch(() => null) : null;
+						const fromOAuth = timezoneSchema.safeParse(oauthState?.serverContext?.timezone);
+						const timezone = fromHeader.success ? fromHeader.data : fromOAuth.success ? fromOAuth.data : undefined;
+						// The interface language the account was made in, for its first emails. Like the timezone, a social
+						// sign-up reads it from the OAuth state, because a cross-site callback may arrive without cookies.
+						const fromOAuthLocale = oauthState?.serverContext?.locale;
+						const locale = requestLocale(context?.headers) ?? (isLocale(fromOAuthLocale) ? fromOAuthLocale : undefined);
+						const data = { ...user, ...(timezone ? { timezone } : {}), ...(locale ? { locale } : {}) };
+						if (!user.isAnonymous) return timezone || locale ? { data } : undefined;
+
+						// Guests sign in without a username. The tail of a UUIDv7 is random; its head is a timestamp.
 						const username = `guest-${generateId().slice(-12)}`;
-						return Promise.resolve({ data: { ...user, username, displayUsername: username } });
+						return { data: { ...data, username, displayUsername: username } };
 					},
 				},
 				update: {
@@ -384,16 +749,6 @@ const getAuthConfig = () => {
 					before: async (user, context) => {
 						const id = context?.context.session?.user.id;
 						if (typeof user.username === "string" && id) await recordUsernameChange(id, toUsername(user.username));
-					},
-				},
-				delete: {
-					// The user row is already gone, so a failed cleanup is logged rather than failing the request.
-					after: async (user) => {
-						try {
-							await userDeleteHook?.(user.id);
-						} catch (error) {
-							console.error("Failed to clean up deleted user %s:", user.id, error);
-						}
 					},
 				},
 			},
@@ -404,6 +759,64 @@ const getAuthConfig = () => {
 
 		hooks: {
 			before: createAuthMiddleware(async (ctx) => {
+				if (ctx.path === "/oauth2/authorize") {
+					// Read the request the way the provider does: a direct POST carries it in the form body, while
+					// continue and consent re-enter this endpoint with the signed query.
+					const isFormPost =
+						ctx.request?.method === "POST" && new URL(ctx.request.url).pathname.endsWith("/oauth2/authorize");
+					const params = (isFormPost ? ctx.body : ctx.query) as Record<string, unknown> | undefined;
+					if (!params?.resource) {
+						const redirect = await missingResourceRedirect(params);
+						if (redirect) throw ctx.redirect(redirect);
+						return ctx.json(
+							{ error: "invalid_target", error_description: missingResourceDescription },
+							{ status: 400 },
+						);
+					}
+				}
+				if (ctx.path === "/oauth2/public-client-prelogin") {
+					// The provider checks only that oauth_query is signed and unexpired. Tie the requested client to that
+					// signed request, so a request for one client can't read another client's public details.
+					const body = ctx.body as { client_id?: unknown; oauth_query?: unknown } | undefined;
+					const signedClientId =
+						typeof body?.oauth_query === "string" ? new URLSearchParams(body.oauth_query).get("client_id") : null;
+					if (!signedClientId || body?.client_id !== signedClientId) {
+						throw new APIError("BAD_REQUEST", { error: "invalid_request", error_description: "client_id mismatch" });
+					}
+				}
+				if (ctx.path === "/oauth2/consent") {
+					const current = await getSessionFromCtx(ctx, { disableCookieCache: true });
+					// Denying grants nothing and returns the guest to the client with access_denied.
+					if (current?.user.isAnonymous && (ctx.body as { accept?: unknown } | undefined)?.accept !== false) {
+						throw new APIError("FORBIDDEN", {
+							message: "Create an account to connect apps. Guest accounts are temporary.",
+						});
+					}
+				}
+				if (ctx.path === "/sign-in/social") {
+					const timezone = timezoneSchema.safeParse(ctx.headers?.get("x-client-timezone"));
+					// Keep the device timezone across the provider redirect in server-only state, so the
+					// callback can start a new account there without trusting redirect parameters.
+					const locale = requestLocale(ctx.headers);
+					if (timezone.success || locale)
+						await addOAuthServerContext({
+							...(timezone.success ? { timezone: timezone.data } : {}),
+							...(locale ? { locale } : {}),
+						});
+				}
+
+				if (ctx.path === "/sign-up/email" && ctx.body && typeof ctx.body.email === "string") {
+					// The username is optional at sign-up: an empty one is made from the email address, changeable in Settings.
+					const chosen = [ctx.body.username, ctx.body.displayUsername].some(
+						(value: unknown) => typeof value === "string" && value.trim(),
+					);
+					if (!chosen) {
+						const username = await allocateUniqueUsername(ctx.body.email);
+						ctx.body.username = username;
+						ctx.body.displayUsername = username;
+					}
+				}
+
 				const user = accountUser.getStore();
 				// Sign-up copies displayUsername into username when username is missing, so either one claims the name.
 				const requestedUsername: unknown = ctx.body?.username ?? ctx.body?.displayUsername;
@@ -498,25 +911,7 @@ const getAuthConfig = () => {
 					if (!consent) throw new APIError("NOT_FOUND");
 					// Native consent deletion alone leaves refresh tokens usable. Revoke
 					// the grant's stored tokens before removing its consent.
-					const revoked = new Date();
-					await db
-						.update(schema.oauthRefreshToken)
-						.set({ revoked })
-						.where(
-							and(
-								eq(schema.oauthRefreshToken.clientId, consent.clientId),
-								eq(schema.oauthRefreshToken.userId, current.user.id),
-							),
-						);
-					await db
-						.update(schema.oauthAccessToken)
-						.set({ revoked })
-						.where(
-							and(
-								eq(schema.oauthAccessToken.clientId, consent.clientId),
-								eq(schema.oauthAccessToken.userId, current.user.id),
-							),
-						);
+					await revokeGrantTokens(db, current.user.id, consent.clientId);
 					return;
 				}
 				if (!ctx.path.includes("/oauth2/register")) return;
@@ -539,6 +934,26 @@ const getAuthConfig = () => {
 					}
 				}
 			}),
+			after: createAuthMiddleware(async (ctx) => {
+				const payload = ctx.context.returned as JWTPayload | undefined;
+				if (ctx.path === "/oauth2/public-client-prelogin" && payload && typeof payload.client_id === "string") {
+					return ctx.json({ client_id: payload.client_id, client_name: payload.client_name });
+				}
+				if (ctx.path === "/oauth2/consent" && ctx.body?.accept === true && typeof ctx.body.oauth_query === "string") {
+					await revokeTokensFromBeforeGrant(ctx.body.oauth_query, ctx.headers);
+					return;
+				}
+				// Run after the provider authenticates the introspecting client and verifies the token.
+				if (ctx.path !== "/oauth2/introspect" || !payload || payload.active !== true || typeof payload.azp !== "string")
+					return;
+				try {
+					await validateOAuthGrant(payload);
+				} catch (error) {
+					// Only a refused grant makes the token inactive; a failed lookup is a server error, not a revocation.
+					if (!isAPIError(error) || error.statusCode !== 401) throw error;
+					return ctx.json({ active: false });
+				}
+			}),
 		},
 
 		// Without this, OAuth callback failures land on Better Auth's built-in `/api/auth/error`
@@ -558,13 +973,11 @@ const getAuthConfig = () => {
 			minPasswordLength: 8,
 			maxPasswordLength: 64,
 			requireEmailVerification: false,
+			// The reset email says the link works for 1 hour; keep this in step with it.
+			resetPasswordTokenExpiresIn: 60 * 60,
 			disableSignUp: env.FLAG_DISABLE_SIGNUPS || env.FLAG_DISABLE_EMAIL_AUTH,
-			sendResetPassword: async ({ user, url }) => {
-				await sendEmail({
-					to: user.email,
-					subject: "Reset your password",
-					react: createElement(ResetPasswordEmail, { url }),
-				});
+			sendResetPassword: async ({ user, url }, request) => {
+				await sendEmail({ to: user.email, ...resetPasswordEmail({ url, locale: accountEmailLocale(user, request) }) });
 			},
 			revokeSessionsOnPasswordReset: true,
 			// The reset link proved control of the inbox. Drop credentials someone else may hold, such as on an
@@ -599,12 +1012,13 @@ const getAuthConfig = () => {
 		emailVerification: {
 			sendOnSignUp: true,
 			autoSignInAfterVerification: true,
-			sendVerificationEmail: async ({ user, url }) => {
-				await sendEmail({
-					to: user.email,
-					subject: "Verify your email",
-					react: createElement(VerifyEmail, { url }),
-				});
+			// The emails say the link works for 1 hour; keep this in step with them.
+			expiresIn: 60 * 60,
+			sendVerificationEmail: async ({ user, url, token }, request) => {
+				const locale = accountEmailLocale(user, request);
+				// A token that moves the account to another address is an email change, not a sign-up: say so.
+				const email = isEmailChangeToken(token) ? confirmNewEmail({ url, locale }) : verifyEmail({ url, locale });
+				await sendEmail({ to: user.email, ...email });
 			},
 		},
 
@@ -614,11 +1028,11 @@ const getAuthConfig = () => {
 				// Better Auth's two-step change: the current address approves first, then the new address gets its own
 				// verification link. Sending this step to the new address would let anyone holding a session move the
 				// account to an address they control without the owner's approval.
-				sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
+				sendChangeEmailConfirmation: async ({ user, newEmail, url }, request) => {
+					const locale = accountEmailLocale(user, request);
 					await sendEmail({
 						to: user.email,
-						subject: "Approve your email change",
-						react: createElement(VerifyEmailChange, { url, previousEmail: user.email, newEmail }),
+						...verifyEmailChange({ url, previousEmail: user.email, newEmail, locale }),
 					});
 				},
 			},
@@ -654,6 +1068,11 @@ const getAuthConfig = () => {
 					type: "json",
 					required: false,
 					validator: { input: applicationsLayoutSchema },
+				},
+				locale: {
+					type: "string",
+					required: false,
+					validator: { input: localeSchema },
 				},
 			},
 		},
@@ -722,8 +1141,14 @@ const getAuthConfig = () => {
 			admin(),
 			passkey(),
 			genericOAuth({ config: authConfigs }),
-			twoFactor({ issuer: APP_NAME }),
+			twoFactor({
+				issuer: APP_NAME,
+				// Capitals without look-alike characters; the sign-in form also tries what's typed in capitals.
+				backupCodeOptions: { customBackupCodesGenerate: () => generateBackupCodes() },
+			}),
 			apiKey({
+				// A fixed prefix lets secret scanners and people reading config files recognize a leaked key.
+				defaultPrefix: "rr_",
 				enableSessionForAPIKeys: false,
 				rateLimit: {
 					...rateLimitConfig.betterAuth.apiKey,
@@ -733,12 +1158,30 @@ const getAuthConfig = () => {
 			oauthProvider({
 				loginPage: "/api/auth/oauth",
 				consentPage: "/auth/consent",
+				signup: {
+					page: "/api/auth/oauth",
+					shouldRedirect: ({ user }) => ("isAnonymous" in user && user.isAnonymous === true ? "/auth/consent" : false),
+				},
 				scopes: ["openid", "profile", "email", "offline_access", "api:read", "api:write", "api:delete"],
 				extensions: [
 					{
 						claims: {
+							userInfo: async ({ jwt }) => {
+								try {
+									await validateOAuthGrant(jwt);
+								} catch (error) {
+									if (!isAPIError(error) || error.statusCode !== 401) throw error;
+									throw new APIError("UNAUTHORIZED", {
+										error: "invalid_token",
+										error_description: "Reconnect the application to restore access.",
+									});
+								}
+								return {};
+							},
 							accessToken: async ({ user, client }) => {
 								if (!user) return {};
+								if (user.isAnonymous)
+									throw new APIError("FORBIDDEN", { message: "Guest accounts cannot connect apps." });
 								const [consent] = await db
 									.select({ id: schema.oauthConsent.id })
 									.from(schema.oauthConsent)
@@ -757,6 +1200,11 @@ const getAuthConfig = () => {
 				// Required for MCP client onboarding (RFC 7591). Redirect URI validation
 				// and explicit user consent protect access by dynamically registered clients.
 				allowUnauthenticatedClientRegistration: true,
+				// Desktop MCP clients (Cursor, older Claude Code) omit application_type while registering
+				// loopback or custom-scheme callbacks; register those as native. An explicit type is kept.
+				clientRegistrationDefaultApplicationType: "infer",
+				// The consent page loads the client through this endpoint, which verifies the signed request first.
+				allowPublicClientPrelogin: true,
 				rateLimit: oauthProviderRateLimit,
 				silenceWarnings: { oauthAuthServerConfig: true },
 			}) as WithoutEndpointMetadata<ReturnType<typeof oauthProvider>>,
@@ -768,28 +1216,15 @@ const getAuthConfig = () => {
 				usernameValidator: (username) => /^[a-z0-9._-]+$/.test(username),
 				validationOrder: { username: "post-normalization", displayUsername: "post-normalization" },
 			}),
+			// After twoFactor, whose sign-in hook creates the challenge this binds the guest to. Like the anonymous plugin,
+			// after oauthProvider: an OAuth login must not continue with the guest session a failed move restores.
+			twoFactorGuestLink,
 			anonymous({
 				emailDomainName: "reactive-resume.local",
 				generateName: () => "Guest",
 				// Signing up or in from a guest session moves the guest's documents to that account; the plugin then
 				// deletes the guest account, along with anything not moved here (assistant threads, career data).
-				onLinkAccount: async ({ anonymousUser, newUser, ctx }) => {
-					try {
-						await linkAnonymousAccount({
-							fromUserId: anonymousUser.user.id,
-							toUserId: newUser.user.id,
-						});
-					} catch (error) {
-						// Better Auth sets the new session cookie before this hook. A failed transfer must leave the
-						// guest accessible, and must not expose a usable credential-session cookie on the error reply.
-						deleteSessionCookie(ctx);
-						await setSessionCookie(ctx, anonymousUser, undefined, {
-							maxAge: Math.max(0, Math.floor((anonymousUser.session.expiresAt.getTime() - Date.now()) / 1000)),
-						});
-						await ctx.context.internalAdapter.deleteSession(newUser.session.token).catch(() => {});
-						throw error;
-					}
-				},
+				onLinkAccount: moveGuestWork,
 			}),
 			...(env.BETTER_AUTH_API_KEY
 				? [dash({ apiKey: env.BETTER_AUTH_API_KEY, activityTracking: { enabled: true } })]
@@ -822,7 +1257,7 @@ export const auth: Auth = new Proxy({} as Auth, {
 	},
 });
 
-type ProfileUpdate = { name?: string; username?: string; image?: string | null; timezone?: string };
+type ProfileUpdate = { name?: string; username?: string; image?: string | null; timezone?: string; locale?: string };
 
 // Only these server calls can install the identity; their cookie headers never leave this module.
 export const accountAuth = {
@@ -834,6 +1269,36 @@ export const accountAuth = {
 		),
 	listApiKeys: (user: User) => accountUser.run(user, () => auth.api.listApiKeys({})),
 	deleteApiKey: (user: User, keyId: string) => accountUser.run(user, () => auth.api.deleteApiKey({ body: { keyId } })),
+	/** The applications this account allowed through OAuth, newest first, with the name each registered. */
+	listConnections: (user: User) =>
+		db
+			.select({
+				id: schema.oauthConsent.id,
+				clientId: schema.oauthConsent.clientId,
+				clientName: schema.oauthClient.name,
+				scopes: schema.oauthConsent.scopes,
+				createdAt: schema.oauthConsent.createdAt,
+			})
+			.from(schema.oauthConsent)
+			.innerJoin(schema.oauthClient, eq(schema.oauthClient.clientId, schema.oauthConsent.clientId))
+			.where(eq(schema.oauthConsent.userId, user.id))
+			.orderBy(desc(schema.oauthConsent.createdAt)),
+	/** Disconnects one application: its tokens stop working and its consent is removed. False when it isn't this account's. */
+	revokeConnection: (user: User, id: string) =>
+		db.transaction(async (tx) => {
+			const [consent] = await tx
+				.select({ clientId: schema.oauthConsent.clientId })
+				.from(schema.oauthConsent)
+				.where(and(eq(schema.oauthConsent.id, id), eq(schema.oauthConsent.userId, user.id)))
+				.limit(1)
+				.for("update");
+			if (!consent) return false;
+			await revokeGrantTokens(tx, user.id, consent.clientId);
+			await tx.delete(schema.oauthConsent).where(eq(schema.oauthConsent.id, id));
+			// Again after the delete: a refresh that committed while the first pass ran is caught here.
+			await revokeGrantTokens(tx, user.id, consent.clientId);
+			return true;
+		}),
 };
 
 export async function initializeAuth(): Promise<void> {

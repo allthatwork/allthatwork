@@ -385,6 +385,8 @@ async function detectedRefs(userId: string, companyIds: string[] | "all") {
 		.where(
 			and(
 				eq(tables.application.userId, userId),
+				// A trashed application's posting doesn't name a board until it's restored.
+				isNull(tables.application.trashedAt),
 				companyIds === "all"
 					? isNotNull(tables.application.companyId)
 					: inArray(tables.application.companyId, companyIds),

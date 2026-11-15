@@ -2,7 +2,7 @@ import type { ApplicationTimelineEntry } from "@reactive-resume/schema/applicati
 import type { ApplicationClosedReason, ApplicationStatus } from "@reactive-resume/schema/applications/data";
 import type { ApplicationLane } from "@reactive-resume/schema/applications/lanes";
 import { getActiveApplicationLanes, getApplicationLane } from "@reactive-resume/schema/applications/lanes";
-import { getStageLabel } from "./stages";
+import { getClosedReasonLabel, getStageColor, getStageLabel } from "./stages";
 
 export type { ApplicationLane };
 
@@ -19,9 +19,31 @@ export function getDisplayLane(lanes: readonly ApplicationLane[], application: L
 	return getApplicationLane(lanes, { status: application.status });
 }
 
+/**
+ * How an application's stage reads: its lane's name and colour, except an accepted offer, which is a win and keeps the
+ * Offer colour with a check rather than reading as one more closed application.
+ */
+export function getStageDisplay(
+	lanes: readonly ApplicationLane[],
+	application: LaneSource & { closedReason?: ApplicationClosedReason | null | undefined },
+) {
+	if (application.status === "closed" && application.closedReason === "accepted")
+		return { color: getCategoryLane(lanes, "offer").color, label: getClosedReasonLabel("accepted"), accepted: true };
+	const lane = getDisplayLane(lanes, application);
+	return { color: lane.color, label: getLaneLabel(lane), accepted: false };
+}
+
 /** The default lane of a category, where legacy writes land. */
 export const getCategoryLane = (lanes: readonly ApplicationLane[], category: ApplicationStatus) =>
 	getApplicationLane(lanes, { status: category });
+
+/**
+ * How a category reads on Insights: the owner's name for its default lane, with the stage's semantic colour. A renamed
+ * lane therefore keeps its name in the charts, while the colour stays the shared stage token.
+ */
+export function getCategoryDisplay(lanes: readonly ApplicationLane[], category: ApplicationStatus) {
+	return { label: getLaneLabel(getCategoryLane(lanes, category)), color: getStageColor(category) };
+}
 
 /** The next active lane in the configured order, skipping Closed ones; null at the end. */
 export function getNextLane(lanes: readonly ApplicationLane[], current: ApplicationLane): ApplicationLane | null {
@@ -39,10 +61,6 @@ export function isCurrentLaneEvent(entry: ApplicationTimelineEntry, application:
 	if (entry.laneId) return entry.laneId === application.laneId;
 	return entry.stage === application.status;
 }
-
-/** False for a lane move within one category: it changes the column, not where the application stands. */
-export const isCanonicalStageEvent = (entry: ApplicationTimelineEntry) =>
-	entry.type === "stage" && entry.canonicalTransition !== false;
 
 export type LaneMode = "lanes" | "legacy";
 

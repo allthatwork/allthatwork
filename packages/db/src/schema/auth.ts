@@ -34,6 +34,8 @@ export const user = pg.pgTable(
 		interviewReminders: pg.boolean("interview_reminders").notNull().default(true),
 		/** The Applications screen's List columns, Board column width and sort (`@reactive-resume/schema/applications/layout`). */
 		applicationsLayout: pg.jsonb("applications_layout").$type<ApplicationsLayout>(),
+		/** The interface language the account last used, for account emails; null until the app reports one. */
+		locale: pg.text("locale"),
 		lastActiveAt: pg.timestamp("last_active_at", { withTimezone: true }),
 		role: pg.text("role").default("user"),
 		banned: pg.boolean("banned").default(false),

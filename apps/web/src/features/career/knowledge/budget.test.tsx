@@ -43,6 +43,12 @@ vi.mock("@/features/settings/ai/catalog", async (importOriginal) => ({
 					modalities: { input: ["text"], output: ["text"] },
 					limit: { context: 8000, output: 4096 },
 				},
+				{
+					id: "claude-large",
+					name: "Claude Large",
+					modalities: { input: ["text"], output: ["text"] },
+					limit: { context: 200000, output: 8192 },
+				},
 			],
 		}),
 	},
@@ -125,6 +131,19 @@ describe("Knowledge budget", () => {
 		fireEvent.click(screen.getByRole("button", { name: "Save" }));
 		await waitFor(() => expect(api.update).toHaveBeenCalled());
 		expect(api.update.mock.calls[0]?.[0]).toEqual({ id: "provider-1", contextTokens: 131072 });
+	});
+
+	it("measures against the capable model the Coach runs on when it has the smaller window", async () => {
+		api.data.providers = [provider("claude-large", null, { capableModel: "claude-small" })];
+		renderMeter();
+		expect(await screen.findByText(/claude-small reads up to 8,000 tokens \(from models.dev\)/)).toBeTruthy();
+		expect(screen.getByText(/larger than this model's context window/)).toBeTruthy();
+	});
+
+	it("keeps the connection's model when a larger capable model only serves the Coach", async () => {
+		api.data.providers = [provider("claude-small", null, { capableModel: "claude-large" })];
+		renderMeter();
+		expect(await screen.findByText(/claude-small reads up to 8,000 tokens \(from models.dev\)/)).toBeTruthy();
 	});
 
 	it("uses a context window set by hand over the catalog", async () => {

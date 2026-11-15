@@ -2,11 +2,13 @@ import type { ExtractProgress } from "./extract-client";
 import type { AtsCheckResult } from "./run-ats-check";
 import type { PdfAtsReport, PdfCategory } from "@reactive-resume/resume/ats-pdf";
 import type { CSSProperties } from "react";
+import { i18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { useNavigate } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import { useIsClient } from "usehooks-ts";
+import { pdfVerdict } from "@reactive-resume/resume/ats-pdf/verdict";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Collapsible, CollapsibleContent } from "@reactive-resume/ui/components/collapsible";
 import { Icon } from "@reactive-resume/ui/components/icon";
@@ -15,11 +17,12 @@ import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { APP_NAME } from "@reactive-resume/utils/brand";
 import { cn } from "@reactive-resume/utils/style";
-import { PdfPasswordRequiredError, PdfTooLargeError, PdfUnreadableError } from "./extract-client";
+import { PdfDamagedError, PdfPasswordRequiredError, PdfTooLargeError, PdfUnreadableError } from "./extract-client";
 import { getPdfCategoryDescription, getPdfCategoryLabel, getPdfFindingMessage } from "./messages";
 import { savePendingImport, takePendingImport } from "./pending-import";
 import { runAtsCheck } from "./run-ats-check";
 import { RollingNumber } from "@/components/ui/rolling-number";
+import { useStartDocument } from "@/features/documents/use-start-document";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { ENTER_CLASS, POP_CLASS, stagger } from "@/libs/motion";
 import { client } from "@/libs/orpc/client";
@@ -34,7 +37,7 @@ const SAMPLE = { url: "/templates/pdf/onyx.pdf", name: "Sample resume.pdf" };
 type State =
 	| { name: "idle"; error?: string }
 	| { name: "busy"; file: File; step: number }
-	| { name: "done"; file: File; result: AtsCheckResult }
+	| { name: "done"; file: File; result: AtsCheckResult; importError?: string }
 	| { name: "importing" };
 
 const stepOf = (progress: ExtractProgress) => (progress.phase === "loading" ? 0 : progress.phase === "text" ? 1 : 2);
@@ -45,6 +48,8 @@ function describeError(error: unknown) {
 	if (error instanceof PdfTooLargeError) return t`That file is too large to check. PDFs up to 25 MB work.`;
 	if (error instanceof PdfUnreadableError)
 		return t`That file couldn't be read as a PDF. Choose a PDF file and try again.`;
+	if (error instanceof PdfDamagedError)
+		return t`This PDF looks damaged. Export it again from your editor and choose the new file.`;
 	return t`Couldn't read that file. Try again.`;
 }
 
@@ -56,7 +61,8 @@ type AtsCheckerProps = {
 
 /**
  * The public checker: drop a PDF, watch three steps, then see the score, what could cost a match, and the file as
- * software reads it. "Fix these in the editor" imports the same file (after signing up, if needed) and opens Check.
+ * software reads it. "Fix these in the editor" imports the same file (after signing up, if needed) and opens Check; a
+ * file with no text offers a blank resume or a Word import instead.
  */
 export function AtsChecker({ signedIn, importPending }: AtsCheckerProps) {
 	const navigate = useNavigate();
@@ -82,7 +88,8 @@ export function AtsChecker({ signedIn, importPending }: AtsCheckerProps) {
 		}
 	};
 
-	const importAndOpen = async (file: File) => {
+	// A failed import goes back to the report it came from, with the reason, rather than to an empty upload screen.
+	const importAndOpen = async (file: File, result?: AtsCheckResult) => {
 		setState({ name: "importing" });
 		let readFile: Awaited<ReturnType<typeof loadReadFile>> | undefined;
 		try {
@@ -92,18 +99,16 @@ export function AtsChecker({ signedIn, importPending }: AtsCheckerProps) {
 			const resumeId = await client.resume.import({ data });
 			await navigate({ to: "/builder/$resumeId", params: { resumeId }, search: { mode: "check" } });
 		} catch (error) {
-			setState({
-				name: "idle",
-				error:
-					readFile && error instanceof readFile.ImportError
-						? error.message
-						: getOrpcErrorMessage(error, { fallback: t`Couldn't import the file. Try again from Documents.` }),
-			});
+			const message =
+				readFile && error instanceof readFile.ImportError
+					? error.message
+					: getOrpcErrorMessage(error, { fallback: t`Couldn't import the file. Try again from Documents.` });
+			setState(result ? { name: "done", file, result, importError: message } : { name: "idle", error: message });
 		}
 	};
 
-	const fix = async (file: File) => {
-		if (signedIn) return importAndOpen(file);
+	const fix = async (file: File, result: AtsCheckResult) => {
+		if (signedIn) return importAndOpen(file, result);
 		await savePendingImport(file);
 		await navigate({ to: "/auth/register", search: { callbackURL: "/ats-checker?import=1" } });
 	};
@@ -142,7 +147,9 @@ export function AtsChecker({ signedIn, importPending }: AtsCheckerProps) {
 				<Result
 					result={state.result}
 					file={state.file}
-					onFix={() => void fix(state.file)}
+					signedIn={signedIn}
+					importError={state.importError}
+					onFix={() => void fix(state.file, state.result)}
 					onReset={() => setState({ name: "idle" })}
 				/>
 			) : (
@@ -185,15 +192,32 @@ function Idle({ error, posting, onPosting, onFile }: IdleProps) {
 	return (
 		<div className="mx-auto grid w-full max-w-[640px] gap-5.5 px-4 py-16 sm:py-18">
 			<div className="grid justify-items-center gap-2.5 text-center">
-				<h1 className="font-display text-[34px] leading-10 font-medium sm:text-[44px] sm:leading-[48px]">
+				<h1 className="font-display text-[34px] leading-10 sm:text-[44px] sm:leading-[48px]">
 					<Trans>Can software read your resume?</Trans>
 				</h1>
-				<p className="max-w-[520px] text-base leading-[25px] text-ink-2">
+				<p className="max-w-[520px] font-display text-[clamp(17px,1.4vw,21px)] leading-normal text-pretty text-ink-2">
 					<Trans>
 						Upload a PDF and see the text an applicant tracking system extracts: what's missing, what's out of order,
 						and how to fix it. Free, no account needed.
 					</Trans>
 				</p>
+			</div>
+
+			{/* Before the file, so a posting can be added first: the result has no posting field. */}
+			<div className="grid gap-1.5">
+				<label htmlFor={id} className="text-[13px] font-medium">
+					<Trans>
+						Job posting <span className="font-normal text-ink-3">· optional, adds a keyword match</span>
+					</Trans>
+				</label>
+				<Textarea
+					id={id}
+					rows={3}
+					maxLength={MAX_POSTING}
+					value={posting}
+					placeholder={t`Paste the posting to see which of its terms your resume already has.`}
+					onChange={(event) => onPosting(event.target.value)}
+				/>
 			</div>
 
 			{/* A drop zone, not a form: the card takes a dropped file; its buttons take the keyboard. */}
@@ -216,18 +240,15 @@ function Idle({ error, posting, onPosting, onFile }: IdleProps) {
 				}}
 			>
 				<Icon name="file-arrow-up" size={36} className="text-accent-text" />
-				<button
-					type="button"
-					className="text-base font-semibold underline-offset-2 hover:underline"
-					onClick={() => input.current?.click()}
-				>
-					<Trans>Drop a PDF here or choose a file</Trans>
-				</button>
+				{/* Your own file is the main path; the sample is there to try it without one. */}
+				<Button onClick={() => input.current?.click()}>
+					<Trans>Choose a PDF</Trans>
+				</Button>
 				<span className="text-sm text-ink-3">
-					<Trans>Up to 25 MB · checked in your browser, never uploaded</Trans>
+					<Trans>or drop it here · up to 25 MB · checked in your browser, never uploaded</Trans>
 				</span>
-				<Button className="mt-1.5" onClick={() => void sample()}>
-					<Trans>Check a sample file</Trans>
+				<Button variant="link" size="sm" className="h-auto" onClick={() => void sample()}>
+					<Trans>Try a sample file</Trans>
 				</Button>
 				<input
 					ref={input}
@@ -250,25 +271,9 @@ function Idle({ error, posting, onPosting, onFile }: IdleProps) {
 				</p>
 			)}
 
-			<div className="grid gap-1.5">
-				<label htmlFor={id} className="text-[13px] font-medium">
-					<Trans>
-						Job posting <span className="font-normal text-ink-3">· optional, adds a keyword match</span>
-					</Trans>
-				</label>
-				<Textarea
-					id={id}
-					rows={3}
-					maxLength={MAX_POSTING}
-					value={posting}
-					placeholder={t`Paste the posting to see which of its terms your resume already has.`}
-					onChange={(event) => onPosting(event.target.value)}
-				/>
-			</div>
-
 			<section aria-labelledby={`${id}-checks`} className="mt-8 grid gap-4 border-t border-line pt-8">
 				<div className="grid gap-1.5">
-					<h2 id={`${id}-checks`} className="font-display text-[22px] leading-7 font-medium">
+					<h2 id={`${id}-checks`} className="font-display text-[22px] leading-7">
 						<Trans>What it checks</Trans>
 					</h2>
 					<p className="text-sm leading-[21px] text-ink-2">
@@ -324,8 +329,11 @@ function Progress({ file, step }: { file: File; step: number }) {
 	);
 }
 
-const verdict = (score: number) =>
-	score >= 80 ? t`Reads cleanly` : score >= 50 ? t`Mostly readable` : t`Hard for software to read`;
+const VERDICT_LABEL = {
+	clean: () => t`Reads cleanly`,
+	mostly: () => t`Mostly readable`,
+	hard: () => t`Hard for software to read`,
+};
 
 type Row = { key: string; title: string; count: string; tone: "danger" | "warn" | "accent"; body: React.ReactNode };
 
@@ -339,7 +347,7 @@ function issueRows(report: PdfAtsReport): Row[] {
 		.map(([category, findings]) => ({
 			key: category,
 			title: getPdfCategoryLabel(category),
-			count: String(findings.length),
+			count: i18n.number(findings.length),
 			tone: findings.some((finding) => finding.severity === "blocker")
 				? ("danger" as const)
 				: findings.every((finding) => finding.severity === "tip")
@@ -364,7 +372,7 @@ function issueRows(report: PdfAtsReport): Row[] {
 		rows.push({
 			key: "posting",
 			title: t`Terms from the posting`,
-			count: `${report.jd.matchedCount}/${report.jd.totalTerms}`,
+			count: `${i18n.number(report.jd.matchedCount)}/${i18n.number(report.jd.totalTerms)}`,
 			tone: "accent",
 			body:
 				report.jd.missingTerms.length > 0 ? (
@@ -377,14 +385,28 @@ function issueRows(report: PdfAtsReport): Row[] {
 	return rows;
 }
 
-type ResultProps = { result: AtsCheckResult; file: File; onFix: () => void; onReset: () => void };
+type ResultProps = {
+	result: AtsCheckResult;
+	file: File;
+	signedIn: boolean;
+	importError: string | undefined;
+	onFix: () => void;
+	onReset: () => void;
+};
 
-function Result({ result, file, onFix, onReset }: ResultProps) {
+// A file with no text behind its pages has nothing to import: the editor would open empty. A partly scanned one
+// (IMAGE_ONLY_DOCUMENT) still brings its readable pages.
+const UNREADABLE = new Set(["NO_TEXT_LAYER"]);
+
+function Result({ result, file, signedIn, importError, onFix, onReset }: ResultProps) {
 	const { report } = result;
+	const unreadable = report.findings.some((finding) => UNREADABLE.has(finding.code));
 	const rows = issueRows(report);
 	const [open, setOpen] = useState<string | null>(rows[0]?.key ?? null);
 	const [lens, setLens] = useState<"page" | "text">("page");
 	const issues = report.findings.length;
+	const tips = report.tips.length;
+	const { verdict, tone } = pdfVerdict(report);
 
 	return (
 		<div className="grid min-h-[calc(100svh-5rem)] lg:grid-cols-[440px_minmax(0,1fr)]">
@@ -392,27 +414,29 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 				<div className="flex items-center gap-4">
 					<div
 						role="img"
-						aria-label={t`Readability score: ${report.score} out of 100`}
+						aria-label={t`Readability score: ${i18n.number(report.score)} out of 100`}
 						className="score-ring score-ring-reveal grid size-[84px] shrink-0 place-items-center rounded-full"
 						style={
 							{
 								"--ring-value": `${report.score}%`,
-								"--ring-color": report.score >= 80 ? "var(--accent)" : "var(--warn)",
+								"--ring-color": `var(--${tone})`,
 							} as CSSProperties
 						}
 					>
-						<span className="grid size-[70px] place-items-center rounded-full bg-surface font-display text-[26px] font-medium">
+						<span className="grid size-[70px] place-items-center rounded-full bg-surface font-display text-[26px]">
 							<RollingNumber value={report.score} duration="480ms" />
 						</span>
 					</div>
 					<div className="grid gap-1">
-						<b className="text-base font-semibold">{verdict(report.score)}</b>
+						<b className="text-base font-semibold">{VERDICT_LABEL[verdict]()}</b>
 						<span className="text-[13px] leading-[19px] text-ink-2">
 							{issues > 0 ? (
 								<Plural value={issues} one="# issue could cost you a match." other="# issues could cost you a match." />
 							) : (
 								<Trans>Nothing here should cost you a match.</Trans>
 							)}{" "}
+							{/* Rows below count tips too; say so, so the numbers add up. */}
+							{tips > 0 && <Plural value={tips} one="Plus # tip." other="Plus # tips." />}{" "}
 							<Trans>The score reflects how reliably text is extracted, not your chances.</Trans>
 						</span>
 					</div>
@@ -420,7 +444,7 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 
 				{report.document.truncated && (
 					<p className="text-xs text-ink-3">
-						<Trans>Only the first {report.document.pageCount} pages were checked.</Trans>
+						<Trans>Only the first {i18n.number(report.document.pageCount)} pages were checked.</Trans>
 					</p>
 				)}
 
@@ -445,7 +469,7 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 												row.key === "content"
 													? "pencil-simple"
 													: row.tone === "accent"
-														? "briefcase"
+														? "info"
 														: row.tone === "danger"
 															? "warning-circle"
 															: "warning"
@@ -480,15 +504,51 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 				)}
 
 				<div className="grid gap-2.5 rounded-xl bg-accent-soft p-4 max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-20 max-lg:rounded-none max-lg:border-t max-lg:border-line max-lg:bg-surface max-lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
-					<b className="text-[15px] font-semibold max-lg:hidden">
-						<Trans>Fix these in a few minutes</Trans>
-					</b>
-					<span className="text-[13px] leading-[19px] text-ink-2 max-lg:hidden">
-						<Trans>Import this file into {APP_NAME}. Every issue is waiting for you in Check.</Trans>
-					</span>
-					<Button className="h-10" onClick={onFix}>
-						<Trans>Fix these in the editor</Trans>
-					</Button>
+					{importError && (
+						<p role="alert" className="text-[13px] leading-[19px] text-danger-text">
+							{importError}
+						</p>
+					)}
+					{unreadable ? (
+						<>
+							<b className="text-[15px] font-semibold max-lg:hidden">
+								<Trans>There's no text here to bring into the editor</Trans>
+							</b>
+							<span className="text-[13px] leading-[19px] text-ink-2 max-lg:hidden">
+								<Trans>
+									Start a blank resume and paste your sections in, or import the Word version from Documents.
+								</Trans>
+							</span>
+							<StartInstead signedIn={signedIn} />
+						</>
+					) : issues === 0 ? (
+						<>
+							<b className="text-[15px] font-semibold max-lg:hidden">
+								<Trans>Keep it this way</Trans>
+							</b>
+							<span className="text-[13px] leading-[19px] text-ink-2 max-lg:hidden">
+								<Trans>Import this file into {APP_NAME} to keep editing it, with Check reading it as you go.</Trans>
+							</span>
+							<Button className="h-10" variant="secondary" onClick={onFix}>
+								<Trans>Edit it in {APP_NAME}</Trans>
+							</Button>
+						</>
+					) : (
+						<>
+							<b className="text-[15px] font-semibold max-lg:hidden">
+								<Trans>Fix these in a few minutes</Trans>
+							</b>
+							<span className="text-[13px] leading-[19px] text-ink-2 max-lg:hidden">
+								<Trans>
+									Import this file into {APP_NAME}, then keep checking it in Check as you edit. Check reads the resume
+									you're editing, so its findings can differ from this file's.
+								</Trans>
+							</span>
+							<Button className="h-10" onClick={onFix}>
+								<Trans>Fix these in the editor</Trans>
+							</Button>
+						</>
+					)}
 				</div>
 
 				<button type="button" className="w-fit text-sm text-ink-2 underline underline-offset-2" onClick={onReset}>
@@ -501,10 +561,10 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 					<Tabs value={lens} onValueChange={(value) => setLens(value as "page" | "text")}>
 						<TabsList aria-label={t`How to show the file`}>
 							<TabsTrigger value="page">
-								<Trans>Original page</Trans>
+								<Trans>What a person sees</Trans>
 							</TabsTrigger>
 							<TabsTrigger value="text">
-								<Trans>As software reads it</Trans>
+								<Trans>What a parser reads</Trans>
 							</TabsTrigger>
 						</TabsList>
 					</Tabs>
@@ -535,6 +595,35 @@ function Result({ result, file, onFix, onReset }: ResultProps) {
 					</pre>
 				</div>
 			</section>
+		</div>
+	);
+}
+
+/**
+ * For a file with no text: a blank resume to paste into, or Documents to import the Word version. Signed out, both go
+ * through sign-up first.
+ */
+function StartInstead({ signedIn }: { signedIn: boolean }) {
+	const navigate = useNavigate();
+	const { creating, startBlank } = useStartDocument();
+	// Signing up first carries the choice: Documents starts the blank resume once the account exists.
+	const signUp = (callbackURL: string) => void navigate({ to: "/auth/register", search: { callbackURL } });
+	return (
+		<div className="flex flex-wrap gap-2">
+			<Button
+				className="h-10"
+				loading={creating}
+				onClick={() => (signedIn ? void startBlank() : signUp("/dashboard?new=resume"))}
+			>
+				<Trans>Start a blank resume</Trans>
+			</Button>
+			<Button
+				variant="secondary"
+				className="h-10"
+				onClick={() => (signedIn ? void navigate({ to: "/dashboard" }) : signUp("/dashboard"))}
+			>
+				<Trans>Import a Word file instead</Trans>
+			</Button>
 		</div>
 	);
 }

@@ -1,6 +1,7 @@
 import type { CalendarEvent } from "./calendar";
 import type { ApplicationSummary as Application } from "@/features/applications/types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
+import { i18n } from "@lingui/core";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useRouter } from "expo-router";
@@ -24,6 +25,7 @@ import { FollowUpSheet } from "@/features/application-detail/sheets";
 import { applicationError } from "@/features/applications/error";
 import { filterApplications } from "@/features/applications/list";
 import { useApplications } from "@/features/applications/queries";
+import { useOfferHints } from "@/features/applications/stage-actions";
 import { routes } from "@/routes";
 import { useIsTablet } from "@/shell/use-is-tablet";
 import { Banner, Button, Card, EmptyState, IconButton, SelectSheet, Sheet, Skeleton, Text, useTheme } from "@/ui";
@@ -55,7 +57,8 @@ function ApplicationCalendar() {
 	const [width, setWidth] = useState(0);
 	const query = useApplications();
 	const pull = usePullRefresh(query.refetch);
-	const { search } = useApplicationSearch();
+	const { search, needsYou, clearFilters } = useApplicationSearch();
+	const offers = useOfferHints();
 	const userTime = useUserTime();
 	const now = useNow();
 	const timeZone = userTime.timeZone;
@@ -69,7 +72,13 @@ function ApplicationCalendar() {
 	const [editing, setEditing] = useState<Editing | null>(null);
 	const [editorOpen, setEditorOpen] = useState(false);
 
-	const applications = filterApplications(query.data ?? [], { search, tag: "", showClosed: true });
+	const applications = filterApplications(
+		query.data ?? [],
+		{ search, tag: "", showClosed: true, needsYou },
+		now,
+		timeZone,
+		offers,
+	);
 	const open = applications.filter((application) => application.status !== "closed");
 	const events = collectEvents(applications, timeZone);
 	const byDay = groupByDay(events);
@@ -115,6 +124,17 @@ function ApplicationCalendar() {
 		);
 	}
 
+	if ((search.trim() || needsYou) && events.length === 0) {
+		return (
+			<EmptyState
+				variant="card"
+				title={applications.length === 0 ? t`No matching applications` : t`Nothing scheduled yet`}
+				message={t`Try different words or clear your filters.`}
+				action={{ label: t`Clear filters`, onPress: clearFilters }}
+			/>
+		);
+	}
+
 	const selectedEvents = byDay.get(selected) ?? [];
 	const agenda = (
 		<View style={{ gap: space.s4 }}>
@@ -134,6 +154,7 @@ function ApplicationCalendar() {
 				</Text>
 				{upcoming.length === 0 ? (
 					<EmptyState
+						variant="card"
 						icon="calendar-blank"
 						title={t`Nothing scheduled yet`}
 						message={t`Add screening calls and technical interviews to see them here and on the calendar.`}
@@ -188,8 +209,10 @@ function ApplicationCalendar() {
 						setSelectedDay(null);
 					}}
 				/>
+				{/* Secondary: the screen's one accent-filled action is New, in the tab bar. */}
 				<Button
 					size="sm"
+					variant="secondary"
 					icon="calendar-plus"
 					label={t`Schedule interview`}
 					disabled={!open.length}
@@ -280,7 +303,7 @@ function ApplicationCalendar() {
 											))}
 											{items.length > MAX_PER_DAY ? (
 												<Text variant="micro" color="ink3">
-													{t`+${items.length - MAX_PER_DAY} more`}
+													{t`+${i18n.number(items.length - MAX_PER_DAY)} more`}
 												</Text>
 											) : null}
 										</>
@@ -411,7 +434,7 @@ function EventCard({ event, onEdit }: EventCardProps) {
 	const when = event.kind === "interview" ? `${userTime.time(event.start)} – ${userTime.time(event.end)}` : "";
 	const title =
 		event.kind === "interview"
-			? t`${interviewTypeLabel(event.interview.kind)} interview · ${event.interview.durationMinutes} min`
+			? t`${interviewTypeLabel(event.interview.kind)} interview · ${i18n.number(event.interview.durationMinutes)} min`
 			: application.followUpNote || t`Follow up`;
 
 	return (

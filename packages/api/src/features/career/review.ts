@@ -7,10 +7,11 @@ import * as tables from "@reactive-resume/db/schema";
 import { knowledgeReviewSchema } from "@reactive-resume/schema/career";
 import { generateId } from "@reactive-resume/utils/string";
 import { aiProvidersService } from "../ai-providers/service";
+import { generateJson } from "../ai/application-generation";
 import { modelCallOptions } from "../ai/request-limits";
 import { getModel } from "../ai/service";
 import { tolerant } from "../ai/tolerant";
-import { generateJson } from "../applications/ai";
+import { createAiUsage } from "../ai/usage";
 import { careerService } from "./service";
 
 const output = z.object({
@@ -110,7 +111,10 @@ export const knowledgeReview = {
 		// The shared facts the AI already reads; private groups, switched-off and archived facts never go.
 		const shared = facts.filter((fact) => fact.applicationId === null);
 		const { batches } = reviewBatches(shared, reviewBatchChars(limits), limits.reviewBatches);
+		// One AI usage operation per review: every batch is a request of it (Settings → AI usage).
+		const usage = createAiUsage(input.userId, "knowledge-review", provider);
 		const model = getModel({
+			usage,
 			provider: provider.provider,
 			model: provider.model,
 			apiKey: provider.apiKey,

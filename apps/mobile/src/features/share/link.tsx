@@ -2,6 +2,8 @@ import type { ResumeDocument } from "@/draft/types";
 import { useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
+import { File, Paths } from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Linking, Share, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
@@ -15,6 +17,7 @@ import {
 	summarizeViews,
 } from "@reactive-resume/resume/sharing";
 import { flushResume } from "./document";
+import { FeedbackLinks } from "./feedback";
 import { WebPageSettings } from "./web-page";
 import { client, orpc } from "@/api/client";
 import { useFlags } from "@/api/flags";
@@ -36,11 +39,27 @@ import {
 	useTheme,
 } from "@/ui";
 
+/** The QR code as a PNG in the cache, through the system share sheet (Save Image, Files, Messages…). */
+async function shareQrImage(dataUrl: string) {
+	if (!(await Sharing.isAvailableAsync())) throw new Error("Sharing unavailable");
+	const base64 = dataUrl.replace(/^data:image\/png;base64,/, "");
+	const file = new File(Paths.cache, "resume-qr-code.png");
+	if (file.exists) file.delete();
+	file.write(Uint8Array.from(atob(base64), (char) => char.charCodeAt(0)));
+	await Sharing.shareAsync(file.uri, { mimeType: "image/png", UTI: "public.png" });
+}
+
 /** Sharing settings: saved beside the resume, not in its data. */
 export type ShareSettings = Partial<
 	Pick<
 		ResumeDocument,
-		"isPublic" | "slug" | "showDownloadButtons" | "showInSearchEngines" | "hideContactDetails" | "isPrimary"
+		| "isPublic"
+		| "slug"
+		| "showDownloadButtons"
+		| "allowWordDownload"
+		| "showInSearchEngines"
+		| "hideContactDetails"
+		| "isPrimary"
 	>
 >;
 
@@ -57,6 +76,7 @@ export function LinkTab({ resume, offline }: LinkProps) {
 	const [takenBy, setTakenBy] = useState<string>();
 	const [retry, setRetry] = useState(0);
 	const [qrOpen, setQrOpen] = useState(false);
+	const qrRef = useRef<{ toDataURL: (callback: (data: string) => void) => void } | null>(null);
 	const profile = useQuery({ ...orpc.auth.getProfile.queryOptions(), enabled: !offline });
 	const username = profile.data?.username;
 	// Shared links use the app's alias (`APP_ALIAS_URL`) when the server has one; every public page works there too.
@@ -76,18 +96,22 @@ export function LinkTab({ resume, offline }: LinkProps) {
 	}, [resume.slug]);
 
 	// Every sharing setting saves one way, like web: straight to the server and never through the draft's undo, after
-	// the draft's pending edits so the version check holds; then the draft reloads the server copy.
+	// the draft's pending edits so the version check holds. The draft takes the answer as its own revision, so Undo and
+	// confirmed assistant decisions stay.
 	const save = (settings: ShareSettings, cancelled = () => false) =>
 		operations.run(async () => {
-			const current = await flushResume(resume.id);
+			await flushResume(resume.id);
 			if (cancelled()) return;
-			await client.resume.update({ id: resume.id, ...settings, expectedUpdatedAt: current.updatedAt });
-			await draftResume.refresh();
+			await draftResume.writeMetadata(async (baseline) => ({
+				...baseline,
+				...(await client.resume.update({ id: resume.id, ...settings, expectedUpdatedAt: baseline.updatedAt })),
+			}));
 		});
 	const saveCheckedSlug = useEffectEvent((value: string, cancelled: () => boolean) => save({ slug: value }, cancelled));
 
 	useEffect(() => {
-		if (!changed || !isValidSlug(slug) || !resume.isPublic || resume.isLocked || offline) return;
+		// Checked and saved while private too, so the address is chosen before it goes live.
+		if (!changed || !isValidSlug(slug) || resume.isLocked || offline) return;
 		let cancelled = false;
 		const timer = setTimeout(() => {
 			setSlugState("checking");
@@ -115,7 +139,7 @@ export function LinkTab({ resume, offline }: LinkProps) {
 			cancelled = true;
 			clearTimeout(timer);
 		};
-	}, [slug, changed, resume.id, resume.isPublic, resume.isLocked, offline, retry]);
+	}, [slug, changed, resume.id, resume.isLocked, offline, retry]);
 
 	const addressError =
 		changed && !slug
@@ -123,7 +147,7 @@ export function LinkTab({ resume, offline }: LinkProps) {
 			: changed && slug.length > MAX_SLUG_LENGTH
 				? t`Use at most 64 characters.`
 				: changed && !isValidSlug(slug)
-					? t`Use lowercase letters, numbers and single dashes.`
+					? t`Use Latin letters a–z, numbers and single dashes.`
 					: slugState === "taken"
 						? takenBy
 							? t`You already use this for “${takenBy}”.`
@@ -159,18 +183,19 @@ export function LinkTab({ resume, offline }: LinkProps) {
 				label={t`Address`}
 				value={slug}
 				onChangeText={(value) => setSlug(normalizeSlug(value))}
+				ltr
 				autoCapitalize="none"
 				autoCorrect={false}
-				editable={resume.isPublic && !disabled && slugState !== "saving"}
-				error={resume.isPublic ? addressError : undefined}
+				editable={!disabled && slugState !== "saving"}
+				error={addressError}
 				helper={
-					!resume.isPublic
-						? t`Turn on the link to choose an address.`
-						: changed
-							? t`Checking… Copy is available after saving.`
-							: url
+					changed
+						? t`Checking… Copy is available after saving.`
+						: !url
+							? t`Loading your public address…`
+							: resume.isPublic
 								? t`Live at ${url}`
-								: t`Loading your public address…`
+								: t`Goes live at ${url} when you publish.`
 				}
 			/>
 			{suggestion && slugState === "taken" && (
@@ -228,6 +253,7 @@ export function LinkTab({ resume, offline }: LinkProps) {
 				save={save}
 			/>
 			<Statistics id={resume.id} isPublic={resume.isPublic} offline={offline} />
+			<FeedbackLinks resumeId={resume.id} offline={offline} />
 			<Sheet open={qrOpen} title={t`QR code`} onClose={() => setQrOpen(false)} detents={[0.5]}>
 				<View
 					accessible
@@ -241,9 +267,24 @@ export function LinkTab({ resume, offline }: LinkProps) {
 							quietZone={space.s3}
 							color={colors.paperInk}
 							backgroundColor={colors.paper}
+							getRef={(ref) => {
+								qrRef.current = ref;
+							}}
 						/>
 					)}
 					<Text selectable>{url}</Text>
+					{/* For print (a card, a paper resume): the share sheet saves it to Photos or Files, or sends it. */}
+					<Button
+						label={t`Share image`}
+						variant="secondary"
+						disabled={!url}
+						onPress={() =>
+							void operations.run(async () => {
+								const dataUrl = await new Promise<string>((resolve) => qrRef.current?.toDataURL(resolve));
+								await shareQrImage(dataUrl);
+							})
+						}
+					/>
 				</View>
 			</Sheet>
 		</View>
@@ -300,13 +341,13 @@ function Statistics({ id, isPublic, offline }: StatisticsProps) {
 							<Text variant="title">
 								{total.data?.lastViewedAt ? formatTimeSince(total.data.lastViewedAt, i18n.locale) : "—"}
 							</Text>
-							<Text variant="caption">{t`since last view`}</Text>
+							<Text variant="caption">{t`since last counted view`}</Text>
 						</View>
 					</View>
 					<View
 						accessible
 						accessibilityRole="image"
-						accessibilityLabel={t`Daily views over 30 days, peak ${summary.peak}`}
+						accessibilityLabel={t`Daily views over 30 days, peak ${i18n.number(summary.peak)}`}
 					>
 						<Svg width="100%" height={size.hit * 1.5} viewBox="0 0 300 60" preserveAspectRatio="none">
 							{summary.bars.map((bar, index) => (
@@ -327,7 +368,7 @@ function Statistics({ id, isPublic, offline }: StatisticsProps) {
 					</View>
 				</>
 			)}
-			<Text variant="caption" color="ink3">{t`Download totals can include repeat clicks.`}</Text>
+			{isPublic && <Text variant="caption" color="ink3">{t`Each visitor counts once an hour.`}</Text>}
 		</View>
 	);
 }

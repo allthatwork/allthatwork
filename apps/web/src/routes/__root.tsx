@@ -14,7 +14,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { createRootRouteWithContext, HeadContent, Outlet, redirect } from "@tanstack/react-router";
+import { createRootRouteWithContext, HeadContent, Outlet, redirect, useMatch } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { LazyMotion, MotionConfig } from "motion/react";
 import { useEffect } from "react";
@@ -23,9 +23,12 @@ import { TooltipProvider } from "@reactive-resume/ui/components/tooltip";
 import { isAppSectionPath } from "@reactive-resume/utils/app-paths";
 import { isRTL } from "@reactive-resume/utils/locale";
 import { BreakpointIndicator } from "@/components/layout/breakpoint-indicator";
+import { NavigationFocus } from "@/components/layout/navigation-focus";
 import { DialogManager } from "@/dialogs/manager";
+import { SessionRecovery } from "@/features/auth/components/session-recovery";
 import { CommandPalette } from "@/features/command-palette";
 import { useDocumentWebMcpTools } from "@/features/documents/webmcp";
+import { KeyboardShortcuts } from "@/features/keyboard-shortcuts";
 import { ThemeProvider } from "@/features/theme/provider";
 import { ConfirmDialogProvider } from "@/hooks/use-confirm";
 import { loadRootContext } from "@/libs/root-context";
@@ -56,7 +59,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 		return { meta: [{ title }, { name: "description", content: description }] };
 	},
 	beforeLoad: async ({ context, location, preload }) => {
-		const root = await loadRootContext(context.queryClient);
+		const root = await loadRootContext(context.queryClient, { commit: !preload });
 		const { aliasUrl, appUrl } = root.flags;
 		// Sign-in and the editor live on APP_URL; the alias (APP_ALIAS_URL) only serves the public pages. The server
 		// redirects full page loads; this catches links followed inside the app.
@@ -69,6 +72,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
 	const { theme, palette, locale, queryClient, session } = Route.useRouteContext();
 	const dir = isRTL(locale) ? "rtl" : "ltr";
+	const onMarketingPage = useMatch({ from: "/_home", shouldThrow: false }) !== undefined;
 
 	// WebMCP: browser agents can list and open the signed-in user's documents from any page.
 	useDocumentWebMcpTools(session !== null);
@@ -93,10 +97,13 @@ function RootComponent() {
 										<DirectionProvider direction={dir}>
 											<TooltipProvider>
 												<ConfirmDialogProvider>
+													<NavigationFocus />
 													<Outlet />
+													<SessionRecovery />
 
 													<DialogManager />
 													<CommandPalette />
+													<KeyboardShortcuts showTrigger={!onMarketingPage} />
 													<LocalizedToaster />
 
 													{import.meta.env.DEV && <BreakpointIndicator />}
@@ -131,5 +138,5 @@ function RootComponent() {
 
 function LocalizedToaster() {
 	useLingui();
-	return <Toaster closeLabel={t`Close notification`} />;
+	return <Toaster closeLabel={t`Close notification`} regionLabel={t`Notifications`} />;
 }

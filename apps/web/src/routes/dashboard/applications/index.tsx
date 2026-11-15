@@ -5,9 +5,10 @@ import type { ListColumn, ListColumnId } from "@reactive-resume/schema/applicati
 import type { ApplicationView } from "@reactive-resume/schema/applications/views";
 import { t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
+import { HotkeysProvider, useHotkey } from "@tanstack/react-hotkeys";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, stripSearchParams, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import z from "zod";
 import { DEFAULT_APPLICATION_SORT } from "@reactive-resume/schema/applications/filters";
 import {
@@ -22,6 +23,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@reactive-resume/ui/components/dropdown-menu";
+import { EmptyState } from "@reactive-resume/ui/components/empty-state";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Skeleton } from "@reactive-resume/ui/components/skeleton";
@@ -30,6 +32,7 @@ import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
 import { FILL_SCREEN_ATTRIBUTE, PAGE_CLASS } from "@/components/layout/page";
+import { takePostingCapture } from "@/features/applications/capture";
 import { AddApplicationDialog } from "@/features/applications/components/add-application-dialog";
 import { ApplicationDetailSheet } from "@/features/applications/components/application-detail-sheet";
 import { ApplicationFormSheet } from "@/features/applications/components/application-form-sheet";
@@ -46,14 +49,14 @@ import { PhoneSortButton, SortButton } from "@/features/applications/components/
 import { ManageViewsSheet } from "@/features/applications/components/views/manage-views-sheet";
 import { SaveViewDialog } from "@/features/applications/components/views/save-view-dialog";
 import { ViewsButton } from "@/features/applications/components/views/views-button";
-import { clearAll, matchesFilters, mergeSnapshot, withHeld } from "@/features/applications/filter";
+import { clearAll, matchesFilters, mergeSnapshot, sameFilters, withHeld } from "@/features/applications/filter";
 import {
 	filterSearchShape,
 	filtersFromSearch,
 	searchFromFilters,
 	sortFromSearch,
 } from "@/features/applications/filter-search";
-import { getNextStep, useNoReplyDays } from "@/features/applications/next-step";
+import { getNextStep, needsFollowUp, useNoReplyDays } from "@/features/applications/next-step";
 import {
 	applicationDetailQueryOptions,
 	applicationsFullListQueryOptions,
@@ -61,15 +64,18 @@ import {
 	hydrateApplicationDetail,
 } from "@/features/applications/queries";
 import { filtersOfView, isViewEdited, viewFiltersOf } from "@/features/applications/saved-views";
-import { useApplicationLanes } from "@/features/applications/use-application-lanes";
+import { applicationLanesQueryOptions, useApplicationLanes } from "@/features/applications/use-application-lanes";
 import { resizeColumnChange, useApplicationsLayout } from "@/features/applications/use-applications-layout";
 import { useRememberedFilters } from "@/features/applications/use-remembered-filters";
 import { isNameTaken, useSavedViews } from "@/features/applications/use-saved-views";
 import { useTabLabels } from "@/features/applications/use-tab-labels";
 import { useToolbarLines } from "@/features/applications/use-toolbar-lines";
+import { useCareerTime, useNow } from "@/features/career/shared";
+import { useShortcutSettings } from "@/features/keyboard-shortcuts/settings";
 import { toastError } from "@/libs/error-message";
 import { ENTER_CLASS } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
+import { getPageTitle } from "@/libs/seo";
 
 const VIEWS = ["board", "list", "insights", "calendar"] as const;
 type View = (typeof VIEWS)[number];
@@ -85,10 +91,28 @@ const searchSchema = z.object({
 type Search = z.output<typeof searchSchema>;
 const defaultSearch: Partial<Search> = { view: "board", create: false };
 
+// How long the page waits for the list and lanes before drawing anyway (a skeleton, or rows in the default order).
+const LOADER_WAIT_MS = 1000;
+
 export const Route = createFileRoute("/dashboard/applications/")({
+	head: () => ({ meta: [{ title: getPageTitle(t`Applications`) }] }),
 	component: RouteComponent,
 	validateSearch: searchSchema,
 	search: { middlewares: [stripSearchParams(defaultSearch)] },
+	// Arrive with the list, as Documents does: a new account sees "Track your first job" at once, not a toolbar and a
+	// skeleton that then vanish. The lanes come with it when they're quick, so rows first draw in the owner's lane order;
+	// slow or failing requests never hold the page (it shows the defaults and the lanes' own error). A failed list still
+	// renders the page, which shows its error and retry.
+	// The two requests can share one batch, so one bound covers both.
+	loader: async ({ context }) => {
+		await Promise.race([
+			Promise.allSettled([
+				context.queryClient.ensureQueryData(applicationsListQueryOptions()),
+				context.queryClient.ensureQueryData(applicationLanesQueryOptions()),
+			]),
+			new Promise((resolve) => setTimeout(resolve, LOADER_WAIT_MS)),
+		]);
+	},
 });
 
 const NO_SNAPSHOT: ShownSnapshot = new Map();
@@ -131,7 +155,14 @@ function RouteComponent() {
 		if (addressFilters.q !== query.trim()) setQuery(addressFilters.q);
 	}
 	const filters: ApplicationFilters = { ...addressFilters, q: query };
-	const [adding, setAdding] = useState(false);
+	const overlayScope = `applications-overlay-${useId()}`;
+	const pageRef = useRef<HTMLDivElement>(null);
+	const collectionRef = useRef<HTMLDivElement>(null);
+	const openingControl = useRef<HTMLElement | null>(null);
+	const searchRef = useRef<HTMLInputElement>(null);
+	// A posting shared from the browser opens Add with it.
+	const [capture, setCapture] = useState(takePostingCapture);
+	const [adding, setAdding] = useState(!!capture);
 	const [importing, setImporting] = useState(false);
 	const [exporting, setExporting] = useState(false);
 	const [exportLoading, setExportLoading] = useState(false);
@@ -146,8 +177,22 @@ function RouteComponent() {
 	const { data: applications, isPending, isError, isFetching, refetch } = useQuery(applicationsListQueryOptions());
 	const { data: profile } = useQuery(orpc.career.profile.queryOptions());
 	const noReplyDays = useNoReplyDays();
+	const { timeZone } = useCareerTime();
 	const [now] = useState(() => new Date());
-	const context = { now, noReplyDays };
+	const context = { now, noReplyDays, timeZone };
+	const characterShortcuts = useShortcutSettings((state) => state.characterShortcuts);
+	useHotkey(
+		"/",
+		(event) => {
+			if (event.keyCode === 229) return;
+			searchRef.current?.focus();
+		},
+		{
+			enabled: characterShortcuts && Boolean(applications?.length),
+			target: pageRef,
+			meta: { name: t`Search applications` },
+		},
+	);
 
 	const setSearch = (patch: Partial<Search>, replace = false) =>
 		void navigate({ replace, resetScroll: false, search: (prev: Search) => ({ ...prev, ...patch }) });
@@ -183,8 +228,9 @@ function RouteComponent() {
 		return () => window.clearTimeout(timer);
 	}, [query, addressQuery, navigate]);
 
-	// Old links' ?closed=true: the stages already include Closed; write them out and drop the old param.
-	const legacyClosed = search.closed !== undefined;
+	// Old links' ?closed=true, and upstream's ?followUp and ?needsYou: the filters already include them; write them out
+	// and drop the old params.
+	const legacyClosed = search.closed !== undefined || search.followUp !== undefined || search.needsYou !== undefined;
 	useEffect(() => {
 		if (!legacyClosed) return;
 		void navigate({
@@ -192,7 +238,13 @@ function RouteComponent() {
 			resetScroll: false,
 			search: (prev: Search) => {
 				const { filters: mapped, sort: sorted } = filtersFromSearch(prev);
-				return { ...prev, ...searchFromFilters(mapped, sorted), closed: undefined };
+				return {
+					...prev,
+					...searchFromFilters(mapped, sorted),
+					closed: undefined,
+					followUp: undefined,
+					needsYou: undefined,
+				};
 			},
 		});
 	}, [legacyClosed, navigate]);
@@ -271,6 +323,18 @@ function RouteComponent() {
 			window.clearTimeout(timer);
 		};
 	}, [prefetch]);
+	// A tag chip adds its tag to the Tags filter.
+	const filterByTag = useCallback(
+		(tag: string) =>
+			void navigate({
+				resetScroll: false,
+				search: (prev: Search) => {
+					const { filters: current } = filtersFromSearch(prev);
+					return current.tag.includes(tag) ? prev : { ...prev, tag: [...current.tag, tag] };
+				},
+			}),
+		[navigate],
+	);
 
 	useEffect(() => {
 		if (!create) return;
@@ -422,6 +486,9 @@ function RouteComponent() {
 	const empty = !!applications && applications.length === 0;
 	// Hoisted so the compiler keeps one function; inline, it changes with every keystroke and re-renders each row.
 	const openApplication = (application: ApplicationSummary) => {
+		const focused = document.activeElement;
+		if (!openingControl.current && focused instanceof HTMLElement && pageRef.current?.contains(focused))
+			openingControl.current = focused;
 		hydrateApplicationDetail(queryClient, application);
 		setSelectedId(application.id);
 	};
@@ -503,6 +570,13 @@ function RouteComponent() {
 
 	return (
 		<div
+			ref={pageRef}
+			onClickCapture={(event) => {
+				const trigger =
+					event.target instanceof Element ? event.target.closest<HTMLElement>("[data-application-open]") : null;
+				if (trigger) openingControl.current = trigger;
+			}}
+			tabIndex={-1}
 			{...(fill ? { [FILL_SCREEN_ATTRIBUTE]: "" } : {})}
 			className={cn(PAGE_CLASS, fill ? "flex min-h-0 flex-1 basis-0 flex-col gap-5 pb-6" : "grid content-start gap-5")}
 		>
@@ -523,18 +597,21 @@ function RouteComponent() {
 				</div>
 				<div ref={actionsRef} className="flex shrink-0 items-center gap-2">
 					<DropdownMenu>
-						<DropdownMenuTrigger
-							render={<Button size="icon" variant="secondary" aria-label={t`Import or export CSV`} />}
-						>
+						<DropdownMenuTrigger render={<Button size="icon" variant="secondary" aria-label={t`More`} />}>
 							<Icon name="dots-three" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
-							<DropdownMenuItem onClick={() => setImporting(true)}>
-								<Trans>Import from CSV…</Trans>
-							</DropdownMenuItem>
-							<DropdownMenuItem disabled={empty || !applications || exportLoading} onClick={() => void openExport()}>
-								<Trans>Export to CSV…</Trans>
-							</DropdownMenuItem>
+							<HotkeysProvider scope={`${overlayScope}-more`} exclusive>
+								<DropdownMenuItem onClick={() => void navigate({ to: "/dashboard/applications/trash" })}>
+									<Trans>Trash</Trans>
+								</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => setImporting(true)}>
+									<Trans>Import from CSV…</Trans>
+								</DropdownMenuItem>
+								<DropdownMenuItem disabled={empty || !applications || exportLoading} onClick={() => void openExport()}>
+									<Trans>Export to CSV…</Trans>
+								</DropdownMenuItem>
+							</HotkeysProvider>
 						</DropdownMenuContent>
 					</DropdownMenu>
 					<Button onClick={() => setAdding(true)}>
@@ -544,7 +621,14 @@ function RouteComponent() {
 				</div>
 			</header>
 
-			{applications && <FollowUpNudge applications={applications} onOpen={setSelectedId} />}
+			{applications && (
+				<FollowUpNudge
+					applications={applications}
+					onOpen={setSelectedId}
+					// Show: the attention filter's late replies and due follow-ups.
+					onShowAll={() => setFilters({ ...clearAll(), attention: ["no-reply", "follow-up"] })}
+				/>
+			)}
 
 			{isError && (
 				<div
@@ -575,7 +659,24 @@ function RouteComponent() {
 			)}
 
 			{isError && !applications ? null : empty ? (
-				<EmptyState onAdd={() => setAdding(true)} onImport={() => setImporting(true)} />
+				<EmptyState
+					title={<Trans>Track your first job</Trans>}
+					description={
+						<Trans>Paste a job link. We'll save the posting so Check, the assistant and your letter can use it.</Trans>
+					}
+					action={
+						<Button onClick={() => setAdding(true)}>
+							<Icon name="plus" />
+							<Trans>Save job</Trans>
+						</Button>
+					}
+					secondary={
+						<Button variant="secondary" onClick={() => setImporting(true)}>
+							<Trans>Import from CSV</Trans>
+						</Button>
+					}
+					className="transition-[opacity,translate] duration-emphasized ease-enter starting:translate-y-2 starting:opacity-0"
+				/>
 			) : (
 				<>
 					{/*
@@ -607,7 +708,9 @@ function RouteComponent() {
 											className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-ink-3"
 										/>
 										<Input
+											ref={searchRef}
 											type="search"
+											aria-keyshortcuts={characterShortcuts ? "/" : undefined}
 											aria-label={t`Search applications`}
 											placeholder={t`Search role, company or contact`}
 											value={query}
@@ -660,6 +763,7 @@ function RouteComponent() {
 					) : (
 						<div
 							key={shown}
+							ref={collectionRef}
 							className={cn(
 								shown === "board" && "flex min-h-96 flex-1 flex-col",
 								viewSwitched
@@ -679,6 +783,7 @@ function RouteComponent() {
 									onColumnResize={resizeColumn}
 									selectedId={selectedId}
 									onOpen={openApplication}
+									onTagSelect={filterByTag}
 								/>
 							)}
 							{shown === "board" && (
@@ -690,15 +795,20 @@ function RouteComponent() {
 									columnWidth={layout.boardColumnWidth}
 									onColumnWidthChange={(width) => updateLayout({ boardColumnWidth: width })}
 									onOpen={openApplication}
+									onTagSelect={filterByTag}
 								/>
 							)}
-							{shown === "insights" && <ApplicationInsights applications={applications ?? []} />}
+							{shown === "insights" && (
+								// Insights counts every application: it doesn't follow the filters.
+								<ApplicationInsights applications={applications ?? []} onSaveJob={() => setAdding(true)} />
+							)}
 							{shown === "calendar" && (
 								<ApplicationCalendar
 									compact={phone}
 									applications={matching}
 									allApplications={applications ?? []}
 									onOpen={openApplication}
+									onClearFilters={sameFilters(filters, clearAll()) ? undefined : () => setFilters(clearAll())}
 								/>
 							)}
 						</div>
@@ -729,27 +839,63 @@ function RouteComponent() {
 				onToggleDefault={(view) => void savedViews.update({ id: view.id, isDefault: !view.isDefault }).catch(failed)}
 				onDelete={(view) => void deleteView(view)}
 			/>
-			<AddApplicationDialog open={adding} onOpenChange={setAdding} onAdded={setSelectedId} />
-			<ApplicationFormSheet
-				open={Boolean(editing)}
-				application={editing}
-				onOpenChange={(open) => !open && setEditing(null)}
-			/>
-			<ImportApplicationsSheet open={importing} onOpenChange={setImporting} />
-			<ExportApplicationsSheet
-				open={exporting}
-				onOpenChange={setExporting}
-				applications={fullApplications ?? []}
-				filtered={matchingFullApplications}
-			/>
-			<ApplicationDetailSheet
-				application={selected}
-				onOpenChange={(open) => !open && setSelectedId(null)}
-				onEditDetails={(application) => {
-					setSelectedId(null);
-					setEditing(application);
-				}}
-			/>
+			<HotkeysProvider
+				scope={overlayScope}
+				exclusive
+				enabled={adding || importing || exporting || !!editing || !!selectedId}
+			>
+				<AddApplicationDialog
+					open={adding}
+					initialCapture={capture}
+					onOpenChange={(open) => {
+						setAdding(open);
+						if (!open) setCapture(null);
+					}}
+					onAdded={setSelectedId}
+				/>
+				<ApplicationFormSheet
+					open={Boolean(editing)}
+					application={editing}
+					onOpenChange={(open) => !open && setEditing(null)}
+				/>
+				<ImportApplicationsSheet open={importing} onOpenChange={setImporting} />
+				<ExportApplicationsSheet
+					open={exporting}
+					onOpenChange={setExporting}
+					applications={fullApplications ?? []}
+					filtered={matchingFullApplications}
+				/>
+				<ApplicationDetailSheet
+					returnFocus={(id) => {
+						const trigger = openingControl.current;
+						openingControl.current = null;
+						if (editing || adding) return null;
+						if (
+							trigger?.isConnected &&
+							trigger.getClientRects().length > 0 &&
+							trigger.closest<HTMLElement>("[data-application-id]")?.dataset.applicationId === id
+						)
+							return trigger;
+						const rows = Array.from(
+							collectionRef.current?.querySelectorAll<HTMLElement>("[data-application-id] [data-application-open]") ??
+								[],
+						).filter((row) => row.getClientRects().length > 0);
+						const row =
+							rows.find((item) => item.closest<HTMLElement>("[data-application-id]")?.dataset.applicationId === id) ??
+							rows[0];
+						if (row) return row;
+						const heading = pageRef.current?.querySelector<HTMLElement>("h1") ?? null;
+						if (heading) heading.tabIndex = -1;
+						return heading;
+					}}
+					application={selected}
+					onOpenChange={(open) => !open && setSelectedId(null)}
+					onEditDetails={(application) => {
+						setSelectedId(null);
+						setEditing(application);
+					}}
+				/>
+			</HotkeysProvider>
 		</div>
 	);
 }
@@ -764,29 +910,38 @@ function readDismissed(): string[] {
 	}
 }
 
-type FollowUpNudgeProps = { applications: ApplicationSummary[]; onOpen: (id: string) => void };
+type FollowUpNudgeProps = {
+	applications: ApplicationSummary[];
+	onOpen: (id: string) => void;
+	onShowAll: () => void;
+};
 
 /**
- * The follow-up nudge: the application waiting longest without a reply (by default 10+ days since applying; set or
- * turned off in Settings → Preferences). Dismissing it is remembered on this device; it doesn't come back for that
- * application.
+ * The follow-up nudge: applications that owe a follow-up (a due follow-up date, or no reply after the account's
+ * no-reply days: 10 by default, set or turned off in Settings → Preferences), from the same next-step rules Career →
+ * Today reads. One is named; several are counted with Show to filter the list. Dismissing is remembered on this
+ * device; dismissed applications don't come back here.
  */
-function FollowUpNudge({ applications, onOpen }: FollowUpNudgeProps) {
+function FollowUpNudge({ applications, onOpen, onShowAll }: FollowUpNudgeProps) {
+	const { timeZone } = useCareerTime();
+	const now = useNow();
 	const [dismissed, setDismissed] = useState(readDismissed);
 	const noReplyDays = useNoReplyDays();
 
 	const dismissedIds = new Set(dismissed);
-	const waiting = applications
+	const owed = applications
 		.filter((application) => !dismissedIds.has(application.id))
 		.flatMap((application) => {
-			const step = getNextStep(application, { noReplyDays });
-			return step.kind === "no-reply" ? [{ application, days: step.days }] : [];
+			const step = getNextStep(application, now, timeZone, undefined, noReplyDays);
+			return needsFollowUp(step, now) ? [{ application, step }] : [];
 		})
-		.sort((a, b) => b.days - a.days)[0];
-	if (!waiting) return null;
+		// The longest silence first; dated follow-ups after it.
+		.sort((a, b) => (b.step.kind === "no-reply" ? b.step.days : -1) - (a.step.kind === "no-reply" ? a.step.days : -1));
+	const first = owed[0];
+	if (!first) return null;
 
 	const dismiss = () => {
-		const next = [...dismissed, waiting.application.id].slice(-200);
+		const next = [...dismissed, ...owed.map(({ application }) => application.id)].slice(-1000);
 		setDismissed(next);
 		try {
 			window.localStorage.setItem(NUDGE_STORAGE_KEY, JSON.stringify(next));
@@ -795,13 +950,14 @@ function FollowUpNudge({ applications, onOpen }: FollowUpNudgeProps) {
 		}
 	};
 
-	const { company } = waiting.application;
-	const { days } = waiting;
+	const { company } = first.application;
+	const count = owed.length;
+	const days = first.step.kind === "no-reply" ? first.step.days : 0;
 
 	return (
 		<div
-			key={waiting.application.id}
-			data-application-id={waiting.application.id}
+			key={owed.length === 1 ? first.application.id : "several"}
+			data-application-id={owed.length === 1 ? first.application.id : undefined}
 			role="status"
 			className={cn(
 				ENTER_CLASS,
@@ -810,43 +966,36 @@ function FollowUpNudge({ applications, onOpen }: FollowUpNudgeProps) {
 		>
 			<Icon name="clock" size={20} />
 			<span className="min-w-0 flex-1">
-				<Plural
-					value={days}
-					one={`${company}: no reply for # day. A short follow-up is usually fine now.`}
-					other={`${company}: no reply for # days. A short follow-up is usually fine now.`}
-				/>
+				{owed.length > 1 ? (
+					<Plural value={count} one="# application needs a follow-up." other="# applications need a follow-up." />
+				) : first.step.kind === "no-reply" && first.step.after === "interview" ? (
+					<Plural
+						value={days}
+						one={`${company}: no word since your interview # day ago. A short follow-up is usually fine now.`}
+						other={`${company}: no word since your interview # days ago. A short follow-up is usually fine now.`}
+					/>
+				) : first.step.kind === "no-reply" ? (
+					<Plural
+						value={days}
+						one={`${company}: no reply for # day. A short follow-up is usually fine now.`}
+						other={`${company}: no reply for # days. A short follow-up is usually fine now.`}
+					/>
+				) : (
+					<Trans>{company}: a follow-up is due.</Trans>
+				)}
 			</span>
-			<Button size="sm" variant="secondary" data-application-open onClick={() => onOpen(waiting.application.id)}>
-				<Trans>Open</Trans>
-			</Button>
+			{owed.length > 1 ? (
+				<Button size="sm" variant="secondary" onClick={onShowAll}>
+					<Trans>Show</Trans>
+				</Button>
+			) : (
+				<Button size="sm" variant="secondary" data-application-open onClick={() => onOpen(first.application.id)}>
+					<Trans>Open</Trans>
+				</Button>
+			)}
 			<Button size="icon-sm" variant="ghost" aria-label={t`Dismiss`} onClick={dismiss} className="text-warn-text">
 				<Icon name="x" size={18} />
 			</Button>
-		</div>
-	);
-}
-
-function EmptyState({ onAdd, onImport }: { onAdd: () => void; onImport: () => void }) {
-	return (
-		<div className="grid justify-items-center gap-3 py-20 text-center transition-[opacity,translate] duration-emphasized ease-enter starting:translate-y-2 starting:opacity-0">
-			<span className="grid size-12 place-items-center rounded-xl bg-sunken text-ink-2">
-				<Icon name="briefcase" size={26} />
-			</span>
-			<h2 className="text-lg font-semibold">
-				<Trans>Track your first job</Trans>
-			</h2>
-			<p className="max-w-sm text-sm text-ink-2">
-				<Trans>Paste a job link. We'll save the posting so Check, the assistant and your letter can use it.</Trans>
-			</p>
-			<div className="flex gap-2">
-				<Button onClick={onAdd}>
-					<Icon name="plus" />
-					<Trans>Save job</Trans>
-				</Button>
-				<Button variant="secondary" onClick={onImport}>
-					<Trans>Import from CSV</Trans>
-				</Button>
-			</div>
 		</div>
 	);
 }

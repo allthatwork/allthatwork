@@ -4,11 +4,10 @@ import { createFileRoute, redirect, useBlocker } from "@tanstack/react-router";
 import { useEffect } from "react";
 import z from "zod";
 import { toast } from "@reactive-resume/ui/components/toast";
-import { APP_NAME } from "@reactive-resume/utils/brand";
 import { LetterShell } from "./-components/letter-shell";
 import { useLetterEditorStore } from "@/features/letters/store";
 import { orpc } from "@/libs/orpc/client";
-import { createNoindexFollowMeta } from "@/libs/seo";
+import { getPageTitle, createNoindexFollowMeta } from "@/libs/seo";
 
 const searchSchema = z.object({
 	// Write is the default and stays out of the URL. Letters have no Check.
@@ -47,7 +46,7 @@ export const Route = createFileRoute("/builder/letter/$coverLetterId")({
 	},
 	head: ({ loaderData }) => ({
 		meta: loaderData
-			? [{ title: `${loaderData.name} - ${APP_NAME}` }, createNoindexFollowMeta()]
+			? [{ title: getPageTitle(loaderData.name) }, createNoindexFollowMeta()]
 			: [createNoindexFollowMeta()],
 	}),
 });
@@ -61,12 +60,20 @@ function RouteComponent() {
 		state.letter?.id === coverLetterId ? (state.savedName ?? letter.name) : letter.name,
 	);
 	useEffect(() => {
-		document.title = `${name} - ${APP_NAME}`;
+		document.title = getPageTitle(name);
 	}, [name]);
 
 	useBlocker({
 		shouldBlockFn: async ({ next }) => {
 			if ("coverLetterId" in next.params && next.params.coverLetterId === coverLetterId) return false;
+			const { draft } = useLetterEditorStore.getState();
+			if (draft.phase === "streaming" || draft.phase === "ready") {
+				toast.add({
+					type: "warning",
+					description: t`This letter has an unkept draft. Click Keep to save it, or Discard to leave without it.`,
+				});
+				return true;
+			}
 			let timeout: ReturnType<typeof setTimeout> | undefined;
 			const saved = await Promise.race([
 				useLetterEditorStore.getState().flush(),

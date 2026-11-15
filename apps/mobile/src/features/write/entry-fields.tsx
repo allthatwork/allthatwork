@@ -3,6 +3,7 @@ import type { EntryWriter } from "./hooks";
 import type { Entry } from "./model";
 import type { CustomSectionType, RoleItem, Website } from "@reactive-resume/schema/resume/data";
 import type { DateFormat, ResumeDates } from "@reactive-resume/schema/resume/dates";
+import { i18n } from "@lingui/core";
 import { useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 import { View } from "react-native";
@@ -241,15 +242,28 @@ function Roles({ entry, write, page, disabled, focusField }: FieldProps) {
 	const { t } = useLingui();
 	const { colors, radius, space } = useTheme();
 	const roles = (entry as unknown as Values).roles ?? [];
-	const writeRoles = (key: string, mutate: (roles: RoleItem[]) => void) =>
-		write(`roles:${key}`, (target) => {
-			mutate(target.roles as RoleItem[]);
-		});
-	const update = (role: RoleItem, key: string, mutate: (role: RoleItem) => void) =>
-		writeRoles(`${role.id}:${key}`, (list) => {
-			const target = list.find((item) => item.id === role.id);
-			if (target) mutate(target);
-		});
+	const writeRoles = (key: string, mutate: (roles: RoleItem[]) => void, options?: Parameters<EntryWriter>[2]) =>
+		write(
+			`roles:${key}`,
+			(target) => {
+				mutate(target.roles as RoleItem[]);
+			},
+			options,
+		);
+	const update = (
+		role: RoleItem,
+		key: string,
+		mutate: (role: RoleItem) => void,
+		options?: Parameters<EntryWriter>[2],
+	) =>
+		writeRoles(
+			`${role.id}:${key}`,
+			(list) => {
+				const target = list.find((item) => item.id === role.id);
+				if (target) mutate(target);
+			},
+			options,
+		);
 
 	return (
 		<View style={{ gap: space.s3 }}>
@@ -267,7 +281,7 @@ function Roles({ entry, write, page, disabled, focusField }: FieldProps) {
 				>
 					<View style={{ flexDirection: "row", alignItems: "center" }}>
 						<Text variant="caption" color="ink2" style={{ flex: 1 }}>
-							{t`Role ${index + 1}`}
+							{t`Role ${i18n.number(index + 1)}`}
 						</Text>
 						<IconButton
 							icon="arrow-up"
@@ -318,14 +332,19 @@ function Roles({ entry, write, page, disabled, focusField }: FieldProps) {
 						}
 					/>
 					<RichTextField
-						label={t`Description of role ${index + 1}`}
+						label={t`Description of role ${i18n.number(index + 1)}`}
 						autoFocus={!disabled && focusField === `roles/${index}/description`}
 						value={role.description}
 						disabled={disabled}
-						onChange={(html) =>
-							update(role, "description", (target) => {
-								target.description = html;
-							})
+						onChange={(html, options) =>
+							update(
+								role,
+								"description",
+								(target) => {
+									target.description = html;
+								},
+								options,
+							)
 						}
 					/>
 				</View>
@@ -391,6 +410,7 @@ export function EntryFields({ type, autoFocus, ...props }: EntryFieldsProps) {
 						<DatesField
 							dates={values.dates ?? EMPTY_RESUME_DATES}
 							single={field.kind === "date"}
+							expectable={type === "education"}
 							locale={page.locale}
 							format={page.dateFormat}
 							autoFocus={!disabled && ["dates", "period", "date"].some((key) => focusField?.startsWith(key))}
@@ -426,10 +446,14 @@ export function EntryFields({ type, autoFocus, ...props }: EntryFieldsProps) {
 						value={str(values[field.key])}
 						disabled={disabled}
 						autoFocus={!disabled && focusField === field.key}
-						onChange={(html) =>
-							write(field.key, (target) => {
-								target[field.key] = html;
-							})
+						onChange={(html, options) =>
+							write(
+								field.key,
+								(target) => {
+									target[field.key] = html;
+								},
+								options,
+							)
 						}
 					/>
 				);

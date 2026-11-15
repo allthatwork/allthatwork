@@ -4,7 +4,7 @@ import type { AnyProcedure, InferRouterInitialContext, RouterClient } from "@orp
 import type { RequestAuthentication } from "@reactive-resume/api/context";
 import { call, ORPCError } from "@orpc/server";
 import z from "zod";
-import { requiredPermission } from "@reactive-resume/api/context";
+import { missingPermissionMessage, requiredPermission } from "@reactive-resume/api/context";
 import { restAliases } from "@reactive-resume/api/rest";
 import router from "@reactive-resume/api/routers";
 import { env } from "@reactive-resume/env/server";
@@ -26,7 +26,7 @@ export const MCP_ROUTER = { ...router, rest: restAliases };
 
 // Explicit allowlist: adding an API procedure never silently grants MCP access.
 // Behavior is explicit: HTTP methods and names miss cleanup, publication and provider calls.
-// Per-tool justifications: .agents/docs/mcp-tool-annotations.md.
+// Per-tool justifications: fixtures/tool-annotations.md.
 const PARITY_PROCEDURES: Record<string, [AnyProcedure, BehaviorAnnotations]> = {
 	"directory.importLinkedIn": [router.directory.importLinkedIn, WRITE_DESTRUCTIVE],
 	"directory.companies": [router.directory.companies, READ_IDEMPOTENT],
@@ -70,10 +70,19 @@ const PARITY_PROCEDURES: Record<string, [AnyProcedure, BehaviorAnnotations]> = {
 	"documents.linkApplication": [router.documents.linkApplication, WRITE_DESTRUCTIVE],
 	"documents.trash": [router.documents.trash, WRITE_DESTRUCTIVE_EXTERNAL],
 	"documents.restore": [router.documents.restore, WRITE_DESTRUCTIVE_EXTERNAL],
+	"documents.restoreMany": [router.documents.restoreMany, WRITE_DESTRUCTIVE_EXTERNAL],
 	"documents.purge": [router.documents.purge, WRITE_DESTRUCTIVE],
+	"documents.purgeMany": [router.documents.purgeMany, WRITE_DESTRUCTIVE],
+	"documents.emptyTrash": [router.documents.emptyTrash, WRITE_DESTRUCTIVE],
 	"documents.purgeExpired": [router.documents.purgeExpired, WRITE_DESTRUCTIVE],
 	"documents.copyForJob": [router.documents.copyForJob, WRITE_DESTRUCTIVE],
 	"applications.lanes.get": [router.applications.lanes.get, WRITE_IDEMPOTENT],
+	"applications.findPosting": [router.applications.findPosting, READ_IDEMPOTENT],
+	"applications.listTrash": [router.applications.listTrash, READ_IDEMPOTENT],
+	"applications.trash": [router.applications.trash, WRITE_DESTRUCTIVE_EXTERNAL],
+	"applications.bulkTrash": [router.applications.bulkTrash, WRITE_DESTRUCTIVE_EXTERNAL],
+	"applications.restore": [router.applications.restore, WRITE_DESTRUCTIVE_EXTERNAL],
+	"applications.purge": [router.applications.purge, WRITE_DESTRUCTIVE],
 	"applications.lanes.create": [router.applications.lanes.create, WRITE_NON_IDEMPOTENT],
 	"applications.lanes.update": [router.applications.lanes.update, WRITE_DESTRUCTIVE],
 	"applications.lanes.reorder": [router.applications.lanes.reorder, WRITE_DESTRUCTIVE],
@@ -104,6 +113,7 @@ const PARITY_PROCEDURES: Record<string, [AnyProcedure, BehaviorAnnotations]> = {
 	"agent.messages.setEditStatus": [router.agent.messages.setEditStatus, WRITE_DESTRUCTIVE],
 	"agent.attachments.create": [router.agent.attachments.create, WRITE_NON_IDEMPOTENT],
 	"agent.attachments.delete": [router.agent.attachments.delete, WRITE_DESTRUCTIVE],
+	"career.suggestTargetRoles": [router.career.suggestTargetRoles, READ_EXTERNAL],
 	"career.profile": [router.career.profile, READ_IDEMPOTENT],
 	"career.saveProfile": [router.career.saveProfile, WRITE_DESTRUCTIVE],
 	"career.facts": [router.career.facts, READ_IDEMPOTENT],
@@ -184,8 +194,8 @@ const HANDOFFS: Record<string, Handoff> = {
 	"aiProviders.update": settingsHandoff("Edit an AI provider in the app", "ai"),
 	"webAccess.save": settingsHandoff("Set up web search in the app", "ai"),
 	"resume.getRoot": settingsHandoff("Open the dashboard", ""),
-	"auth.createApiKey": settingsHandoff("Create an API key in the app", "api-keys"),
-	"auth.deleteAccount": settingsHandoff("Delete your account in the app", "account"),
+	"auth.createApiKey": settingsHandoff("Create an API key in the app", "ai?newKey=true#api-keys"),
+	"auth.deleteAccount": settingsHandoff("Delete your account in the app", "account?deleteAccount=true"),
 	// Resume share passwords are credentials too: owners set them and visitors enter them in the browser.
 	"resume.setPassword": {
 		title: "Set a resume's share password in the app",
@@ -207,12 +217,30 @@ const HANDOFFS: Record<string, Handoff> = {
 };
 const handoffOutputSchema = z.object({ url: z.url(), action: z.string(), requiresBrowser: z.literal(true) });
 // Its output carries no `action`, so it is registered on its own.
+/** Where each settings page or group lives now. `authentication` is the old name for `security`, kept for clients. */
+const ACCOUNT_SETTINGS_PATHS = {
+	account: "/dashboard/settings/account",
+	profile: "/dashboard/settings/account",
+	security: "/dashboard/settings/account#security",
+	authentication: "/dashboard/settings/account#security",
+	preferences: "/dashboard/settings/preferences",
+	ai: "/dashboard/settings/ai",
+	"api-keys": "/dashboard/settings/ai#api-keys",
+	"connected-applications": "/dashboard/settings/ai#connected-applications",
+} as const;
 const accountToolMeta = {
 	title: "Open account settings",
 	description:
-		"Open profile, security, connected applications, API keys or preferences. Authentication changes require the user's browser interaction.",
-	inputSchema: z.object({
-		page: z.enum(["profile", "authentication", "api-keys", "preferences", "account"]).default("profile"),
+		"Open a settings page or group: account, profile, security, preferences, ai (AI providers and web access), api-keys or connected-applications. Authentication changes require the user's browser interaction.",
+	inputSchema: z.strictObject({
+		page: z
+			.enum(
+				Object.keys(ACCOUNT_SETTINGS_PATHS) as [
+					keyof typeof ACCOUNT_SETTINGS_PATHS,
+					...(keyof typeof ACCOUNT_SETTINGS_PATHS)[],
+				],
+			)
+			.default("account"),
 	}),
 	outputSchema: z.object({ url: z.url(), requiresBrowser: z.literal(true) }),
 	annotations: { title: "Open account settings", ...READ_IDEMPOTENT },
@@ -242,14 +270,19 @@ const accountExportOutputSchema = z
 				"Career data: profile, facts, stories, artifacts, schedules, notifications, assistant threads, messages and attachments, opportunities, jobs, transcripts and workspaces.",
 			),
 	})
-	.describe("Everything in the account. Secrets such as password hashes, tokens and API keys are never included.");
+	.describe(
+		"Account records with file references only, excluding the private application profile and uploaded bytes. Export that profile in Settings → Profile. Secrets such as password hashes, tokens and API keys are never included.",
+	);
 
 /** The live server and server card share static contracts, never request context or callbacks. */
 function parityToolContract(path: string, procedure: AnyProcedure): ParityToolContract {
 	const definition = procedure["~orpc"];
-	const inputJson = definition.inputSchema
-		? wireJsonSchema(requireZod(definition.inputSchema), "input")
-		: z.toJSONSchema(z.object({}));
+	const inputJson =
+		path === "auth.exportData"
+			? z.toJSONSchema(z.object({}))
+			: definition.inputSchema
+				? wireJsonSchema(requireZod(definition.inputSchema), "input")
+				: z.toJSONSchema(z.object({}));
 	if (path === "ai.parsePdf" || path === "ai.parseDocx" || path === "agent.attachments.create") {
 		const properties = inputJson.properties as Record<string, unknown>;
 		properties[path === "agent.attachments.create" ? "data" : "file"] = z.toJSONSchema(fileInputSchema);
@@ -280,6 +313,13 @@ const PARITY_CONTRACTS = new Map(
 		path,
 		{ procedure, annotations, ...parityToolContract(path, procedure) },
 	]),
+);
+
+/** Parity tools a read-only credential can't call: their route needs write or delete, whatever their annotations say. */
+export const PARITY_WRITE_TOOLS: ReadonlySet<string> = new Set(
+	[...PARITY_CONTRACTS]
+		.filter(([, { procedure }]) => requiredPermission(procedure["~orpc"].route) !== "read")
+		.map(([path]) => parityToolName(path)),
 );
 
 export const PARITY_TOOL_META: Record<
@@ -406,7 +446,7 @@ export function registerParityTools(
 				const permission = requiredPermission(definition.route);
 				if (!context.authentication.permissions.includes(permission))
 					throw new ORPCError("FORBIDDEN", {
-						message: `This credential needs the api:${permission} permission. Use a credential that includes it.`,
+						message: missingPermissionMessage(context.authentication.method, permission),
 					});
 				const maxBytes =
 					path === "rest.checkPdf"
@@ -415,6 +455,8 @@ export function registerParityTools(
 							? 25 * 1024 * 1024
 							: 10 * 1024 * 1024;
 				let input = await decodeInput(params, inputJson as Record<string, unknown>, userId, maxBytes);
+				// File collection sees private profile references before MCP removes that profile. Keep this export records-only.
+				if (path === "auth.exportData") input = { includeUploads: false };
 				if (path === "ai.parsePdf" || path === "ai.parseDocx" || path === "agent.attachments.create") {
 					const record = input as Record<string, unknown>;
 					const field = path === "agent.attachments.create" ? "data" : "file";
@@ -445,6 +487,15 @@ export function registerParityTools(
 					});
 				} else {
 					result = await getClientCall(client, path)(input);
+					// Application-only data stays out of model tool results, including account backups.
+					if (path === "auth.exportData" && result && typeof result === "object") {
+						const {
+							applicationProfile: _privateProfile,
+							uploads: _privateFiles,
+							...backup
+						} = result as Record<string, unknown>;
+						result = backup;
+					}
 				}
 				if (streamingPaths.has(path)) {
 					const events: string[] = [];
@@ -477,6 +528,6 @@ export function registerParityTools(
 		);
 	}
 	server.registerTool("open_account_settings", accountToolMeta, ({ page }) =>
-		json({ url: new URL(`/dashboard/settings/${page}`, env.APP_URL).toString(), requiresBrowser: true }),
+		json({ url: new URL(ACCOUNT_SETTINGS_PATHS[page], env.APP_URL).toString(), requiresBrowser: true }),
 	);
 }

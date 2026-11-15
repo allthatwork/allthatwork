@@ -8,13 +8,19 @@ import { I18nProvider } from "@lingui/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createDefaultApplicationLanes } from "@reactive-resume/schema/applications/lanes";
 
-const account = vi.hoisted(() => ({ timeZone: "UTC", saveInterview: vi.fn(), download: vi.fn() }));
+const account = vi.hoisted(() => ({
+	timeZone: "UTC",
+	saveInterview: vi.fn(),
+	download: vi.fn(),
+	offers: [] as unknown[],
+}));
 vi.mock("@reactive-resume/utils/file", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@reactive-resume/utils/file")>()),
 	downloadWithAnchor: account.download,
 }));
 vi.mock("@tanstack/react-router", () => ({
 	useRouteContext: () => ({ session: { user: { timezone: account.timeZone } } }),
+	Link: ({ children }: { children: ReactNode }) => <a href="/dashboard/career/offers">{children}</a>,
 }));
 vi.mock("./interview-dialog", () => ({
 	InterviewDialog: ({ day }: { day: string | null }) => <output data-testid="scheduled-day">{day}</output>,
@@ -36,7 +42,16 @@ vi.mock("@/libs/orpc/client", () => ({
 			deleteTimelineEntry: { mutationOptions: () => ({ mutationFn: vi.fn() }) },
 			update: { mutationOptions: () => ({ mutationFn: vi.fn() }) },
 		},
-		career: { schedules: { queryOptions: () => ({ queryKey: ["schedules"], queryFn: () => [] }) } },
+		career: {
+			schedules: { queryOptions: () => ({ queryKey: ["schedules"], queryFn: () => [] }) },
+			savedItems: {
+				queryOptions: () => ({
+					queryKey: ["offers"],
+					initialData: account.offers,
+					queryFn: async () => account.offers,
+				}),
+			},
+		},
 		// The interview editor picks people from the Directory.
 		directory: { contacts: { queryOptions: () => ({ queryKey: ["contacts"], queryFn: () => [] }) } },
 	},
@@ -86,6 +101,7 @@ function show(children: ReactNode) {
 
 beforeEach(() => {
 	account.download.mockClear();
+	account.offers = [];
 	i18n.load("en-GB", {});
 	i18n.activate("en-GB");
 	vi.useFakeTimers();
@@ -106,12 +122,16 @@ it.each([
 	expect(account.download).toHaveBeenCalledWith(expect.any(Blob), `Northstar-${date}.ics`);
 });
 
-it("keeps follow-up calendar filenames on the date selected by the browser-local editor", () => {
+it("names follow-up calendar downloads on the account date used by Today", () => {
 	account.timeZone = "Pacific/Honolulu";
-	const followUp = { ...application("2026-10-31T23:30:00Z"), activity: [], followUpAt: new Date(2026, 9, 30, 9) };
+	const followUp = {
+		...application("2026-10-31T23:30:00Z"),
+		activity: [],
+		followUpAt: new Date("2026-10-30T09:00:00Z"),
+	};
 	show(<NextStepCard application={followUp} onScheduleInterview={vi.fn()} />);
 	fireEvent.click(screen.getByRole("button", { name: "Add to calendar" }));
-	expect(account.download).toHaveBeenCalledWith(expect.any(Blob), "Northstar-2026-10-30.ics");
+	expect(account.download).toHaveBeenCalledWith(expect.any(Blob), "Northstar-2026-10-29.ics");
 });
 
 it.each([
@@ -204,7 +224,7 @@ it("uses the calendar-selected civil day in the real interview editor", async ()
 });
 
 it.each([
-	["UTC", "October 2026", "November 2026", "23:30", "00:30", "Today", "Tomorrow", "1 interview", "2 interviews"],
+	["UTC", "October 2026", "November 2026", "23:30", "00:30", "Today", "Tomorrow", "3 interviews", "2 interviews"],
 	[
 		"Europe/Berlin",
 		"November 2026",
@@ -234,8 +254,10 @@ it.each([
 		show(<ApplicationCalendar compact applications={rows} allApplications={rows} onOpen={onOpen} />);
 		const agenda = screen.getByTestId("interview-agenda");
 		expect(screen.queryByTestId("interview-month-grid")).toBeNull();
-		expect(screen.getByRole("heading", { name: month })).toBeDefined();
+		// Until a month is picked, the phone header titles the upcoming list rather than a month (G1B-17).
+		expect(screen.getByRole("heading", { name: "Upcoming" })).toBeDefined();
 		expect(screen.getByText(count, { exact: true })).toBeDefined();
+		expect(screen.queryByRole("heading", { name: month })).toBeNull();
 		expect(within(agenda).getAllByRole("heading", { level: 4 })).toHaveLength(timeZone === "UTC" ? 3 : 2);
 		for (const [index, time, day] of [
 			[0, firstTime, firstDay],
@@ -272,27 +294,38 @@ it.each([false, true])("follows account-local month rollover until browsing (com
 		return row;
 	});
 	show(<ApplicationCalendar compact={compact} applications={rows} allApplications={rows} onOpen={vi.fn()} />);
-	expect(screen.getByRole("heading", { name: "October 2026" })).toBeDefined();
-	expect(screen.getByText("1 interview", { exact: true })).toBeDefined();
+	// Phones title the unbrowsed view "Upcoming"; a browsed month is named on both.
+	const current = (month: string) => (compact ? "Upcoming" : month);
+	expect(screen.getByRole("heading", { name: current("October 2026") })).toBeDefined();
+	if (!compact) expect(screen.getByText("1 interview", { exact: true })).toBeDefined();
 	act(() => vi.advanceTimersByTime(60_000));
-	expect(screen.getByRole("heading", { name: "November 2026" })).toBeDefined();
-	expect(screen.getByText("2 interviews", { exact: true })).toBeDefined();
+	expect(screen.getByRole("heading", { name: current("November 2026") })).toBeDefined();
+	if (!compact) expect(screen.getByText("2 interviews", { exact: true })).toBeDefined();
 	fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
 	vi.setSystemTime(new Date("2026-11-30T22:59:30Z"));
 	act(() => vi.advanceTimersByTime(60_000));
 	expect(screen.getByRole("heading", { name: "October 2026" })).toBeDefined();
 	fireEvent.click(screen.getByRole("button", { name: "This month" }));
-	expect(screen.getByRole("heading", { name: "December 2026" })).toBeDefined();
+	expect(screen.getByRole("heading", { name: current("December 2026") })).toBeDefined();
 	vi.setSystemTime(new Date("2026-12-31T22:59:30Z"));
 	act(() => vi.advanceTimersByTime(60_000));
-	expect(screen.getByRole("heading", { name: "January 2027" })).toBeDefined();
+	expect(screen.getByRole("heading", { name: current("January 2027") })).toBeDefined();
 });
 
-it("uses neutral empty-state wording under the browsed month heading", () => {
-	account.timeZone = "UTC";
-	show(<ApplicationCalendar compact applications={[]} allApplications={[]} onOpen={vi.fn()} />);
-	fireEvent.click(screen.getByRole("button", { name: "Next month" }));
-	expect(screen.getByRole("heading", { name: "November 2026" })).toBeDefined();
-	expect(within(screen.getByTestId("interview-agenda")).getByText("Nothing scheduled yet")).toBeDefined();
-	expect(screen.queryByText("No interviews this month")).toBeNull();
+it.each([
+	["UTC", "2026-10-31"],
+	["Europe/Berlin", "2026-11-01"],
+])("names an offer deadline download on the %s account date", (timeZone, date) => {
+	account.timeZone = timeZone;
+	account.offers = [
+		{ applicationId: "application", createdAt: new Date(), data: { kind: "offer", respondBy: "2026-10-31T23:30:00Z" } },
+	];
+	show(
+		<NextStepCard
+			application={{ ...application("2026-11-15T09:00:00Z"), status: "offer" }}
+			onScheduleInterview={vi.fn()}
+		/>,
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Add to calendar" }));
+	expect(account.download.mock.calls[0]?.[1]).toBe(`Northstar-${date}.ics`);
 });

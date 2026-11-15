@@ -48,10 +48,16 @@ describe("loadPublicWebPage", () => {
 			trustedClient: "test",
 		});
 
-		expect(page).toEqual({ status: "moved", username: "jane-new", slug: "k3v9x2m7qa4p" });
+		expect(page).toEqual({
+			status: "moved",
+			username: "jane-new",
+			slug: "k3v9x2m7qa4p",
+			isPrimary: false,
+			movedBy: "username",
+		});
 		const [query] = pg.queries;
-		expect(query?.text).toContain('"username_redirect"."username" = $4');
-		expect(query?.params[3]).toBe("jane");
+		expect(query?.text).toContain('"username_redirect"."username" = $5');
+		expect(query?.params[4]).toBe("jane");
 	});
 
 	it("moves a link with an old slug to the current address", async () => {
@@ -63,6 +69,12 @@ describe("loadPublicWebPage", () => {
 			trustedClient: "test",
 		});
 
-		expect(page).toEqual({ status: "moved", username: "jane", slug: "k3v9x2m7qa4p" });
+		expect(page).toEqual({
+			status: "moved",
+			username: "jane",
+			slug: "k3v9x2m7qa4p",
+			isPrimary: false,
+			movedBy: "slug",
+		});
 	});
 });

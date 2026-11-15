@@ -4,6 +4,7 @@ import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
+import { followUpInstant, isDateOnlyFollowUp } from "@reactive-resume/schema/applications/follow-up";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@reactive-resume/ui/components/accordion";
 import { Button } from "@reactive-resume/ui/components/button";
 import { Icon } from "@reactive-resume/ui/components/icon";
@@ -19,6 +20,8 @@ import {
 } from "@reactive-resume/ui/components/sheet";
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { fromZonedDateTime } from "@reactive-resume/utils/timezone";
+import { dayKey } from "../interviews";
 import { getCategoryLane, getDisplayLane, getLaneLabel, laneMoveInput } from "../lanes";
 import { applicationsListQueryKey, applicationsListQueryOptions } from "../queries";
 import { foundBySuggestions, foundOnSuggestions } from "../suggestions";
@@ -27,7 +30,9 @@ import { FileAttachmentField } from "./file-attachment-field";
 import { PriorNoResponseNotice } from "./prior-no-response-notice";
 import { SuggestionCombobox } from "./suggestion-combobox";
 import { Combobox } from "@/components/ui/combobox";
+import { useCareerTime } from "@/features/career/shared";
 import { useClosingValue } from "@/hooks/use-closing-value";
+import { toastError } from "@/libs/error-message";
 import { isImeComposing } from "@/libs/keyboard";
 import { orpc } from "@/libs/orpc/client";
 
@@ -48,11 +53,13 @@ const emptyForm = () => ({
 	/** A lane picked in this form; null keeps the current one (Saved for a new application). */
 	laneId: null as string | null,
 	resumeId: "",
+	coverLetterId: "",
 	tags: [] as string[],
 	sourceUrl: "",
 	stageEnteredAt: todayInputValue(),
 	jobDescription: "",
 	followUpAt: "",
+	followUpTime: "09:00",
 	followUpNote: "",
 	notes: "",
 	resumeFile: null as FileAttachment | File | null,
@@ -64,7 +71,7 @@ type FormState = ReturnType<typeof emptyForm>;
 const toAttachment = (url: string | null, name: string | null): FileAttachment | null =>
 	url ? { url, name: name ?? url } : null;
 
-function toForm(app: Application): FormState {
+function toForm(app: Application, timeZone: string): FormState {
 	return {
 		company: app.company,
 		role: app.role,
@@ -74,11 +81,17 @@ function toForm(app: Application): FormState {
 		foundBy: app.foundBy ?? "",
 		laneId: null,
 		resumeId: app.resumeId ?? "",
+		coverLetterId: app.coverLetterId ?? "",
 		tags: app.tags,
 		sourceUrl: app.sourceUrl ?? "",
 		stageEnteredAt: "",
 		jobDescription: app.jobDescription ?? "",
-		followUpAt: app.followUpAt ? new Date(app.followUpAt).toISOString().slice(0, 10) : "",
+		followUpAt: app.followUpAt ? dayKey(followUpInstant(app, timeZone) ?? new Date(app.followUpAt), timeZone) : "",
+		followUpTime: app.followUpAt
+			? new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
+					followUpInstant(app, timeZone) ?? new Date(app.followUpAt),
+				)
+			: "09:00",
 		followUpNote: app.followUpNote ?? "",
 		notes: app.notes ?? "",
 		resumeFile: toAttachment(app.resumeFileUrl, app.resumeFileName),
@@ -86,7 +99,15 @@ function toForm(app: Application): FormState {
 	};
 }
 
-function toPayload(form: FormState) {
+function toPayload(form: FormState, timeZone: string, application: Application | null) {
+	const original = application ? followUpInstant(application, timeZone) : null;
+	const originalTime = original
+		? new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
+				original,
+			)
+		: "09:00";
+	const unchanged = !!original && form.followUpAt === dayKey(original, timeZone) && form.followUpTime === originalTime;
+
 	return {
 		company: form.company.trim(),
 		role: form.role.trim(),
@@ -95,12 +116,18 @@ function toPayload(form: FormState) {
 		source: form.source.trim() || null,
 		foundBy: form.foundBy.trim() || null,
 		resumeId: form.resumeId || null,
+		coverLetterId: form.coverLetterId || null,
 		tags: form.tags,
 		sourceUrl: form.sourceUrl.trim() || null,
 		jobDescription: form.jobDescription.trim() || null,
 		notes: form.notes.trim() || null,
 		followUpNote: form.followUpNote.trim() || null,
-		followUpAt: form.followUpAt ? new Date(form.followUpAt) : null,
+		followUpDateOnly: unchanged && application ? isDateOnlyFollowUp(application) : false,
+		followUpAt: form.followUpAt
+			? unchanged && application?.followUpAt
+				? new Date(application.followUpAt)
+				: fromZonedDateTime(form.followUpAt, form.followUpTime, timeZone)
+			: null,
 		resumeFileUrl: form.resumeFile instanceof File ? null : (form.resumeFile?.url ?? null),
 		...(form.resumeFile instanceof File ? { resumeFile: form.resumeFile } : {}),
 		resumeFileName: form.resumeFile?.name ?? null,
@@ -159,7 +186,7 @@ function JobDescriptionAutofill({ value, onChange, onFill }: JobDescriptionAutof
 					<p className="text-xs text-ink-3">
 						<Trans>
 							Copy the entire job description from the posting and paste it below. We'll fill in the fields for you and
-							keep the text with this application for match scoring and tailoring.
+							keep the text with this application for a fit check and tailoring.
 						</Trans>
 					</p>
 					<Textarea
@@ -174,7 +201,7 @@ function JobDescriptionAutofill({ value, onChange, onFill }: JobDescriptionAutof
 						onPaste={(event) => runAutofill(event.clipboardData.getData("text"))}
 					/>
 					<div className="flex items-center justify-between gap-2">
-						<p className="text-[11px] text-ink-3">
+						<p className="text-xs text-ink-3">
 							{autofill.isPending ? (
 								<Trans>Reading the posting…</Trans>
 							) : (
@@ -207,11 +234,12 @@ type Props = {
 
 export function ApplicationFormSheet({ open, onOpenChange, application: requested }: Props) {
 	const queryClient = useQueryClient();
+	const { timeZone } = useCareerTime();
 	// Closing keeps the application (title and fields) on screen until the sheet has slid away.
 	const [application, onApplicationOpenChangeComplete] = useClosingValue(requested ?? null);
 	const isEditing = !!application;
 
-	const [form, setForm] = useState<FormState>(() => (application ? toForm(application) : emptyForm()));
+	const [form, setForm] = useState<FormState>(() => (application ? toForm(application, timeZone) : emptyForm()));
 	const { lanes, active, mode } = useApplicationLanes();
 	const currentLane = application ? getDisplayLane(lanes, application) : getCategoryLane(lanes, "saved");
 	const pickedLane = active.find((lane) => lane.id === form.laneId);
@@ -220,9 +248,10 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 	const [syncedId, setSyncedId] = useState(application?.id ?? null);
 	if ((application?.id ?? null) !== syncedId) {
 		setSyncedId(application?.id ?? null);
-		setForm(application ? toForm(application) : emptyForm());
+		setForm(application ? toForm(application, timeZone) : emptyForm());
 	}
 
+	const { data: documents } = useQuery(orpc.documents.list.queryOptions({ input: { trashed: false } }));
 	const { data: resumes } = useQuery(orpc.resume.list.queryOptions());
 	const resumeOptions = (resumes ?? []).map((resume) => ({ value: resume.id, label: resume.name }));
 
@@ -265,7 +294,7 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 				toast.add({ type: "success", description: t`Application updated` });
 				onOpenChange(false);
 			},
-			onError: () => toast.add({ type: "error", description: t`Couldn't save your changes. Try again.` }),
+			onError: (error) => toastError(error, t`Couldn't save your changes. Try again.`),
 		}),
 	);
 
@@ -273,7 +302,14 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 
 	const submit = () => {
 		if (!form.company.trim() || !form.role.trim()) return;
-		const payload = toPayload(form);
+		const payload = toPayload(form, timeZone, application);
+		if (form.followUpAt && !payload.followUpAt) {
+			toast.add({
+				type: "error",
+				description: t`This date or time does not exist in your timezone. Choose another time.`,
+			});
+			return;
+		}
 		const stage = pickedLane ? laneMoveInput(pickedLane, mode) : application ? {} : { status: "saved" as const };
 		if (application) update.mutate({ id: application.id, ...payload, ...stage });
 		else create.mutate({ ...payload, ...stage, stageEnteredAt: form.stageEnteredAt || undefined });
@@ -294,7 +330,7 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 				}
 			}}
 		>
-			<SheetContent side="right" className="w-full gap-0 data-[side=right]:sm:max-w-lg">
+			<SheetContent closeLabel={t`Close`} side="right" className="w-full gap-0 data-[side=right]:sm:max-w-lg">
 				<SheetHeader>
 					<SheetTitle>{isEditing ? <Trans>Edit application</Trans> : <Trans>Add application</Trans>}</SheetTitle>
 					<SheetDescription>
@@ -306,7 +342,7 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 					</SheetDescription>
 				</SheetHeader>
 
-				<div className="-mt-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4 pt-1 pb-4 [&>*]:shrink-0">
+				<div className="-mt-1 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pt-1 pb-4 [&>*]:shrink-0">
 					{/* Hidden entirely when AI is off. */}
 					{!aiEnabled && (
 						<Field label={t`Job description`}>
@@ -341,7 +377,7 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 						{(id) => <Input id={id} value={form.company} onChange={(event) => set("company", event.target.value)} />}
 					</Field>
 					{!isEditing && <PriorNoResponseNotice company={form.company} />}
-					<Field label={t`Role / title`} required>
+					<Field label={t`Role`} required>
 						{(id) => <Input id={id} value={form.role} onChange={(event) => set("role", event.target.value)} />}
 					</Field>
 
@@ -364,7 +400,7 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 								</>
 							)}
 						</Field>
-						<Field label={t`Salary range`}>
+						<Field label={t`Salary`}>
 							{(id) => <Input id={id} value={form.salary} onChange={(event) => set("salary", event.target.value)} />}
 						</Field>
 					</div>
@@ -452,8 +488,8 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 									attachLabel={t`Or upload a resume PDF`}
 									onChange={(value) => set("resumeFile", value)}
 								/>
-								<p className="text-[11px] text-ink-3">
-									<Trans>Link a resume to use AI match scoring and tailoring.</Trans>
+								<p className="text-xs text-ink-3">
+									<Trans>Link a resume to use a fit check against each requirement and tailoring.</Trans>
 								</p>
 							</div>
 						)}
@@ -462,11 +498,34 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 					{/* The attach button below names itself; the file picker has no labelable control. */}
 					<Field label={t`Cover letter`}>
 						{() => (
-							<FileAttachmentField
-								value={form.coverLetter}
-								attachLabel={t`Attach a cover letter (PDF)`}
-								onChange={(value) => set("coverLetter", value)}
-							/>
+							<div className="grid gap-2">
+								<select
+									aria-label={t`Link an existing letter`}
+									value={form.coverLetterId}
+									disabled={Boolean(application?.sentCoverLetterVersionId)}
+									onChange={(event) => set("coverLetterId", event.target.value)}
+									className="h-9 rounded-md border border-control-border bg-surface px-2 text-sm"
+								>
+									<option value="">{t`No letter`}</option>
+									{documents
+										?.filter(
+											(item) =>
+												item.type === "letter" &&
+												(item.id === form.coverLetterId ||
+													(!item.isLocked && (!item.application || item.application.id === application?.id))),
+										)
+										.map((item) => (
+											<option key={item.id} value={item.id}>
+												{item.name}
+											</option>
+										))}
+								</select>
+								<FileAttachmentField
+									value={form.coverLetter}
+									attachLabel={t`Attach a cover letter (PDF, up to 10 MB)`}
+									onChange={(value) => set("coverLetter", value)}
+								/>
+							</div>
 						)}
 					</Field>
 
@@ -484,6 +543,16 @@ export function ApplicationFormSheet({ open, onOpenChange, application: requeste
 									type="date"
 									value={form.followUpAt}
 									onChange={(event) => set("followUpAt", event.target.value)}
+								/>
+							)}
+						</Field>
+						<Field label={t`Time`}>
+							{(id) => (
+								<Input
+									id={id}
+									type="time"
+									value={form.followUpTime}
+									onChange={(event) => set("followUpTime", event.target.value)}
 								/>
 							)}
 						</Field>

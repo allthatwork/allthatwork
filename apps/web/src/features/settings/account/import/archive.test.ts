@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vite-plus/test";
 import { i18n } from "@lingui/core";
 import { strToU8, zipSync } from "fflate";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
-import { buildAccountZip } from "../export";
+import { buildAccountZip } from "@reactive-resume/utils/account-zip";
 import { archiveCounts, archiveSettings, readAccountArchive } from "./archive";
 
 beforeAll(() => i18n.loadAndActivate({ locale: "en-US", messages: {} }));

@@ -28,7 +28,8 @@ describe("Directory erasure permissions", () => {
 		});
 		await expect(client.deleteAllContacts({ confirm: true })).rejects.toMatchObject({
 			code: "FORBIDDEN",
-			message: "This credential needs the api:delete permission. Use a credential that includes it.",
+			message:
+				"This API key is read-only. Create a key with read, write and delete access in Settings → AI & developer.",
 		});
 		expect(erase).not.toHaveBeenCalled();
 	});

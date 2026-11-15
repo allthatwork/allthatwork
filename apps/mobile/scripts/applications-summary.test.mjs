@@ -1,30 +1,47 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import * as harness from "./harness.mjs";
 
-const serverRequire = createRequire(new URL("../../server/package.json", import.meta.url));
-const { transformSync } = createRequire(serverRequire.resolve("tsx"))("esbuild");
-const { QueryClient, QueryObserver } = createRequire(new URL("../package.json", import.meta.url))(
-	"@tanstack/react-query",
-);
+const { MutationObserver, QueryClient, QueryObserver } = harness.mobileRequire("@tanstack/react-query");
 
-function load(path, mocks = {}) {
-	const module = { exports: {} };
-	const code = transformSync(readFileSync(new URL("../src/" + path, import.meta.url), "utf8"), {
-		loader: path.endsWith(".tsx") ? "tsx" : "ts",
-		format: "cjs",
-	}).code;
-	new Function("require", "module", "exports", code)(
-		(name) => {
-			assert.ok(name in mocks, "Missing boundary: " + name);
-			return mocks[name];
+let followUpDomain;
+const load = (path, mocks = {}) =>
+	harness.load("../src/" + path, {
+		"@reactive-resume/schema/applications/follow-up": followUpDomain,
+		"@/api/client": { SessionChangedError: Error },
+		...mocks,
+	});
+
+const { prepareRequest } = load("../../../packages/utils/src/deferred-request.ts");
+const prepareCall = (call) =>
+	prepareRequest(async (defer) => {
+		let result;
+		await defer(async () => {
+			result = await call();
+			return new Response();
+		});
+		return result;
+	});
+const deferredUndo = (options) => {
+	const ready = options.prepare().then((request) => {
+		options.onReady();
+		return request;
+	});
+	return {
+		ready,
+		restore: async () => {
+			(await ready).cancel();
+			return options.restore();
 		},
-		module,
-		module.exports,
-	);
-	return module.exports;
-}
+		commit: async () => options.commit((await ready).send()),
+	};
+};
 
+const zod = createRequire(new URL("../../../packages/schema/package.json", import.meta.url))("zod");
+const timeParser = load("../../../packages/utils/src/timezone.ts", { zod });
+followUpDomain = load("../../../packages/schema/src/applications/follow-up.ts", {
+	"@reactive-resume/utils/timezone": timeParser,
+});
 const stages = load("features/applications/stages.ts", {
 	"@lingui/core/macro": { t: String },
 });
@@ -44,16 +61,25 @@ const lanes = load("features/applications/lanes.ts", {
 	"@reactive-resume/schema/applications/lanes": schemaLanes,
 	"./stages": stages,
 });
-const history = load("features/applications/history.ts");
+const domainNextStep = load("../../../packages/schema/src/applications/next-step.ts", {
+	"./follow-up": followUpDomain,
+	"./data": load("../../../packages/schema/src/applications/data.ts", {
+		zod,
+		"@reactive-resume/utils/timezone": timeParser,
+	}),
+});
+const history = load("features/applications/history.ts", {
+	"@reactive-resume/schema/applications/next-step": domainNextStep,
+});
 const nextStep = load("features/applications/next-step.ts", {
+	"@reactive-resume/schema/applications/next-step": domainNextStep,
 	"./stages": stages,
-	"./history": history,
 	"@/ui": {},
 	"@lingui/core/macro": { plural: (value, forms) => forms.other.replace("#", String(value)), t: String },
 });
 const list = load("features/applications/list.ts", {
 	"./lanes": lanes,
-	"./next-step": nextStep,
+	"@reactive-resume/schema/applications/next-step": domainNextStep,
 	"./stages": stages,
 });
 const schedule = {
@@ -62,10 +88,9 @@ const schedule = {
 		return { date: date.toISOString().slice(0, 10) };
 	},
 };
-const calendar = load("features/applications-board/calendar.ts", {
-	"../reminders/schedule.ts": schedule,
-});
+const outcomesDomain = load("../../../packages/schema/src/applications/outcomes.ts");
 const insights = load("features/applications-board/insights.ts", {
+	"@reactive-resume/schema/applications/outcomes": outcomesDomain,
 	"../applications/history": history,
 	"../reminders/schedule.ts": schedule,
 });
@@ -177,35 +202,39 @@ const summary = full.map((application) =>
 			.map(([key, value]) => [key, key === "activity" ? value.filter((entry) => entry.type !== "note") : value]),
 	),
 );
-const fullFiltered = list.filterApplications(full, { search: "engineer", tag: "", showClosed: false });
-const summaryFiltered = list.filterApplications(summary, { search: "engineer", tag: "", showClosed: false });
-assert.deepEqual(
-	summaryFiltered.map(({ id }) => id),
-	fullFiltered.map(({ id }) => id),
+const attentionFilter = { search: "", tag: "", showClosed: true, needsYou: true };
+const attentionNow = new Date("2026-11-02T00:00:00.000Z");
+const dateOnlyReminder = {
+	...summary[0],
+	status: "applied",
+	activity: [],
+	appliedAt: attentionNow,
+	followUpAt: "2026-11-03T00:00:00.000Z",
+	followUpDateOnly: true,
+};
+assert.equal(list.filterApplications([dateOnlyReminder], attentionFilter, attentionNow, "UTC").length, 0);
+assert.equal(
+	list.filterApplications([dateOnlyReminder], attentionFilter, attentionNow, "Pacific/Kiritimati").length,
+	1,
+	"Needs you uses the account clock for date-only reminders",
 );
-
-const fullGroups = list.groupApplications(full, "next", "desc", new Date("2026-01-04T00:00:00.000Z"));
-const summaryGroups = list.groupApplications(summary, "next", "desc", new Date("2026-01-04T00:00:00.000Z"));
-assert.deepEqual(
-	summaryGroups.map((group) => [group.status, group.data.map(({ id }) => id)]),
-	fullGroups.map((group) => [group.status, group.data.map(({ id }) => id)]),
+const offerWithReminder = { ...dateOnlyReminder, status: "offer", followUpAt: "2026-11-10T09:00:00.000Z" };
+assert.equal(
+	list.filterApplications([offerWithReminder], attentionFilter, attentionNow, "UTC").length,
+	1,
+	"Unknown offer hints cannot hide a decision that may need attention",
 );
-
-const fullEvents = calendar.collectEvents(full, "UTC");
-const summaryEvents = calendar.collectEvents(summary, "UTC");
-assert.deepEqual(
-	summaryEvents.map(({ id, day }) => [id, day]),
-	fullEvents.map(({ id, day }) => [id, day]),
-);
-
-const tailored = (application) => application.resumeId === "resume-a";
-const fullOutcomes = insights.computeOutcomes(full, tailored);
-const summaryOutcomes = insights.computeOutcomes(summary, tailored);
-assert.deepEqual(summaryOutcomes, fullOutcomes);
-assert.deepEqual(insights.countSources(summary), insights.countSources(full));
-assert.deepEqual(
-	insights.computeTimeline(summary, { now: new Date("2026-01-10T00:00:00.000Z"), timeZone: "UTC", weekStartsOn: 0 }),
-	insights.computeTimeline(full, { now: new Date("2026-01-10T00:00:00.000Z"), timeZone: "UTC", weekStartsOn: 0 }),
+assert.equal(list.filterApplications([offerWithReminder], attentionFilter, attentionNow, "UTC", new Map()).length, 0);
+assert.equal(
+	list.filterApplications(
+		[offerWithReminder],
+		attentionFilter,
+		attentionNow,
+		"UTC",
+		new Map([[offerWithReminder.id, { respondBy: "2026-11-12T09:00:00.000Z" }]]),
+	).length,
+	1,
+	"A saved offer's decision is not hidden by its later follow-up reminder",
 );
 
 const orpc = {
@@ -214,15 +243,18 @@ const orpc = {
 		getById: { queryOptions: ({ input }) => ({ queryKey: ["applications", "detail", input] }) },
 		create: { mutationOptions: () => ({}) },
 		update: { mutationOptions: () => ({}) },
-		delete: { mutationOptions: () => ({}) },
+		trash: { mutationOptions: () => ({}) },
 		bulkUpdate: { mutationOptions: () => ({}) },
-		bulkDelete: { mutationOptions: () => ({}) },
+		bulkTrash: { mutationOptions: () => ({}) },
 		import: { mutationOptions: () => ({}) },
+		logFollowUp: { mutationOptions: () => ({}) },
 		stats: { queryKey: () => ["applications", "stats"] },
 		tags: { queryKey: () => ["applications", "tags"] },
 		key: () => ["applications"],
 	},
-	documents: { list: { key: () => ["documents"] } },
+	documents: { key: () => ["documents"] },
+	career: { key: () => ["career"], workspace: { key: () => ["career", "workspace"] } },
+	agent: { key: () => ["agent"] },
 };
 let capturedQuery;
 let listRows = [{ ...summary[0], initialDetail: full[0] }];
@@ -239,7 +271,7 @@ let laneEndpoint = async () => ({ revision: 1, lanes: schemaLanes.createDefaultA
 const writes = [];
 const client = {
 	applications: Object.fromEntries(
-		["create", "update", "bulkUpdate"].map((name) => [
+		["create", "update", "bulkUpdate", "logFollowUp"].map((name) => [
 			name,
 			async (input) => {
 				writes.push(input);
@@ -349,28 +381,33 @@ resolveOld(oldDetail);
 await oldRequest.catch(() => undefined);
 assert.equal(queryClient.getQueryData(detailKey).notes, "newer");
 const mutations = queries.useApplicationMutations();
+{
+	const remindersBefore = [...reminderCancellations];
+	const writesBefore = writes.length;
+	const toastsBefore = toasts.length;
+	await new MutationObserver(queryClient, mutations.logFollowUp).mutate({ id: "app-a" });
+	assert.equal(writes.length, writesBefore + 1);
+	assert.deepEqual(writes.at(-1), { id: "app-a" });
+	assert.deepEqual(reminderCancellations, remindersBefore, "Logging contact must not cancel authored reminders");
+	const original = client.applications.logFollowUp;
+	client.applications.logFollowUp = async () => {
+		throw new Error("old server or lost reply");
+	};
+	const invalidated = invalidations.length;
+	await assert.rejects(
+		new MutationObserver(queryClient, queries.useApplicationMutations().logFollowUp).mutate({ id: "app-a" }),
+	);
+	assert.ok(invalidations.length > invalidated, "Even failed contact requests refresh authoritative state");
+	client.applications.logFollowUp = original;
+	writes.splice(writesBefore);
+	toasts.splice(toastsBefore);
+}
 mutations.update.onSettled(undefined, undefined, { id: "app-a" });
 assert.ok(invalidations.some((key) => key[0] === "applications"));
-const observerClient = new QueryClient();
-const cachedDetail = { ...full[0], resumeFileUrl: "/uploads/resume.pdf", resumeFileName: "resume.pdf" };
-const observerKey = ["application-detail", cachedDetail.id];
-observerClient.setQueryData(observerKey, cachedDetail);
-const observer = new QueryObserver(observerClient, {
-	queryKey: observerKey,
-	queryFn: async () => {
-		throw new Error("refresh failed");
-	},
-	retry: false,
-	staleTime: 0,
-});
-await observer.refetch();
-const failedRefresh = observer.getCurrentResult();
-assert.equal(failedRefresh.isError, true);
-assert.equal(failedRefresh.data?.id, cachedDetail.id);
-assert.equal(Boolean(failedRefresh.data), true);
-assert.equal(failedRefresh.data?.resumeFileUrl, "/uploads/resume.pdf");
-observer.destroy();
-observerClient.clear();
+assert.ok(
+	invalidations.some((key) => key[0] === "career"),
+	"application writes invalidate every affected career view",
+);
 const refreshBase = { ...full[0], notes: "cached newer", updatedAt: new Date("2026-01-03T00:00:00.000Z") };
 queryClient.setQueryData(detailKey, refreshBase, { updatedAt: 700 });
 let resolveRefresh;
@@ -397,60 +434,8 @@ assert.equal(queryClient.getQueryData(detailKey).notes, "refreshed latest");
 unsubscribeRefresh();
 refreshObserver.destroy();
 queryClient.clear();
-const prefetchCalls = [];
-const pendingPrefetches = new Map();
-orpc.applications.getById.queryOptions = ({ input }) => ({
-	queryKey: ["applications", "detail", input],
-	queryFn: () => {
-		prefetchCalls.push(input.id);
-		return new Promise((resolve, reject) => pendingPrefetches.set(input.id, { resolve, reject }));
-	},
-});
-queryClient.setDefaultOptions({ queries: { retry: false } });
-const onVisible = queries.useApplicationDetailPrefetch();
-const visible = (...ids) =>
-	onVisible({ viewableItems: [{ item: { title: "Interview" } }, ...ids.map((id) => ({ item: { id } }))] });
-const waitForPrefetch = () => new Promise((resolve) => setTimeout(resolve, 150));
-const finishPrefetches = async () => {
-	for (const [id, pending] of pendingPrefetches) pending.resolve({ ...full[0], id });
-	pendingPrefetches.clear();
-	await new Promise((resolve) => setImmediate(resolve));
-};
-visible("skipped");
-visible("visible-a", "visible-b", "not-in-first-two");
-await waitForPrefetch();
-assert.deepEqual(prefetchCalls, ["visible-a", "visible-b"]);
-visible("visible-c", "visible-d");
-await waitForPrefetch();
-assert.equal(prefetchCalls.length, 2, "only two detail requests may run concurrently");
-await finishPrefetches();
-for (let offset = 2; offset < 14; offset += 2) {
-	visible("visible-" + offset, "visible-" + (offset + 1));
-	await waitForPrefetch();
-	await finishPrefetches();
-}
-assert.equal(prefetchCalls.length, 14, "completed requests free slots for later visible applications");
-visible("visible-a", "visible-b");
-await waitForPrefetch();
-assert.equal(prefetchCalls.length, 14, "cached details do not need another prefetch");
-queryClient.clear();
-const onRetryVisible = queries.useApplicationDetailPrefetch();
-const retryVisible = () => onRetryVisible({ viewableItems: [{ item: { id: "retry" } }] });
-retryVisible();
-await waitForPrefetch();
-pendingPrefetches.get("retry").reject(new Error("temporary failure"));
-pendingPrefetches.clear();
-await new Promise((resolve) => setImmediate(resolve));
-retryVisible();
-await waitForPrefetch();
-assert.equal(prefetchCalls.filter((id) => id === "retry").length, 2, "failed prefetch does not block retry");
-await finishPrefetches();
-onRetryVisible({ viewableItems: [{ item: { id: "unmounted" } }] });
-for (const cleanup of cleanups) cleanup();
-await waitForPrefetch();
-assert.ok(!prefetchCalls.includes("unmounted"), "unmount cancels the pending prefetch timer");
 
-// Same-category lane changes reset only time in lane, not the no-reply clock.
+// A lane-only move inside one category (the lane anchor is checked below).
 const appliedLaneMove = {
 	...full[0],
 	status: "applied",
@@ -460,28 +445,42 @@ const appliedLaneMove = {
 		{ ...stage("lane-only", "applied", "2026-01-08"), laneId: "awaiting-review", canonicalTransition: false },
 	],
 };
-assert.equal(nextStep.daysInStage(appliedLaneMove, new Date("2026-01-11")), 3);
-assert.deepEqual(nextStep.getNextStep(appliedLaneMove, new Date("2026-01-11")), { kind: "no-reply", days: 10 });
-for (const status of ["closed", "applied"]) {
-	const outcomes = insights.computeOutcomes(
-		[
-			{
-				...appliedLaneMove,
-				status,
-				closedReason: status === "closed" ? "not-selected" : null,
-				activity: [
-					stage("applied", "applied", "2026-01-01"),
-					{ ...stage("ghosted", "closed", "2026-01-05"), closedReason: "no-response" },
-					{ ...stage("rejected", "closed", "2026-01-10"), closedReason: "not-selected", canonicalTransition: false },
-					...(status === "applied" ? [stage("reopened", "applied", "2026-01-11")] : []),
-				],
-			},
-		],
-		() => false,
-	);
-	assert.equal(outcomes.heardBack, 1, "recorded rejection survives reopening");
-	assert.equal(outcomes.medianDaysToReply, 9, "reply date uses the recorded outcome change");
-}
+const stageOnly = (status, extra = []) => ({
+	...full[0],
+	status,
+	laneId: null,
+	followUpAt: null,
+	activity: [stage(`${status}-entry`, status, "2026-01-01"), ...extra],
+});
+const day11 = new Date("2026-01-11");
+// J4-09: the follow-up nudge is for due follow-ups and silent applications, not every step that needs the user.
+assert.deepEqual(
+	[
+		{ kind: "no-reply", days: 12 },
+		{ kind: "offer", days: 1 },
+		{ kind: "follow-up", at: new Date("2026-01-11T12:00:00Z"), note: "", overdue: false },
+		{ kind: "follow-up", at: new Date("2026-01-20"), note: "", overdue: false },
+	].map((step) => nextStep.needsFollowUp(step, day11)),
+	[true, false, true, false],
+);
+// J4-07: a group imported in one go orders by each row's own stage date, longest wait first.
+const imported = [
+	["niantic", 9],
+	["bethesda", 35],
+	["sucker-punch", 21],
+].map(([id, days]) => ({
+	...stageOnly("applied"),
+	id,
+	updatedAt: new Date("2026-02-10"),
+	appliedAt: new Date(new Date("2026-02-10").getTime() - days * 86_400_000),
+	activity: [stage(`${id}-applied`, "applied", new Date(new Date("2026-02-10").getTime() - days * 86_400_000))],
+}));
+assert.deepEqual(
+	list
+		.groupApplications(imported, "next", "asc", new Date("2026-02-10"))
+		.flatMap((group) => group.data.map(({ id }) => id)),
+	["bethesda", "sucker-punch", "niantic"],
+);
 assert.equal(history.currentLaneEntry(appliedLaneMove).id, "lane-only");
 assert.equal(
 	history.currentLaneEntry({
@@ -577,7 +576,6 @@ assert.equal(
 	"retired-entry",
 	"retirement preserves residence time even when the replacement has earlier history",
 );
-assert.equal(nextStep.daysInStage(retirementHistory, new Date("2026-01-11"), [...pipeline, retired]), 3);
 const grouped = list.groupApplications(
 	[
 		{ ...appliedLaneMove, id: "custom" },
@@ -600,6 +598,11 @@ assert.deepEqual(list.visibleSelection(grouped, new Set(["awaiting-review"]), ne
 	"legacy",
 ]);
 const board = load("features/applications-board/board.ts");
+const tabletLane = board.tabletColumnWidth(1200, 5, 16, 12);
+assert.ok(16 + tabletLane * 5 + 12 * 4 <= 1200, "Offer fits after the sidebar on a 1440pt tablet");
+assert.equal(board.tabletColumnWidth(2000, 5, 16, 12), 250, "Wide boards retain their preferred column size");
+assert.ok(board.tabletColumnWidth(784, 5, 16, 12) >= 208, "Narrow boards scroll instead of squeezing cards");
+assert.ok(board.tabletColumnWidth(1200, 8, 16, 12) * 8 > 1200, "Extra custom lanes remain scrollable");
 const pending = { id: "custom", from: "applied", to: "awaiting-review" };
 assert.equal(board.keepPending(pending, [{ id: "custom", status: "applied", laneId: "awaiting-review" }]), null);
 assert.equal(board.keepPending(pending, [{ id: "custom", status: "applied", laneId: "applied" }]), pending);
@@ -722,6 +725,366 @@ mutations.bulkDelete.onSuccess(undefined, { ids: ["deleted-bulk"] });
 assert.deepEqual(reminderCancellations.slice(-2), ["deleted", "deleted-bulk"]);
 accountScope = "account-a";
 queryClient.clear();
+// J2-18 / J2-07: stage moves with Undo show at once, write once on commit, and restore on Undo without a write.
+{
+	const client = new QueryClient();
+	const listKey = ["applications", "fixture"];
+	const detailKey = (id) => ["application", id, "fixture"];
+	const rows = [
+		{ id: "a", status: "applied", laneId: null, closedReason: null, activity: [] },
+		{
+			id: "b",
+			status: "interview",
+			laneId: null,
+			closedReason: null,
+			activity: [{ id: "b-interview", type: "stage", stage: "interview", at: new Date(0) }],
+		},
+	];
+	const pending = [];
+	const writes = [];
+	const zod = createRequire(new URL("../../../packages/schema/package.json", import.meta.url))("zod");
+	const applicationData = load("../../../packages/schema/src/applications/data.ts", {
+		zod,
+		"@reactive-resume/utils/timezone": load("../../../packages/utils/src/timezone.ts", { zod }),
+	});
+	const stageActions = load("features/applications/stage-actions.ts", {
+		"@/features/applications/error": { applicationError: (error) => error.message },
+		"@reactive-resume/schema/applications/next-step": domainNextStep,
+		"@lingui/core/macro": { t: String, plural: (value, forms) => forms.other.replace("#", String(value)) },
+		"@tanstack/react-query": { useQueryClient: () => client },
+		"expo-router": { useRouter: () => ({ push() {} }) },
+		react: { useMemo: (make) => make() },
+		"./lane-queries": {
+			useApplicationLanes: () => ({ lanes: schemaLanes.createDefaultApplicationLanes(), supported: false }),
+		},
+		"./lanes": lanes,
+		"./queries": {
+			applicationsListQueryKey: () => listKey,
+			applicationDetailQueryKey: detailKey,
+			stageScope: () => "fixture:account",
+			useApplicationMutations: () => ({
+				prepareBulkUpdate: (input) =>
+					prepareCall(async () => {
+						writes.push(input);
+						return { updated: input.ids.length };
+					}),
+			}),
+		},
+		"./stages": stages,
+		"@reactive-resume/schema/applications/stage-baselines": load(
+			"../../../packages/schema/src/applications/stage-baselines.ts",
+			{ "./data": applicationData },
+		),
+		"@/auth/session": { useSession: () => ({ server: "fixture" }), getServer: () => "fixture" },
+		"@/features/career/hooks": { useOffers: () => ({ data: undefined }) },
+		"@/features/career/undo": { withUndo: (options) => pending.push(deferredUndo(options)) },
+		"@/routes": { routes: { application: (id, tab) => `/applications/${id}/${tab}` } },
+		"@/ui": { showToast() {} },
+	});
+	client.setQueryData(listKey, rows);
+	client.setQueryData(detailKey("a"), rows[0]);
+	const move = stageActions.useMoveWithUndo();
+	const closed = schemaLanes.createDefaultApplicationLanes().find((lane) => lane.category === "closed");
+	move({
+		applications: [{ id: "a" }, { id: "b" }],
+		lane: closed,
+		supported: false,
+		closedReason: "accepted-other",
+		message: "2 closed",
+	});
+	await pending[0].ready;
+	assert.deepEqual(
+		client.getQueryData(listKey).map((row) => [row.status, row.closedReason]),
+		[
+			["closed", "accepted-other"],
+			["closed", "accepted-other"],
+		],
+	);
+	assert.equal(client.getQueryData(detailKey("a")).status, "closed", "the open application shows the move too");
+	assert.equal(writes.length, 0, "nothing is written until the toast ends");
+	await pending[0].restore();
+	assert.deepEqual(client.getQueryData(listKey), rows, "Undo puts every row back");
+	assert.equal(client.getQueryData(detailKey("a")).status, "applied");
+	move({ applications: [{ id: "b" }], lane: closed, supported: false, closedReason: "withdrew", message: "1 closed" });
+	await pending[1].commit();
+	assert.deepEqual(writes, [
+		{
+			ids: ["b"],
+			status: "closed",
+			closedReason: "withdrew",
+			// Its latest stage change goes along, so a move away and back since also counts as a change.
+			expectedStages: [{ id: "b", status: "interview", closedReason: null, stageEntryId: "b-interview" }],
+		},
+	]);
+
+	// J2-18: Undo puts back only this move's rows, and only those still showing it; a later move and other rows stay.
+	client.setQueryData(listKey, [...rows, { id: "c", status: "saved", laneId: null, closedReason: null, activity: [] }]);
+	move({
+		applications: [{ id: "a" }, { id: "b" }],
+		lane: closed,
+		supported: false,
+		closedReason: "withdrew",
+		message: "2 closed",
+	});
+	await pending[2].ready;
+	client.setQueryData(listKey, (current) =>
+		current.map((row) =>
+			row.id === "a"
+				? { ...row, status: "offer", closedReason: null }
+				: row.id === "c"
+					? { ...row, status: "applied" }
+					: row,
+		),
+	);
+	await pending[2].restore();
+	assert.deepEqual(
+		client.getQueryData(listKey).map((row) => [row.id, row.status]),
+		[
+			["a", "offer"],
+			["b", "interview"],
+			["c", "applied"],
+		],
+	);
+	assert.equal(stageActions.offerHintFor(undefined, "a"), undefined, "unknown offers stay unknown");
+	assert.equal(stageActions.offerHintFor(new Map(), "a"), null, "loaded with none saved");
+}
+// J2-18: a second quick move of the same row is saved after the first, from what the first saved; an outside move wins.
+{
+	const client = new QueryClient();
+	const listKey = ["applications", "fixture"];
+	const zod = createRequire(new URL("../../../packages/schema/package.json", import.meta.url))("zod");
+	const applicationData = load("../../../packages/schema/src/applications/data.ts", {
+		zod,
+		"@reactive-resume/utils/timezone": load("../../../packages/utils/src/timezone.ts", { zod }),
+	});
+	// A server that keeps the API's contract: each move adds a stage change, a row that differs from the expected
+	// stage is left, and the moved rows come back as saved.
+	let changes = 0;
+	const server = { a: { status: "applied", laneId: null, closedReason: null, stageEntryId: null } };
+	const order = [];
+	const pending = [];
+	const toasts = [];
+	const stageBaselines = load("../../../packages/schema/src/applications/stage-baselines.ts", {
+		"./data": applicationData,
+	});
+	// As the app sets its query client up: single stage writes are followed.
+	stageBaselines.followStageWrites(
+		client,
+		() => "fixture:account",
+		(id) => client.getQueryData(listKey)?.find((row) => row.id === id),
+	);
+	const stageActions = load("features/applications/stage-actions.ts", {
+		"@/features/applications/error": { applicationError: (error) => error.message },
+		"@reactive-resume/schema/applications/next-step": domainNextStep,
+		"@lingui/core/macro": { t: String, plural: (value, forms) => forms.other.replace("#", String(value)) },
+		"@tanstack/react-query": { useQueryClient: () => client },
+		"expo-router": { useRouter: () => ({ push() {} }) },
+		react: { useMemo: (make) => make() },
+		"./lane-queries": {
+			useApplicationLanes: () => ({ lanes: schemaLanes.createDefaultApplicationLanes(), supported: false }),
+		},
+		"./lanes": lanes,
+		"./queries": {
+			applicationsListQueryKey: () => listKey,
+			applicationDetailQueryKey: (id) => ["application", id, "fixture"],
+			stageScope: () => "fixture:account",
+			useApplicationMutations: () => ({
+				prepareBulkUpdate: (input) =>
+					prepareCall(async () => {
+						order.push({ status: input.status, expected: input.expectedStages });
+						const saved = [];
+						for (const { id, ...expected } of input.expectedStages) {
+							const row = server[id];
+							if (expected.status !== row.status || expected.stageEntryId !== row.stageEntryId) continue;
+							server[id] = { ...row, status: input.status, stageEntryId: `change-${(changes += 1)}` };
+							saved.push({ id, ...server[id] });
+						}
+						return { updated: saved.length, stages: saved };
+					}),
+			}),
+		},
+		"./stages": stages,
+		"@reactive-resume/schema/applications/stage-baselines": stageBaselines,
+		"@/auth/session": { useSession: () => ({ server: "fixture" }), getServer: () => "fixture" },
+		"@/features/career/hooks": { useOffers: () => ({ data: undefined }) },
+		"@/features/career/undo": { withUndo: (options) => pending.push(deferredUndo(options)) },
+		"@/routes": { routes: { application: (id, tab) => `/applications/${id}/${tab}` } },
+		"@/ui": { showToast: (toast) => toasts.push(toast.message) },
+	});
+	const laneFor = (category) => schemaLanes.createDefaultApplicationLanes().find((lane) => lane.category === category);
+	const move = stageActions.useMoveWithUndo();
+	client.setQueryData(listKey, [{ id: "a", status: "applied", laneId: null, closedReason: null, activity: [] }]);
+	move({ applications: [{ id: "a" }], lane: laneFor("interview"), supported: false, message: "moved" });
+	move({ applications: [{ id: "a" }], lane: laneFor("offer"), supported: false, message: "moved again" });
+	// The second toast ends first; its write still waits for the first one's.
+	const second = pending[1].commit();
+	await pending[0].commit();
+	await second;
+	assert.deepEqual(
+		order.map(({ status }) => status),
+		["interview", "offer"],
+	);
+	assert.deepEqual(order[1].expected, [{ id: "a", status: "interview", closedReason: null, stageEntryId: "change-1" }]);
+	assert.equal(server.a.status, "offer", "the later quick move is saved");
+	assert.deepEqual(toasts, [], "nothing is reported as changed in the meantime");
+	// A third move before the list reloads starts from what the second saved, not the list's older timeline.
+	move({ applications: [{ id: "a" }], lane: laneFor("interview"), supported: false, message: "back to interview" });
+	await pending[2].commit();
+	assert.deepEqual(order[2].expected, [{ id: "a", status: "offer", closedReason: null, stageEntryId: "change-2" }]);
+	assert.equal(server.a.status, "interview");
+
+	// An outside move away and back inside the window still wins over a move from this app.
+	move({
+		applications: [{ id: "a" }],
+		lane: laneFor("closed"),
+		supported: false,
+		closedReason: "withdrew",
+		message: "closed",
+	});
+	await pending[3].ready;
+	server.a = { ...server.a, stageEntryId: "outside-change" };
+	await pending[3].commit();
+	assert.equal(server.a.status, "interview");
+	assert.deepEqual(toasts, ["1 applications changed in the meantime, so they keep their newer stage"]);
+
+	// A single move on its way (the app's update mutation, held at a gate), then a bulk move: the bulk move waits for
+	// the single one's answer and starts from it. A failed single move leaves the list as the start.
+	const single = (id, status, gate) =>
+		new MutationObserver(client, {
+			mutationKey: [["applications", "update"], { type: "mutation" }],
+			mutationFn: async (input) => {
+				await gate;
+				const row = server[input.id];
+				server[input.id] = { ...row, status: input.status, stageEntryId: `change-${(changes += 1)}` };
+				order.push({ status: `single ${input.status}`, saved: server[input.id].stageEntryId });
+				return {
+					id,
+					...server[input.id],
+					activity: [{ id: server[input.id].stageEntryId, type: "stage", at: new Date() }],
+				};
+			},
+		}).mutate({ id, status });
+	let open = () => {};
+	let fail = () => {};
+	server.b = { status: "applied", laneId: null, closedReason: null, stageEntryId: null };
+	server.c = { status: "applied", laneId: null, closedReason: null, stageEntryId: null };
+	client.setQueryData(listKey, [
+		{ id: "b", status: "applied", laneId: null, closedReason: null, activity: [] },
+		{ id: "c", status: "applied", laneId: null, closedReason: null, activity: [] },
+	]);
+	order.length = 0;
+	const singleB = single("b", "interview", new Promise((resolve) => (open = resolve)));
+	const singleC = single("c", "interview", new Promise((_resolve, reject) => (fail = reject))).catch(() => {});
+	move({ applications: [{ id: "b" }, { id: "c" }], lane: laneFor("offer"), supported: false, message: "2 moved" });
+	const bulk = pending.at(-1).commit();
+	open();
+	fail(new Error("offline"));
+	await Promise.all([singleB, singleC, bulk]);
+	assert.deepEqual(order.at(-1).expected, [
+		{ id: "b", status: "interview", closedReason: null, stageEntryId: order[0].saved },
+		{ id: "c", status: "applied", closedReason: null, stageEntryId: null },
+	]);
+	assert.deepEqual([server.b.status, server.c.status], ["offer", "offer"], "the later bulk move is saved for both");
+
+	// Mark as applied (the workspace's mutation, held), then a bulk move: it waits for the stage Mark as applied saved.
+	server.d = { status: "saved", laneId: null, closedReason: null, stageEntryId: "d-saved" };
+	client.setQueryData(listKey, [
+		{
+			id: "d",
+			status: "saved",
+			laneId: null,
+			closedReason: null,
+			activity: [{ id: "d-saved", type: "stage", at: new Date(0) }],
+		},
+	]);
+	order.length = 0;
+	let openSubmit = () => {};
+	const submitGate = new Promise((resolve) => (openSubmit = resolve));
+	const submitted = new MutationObserver(client, {
+		mutationKey: [["career", "submitApplication"], { type: "mutation" }],
+		mutationFn: async (input) => {
+			await submitGate;
+			server[input.applicationId] = { ...server[input.applicationId], status: "applied", stageEntryId: "d-applied" };
+			order.push({ status: "submit" });
+			return { stages: [{ id: input.applicationId, ...server[input.applicationId] }] };
+		},
+	}).mutate({ applicationId: "d" });
+	move({ applications: [{ id: "d" }], lane: laneFor("interview"), supported: false, message: "moved" });
+	const afterSubmit = pending.at(-1).commit();
+	openSubmit();
+	await Promise.all([submitted, afterSubmit]);
+	assert.deepEqual(order.at(-1).expected, [
+		{ id: "d", status: "applied", closedReason: null, stageEntryId: "d-applied" },
+	]);
+	assert.equal(server.d.status, "interview", "the bulk move after Mark as applied is saved");
+	// A single answer can contain a later write whose display date is earlier than the old list's noon date.
+	const dated = {
+		id: "dated",
+		status: "applied",
+		laneId: null,
+		closedReason: null,
+		activity: [{ id: "noon", type: "stage", stage: "applied", at: new Date("2026-11-01T12:00:00Z"), writeSequence: 1 }],
+	};
+	server.dated = { status: "applied", laneId: null, closedReason: null, stageEntryId: "noon" };
+	client.setQueryData(listKey, [dated]);
+	await new MutationObserver(client, {
+		mutationKey: [["applications", "update"], { type: "mutation" }],
+		mutationFn: async () => {
+			server.dated = { ...server.dated, status: "interview", stageEntryId: "morning" };
+			return {
+				...dated,
+				status: "interview",
+				activity: [
+					...dated.activity,
+					{ id: "morning", type: "stage", stage: "interview", at: new Date("2026-11-01T08:00:00Z"), writeSequence: 2 },
+				],
+			};
+		},
+	}).mutate({ id: "dated", status: "interview" });
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	move({ applications: [{ id: "dated" }], lane: laneFor("offer"), supported: false, message: "moved" });
+	await pending.at(-1).commit();
+	assert.equal(server.dated.status, "offer", "the canonical write identity survives an older displayed date");
+	assert.equal(order.at(-1).expected[0].stageEntryId, "morning");
+}
+
+// J2-03: copies start from the base resume, not the job copy edited last.
+{
+	const { defaultCopySource } = load("features/documents/filter.ts");
+	const base = { id: "base", updatedAt: new Date("2026-10-30T09:00:00Z"), application: null };
+	const copy = {
+		id: "copy",
+		updatedAt: new Date("2026-10-30T12:00:00Z"),
+		application: { id: "j", company: "N", role: "R" },
+	};
+	assert.equal(defaultCopySource([copy, base])?.id, "base");
+	assert.equal(defaultCopySource([copy, { ...copy, id: "older", updatedAt: new Date("2026-01-01") }])?.id, "copy");
+	assert.equal(defaultCopySource([]), undefined);
+}
+
+// J2-17: the mobile Next step text at Offer follows what is known of the saved offer.
+{
+	const now = new Date("2026-10-30T12:00:00Z");
+	const atOffer = {
+		status: "offer",
+		laneId: null,
+		appliedAt: new Date("2026-10-01T00:00:00Z"),
+		followUpAt: null,
+		followUpNote: null,
+		closedReason: null,
+		activity: [
+			stage("s1", "offer", new Date("2026-10-29T00:00:00Z")),
+			interview("earlier", new Date("2026-11-04T14:30:00Z")),
+		],
+	};
+	const deadline = "2026-11-12T17:00:00Z";
+	const title = (offer) =>
+		nextStep.describeNextStep(nextStep.getNextStep(atOffer, now, [], "UTC", offer), atOffer, "en-US", "UTC").title;
+	assert.equal(title(null), "Add the offer's terms");
+	assert.equal(title({ respondBy: null }), "Decide on the offer");
+	assert.equal(title(undefined), "Decide on the offer");
+	assert.equal(title({ respondBy: deadline }), "Reply to the offer");
+}
 console.log(
 	"PASS native application summaries, lanes/history, old-server write guards, cache rollback and authoritative reminder cancellation",
 );

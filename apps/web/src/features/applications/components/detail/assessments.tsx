@@ -243,7 +243,7 @@ export function TargetingNoteButton({ application, notes, className }: Targeting
 				<Trans>Read the targeting note</Trans>
 			</Button>
 			<Dialog open={reading} onOpenChange={setReading}>
-				<DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-4xl">
+				<DialogContent closeLabel={t`Close`} className="max-h-[90svh] overflow-y-auto sm:max-w-4xl">
 					<DialogHeader>
 						<DialogTitle>
 							<Trans>Targeting note</Trans>

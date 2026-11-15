@@ -4,13 +4,17 @@ import { Trans } from "@lingui/react/macro";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
+import { offerHintFor, useOfferHints } from "../queries";
 import { ApplicationActionsMenu } from "./application-actions-menu";
 import { BuildStatusControl } from "./build-status";
+import { TagChips } from "./tag-chips";
 import { useCareerTime } from "@/features/career/shared";
 
 type ApplicationCardProps = {
 	application: ApplicationSummary;
 	onClick?: () => void;
+	/** A tag chip filters the page's existing search. */
+	onTagSelect?: ((tag: string) => void) | undefined;
 	/** The ⋯ menu (Move to…, Close…, Delete); cards dragged in the overlay go without. */
 	withMenu?: boolean;
 	dragging?: boolean;
@@ -18,17 +22,24 @@ type ApplicationCardProps = {
 	stale?: boolean;
 };
 
-/** A board card: the company's initial, role and company, the next step (warn when it's overdue) and the search fit. */
+/** A board card: the company's initial, role and company, its tags, the next step (warn when it's overdue) and the search fit. */
 export function ApplicationCard({
 	application,
 	onClick,
+	onTagSelect,
 	withMenu = false,
 	dragging = false,
 	stale = false,
 }: ApplicationCardProps) {
 	const { locale, timeZone } = useCareerTime();
 	const noReplyDays = useNoReplyDays();
-	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, locale, timeZone);
+	const hints = useOfferHints(application.status === "offer");
+	const next = describeNextStep(
+		getNextStep(application, undefined, timeZone, offerHintFor(hints, application.id), noReplyDays),
+		application,
+		locale,
+		timeZone,
+	);
 
 	return (
 		<div
@@ -48,15 +59,23 @@ export function ApplicationCard({
 				>
 					{application.company.slice(0, 1).toUpperCase()}
 				</span>
-				<button
-					type="button"
-					data-application-open
-					onClick={onClick}
-					className="grid min-w-0 flex-1 text-start after:absolute after:inset-0 after:rounded-lg"
-				>
-					<span className="line-clamp-2 text-sm font-semibold">{application.role}</span>
-					<span className="truncate text-xs text-ink-3">{application.company}</span>
-				</button>
+				<div className="grid min-w-0 flex-1 gap-1">
+					<button
+						type="button"
+						data-application-open
+						onClick={onClick}
+						className="grid min-w-0 text-start after:absolute after:inset-0 after:rounded-lg"
+					>
+						<span dir="auto" className="line-clamp-2 text-sm font-semibold">
+							{application.role}
+						</span>
+						<span dir="auto" className="truncate text-xs text-ink-3">
+							{application.company}
+						</span>
+					</button>
+					{/* Above the open button's stretched target, so filtering never opens the card. */}
+					<TagChips tags={application.tags} onSelect={onTagSelect} className="relative z-10 ms-0" />
+				</div>
 				{withMenu && <ApplicationActionsMenu application={application} className="relative z-10 -me-1.5 -mt-1.5" />}
 			</div>
 			{/* The next step keeps its full width: when it and the badges don't fit on one line, the badges wrap below. */}

@@ -41,7 +41,7 @@ describe("randomSlug", () => {
 });
 
 describe("matchesUsername", () => {
-	it("matches the current username, or an unexpired old one while no account holds it", async () => {
+	it("matches the current username, a released one, or an unexpired old one while no account holds it", async () => {
 		const { PgDialect } = await import("drizzle-orm/pg-core");
 		const { drizzle } = await import("drizzle-orm/node-postgres");
 		const testDb = drizzle({ client: {} as never });
@@ -52,10 +52,11 @@ describe("matchesUsername", () => {
 		const query = new PgDialect().sqlToQuery(condition);
 
 		expect(query.sql).toContain('"user"."username" = $1');
-		expect(query.sql).toContain('"username_redirect"."username" = $2');
+		expect(query.sql).toContain('"released_username"."username" = $2');
+		expect(query.sql).toContain('"username_redirect"."username" = $3');
 		expect(query.sql).toContain('"username_redirect"."expires_at" > now()');
-		expect(query.sql).toContain('not exists (select 1 from "user" as taken where taken.username = $3)');
-		expect(query.params).toEqual(["old-name", "old-name", "old-name"]);
+		expect(query.sql).toContain('not exists (select 1 from "user" as taken where taken.username = $4)');
+		expect(query.params).toEqual(["old-name", "old-name", "old-name", "old-name"]);
 	});
 });
 

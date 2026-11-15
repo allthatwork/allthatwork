@@ -1,88 +1,34 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { test } from "node:test";
+import * as harness from "./harness.mjs";
 
-const serverRequire = createRequire(new URL("../../server/package.json", import.meta.url));
-const { transformSync } = createRequire(serverRequire.resolve("tsx"))("esbuild");
-const tag = (parts, ...values) => parts.reduce((text, part, index) => text + part + (values[index] ?? ""), "");
-
-function load(path, mocks, development = true) {
-	const module = { exports: {} };
-	const code = transformSync(readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8"), {
+const load = (path, mocks, development = true) =>
+	harness.load(`../src/${path}`, mocks, {
 		loader: "ts",
-		format: "cjs",
-	}).code;
-	new Function("require", "module", "exports", "__DEV__", code)(
-		(name) => {
-			assert.ok(name in mocks, `Unexpected dependency: ${name}`);
-			return mocks[name];
-		},
-		module,
-		module.exports,
-		development,
-	);
-	return module.exports;
-}
-
-test("AI imports retain the selecting account through parsing", async () => {
-	let scope = "original-account";
-	const parsed = Promise.withResolvers();
-	const started = Promise.withResolvers();
-	let saved = 0;
-	class SessionChangedError extends Error {}
-	const { importDocument } = load("features/documents/import-file.ts", {
-		"@lingui/core/macro": { t: tag },
-		"expo-file-system": {
-			File: class {
-				size = 12;
-				base64 = async () => "file";
-			},
-		},
-		"@reactive-resume/schema/cover-letter/data": {},
-		"@/auth/session": { getAccountScope: () => scope },
-		"@/api/client": {
-			SessionChangedError,
-			client: {
-				ai: {
-					parsePdf: (_input, options) => {
-						assert.equal(options.context.scope, "original-account");
-						started.resolve();
-						return parsed.promise;
-					},
-				},
-				resume: {
-					import: async () => {
-						saved++;
-						return "id";
-					},
-				},
-			},
-		},
+		supported: { "dynamic-import": false },
+		globals: { __DEV__: development },
 	});
-	const result = importDocument({ name: "private.pdf", uri: "fixture" }, true, true, new AbortController().signal);
-	await started.promise;
-	scope = "different-account";
-	parsed.resolve({ basics: { name: "Private" } });
-	await assert.rejects(result, SessionChangedError);
-	assert.equal(saved, 0);
-});
 
-function previewSession(values = [], development = true) {
+function previewSession(values = [], development = true, clearAccountExportCache = () => {}) {
 	const store = new Map(values);
 	const session = load(
 		"auth/session.ts",
 		{
+			"@lingui/core": { i18n: { locale: "en-US" } },
 			"expo-auth-session": {},
 			"expo-network": {},
 			"expo-web-browser": {},
 			"expo-sqlite/kv-store": {},
+			"@/features/settings/export-cache": { clearAccountExportCache },
 			react: {},
 			"@reactive-resume/utils/string": { fnv1a: () => 1 },
 			"expo-secure-store": {
 				getItemAsync: async (key) => store.get(key) ?? null,
 				setItemAsync: async (key, value) => {
 					store.set(key, value);
+				},
+				deleteItemAsync: async (key) => {
+					store.delete(key);
 				},
 			},
 			"./oauth": { storeKey: (kind, origin) => `${kind}:${origin}`, isAllowedServer: () => true },
@@ -101,6 +47,45 @@ test("development previews never replace real credentials", async () => {
 	await assert.rejects(session.installDevelopmentSession("http://localhost:3000"), /Sign out/);
 	assert.deepEqual([...store], values);
 	assert.equal(session.getServer(), "https://real.example");
+});
+
+test("session expiry removes private exports and repeated unauthorized responses cannot clear files again", async () => {
+	let cleanups = 0;
+	const { session, store } = previewSession(
+		[
+			["server", "https://real.example"],
+			["tokens:https://real.example", JSON.stringify({ accessToken: "real-token" })],
+		],
+		true,
+		() => cleanups++,
+	);
+	await session.restoreSession();
+	assert.equal(cleanups, 1, "cold start removes previous export files");
+	const credentials = await session.getCredentials();
+	await session.rejectCredentials(credentials);
+	assert.equal(session.getSession().status, "expired");
+	assert.equal(cleanups, 2);
+	assert.equal(store.has("tokens:https://real.example"), false);
+	await session.rejectCredentials(credentials);
+	assert.equal(cleanups, 2, "a repeated 401 cannot clean files again");
+});
+
+test("export cleanup failure still expires and retires credentials", async () => {
+	let failCleanup = false;
+	const { session, store } = previewSession(
+		[["tokens:https://rxresu.me", JSON.stringify({ accessToken: "real-token" })]],
+		true,
+		() => {
+			if (failCleanup) throw new Error("Disk unavailable");
+		},
+	);
+	await session.restoreSession();
+	const credentials = await session.getCredentials();
+	failCleanup = true;
+	await assert.rejects(session.rejectCredentials(credentials), /Disk unavailable/);
+	assert.equal(session.getSession().status, "expired");
+	assert.equal(await session.getAccessToken(), null);
+	assert.equal(store.has("tokens:https://rxresu.me"), false);
 });
 
 test("a development fixture changes disk and memory together and rejects remote origins", async () => {

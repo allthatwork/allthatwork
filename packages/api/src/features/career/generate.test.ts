@@ -7,11 +7,18 @@ const mocks = vi.hoisted(() => ({
 	save: vi.fn(),
 	context: null as unknown,
 }));
-vi.mock("../applications/ai", () => ({ generateJson: mocks.generate }));
+vi.mock("../ai/application-generation", () => ({ generateJson: mocks.generate }));
 vi.mock("../ai/service", () => ({ getModel: () => ({}) }));
 vi.mock("../ai-providers/service", () => ({
 	aiProvidersService: {
-		getDefaultRunnable: async () => ({ provider: "openai", model: "m", apiKey: "k", reasoning: null }),
+		getDefaultRunnable: async () => ({
+			id: "p",
+			label: "Connection",
+			provider: "openai",
+			model: "m",
+			apiKey: "k",
+			reasoning: null,
+		}),
 		getRunnableById: async () => null,
 	},
 }));
@@ -21,6 +28,7 @@ vi.mock("./service", () => ({
 		saveSavedItem: mocks.save,
 		assertMemoryVersion: async () => undefined,
 	},
+	hasFitEvidence: () => true,
 }));
 
 const { excerpt, fitOutput, generateCareer, practiceStoryBudget, stripQuoted } = await import("./generate");

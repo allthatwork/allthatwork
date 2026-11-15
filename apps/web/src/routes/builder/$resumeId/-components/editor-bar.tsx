@@ -1,9 +1,12 @@
 import type { EditorMode } from "@/features/resume/editor/store";
+import { i18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
 import { Plural, Trans } from "@lingui/react/macro";
 import { Icon } from "@reactive-resume/ui/components/icon";
+import { IconButton } from "@reactive-resume/ui/components/icon-button";
 import { TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs";
 import { DocumentMenu } from "./document-menu";
+import { useShortcutSettings } from "@/features/keyboard-shortcuts/settings";
 import { useCurrentBuilderResumeSelector, useCurrentResume, useResumeStore } from "@/features/resume/builder/draft";
 import { useOpenIssueCount } from "@/features/resume/editor/check/use-check";
 import { DownloadButtons, EditorBarFrame } from "@/features/resume/editor/chrome/bar";
@@ -16,8 +19,8 @@ type EditorBarProps = {
 };
 
 /**
- * The 56px editor bar. Desktop: back, name and save state · Write/Design/Check/Share · history, assistant and
- * Download PDF. The mode switch stays centered through a `1fr auto 1fr` grid.
+ * The 56px editor bar. Desktop: back, name and save state · Write/Design/Check/Share · Undo, Redo, history, assistant
+ * and Download PDF. The mode switch stays centered through a `1fr auto 1fr` grid.
  */
 export function EditorBar({ layout, pinnable }: EditorBarProps) {
 	// Download needs a connection.
@@ -26,7 +29,13 @@ export function EditorBar({ layout, pinnable }: EditorBarProps) {
 	const { onDownloadPDF, isExporting } = useResumeExport(resume);
 
 	return (
-		<EditorBarFrame layout={layout} pinnable={pinnable} menu={<DocumentMenu />} modes={<ModeTabs />}>
+		<EditorBarFrame
+			layout={layout}
+			pinnable={pinnable}
+			menu={<DocumentMenu />}
+			modes={<ModeTabs compact={layout === "tablet"} />}
+			history={<UndoRedo />}
+		>
 			<DownloadButtons
 				busy={isExporting}
 				onDownload={() => void onDownloadPDF()}
@@ -39,6 +48,35 @@ export function EditorBar({ layout, pinnable }: EditorBarProps) {
 	);
 }
 
+/** The document's Undo and Redo, the same steps as ⌘Z and ⇧⌘Z outside a field. Phones have no keyboard for those. */
+function UndoRedo() {
+	const undo = useResumeStore((state) => state.undo);
+	const redo = useResumeStore((state) => state.redo);
+	const canUndo = useResumeStore((state) => state.undoStack.length > 0 && !state.resume?.isLocked);
+	const canRedo = useResumeStore((state) => state.redoStack.length > 0 && !state.resume?.isLocked);
+
+	return (
+		<>
+			<IconButton
+				icon="arrow-counter-clockwise"
+				label={t`Undo`}
+				shortcut="⌘Z"
+				className="text-ink-2"
+				disabled={!canUndo}
+				onClick={undo}
+			/>
+			<IconButton
+				icon="arrow-clockwise"
+				label={t`Redo`}
+				shortcut="⇧⌘Z"
+				className="text-ink-2"
+				disabled={!canRedo}
+				onClick={redo}
+			/>
+		</>
+	);
+}
+
 const MODE_ICONS = {
 	write: "pencil-simple",
 	design: "palette",
@@ -46,20 +84,45 @@ const MODE_ICONS = {
 	share: "globe-hemisphere-west",
 } as const;
 
-function ModeTabs() {
+type ModeTabsProps = { compact: boolean };
+
+function ModeTabs({ compact }: ModeTabsProps) {
+	const characterShortcuts = useShortcutSettings((state) => state.characterShortcuts);
 	const issueCount = useOpenIssueCount();
 	const isPublic = useCurrentBuilderResumeSelector((resume) => resume.isPublic ?? false);
-	const labels: Record<EditorMode, string> = { write: t`Write`, design: t`Design`, check: t`Check`, share: t`Share` };
+	const labels: Record<EditorMode, string> = {
+		write: t`Write`,
+		design: t`Design`,
+		check: t({
+			comment: "The resume builder mode that reviews the resume for problems. Not the Screening application stage.",
+			message: "Check",
+		}),
+		share: t`Share`,
+	};
 
 	return (
 		<TabsList aria-label={t`Editor mode`} className="h-9" data-mode-switch="">
-			{(Object.keys(MODE_ICONS) as EditorMode[]).map((mode) => (
-				<TabsTrigger key={mode} value={mode} className="px-4">
+			{(Object.keys(MODE_ICONS) as EditorMode[]).map((mode, index) => (
+				// Keys 1–4 switch modes (outside text fields): said on hover and to assistive tech.
+				<TabsTrigger
+					key={mode}
+					value={mode}
+					className={compact ? "px-2" : "px-4"}
+					aria-keyshortcuts={characterShortcuts ? String(index + 1) : undefined}
+					title={
+						characterShortcuts
+							? t({
+									comment: "Mode tab tooltip: the mode, then the key that opens it",
+									message: `${labels[mode]} · key ${index + 1}`,
+								})
+							: labels[mode]
+					}
+				>
 					<Icon name={MODE_ICONS[mode]} size={18} />
-					{labels[mode]}
+					<span className={compact ? "sr-only" : undefined}>{labels[mode]}</span>
 					{mode === "check" && <CheckBadge count={issueCount} />}
 					{mode === "share" && isPublic && (
-						<span className="size-1.5 rounded-full bg-accent" aria-hidden="true" title={t`Public`} />
+						<span className="size-1.5 rounded-sm bg-accent" aria-hidden="true" title={t`Public`} />
 					)}
 				</TabsTrigger>
 			))}
@@ -80,8 +143,8 @@ function CheckBadge({ count }: { count: number }) {
 	}
 
 	return (
-		<span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-warn-soft px-[5px] text-[11px] font-semibold text-warn-text">
-			<span aria-hidden="true">{count}</span>
+		<span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-warn-soft px-[5px] text-xs font-semibold text-warn-text">
+			<span aria-hidden="true">{i18n.number(count)}</span>
 			<span className="sr-only">
 				<Plural value={count} one="# open issue" other="# open issues" />
 			</span>

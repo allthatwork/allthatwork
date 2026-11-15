@@ -30,7 +30,7 @@ const stop = (event: React.SyntheticEvent) => event.stopPropagation();
 
 type ApplicationActionsMenuProps = { application: ApplicationSummary; className?: string };
 
-/** A card's ⋯ menu, the keyboard alternative to dragging: Move to…, Close…, and Delete after asking. */
+/** A card's ⋯ menu, the keyboard alternative to dragging: Move to…, Mark as closed…, and Delete after asking. */
 export function ApplicationActionsMenu({ application, className }: ApplicationActionsMenuProps) {
 	const { moveTo, close, remove } = useApplicationActions();
 	const { lanes, active } = useApplicationLanes();
@@ -38,9 +38,11 @@ export function ApplicationActionsMenu({ application, className }: ApplicationAc
 	const current = getDisplayLane(lanes, application);
 
 	const onDelete = async () => {
-		const confirmed = await confirm(t`Delete this application?`, {
-			description: t`“${application.role} · ${application.company}” and its timeline are deleted permanently. This can't be undone.`,
-			confirmText: t`Delete application`,
+		const confirmed = await confirm(t`Move to Trash`, {
+			description: t`Applications and their timelines can be restored from Trash.`,
+			confirmText: t`Move to Trash`,
+			cancelText: t`Keep application`,
+			variant: "danger",
 		});
 		if (confirmed) remove.mutate({ id: application.id });
 	};
@@ -91,7 +93,7 @@ export function ApplicationActionsMenu({ application, className }: ApplicationAc
 					<DropdownMenuSub>
 						<DropdownMenuSubTrigger>
 							<Icon name="check" size={18} />
-							<Trans>Close…</Trans>
+							<Trans>Mark as closed…</Trans>
 						</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent>
 							<ClosedLaneItems
@@ -108,7 +110,7 @@ export function ApplicationActionsMenu({ application, className }: ApplicationAc
 
 					<DropdownMenuItem variant="destructive" onClick={onDelete}>
 						<Icon name="trash" size={18} />
-						<Trans>Delete…</Trans>
+						<Trans>Move to Trash</Trans>
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>

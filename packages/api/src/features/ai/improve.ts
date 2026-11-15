@@ -9,6 +9,8 @@ const REQUESTS = {
 	verb: "Stronger verb",
 	result: "Add a result",
 	shorter: "Make it shorter",
+	posting: "Tie to the posting",
+	warmer: "Warmer",
 } as const;
 
 /** The most of a line Improve rewrites, and the most of the field around it the model reads. */
@@ -18,16 +20,18 @@ export const IMPROVE_CONTEXT_CHARS = 10_000;
 export const improveInputSchema = z.object({
 	aiProviderId: z.string().optional(),
 	line: z.string().trim().min(1).max(IMPROVE_LINE_CHARS),
-	action: z.enum(["verb", "result", "shorter", "custom"]),
-	/** The user's own words, for "Ask for something else…". */
+	action: z.enum(["verb", "result", "shorter", "posting", "warmer", "custom"]),
+	/** The user's own words: what to change for "Ask for something else…", or the result itself for "Add a result". */
 	request: z.string().trim().max(500).optional(),
 	/** Where the line sits, e.g. "Description · Fieldnote". */
 	where: z.string().trim().max(200).default(""),
 	/** The whole field, so a result can come from the lines around it. Cut around the line before the model reads it. */
 	context: z.string().max(200_000).default(""),
+	/** The application whose job posting "Tie to the posting" works from (a cover letter's linked application). */
+	applicationId: z.string().optional(),
 });
 
-type ImproveInput = z.infer<typeof improveInputSchema>;
+type ImproveInput = z.infer<typeof improveInputSchema> & { posting?: string | undefined };
 
 export const improveOutputSchema = z.object({
 	text: z
@@ -41,6 +45,8 @@ export const improveOutputSchema = z.object({
 export type ImproveOutput = z.infer<typeof improveOutputSchema>;
 
 type ImproveServiceInput = ImproveInput & {
+	usage: Parameters<typeof getModel>[0]["usage"];
+	signal?: AbortSignal | undefined;
 	provider: Parameters<typeof getModel>[0]["provider"];
 	model: string;
 	apiKey: string;
@@ -72,14 +78,19 @@ export function contextAround(context: string, line: string, max = IMPROVE_CONTE
 	return context.slice(from, to);
 }
 
-function buildUserPrompt(input: ImproveInput): string {
+export function buildUserPrompt(input: ImproveInput): string {
 	const request =
-		input.action === "custom" ? `Something else: ${input.request || "Improve it."}` : REQUESTS[input.action];
+		input.action === "custom"
+			? `Something else: ${input.request || "Improve it."}`
+			: input.action === "result" && input.request
+				? `${REQUESTS.result}. The user says the result was: ${input.request}`
+				: REQUESTS[input.action];
 	const values: Record<string, string> = {
 		REQUEST: request,
 		WHERE: input.where || "Not given",
 		LINE: inertMarkers(input.line),
 		CONTEXT: inertMarkers(contextAround(input.context, input.line) || "None"),
+		POSTING: inertMarkers(input.posting || "None"),
 	};
 
 	// One pass, so text in the line that looks like a placeholder stays as it is.

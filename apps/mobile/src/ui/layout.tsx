@@ -18,6 +18,7 @@ import Animated, {
 	withRepeat,
 	withTiming,
 } from "react-native-reanimated";
+import { getInitials } from "@reactive-resume/utils/string";
 import { Button, IconButton } from "./button";
 import { Icon } from "./icon";
 import { haptics, useReducedMotion } from "./motion";
@@ -29,7 +30,8 @@ const android = Platform.OS === "android";
 
 export type ListRowProps = {
 	title: string;
-	subtitle?: string | undefined;
+	/** Strings use standard subtitle styling; an element owns its text layout. */
+	subtitle?: string | ReactElement | undefined;
 	/** An icon name, or any element (avatar, checkbox, thumbnail). */
 	leading?: IconName | ReactNode;
 	/** A value, switch or badge at the end. */
@@ -52,6 +54,7 @@ export type ListRowProps = {
 	divider?: boolean | undefined;
 };
 
+/** Strings share row typography; elements retain their own layout and truncation. */
 export function ListRow({
 	title,
 	subtitle,
@@ -163,9 +166,13 @@ export function ListRow({
 					{title}
 				</Text>
 				{subtitle ? (
-					<Text variant="callout" color={quiet}>
-						{subtitle}
-					</Text>
+					typeof subtitle === "string" ? (
+						<Text variant="callout" color={quiet}>
+							{subtitle}
+						</Text>
+					) : (
+						subtitle
+					)
 				) : null}
 				{stacked && (value || trailing) ? (
 					<View style={{ alignItems: "flex-start", gap: space.s1, paddingTop: space.s1 }}>{accessory}</View>
@@ -285,13 +292,78 @@ export type EmptyStateProps = {
 	action?: Action | undefined;
 	/** A second, quieter action under the first. */
 	secondaryAction?: Action | undefined;
+	/** Content that needs more than a button, such as the AI notice and its privacy line. */
+	children?: ReactNode;
+	/** `card` is the dashed first-run card; `compact` is a row. Defaults to the original unframed state. */
+	variant?: "default" | "card" | "compact" | undefined;
 };
 
-export function EmptyState({ icon, title, message, action, secondaryAction }: EmptyStateProps) {
+export function EmptyState({
+	icon,
+	title,
+	message,
+	action,
+	secondaryAction,
+	children,
+	variant = "default",
+}: EmptyStateProps) {
 	const { colors, radius, size, space } = useTheme();
+	const compact = variant === "compact";
+	const card = variant === "card";
+
+	if (compact) {
+		return (
+			<View
+				style={{
+					flexDirection: "row",
+					flexWrap: "wrap",
+					alignItems: "center",
+					justifyContent: "space-between",
+					gap: space.s2,
+					paddingVertical: space.s3,
+					paddingHorizontal: space.s4,
+				}}
+			>
+				<View style={{ flexShrink: 1, gap: space.s1 }}>
+					<Text variant="callout" color="ink">
+						{title}
+					</Text>
+					{message ? (
+						<Text variant="callout" color="ink2">
+							{message}
+						</Text>
+					) : null}
+				</View>
+				{action ? <Button size="sm" variant="secondary" label={action.label} onPress={action.onPress} /> : null}
+				{secondaryAction ? (
+					<Button variant="link" label={secondaryAction.label} onPress={secondaryAction.onPress} />
+				) : null}
+			</View>
+		);
+	}
 
 	return (
-		<View style={{ alignItems: "center", gap: space.s3, paddingVertical: space.s10, paddingHorizontal: space.s6 }}>
+		<View
+			style={
+				card
+					? {
+							alignItems: "center",
+							gap: space.s2,
+							paddingVertical: space.s6,
+							paddingHorizontal: space.s6,
+							borderRadius: radius.rLg,
+							borderWidth: 1,
+							borderStyle: "dashed",
+							borderColor: colors.line2,
+						}
+					: {
+							alignItems: "center",
+							gap: space.s3,
+							paddingVertical: space.s10,
+							paddingHorizontal: space.s6,
+						}
+			}
+		>
 			{icon ? (
 				<View
 					style={{
@@ -315,6 +387,7 @@ export function EmptyState({ icon, title, message, action, secondaryAction }: Em
 					{message}
 				</Text>
 			) : null}
+			{children ? <View style={{ alignSelf: "stretch", alignItems: "center", gap: space.s3 }}>{children}</View> : null}
 			{action ? (
 				<View style={{ alignSelf: "center" }}>
 					<Button label={action.label} onPress={action.onPress} />
@@ -444,14 +517,8 @@ export type AvatarProps = {
 
 export function Avatar({ name, uri, size = 40 }: AvatarProps) {
 	const { colors, fonts, motion, radius } = useTheme();
-	// Array.from keeps surrogate pairs whole, so a name starting with an emoji or a supplementary-plane letter
-	// does not show half a character.
-	const initials = name
-		.split(/\s+/)
-		.filter(Boolean)
-		.slice(0, 2)
-		.map((part) => Array.from(part)[0]?.toLocaleUpperCase())
-		.join("");
+	// Shared with web: whole characters, and joining scripts (Arabic) kept apart so the letters don't read as a word.
+	const initials = getInitials(name.replace(/\s+/g, " ").trim());
 	const circle = { width: size, height: size, borderRadius: radius.rLg };
 
 	if (uri)

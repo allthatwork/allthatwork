@@ -9,6 +9,12 @@ const dbMock = vi.hoisted(() => ({
 	transaction: vi.fn(),
 	update: vi.fn(),
 }));
+const proposalApplicationsMock = vi.hoisted(() => vi.fn(async () => undefined));
+vi.mock("../agent/proposal-applications", () => ({
+	saveProposalApplications: proposalApplicationsMock,
+	assertCurrentClientWrite: vi.fn(async () => undefined),
+	CurrentClientRequired: class extends Error {},
+}));
 const compareMock = vi.hoisted(() => vi.fn());
 const publishResumeUpdatedMock = vi.hoisted(() => vi.fn());
 const grantResumeAccessMock = vi.hoisted(() => vi.fn());
@@ -82,6 +88,12 @@ vi.mock("./access", () => ({
 vi.mock("../storage/service", () => ({
 	getStorageService: () => ({ delete: vi.fn() }),
 }));
+const cleanupMock = vi.hoisted(() => ({
+	enqueueStorageCleanup: vi.fn(),
+	runStorageCleanup: vi.fn(async () => ({ completed: 0, missing: 0, failed: 0, partial: 0, abandoned: 0 })),
+	reportStorageCleanupSummary: vi.fn(),
+}));
+vi.mock("../storage/cleanup", () => cleanupMock);
 // Version history and slugs have their own tests; here they only need to be called at the right moments.
 const versionHistoryMock = vi.hoisted(() => ({
 	writeVersion: vi.fn(),
@@ -95,10 +107,13 @@ vi.mock("./version-history", () => versionHistoryMock);
 const recordSlugChangeMock = vi.hoisted(() => vi.fn());
 // The lookup by username and slug; its query is tested against real SQL in public-pdf.test.ts.
 const findResumeMock = vi.hoisted(() => vi.fn());
+const followNameWithSlugMock = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock("./slugs", () => ({
 	checkSlug: vi.fn(),
+	DEFAULT_SLUG_STEM: "resume",
 	findFreeSlug: vi.fn(async () => "generated-slug"),
 	findFreeRandomSlug: vi.fn(async () => "k3v9x2m7qa4p"),
+	followNameWithSlug: followNameWithSlugMock,
 	findResume: findResumeMock,
 	recordSlugChange: recordSlugChangeMock,
 }));
@@ -142,6 +157,7 @@ const createResumeRow = (data: ResumeData, updatedAt = new Date()) => ({
 	slug: "resume",
 	tags: [],
 	data,
+	aiOperationIds: [],
 	isPublic: false,
 	isLocked: false,
 	updatedAt,
@@ -151,7 +167,10 @@ const createResumeRow = (data: ResumeData, updatedAt = new Date()) => ({
 const createRestoreHarness = (currentData: ResumeData, restoredData: ResumeData) => {
 	const currentRow = createResumeRow(currentData);
 	dbMock.select.mockReturnValueOnce(createSelectChain([currentRow]));
-	versionHistoryMock.getVersion.mockImplementationOnce(async () => ({ data: parseStoredResumeData(restoredData) }));
+	versionHistoryMock.getVersion.mockImplementationOnce(async () => ({
+		data: parseStoredResumeData(restoredData),
+		aiOperationIds: [],
+	}));
 
 	const lockedSelect = createLockedSelectChain([
 		{
@@ -176,12 +195,15 @@ const createRestoreHarness = (currentData: ResumeData, restoredData: ResumeData)
 
 beforeEach(() => {
 	dbMock.select.mockReset();
+	proposalApplicationsMock.mockClear();
 	dbMock.transaction.mockReset();
 	dbMock.update.mockReset();
 	compareMock.mockReset();
 	publishResumeUpdatedMock.mockReset();
 	grantResumeAccessMock.mockReset();
 	for (const mock of Object.values(versionHistoryMock)) mock.mockReset();
+	for (const mock of Object.values(cleanupMock)) mock.mockReset();
+	cleanupMock.runStorageCleanup.mockResolvedValue({ completed: 0, missing: 0, failed: 0, partial: 0, abandoned: 0 });
 	versionHistoryMock.writeVersion.mockResolvedValue({ id: "v" });
 	versionHistoryMock.saveSessionVersion.mockResolvedValue(undefined);
 	recordSlugChangeMock.mockReset();
@@ -257,10 +279,33 @@ describe("update", () => {
 			} else {
 				await expect(resumeService.update(input)).resolves.toMatchObject({ id: "r1" });
 				expect(update.set).toHaveBeenCalledWith({ name: "Saved", autoName: false });
+				expect(followNameWithSlugMock).toHaveBeenCalledWith(expect.anything(), {
+					userId: "u1",
+					resumeId: "r1",
+					name: "Saved",
+				});
 				expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"], ["is_locked", false]]));
 			}
 		},
 	);
+
+	it("sends metadata-only Undo decisions through the same version-guarded transaction", async () => {
+		const updatedAt = new Date("2026-10-17T10:00:00.123Z");
+		const { tx, update } = updateHarness({ slug: "resume", updatedAt });
+		await resumeService.update({
+			id: "r1",
+			userId: "u1",
+			expectedUpdatedAt: updatedAt,
+			proposalApplications: { edit: false },
+		});
+		expect(update.set).toHaveBeenCalledWith({ updatedAt: expect.any(Date) });
+		expect(proposalApplicationsMock).toHaveBeenCalledWith(tx, {
+			userId: "u1",
+			document: { kind: "resume", id: "r1" },
+			applications: { edit: false },
+			conflict: expect.any(Function),
+		});
+	});
 
 	it("keeps the old address as a redirect when the slug changes", async () => {
 		const { tx, update } = updateHarness({ slug: "old-address" });
@@ -325,6 +370,8 @@ describe("update", () => {
 			await resumeService.update({ id: "r1", userId: "u1", name: "Renamed", slug: legacySlug });
 			// A name typed by hand also ends automatic naming. An unchanged address isn't written, so it stays not chosen.
 			expect(update.set).toHaveBeenCalledWith({ name: "Renamed", autoName: false });
+			// The given address wins over following the new name.
+			expect(followNameWithSlugMock).not.toHaveBeenCalled();
 			expect(recordSlugChangeMock).not.toHaveBeenCalled();
 		},
 	);
@@ -561,45 +608,103 @@ describe("delete", () => {
 		expect(selectWhere.mock.calls[0]?.[0]).not.toContainEqual(["trashed_at"]);
 		expect(deleteWhere).toHaveBeenCalledTimes(1);
 		expect(deleteWhere.mock.calls[0]?.[0]).not.toContainEqual(["trashed_at"]);
+		expect(cleanupMock.enqueueStorageCleanup).toHaveBeenCalledWith(expect.anything(), "u1", [
+			"uploads/u1/screenshots/r1",
+			"uploads/u1/pdfs/r1",
+		]);
+		expect(cleanupMock.runStorageCleanup).toHaveBeenCalledWith({
+			storageKeys: ["uploads/u1/screenshots/r1", "uploads/u1/pdfs/r1"],
+			limit: 2,
+		});
 	});
 });
+
+// Lock, password and linked-application writes read the row under a lock, check its version, then write.
+const fieldWrite = (existing: unknown[], written: unknown[] = []) => {
+	const select = createLockedSelectChain(existing);
+	const update = createUpdateChain(written);
+	const selectWhere = vi.fn((_condition: unknown) => ({ for: select.forUpdate }));
+	dbMock.transaction.mockImplementationOnce(async (callback: (tx: unknown) => Promise<unknown>) =>
+		callback({ select: () => ({ from: () => ({ where: selectWhere }) }), update: () => update.chain }),
+	);
+	return { update, selectWhere };
+};
+const revision = new Date("2026-01-01T00:00:00Z");
 
 describe.each([
 	{
 		name: "setPassword",
-		run: () => resumeService.setPassword({ id: "r1", userId: "u1", password: "newPassword123" }),
-		written: "hashed-password",
+		run: (expectedUpdatedAt?: Date) =>
+			resumeService.setPassword({ id: "r1", userId: "u1", password: "newPassword123", expectedUpdatedAt }),
+		written: { password: "hashed-password" },
+		refusesLocked: true,
 	},
-	{ name: "removePassword", run: () => resumeService.removePassword({ id: "r1", userId: "u1" }), written: null },
-])("$name", ({ run, written }) => {
-	it("writes the password when the resume is unlocked", async () => {
-		const update = createUpdateChain([{ id: "r1", updatedAt: new Date() }]);
-		dbMock.update.mockReturnValueOnce(update.chain);
+	{
+		name: "removePassword",
+		run: (expectedUpdatedAt?: Date) => resumeService.removePassword({ id: "r1", userId: "u1", expectedUpdatedAt }),
+		written: { password: null },
+		refusesLocked: true,
+	},
+	{
+		name: "setLocked",
+		run: (expectedUpdatedAt?: Date) =>
+			resumeService.setLocked({ id: "r1", userId: "u1", isLocked: true, expectedUpdatedAt }),
+		written: { isLocked: true },
+		refusesLocked: false,
+	},
+])("$name", ({ run, written, refusesLocked }) => {
+	it("writes the field and answers with the accepted revision", async () => {
+		const row = createResumeRow(defaultResumeData, new Date("2026-01-02T00:00:00Z"));
+		const { update } = fieldWrite([{ isLocked: false, updatedAt: revision }], [row]);
 
-		await expect(run()).resolves.toBeUndefined();
-		expect(update.set).toHaveBeenCalledWith({ password: written });
-		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"], ["is_locked", false]]));
+		await expect(run(revision)).resolves.toMatchObject({ id: "r1", updatedAt: row.updatedAt });
+		expect(update.set).toHaveBeenCalledWith(expect.objectContaining(written));
+		// A revision later than the one it builds on, even in the same millisecond.
+		const set = update.set.mock.calls[0]?.[0] as { updatedAt: Date };
+		expect(set.updatedAt.getTime()).toBeGreaterThan(revision.getTime());
+		expect(publishResumeUpdatedMock).toHaveBeenCalledWith(
+			expect.objectContaining({ resumeId: "r1", updatedAt: row.updatedAt.toISOString() }),
+		);
 	});
 
-	it.each([
-		{ code: "RESUME_LOCKED", rows: [{ id: "r1" }] },
-		{ code: "NOT_FOUND", rows: [] },
-	])("throws $code when no unlocked row matches", async ({ code, rows }) => {
-		dbMock.update.mockReturnValueOnce(createUpdateChain([]).chain);
-		dbMock.select.mockReturnValueOnce(createSelectChain(rows));
+	it("refuses a revision the caller hasn't seen", async () => {
+		const { update } = fieldWrite([{ isLocked: false, updatedAt: new Date("2026-01-03T00:00:00Z") }]);
 
-		await expect(run()).rejects.toMatchObject({ code });
+		await expect(run(revision)).rejects.toMatchObject({ code: "RESUME_VERSION_CONFLICT" });
+		expect(update.set).not.toHaveBeenCalled();
 	});
 
-	it("does not update password for a resume in Trash", async () => {
-		const update = createUpdateChain([]);
-		dbMock.update.mockReturnValueOnce(update.chain);
-		const selectWhere = vi.fn((_cond: unknown) => Promise.resolve([]));
-		dbMock.select.mockReturnValueOnce({ from: () => ({ where: selectWhere }) });
+	it("writes a revision later than the current one even when the clock hasn't moved on", async () => {
+		const future = new Date(Date.now() + 60_000);
+		const { update } = fieldWrite([{ isLocked: false, updatedAt: future }], [createResumeRow(defaultResumeData)]);
+
+		await run(future);
+		const set = update.set.mock.calls[0]?.[0] as { updatedAt: Date };
+		expect(set.updatedAt.getTime()).toBe(future.getTime() + 1);
+	});
+
+	it("writes without a version check when the caller sends none", async () => {
+		const row = createResumeRow(defaultResumeData);
+		const { update } = fieldWrite([{ isLocked: false, updatedAt: new Date("2026-01-03T00:00:00Z") }], [row]);
+
+		await expect(run()).resolves.toMatchObject({ id: "r1" });
+		expect(update.set).toHaveBeenCalledWith(expect.objectContaining(written));
+	});
+
+	it(`${refusesLocked ? "refuses" : "allows"} a locked resume`, async () => {
+		const row = createResumeRow(defaultResumeData);
+		fieldWrite([{ isLocked: true, updatedAt: revision }], [row]);
+
+		if (refusesLocked) await expect(run()).rejects.toMatchObject({ code: "RESUME_LOCKED" });
+		else await expect(run()).resolves.toMatchObject({ id: "r1" });
+	});
+
+	it("does not write to a resume in Trash", async () => {
+		const { update, selectWhere } = fieldWrite([]);
 
 		await expect(run()).rejects.toMatchObject({ code: "NOT_FOUND" });
-		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"]]));
 		expect(selectWhere).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"]]));
+		expect(update.set).not.toHaveBeenCalled();
 	});
 });
 
@@ -723,17 +828,5 @@ describe("getById", () => {
 			code: "NOT_FOUND",
 		});
 		expect(where.mock.calls[0]?.[0]).not.toContainEqual(["trashed_at"]);
-	});
-});
-
-describe("setLocked", () => {
-	it("does not allow locking or unlocking a resume in Trash", async () => {
-		const update = createUpdateChain([]);
-		dbMock.update.mockReturnValueOnce(update.chain);
-
-		await expect(resumeService.setLocked({ id: "r1", userId: "u1", isLocked: true })).rejects.toMatchObject({
-			code: "NOT_FOUND",
-		});
-		expect(update.where).toHaveBeenCalledWith(expect.arrayContaining([["trashed_at"]]));
 	});
 });

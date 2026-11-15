@@ -6,6 +6,7 @@ import { Plural, Trans } from "@lingui/react/macro";
 import { useState } from "react";
 import { INTERVIEW_KINDS } from "@reactive-resume/schema/applications/data";
 import { Button } from "@reactive-resume/ui/components/button";
+import { EmptyState } from "@reactive-resume/ui/components/empty-state";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
 import { cn } from "@reactive-resume/utils/style";
@@ -15,6 +16,7 @@ import {
 	formatDuration,
 	groupByDay,
 	interviewKindOf,
+	interviewTypeLabel,
 	monthGrid,
 	upcomingInterviews,
 } from "../interviews";
@@ -39,10 +41,17 @@ type ApplicationCalendarProps = {
 	// Every application, offered by the "schedule interview" picker.
 	allApplications: ApplicationSummary[];
 	onOpen: (application: ApplicationSummary) => void;
+	onClearFilters?: (() => void) | undefined;
 };
 
-export function ApplicationCalendar({ compact, applications, allApplications, onOpen }: ApplicationCalendarProps) {
-	const { locale, timeZone, time } = useCareerTime();
+export function ApplicationCalendar({
+	compact,
+	applications,
+	allApplications,
+	onOpen,
+	onClearFilters,
+}: ApplicationCalendarProps) {
+	const { locale, timeZone, plainTime, timeRange } = useCareerTime();
 	const now = useNow();
 	const todayKey = dayKey(now, timeZone);
 	// Grid dates are civil days carried in UTC; interview start/end remain absolute instants.
@@ -100,10 +109,25 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 			>
 				<div className="flex flex-wrap items-center gap-x-3 gap-y-2">
 					<div className="flex flex-wrap items-baseline gap-2">
-						<h2 className="text-lg font-semibold capitalize">{monthFormat.format(month)}</h2>
-						<span className="text-sm text-ink-3">
-							<Plural value={monthCount} _0="No interviews" one="# interview" other="# interviews" />
-						</span>
+						{/* On phones the list below shows every upcoming interview until a month is picked: title it that way,
+						    so the header never says "No interviews" above a list of them. */}
+						{compact && !monthAgenda ? (
+							<>
+								<h2 className="text-lg font-semibold">
+									<Trans>Upcoming</Trans>
+								</h2>
+								<span className="text-sm text-ink-3">
+									<Plural value={upcoming.length} _0="No interviews" one="# interview" other="# interviews" />
+								</span>
+							</>
+						) : (
+							<>
+								<h2 className="text-lg font-semibold capitalize">{monthFormat.format(month)}</h2>
+								<span className="text-sm text-ink-3">
+									<Plural value={monthCount} _0="No interviews" one="# interview" other="# interviews" />
+								</span>
+							</>
+						)}
 					</div>
 
 					<div className="ms-auto flex flex-wrap items-center gap-1">
@@ -116,7 +140,8 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 						<Button size="icon-sm" variant="ghost" title={t`Next month`} onClick={() => shiftMonth(1)}>
 							<Icon name="caret-right" size={16} />
 						</Button>
-						<Button size="sm" className="ms-2" onClick={() => schedule()}>
+						{/* Secondary: the page's one accent-filled action is Save job, in the header. */}
+						<Button size="sm" variant="secondary" className="ms-2" onClick={() => schedule()}>
 							<Icon name="calendar-plus" size={16} />
 							<Trans>Schedule interview</Trans>
 						</Button>
@@ -190,7 +215,7 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 											<InterviewChip
 												key={item.interview.id}
 												item={item}
-												time={time(item.start)}
+												time={plainTime(item.start)}
 												onOpen={() => edit(item)}
 											/>
 										))}
@@ -200,7 +225,7 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 													render={
 														<button
 															type="button"
-															className="self-start rounded-md px-1.5 py-0.5 text-[11px] text-ink-3 transition-colors hover:bg-sunken hover:text-ink"
+															className="max-w-full self-start rounded-md px-1.5 py-0.5 text-xs text-ink-3 transition-colors hover:bg-sunken hover:text-ink"
 														/>
 													}
 												>
@@ -212,7 +237,7 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 														<InterviewChip
 															key={item.interview.id}
 															item={item}
-															time={time(item.start)}
+															time={plainTime(item.start)}
 															onOpen={() => edit(item)}
 														/>
 													))}
@@ -231,7 +256,7 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 						{INTERVIEW_KINDS.map((kind) => (
 							<span key={kind.value} className="flex items-center gap-1.5">
 								<span className="size-2 rounded-sm" style={{ background: kind.color }} />
-								{kind.label}
+								{interviewTypeLabel(kind.value)}
 							</span>
 						))}
 					</div>
@@ -239,28 +264,33 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 			</section>
 
 			<aside className="flex min-w-0 shrink-0 flex-col gap-4 lg:w-80 lg:overflow-y-auto" data-testid="interview-agenda">
-				<h3 className="text-sm font-semibold">
+				<h2 className="text-sm font-semibold">
 					{monthAgenda ? <Trans>Interviews</Trans> : <Trans>Upcoming interviews</Trans>}
-				</h3>
+				</h2>
 
 				{agenda.length === 0 ? (
-					<div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line px-4 py-8 text-center">
-						<div className="flex size-10 items-center justify-center rounded-sm bg-sunken">
-							<Icon name="calendar-blank" size={20} className="text-ink-3" />
-						</div>
-						<div className="space-y-1">
-							<p className="text-sm font-medium">
-								<Trans>Nothing scheduled yet</Trans>
-							</p>
-							<p className="text-xs text-ink-3">
+					<EmptyState
+						title={<Trans>Nothing scheduled yet</Trans>}
+						description={
+							onClearFilters ? (
+								<Trans>Try different words or clear your filters.</Trans>
+							) : (
 								<Trans>Add screening calls and technical interviews to see them here and on the calendar.</Trans>
-							</p>
-						</div>
-						<Button size="sm" variant="secondary" onClick={() => schedule()}>
-							<Icon name="calendar-plus" size={16} />
-							<Trans>Schedule interview</Trans>
-						</Button>
-					</div>
+							)
+						}
+						action={
+							onClearFilters ? (
+								<Button size="sm" variant="secondary" onClick={onClearFilters}>
+									<Trans>Clear filters</Trans>
+								</Button>
+							) : (
+								<Button size="sm" variant="secondary" onClick={() => schedule()}>
+									<Icon name="calendar-plus" size={16} />
+									<Trans>Schedule interview</Trans>
+								</Button>
+							)
+						}
+					/>
 				) : (
 					agendaByDay.map((group) => {
 						const first = group[0];
@@ -272,7 +302,7 @@ export function ApplicationCalendar({ compact, applications, allApplications, on
 									<UpcomingCard
 										key={item.interview.id}
 										item={item}
-										timeRange={`${time(item.start)} – ${time(item.end)}`}
+										timeRange={timeRange(item.start, item.end)}
 										locale={locale}
 										onEdit={() => edit(item)}
 										onOpenApplication={() => onOpen(item.application)}
@@ -318,9 +348,11 @@ function UpcomingCard({ item, timeRange, locale, onEdit, onOpenApplication }: Up
 					<span className="font-medium">{timeRange}</span>
 					<span className="text-ink-3">{formatDuration(item.interview.durationMinutes, locale)}</span>
 				</span>
-				<span className="mt-1 block truncate font-semibold">{item.application.company}</span>
+				<span dir="auto" className="mt-1 block truncate font-semibold">
+					{item.application.company}
+				</span>
 				<span className="block truncate text-xs text-ink-3">
-					{kind?.label ?? item.interview.kind} · {item.application.role}
+					{kind?.label ?? item.interview.kind} · <bdi>{item.application.role}</bdi>
 				</span>
 				{item.interview.location && (
 					<span className="mt-1.5 flex items-center gap-1 text-xs text-ink-3">
@@ -353,14 +385,15 @@ function InterviewChip({ item, time, onOpen }: InterviewChipProps) {
 		<button
 			type="button"
 			title={`${time} · ${kind?.label ?? item.interview.kind} · ${item.application.company} — ${item.application.role}`}
-			className="flex min-w-0 items-center gap-1.5 rounded-md border-s-2 bg-sunken/60 px-1.5 py-0.5 text-start text-[11px] leading-tight transition-colors hover:bg-sunken max-sm:justify-center max-sm:border-s-0 max-sm:bg-transparent"
-			style={{ borderInlineStartColor: kind?.color }}
+			className="flex min-w-0 items-center gap-1.5 rounded-md bg-sunken/60 px-1.5 py-0.5 text-start text-xs leading-tight transition-colors hover:bg-sunken max-sm:justify-center max-sm:bg-transparent"
 			onClick={onOpen}
 		>
-			<span className="size-2 shrink-0 rounded-sm sm:hidden" style={{ background: kind?.color }} />
+			<span className="size-2 shrink-0 rounded-sm" style={{ background: kind?.color }} />
 			<span className="flex min-w-0 items-baseline gap-1.5 max-sm:hidden">
 				<span className="shrink-0 text-ink-3 tabular-nums">{time}</span>
-				<span className="truncate font-medium">{item.application.company}</span>
+				<span dir="auto" className="truncate font-medium">
+					{item.application.company}
+				</span>
 			</span>
 		</button>
 	);

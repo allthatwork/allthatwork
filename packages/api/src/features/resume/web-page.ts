@@ -9,6 +9,7 @@ import { publicResumePath } from "@reactive-resume/resume/sharing";
 import { verifiedDomainColumn } from "../custom-domain/service";
 import { createPreviewToken, hasResumeAccess, isValidPreviewToken } from "./access";
 import {
+	isOwner,
 	ownerIsNotBanned,
 	publicResumeData,
 	requiresPassword,
@@ -23,11 +24,12 @@ import { countVisit } from "./view-dedup";
 export type { ResumeMatch } from "./slugs";
 
 export type PublicWebPage =
-	| { status: "unavailable" }
+	/** Off, unknown or trashed; `ownerResumeId` when the viewer owns the unpublished resume at this address. */
+	| { status: "unavailable"; ownerResumeId?: string }
 	/** Locked behind a password; `locale` is the resume's language, for the form. */
 	| { status: "password"; locale: string }
-	/** A previous slug or username: the page lives at `username`/`slug` now. */
-	| { status: "moved"; username: string; slug: string }
+	/** A previous slug, or a username the owner changed in the last 30 days: the page lives at `username`/`slug` now. */
+	| { status: "moved"; username: string; slug: string; isPrimary: boolean; movedBy: "username" | "slug" }
 	| {
 			status: "ok";
 			username: string;
@@ -40,6 +42,7 @@ export type PublicWebPage =
 			/** The verified custom domain this primary resume opens at, which search engines are pointed to. */
 			customDomain: string | null;
 			showDownloadButtons: boolean;
+			allowWordDownload: boolean;
 			hasPassword: boolean;
 			/** Listed in search engines: the owner allows it, no password guards it, and it isn't a preview. */
 			indexable: boolean;
@@ -70,13 +73,23 @@ export async function loadPublicWebPage(input: {
 			isPrimary: schema.resume.isPrimary,
 			passwordHash: schema.resume.password,
 			showDownloadButtons: schema.resume.showDownloadButtons,
+			allowWordDownload: schema.resume.allowWordDownload,
 			showInSearchEngines: schema.resume.showInSearchEngines,
 			hideContactDetails: schema.resume.hideContactDetails,
 			customDomain: verifiedDomainColumn(),
 		},
 		previewToken ? undefined : eq(schema.resume.isPublic, true),
 	);
-	if (!resume) return { status: "unavailable" };
+	if (!resume) {
+		// The owner opening their own unpublished address is told so, with the way to publish it; visitors aren't.
+		if (previewToken) return { status: "unavailable" };
+		const unpublished = await findResume(match, { id: schema.resume.id, userId: schema.resume.userId }, undefined);
+		if (!unpublished) return { status: "unavailable" };
+		const viewer = await resolveViewer(input.requestHeaders);
+		return isOwner(unpublished, viewer)
+			? { status: "unavailable", ownerResumeId: unpublished.id }
+			: { status: "unavailable" };
+	}
 
 	const hasPassword = resume.passwordHash !== null;
 	const page = ({ preview }: { preview: boolean }): PublicWebPage => ({
@@ -88,6 +101,7 @@ export async function loadPublicWebPage(input: {
 		isPrimary: resume.isPrimary,
 		customDomain: resume.isPrimary ? resume.customDomain : null,
 		showDownloadButtons: resume.showDownloadButtons,
+		allowWordDownload: resume.allowWordDownload,
 		hasPassword,
 		// A preview is never listed, whatever the switch says.
 		indexable: resume.showInSearchEngines && !hasPassword && !preview,
@@ -96,10 +110,18 @@ export async function loadPublicWebPage(input: {
 	// The owner's preview link: the page as visitors will see it, published or not, without counting or indexing.
 	if (previewToken)
 		return isValidPreviewToken(previewToken, resume.id) ? page({ preview: true }) : { status: "unavailable" };
-	// A previous slug, or a previous username (kept 30 days after a change), moves to the current address.
-	const movedSlug = "slug" in match && resume.slug !== match.slug;
-	const movedUser = "username" in match && resume.username !== match.username.toLowerCase();
-	if (movedSlug || movedUser) return { status: "moved", username: resume.username, slug: resume.slug };
+	// A previous slug, or a username the owner changed in the last 30 days: send visitors to the current address.
+	// Only a slug move is a stable address; an old username expires and can later belong to someone else, so it must
+	// not be cached as a permanent redirect. When both moved, the username is the one that can be reclaimed.
+	const movedUsername = "username" in match && resume.username !== match.username.toLowerCase();
+	if (("slug" in match && resume.slug !== match.slug) || movedUsername)
+		return {
+			status: "moved",
+			username: resume.username,
+			slug: resume.slug,
+			isPrimary: "primary" in match,
+			movedBy: movedUsername ? "username" : "slug",
+		};
 
 	const viewer = await resolveViewer(input.requestHeaders);
 	if (requiresPassword(resume, viewer) && !hasResumeAccess(input.requestHeaders, resume.id, resume.passwordHash))

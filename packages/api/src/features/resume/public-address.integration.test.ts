@@ -138,11 +138,16 @@ describe.skipIf(!databaseUrl)("public addresses and old usernames", () => {
 		]);
 		await getDb().update(tables.user).set({ username: "alice" }).where(eq(tables.user.id, "alice"));
 
-		// An expired redirect finds nothing.
+		// After 30 days the old name finds nothing: both the fork's redirect and upstream's released-name record (written
+		// by a database trigger on every username change) have run out.
 		await getDb()
 			.update(tables.usernameRedirect)
 			.set({ expiresAt: new Date(Date.now() - 1000) })
 			.where(eq(tables.usernameRedirect.username, "alexandru"));
+		await getDb()
+			.update(tables.releasedUsername)
+			.set({ releasedAt: new Date(Date.now() - 31 * 86_400_000) })
+			.where(eq(tables.releasedUsername.username, "alexandru"));
 		await expect(visit("alexandru", slug)).rejects.toMatchObject({ code: "NOT_FOUND" });
 
 		// Another account that takes a freed name gets its own links, not alice's.
