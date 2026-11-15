@@ -21,6 +21,7 @@ describe("rewrite suggestions", () => {
 		return reviewResumeText({
 			...atsReviewInputSchema.parse({ extractedText: "Resume" }),
 			maxSuggestions,
+			usage: { userId: "u", operationId: "o", action: "writing-review", providerId: "p", label: "L" },
 			provider: "openai",
 			model: "m",
 			apiKey: "k",

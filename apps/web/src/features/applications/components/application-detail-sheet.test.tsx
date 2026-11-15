@@ -21,6 +21,7 @@ vi.mock("@/libs/orpc/client", () => {
 	return {
 		orpc: {
 			applications: {
+				key: () => ["applications"],
 				getById: endpoint("getById"),
 				list: endpoint("list"),
 				listSummary: endpoint("listSummary"),
@@ -30,9 +31,17 @@ vi.mock("@/libs/orpc/client", () => {
 				tags: endpoint("tags"),
 				update: endpoint("update", api.update),
 				delete: endpoint("delete"),
+				trash: endpoint("trash"),
+				logFollowUp: endpoint("logFollowUp"),
 			},
-			career: { profile: endpoint("profile"), savedItems: endpoint("savedItems") },
-			documents: { list: endpoint("documents") },
+			career: {
+				key: () => ["career"],
+				profile: endpoint("profile"),
+				savedItems: endpoint("savedItems"),
+				workspace: endpoint("workspace"),
+			},
+			documents: { key: () => ["documents"], list: endpoint("documents") },
+			agent: { key: () => ["agent"] },
 		},
 	};
 });
@@ -51,6 +60,7 @@ vi.mock("@reactive-resume/ui/components/toast", () => ({ toast: { add: vi.fn() }
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({ children }: { children: ReactNode }) => <a href="#test-link">{children}</a>,
 	useNavigate: () => vi.fn(),
+	useRouter: () => ({ navigate: vi.fn() }),
 }));
 
 import { ApplicationDetailSheet } from "./application-detail-sheet";
@@ -114,9 +124,17 @@ const mount = (application: Application) => {
 			<I18nProvider i18n={i18n}>{children}</I18nProvider>
 		</QueryClientProvider>
 	);
-	return render(<ApplicationDetailSheet application={application} onOpenChange={vi.fn()} onEditDetails={vi.fn()} />, {
-		wrapper,
-	});
+	return render(
+		<ApplicationDetailSheet
+			application={application}
+			returnFocus={() => null}
+			onOpenChange={vi.fn()}
+			onEditDetails={vi.fn()}
+		/>,
+		{
+			wrapper,
+		},
+	);
 };
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -135,9 +153,7 @@ it("marks a Saved job applied in one click, without a dialog", async () => {
 	expect(api.update.mock.calls[0]?.[0]).toEqual({ id: saved.id, status: "applied" });
 	expect(screen.queryByRole("dialog", { name: "Mark as applied" })).toBeNull();
 	// The answers it saved show in the workspace without waiting for the cache to go stale.
-	await waitFor(() =>
-		expect(vi.mocked(clients[0]?.invalidateQueries)).toHaveBeenCalledWith({ queryKey: ["savedItems"] }),
-	);
+	await waitFor(() => expect(vi.mocked(clients[0]?.invalidateQueries)).toHaveBeenCalledWith({ queryKey: ["career"] }));
 	expect(screen.queryByText("Confirm applied")).toBeNull();
 });
 

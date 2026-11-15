@@ -9,12 +9,15 @@ For focused work on one job, open its details and select **Open workspace**. [Ca
 
 To open it, select **Applications** in the sidebar (on a phone, it's in the bottom tab bar).
 
-<Frame caption="The Applications page in the List view, with the follow-up reminder at the top">
+<Frame caption="Next steps and follow-up reminders in Applications">
   <img
     src="/images/guides/tracking-job-applications/applications-list-view.webp"
     alt="Applications page with the Board, List, Insights and Calendar tabs beside the title, a follow-up reminder banner, the search field and filters with Sort and Columns at the end, and applications grouped under Interview, Screening and Applied"
   />
 </Frame>
+
+Interview and activity times use your interface language’s 12- or 24-hour clock.
+Their timezone follows **Settings → Preferences**.
 
 ## How stages work
 
@@ -29,7 +32,7 @@ Every application sits in one stage. The first five stages form a pipeline you m
 | **Offer**     | You received an offer.                                                   |
 | **Closed**    | The application ended, whatever the outcome.                             |
 
-You can close an application from any stage. Closing asks for a reason (**Not selected**, **I withdrew**, **Accepted another offer** or **No response**), which Insights uses later. Closed applications are hidden until you add **Closed** in the **Stage** filter (see [Finding applications](#finding-applications)). See [Managing an application](/guides/managing-an-application#closing-an-application).
+You can close an application from any stage. Closing asks for a reason (**Accepted offer**, **Not selected**, **I withdrew**, **Accepted another offer** or **No response**), which Insights uses later. Closing from **Offer** starts on **Accepted offer**. Closed applications are hidden until you add **Closed** in the **Stage** filter (see [Finding applications](#finding-applications)). See [Managing an application](/guides/managing-an-application#closing-an-application).
 
 <Note>
   When an application with a linked resume or letter reaches **Applied** or a later stage, Reactive Resume saves a copy
@@ -52,7 +55,7 @@ Use the tabs beside the **Applications** title to switch views. Your choice is k
     </Frame>
 
     <Frame caption="A card's menu, with Move to… open">
-      <img src="/images/guides/tracking-job-applications/board-card-move-to-menu.webp" alt="Card menu with Move to…, Close… and Delete…, and the Move to submenu listing Saved, Applied, Screening, Interview and Offer" />
+      <img src="/images/guides/tracking-job-applications/board-card-move-to-menu.webp" alt="Card menu with Move to…, Mark as closed… and Delete…, and the Move to submenu listing Saved, Applied, Screening, Interview and Offer" />
     </Frame>
 
   </Tab>
@@ -83,6 +86,27 @@ Use the tabs beside the **Applications** title to switch views. Your choice is k
 Your sort is saved to your account, so the page opens with it anywhere. It's also in the page address, so a link with a sort opens with that sort. Calendar and Insights don't use it.
 
 On phones, the page shows **List**, **Insights** and **Calendar** (it opens on List; Calendar lists upcoming interviews by day, see [Scheduling interviews](/guides/scheduling-interviews#in-a-phone-browser)), and list rows show the company and next step on a second line. **Sort** is the icon button after **Filters**; the List's columns can't be changed there.
+
+## Keyboard triage in List
+
+In the web app, use <kbd>Tab</kbd> to focus an application's role button. Its outline shows which application receives shortcuts. Moving focus outside the row stops bare-key triage.
+
+| Key                         | Action                                                                                                                                                                                               |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <kbd>j</kbd> / <kbd>k</kbd> | Focus the next / previous displayed application. Stops at the ends; follows sorting, filters and expanded groups.                                                                                    |
+| <kbd>Enter</kbd>            | Open the focused application's details.                                                                                                                                                              |
+| <kbd>1</kbd>–<kbd>5</kbd>   | Move to **Saved**, **Applied**, **Screening**, **Interview** or **Offer**, respectively, using that category's default stage. **Undo** cancels the pending move; a newer stage saved elsewhere wins. |
+| <kbd>x</kbd>                | Toggle the focused application in the existing bulk selection.                                                                                                                                       |
+| <kbd>f</kbd>                | Record **Followed up** for an open application beyond Saved. Sends no message; see [Managing an application](/guides/managing-an-application).                                                       |
+
+Typing in a field or editor, composing text, modifier chords, and open dialogs, menus or sheets do not trigger background triage. Holding a command key does not repeat stage, selection or contact actions. A hidden or removed application cannot receive the next action.
+
+<Frame caption="The role button's outline identifies keyboard focus; x selected the same fictional application for bulk actions.">
+  <img
+    src="/images/guides/career/applications-keyboard-triage.png"
+    alt="Fictional Cedar Platform engineer in Interview with an outlined role button, checked selection and one selected in the bulk toolbar"
+  />
+</Frame>
 
 ## Finding applications
 
@@ -135,34 +159,54 @@ A saved view is a name for a set of filters, a sort and the List's columns, so a
 
 The Board and Calendar follow a view's filters, and the Board its sort too; the columns only matter on the List. Insights hides **Views**, as it hides the filters. On phones, **Views** sits at the end of the tabs' line and opens a sheet with the same menu; phones have no column picker, so a view's columns only show on a wider window. Your views are in **Export everything** and come back with the account import.
 
+Press <kbd>/</kbd> with an Applications view focused, outside a text field, to focus search. Open sheets and alerts keep keyboard focus.
+Rows and board cards show up to two of an application's tags, with a count for the rest. Select a tag to add it to the **Tags** filter without leaving the list.
+
 ## Acting on several applications at once
 
-In the List view on a computer or tablet, select the checkboxes next to the applications you want. A bar appears at the bottom of the page with:
+In the List view on a computer or tablet, select the checkboxes next to the applications you want. The checkbox in the table header selects every row in the expanded stages, or clears them; it shows a partial state while only some are selected. After you select at least one row, a bar appears at the bottom of the page with:
 
+- **Select all** to add every matching application in expanded stages
+- **Tags…** to add the same tag to each
 - **Move to…** to move them all to one stage
-- **Add tag** to add the same tag to each
 - **Close…** to close them all with one reason
-- **Delete…** to delete them permanently (you're asked to confirm)
-- **Clear** to deselect
+- **Clear selection** (×) to deselect
+- **Move to Trash** to move them to Trash, where they stay for 30 days
 
-<Frame caption="Two applications selected, with the bulk actions bar">
+<Frame caption="Act on selected applications">
   <img
-    src="/images/guides/tracking-job-applications/list-bulk-actions-bar.webp"
-    alt="Two application rows checked in the List view and a dark bar reading 2 selected with Move to…, Add tag, Close…, Delete… and Clear"
+    src="/images/guides/tracking-job-applications/list-bulk-actions-bar.png"
+    alt="Five fictional applications with every visible row checked from the header checkbox, above a selection bar with 5 selected, Tags…, Move to…, Close…, clear and Move to Trash"
   />
 </Frame>
+
+Bulk moves and keyboard triage show the new stage and **Undo** once the pending move is ready. They're saved when the message goes away, or when you reload or close the tab; **Undo** puts the selected applications back where they were, without recording a stage change. If you move one of them again before then, here or on another device, that later move stays, even if it moved away and back to the same stage: the bulk move leaves it and says so, and **Undo** leaves it too. Other edits, such as a note, don't stop the move. If you move the same applications again before the first move is saved, or while a move of one of them from its own menu or details, **Mark as applied**, or a message's changes are still being saved, the later move is saved after the earlier one, so it's the one that stays. Tags and moves to Trash are saved straight away.
+
+<Frame caption="The fictional application shows Offer while Undo can still cancel the pending move.">
+  <img
+    src="/images/guides/tracking-job-applications/stage-move-undo.png"
+    alt="Fictional Cedar Platform engineer in Offer with a Moved to Offer message and Undo button"
+  />
+</Frame>
+
+You can act on up to 200 applications at once. Larger selections show a reminder; deselect rows or narrow the search before choosing an action. The list leaves room to scroll its final rows above the selection bar, including when its buttons wrap.
 
 Selection follows the visible rows. Filtering out a stage, collapsing a stage or changing the search removes hidden selections before a bulk action.
 
 ## Follow-up reminders
 
-When an application has been at **Applied** for 10 days or more without a reply, a reminder appears above the list for the one that has waited longest, for example "Harborlight Labs: no reply for 17 days." Select **Open** to go to that application, or **×** to dismiss the reminder. Dismissing is remembered in this browser, so that application's reminder doesn't come back here.
+A reminder appears above the list when applications owe a follow-up: the follow-up date you set is due, an application has been at **Applied** or **Screening** for 10 days without a reply, or 10 days have passed since its last recorded interview ended. Ten days is the default; your own number from **Settings → Preferences → Reminders** applies everywhere.
+
+- With one, the reminder names it, for example "Harborlight Labs: no reply for 17 days." Select **Open** to go to that application.
+- With several, it counts them, for example "8 applications need a follow-up." Select **Show** to filter the list to them (the **Needs attention** filter, set to late replies and due follow-ups); **Clear all** returns to the full list.
+
+Select **×** to dismiss the reminder. Dismissing is remembered on this device, so those applications don't come back in it here. The same rules feed **Needs you** in [Career → Today](/guides/career-overview), which also lists interviews in the next week and offers to decide.
 
 To wait longer before the reminder, or to stop these reminders altogether, go to **Settings → Preferences → Reminders**. See [Choose your reminders](/guides/changing-appearance-and-language#choose-your-reminders).
 
 ## Opening Applications from anywhere
 
-Press <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd> on Windows and Linux) and choose **Applications** to go to the page or to search your applications by company or role. Run **New application** to open the add dialog. See [Using the command bar](/guides/using-the-command-bar).
+Press <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd> on Windows and Linux) and type a company or role to find an application from the first list, or choose **Applications** to go to the page. Run **Save job** to open the add dialog. See [Using the command bar](/guides/using-the-command-bar).
 
 ## Related guides
 
@@ -182,3 +226,12 @@ Press <kbd>⌘</kbd> <kbd>K</kbd> (<kbd>Ctrl</kbd> <kbd>K</kbd> on Windows and L
 </CardGroup>
 
 You can also manage applications from an AI client over MCP. See [Managing applications with MCP](/guides/managing-applications-with-mcp).
+
+<Frame caption="German application labels describe closed applications, commands, and attached documents. This example is fictional.">
+  <img
+    src="/images/guides/tracking-job-applications/german-contextual-labels.png"
+    alt="German Applications page for Maya Chen, showing Accessibility Engineer at fictional Lumen Workshop, Geschlossene Bewerbungen anzeigen, and Keine Dokumente angehängt"
+  />
+</Frame>
+The dates you choose for stage history do not change which move happened last. After retrying a submission or message
+change whose response was lost, reload the list before moving it again.

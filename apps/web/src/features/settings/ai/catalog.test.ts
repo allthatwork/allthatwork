@@ -1,6 +1,72 @@
 import type { ModelSuggestions } from "./catalog";
 import { expect, it, vi } from "vite-plus/test";
-import { contextWindow, loadModelSuggestions, suggestedModel } from "./catalog";
+import { contextWindow, describeTest, loadModelSuggestions, providerDefaults, suggestedModel } from "./catalog";
+
+it("formats provider latency in the interface locale", () => {
+	const labels = { connected: "Connected", failed: "Failed" };
+	expect(describeTest({ testStatus: "success", testError: null }, 1234.4, labels, "ar-SA").label).toBe(
+		"Connected · ١٬٢٣٤ ms",
+	);
+	expect(describeTest({ testStatus: "failure", testError: "Unavailable" }, 1234.4, labels, "ar-SA")).toEqual({
+		ok: false,
+		label: "Failed",
+		error: "Unavailable",
+	});
+});
+
+// Fork: the model box starts empty and models.dev only suggests a placeholder, so the defaults carry no model.
+it("prefills the base URL offline and never a model", () => {
+	const fetch = vi.spyOn(globalThis, "fetch");
+	expect(providerDefaults("vercel-ai-gateway")).toEqual({ baseURL: "https://ai-gateway.vercel.sh/v3/ai" });
+	expect(providerDefaults("openai-compatible")).toEqual({ baseURL: "" });
+	expect(fetch).not.toHaveBeenCalled();
+	fetch.mockRestore();
+});
+
+it("prefills the newest model in the provider's family, the newest overall without one, and nothing otherwise", () => {
+	const entry = (id: string) => ({
+		id,
+		name: id,
+		modalities: { input: ["text"], output: ["text"] },
+		limit: { context: 128000, output: 8192 },
+	});
+	// Newest first, as loadModelSuggestions sorts them.
+	const catalog: ModelSuggestions = {
+		cohere: [entry("north-small-translate"), entry("command-a-plus"), entry("command-a")],
+		openrouter: [entry("deepseek/deepseek-flash"), entry("openai/gpt-example")],
+		xai: [entry("aurora-image-text")],
+		anthropic: [],
+	};
+
+	expect(suggestedModel(catalog, "cohere")).toBe("command-a-plus");
+	expect(suggestedModel(catalog, "openrouter")).toBe("deepseek/deepseek-flash");
+	expect(suggestedModel(catalog, "xai")).toBe("aurora-image-text");
+	expect(suggestedModel(catalog, "anthropic")).toBe("");
+	expect(suggestedModel(catalog, "openai-compatible")).toBe("");
+	expect(suggestedModel(undefined, "openai")).toBe("");
+});
+
+it("finds a model's context window in its provider's catalog, or in any catalog for OpenAI-compatible", () => {
+	const entry = (id: string, context: number) => ({
+		id,
+		name: id,
+		modalities: { input: ["text"], output: ["text"] },
+		limit: { context, output: 8192 },
+	});
+	const catalog: ModelSuggestions = {
+		anthropic: [entry("claude-example", 200_000)],
+		openrouter: [entry("anthropic/claude-example", 180_000)],
+	};
+	expect(contextWindow(catalog, "anthropic", "claude-example")).toBe(200_000);
+	expect(contextWindow(catalog, "openrouter", "anthropic/claude-example")).toBe(180_000);
+	// A gateway that exposes the model under its own or a prefixed id.
+	expect(contextWindow(catalog, "openai-compatible", "claude-example")).toBe(200_000);
+	expect(contextWindow(catalog, "openai-compatible", "vendor/claude-example")).toBe(200_000);
+	// Gateway aliases and unloaded catalogs are unknown.
+	expect(contextWindow(catalog, "openai-compatible", "auto")).toBeNull();
+	expect(contextWindow(catalog, "openai", "claude-example")).toBeNull();
+	expect(contextWindow(undefined, "anthropic", "claude-example")).toBeNull();
+});
 
 it("suggests current text models with provider-specific IDs and tolerates incomplete catalog entries", async () => {
 	const model = {
@@ -47,49 +113,4 @@ it("suggests current text models with provider-specific IDs and tolerates incomp
 	} finally {
 		fetchCatalog.mockRestore();
 	}
-});
-
-it("prefills the newest model in the provider's family, the newest overall without one, and nothing otherwise", () => {
-	const entry = (id: string) => ({
-		id,
-		name: id,
-		modalities: { input: ["text"], output: ["text"] },
-		limit: { context: 128000, output: 8192 },
-	});
-	// Newest first, as loadModelSuggestions sorts them.
-	const catalog: ModelSuggestions = {
-		cohere: [entry("north-small-translate"), entry("command-a-plus"), entry("command-a")],
-		openrouter: [entry("deepseek/deepseek-flash"), entry("openai/gpt-example")],
-		xai: [entry("aurora-image-text")],
-		anthropic: [],
-	};
-
-	expect(suggestedModel(catalog, "cohere")).toBe("command-a-plus");
-	expect(suggestedModel(catalog, "openrouter")).toBe("deepseek/deepseek-flash");
-	expect(suggestedModel(catalog, "xai")).toBe("aurora-image-text");
-	expect(suggestedModel(catalog, "anthropic")).toBe("");
-	expect(suggestedModel(catalog, "openai-compatible")).toBe("");
-	expect(suggestedModel(undefined, "openai")).toBe("");
-});
-
-it("finds a model's context window in its provider's catalog, or in any catalog for OpenAI-compatible", () => {
-	const entry = (id: string, context: number) => ({
-		id,
-		name: id,
-		modalities: { input: ["text"], output: ["text"] },
-		limit: { context, output: 8192 },
-	});
-	const catalog: ModelSuggestions = {
-		anthropic: [entry("claude-example", 200_000)],
-		openrouter: [entry("anthropic/claude-example", 180_000)],
-	};
-	expect(contextWindow(catalog, "anthropic", "claude-example")).toBe(200_000);
-	expect(contextWindow(catalog, "openrouter", "anthropic/claude-example")).toBe(180_000);
-	// A gateway that exposes the model under its own or a prefixed id.
-	expect(contextWindow(catalog, "openai-compatible", "claude-example")).toBe(200_000);
-	expect(contextWindow(catalog, "openai-compatible", "vendor/claude-example")).toBe(200_000);
-	// Gateway aliases and unloaded catalogs are unknown.
-	expect(contextWindow(catalog, "openai-compatible", "auto")).toBeNull();
-	expect(contextWindow(catalog, "openai", "claude-example")).toBeNull();
-	expect(contextWindow(undefined, "anthropic", "claude-example")).toBeNull();
 });

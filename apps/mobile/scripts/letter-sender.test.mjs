@@ -39,8 +39,10 @@ const baseline = {
 			phone: "",
 			location: "Berlin",
 			headline: "Engineer",
-			customFields: [],
+			website: { url: "https://jordan.example", label: "" },
+			customFields: [{ id: "gh", icon: "github-logo", text: "github.com/jordan", link: "" }],
 		},
+		picture: { url: "/uploads/photo.png", hidden: false, size: 64 },
 		metadata: { template: "ditto" },
 	},
 };
@@ -49,19 +51,26 @@ test("native sender saves patch only changed contact fields and retain server-ow
 	const edited = structuredClone(baseline);
 	edited.style.basics.email = "letter@example.test";
 	edited.style.basics.phone = "5550100";
-	await letterAdapter.save(edited, baseline, "session", false, "fixture");
+	await letterAdapter.save(edited, baseline, "session", false, "fixture", undefined, "v1");
 	assert.deepEqual(calls.pop(), {
 		id: "letter",
 		expectedRevision: 1,
 		sessionId: "session",
+		proposalSafety: "v1",
 		sender: { email: "letter@example.test", phone: "5550100" },
 	});
-	await letterAdapter.save(baseline, baseline, "session", false, "fixture");
+	await letterAdapter.save(baseline, baseline, "session", false, "fixture", undefined, "v1");
 	assert.equal("sender" in calls.pop(), false);
 	// Relinking and history rebasing must not send the previous independent details back to the API.
 	edited.senderLinked = true;
-	await letterAdapter.save(edited, baseline, "session", false, "fixture");
-	assert.deepEqual(calls.pop(), { id: "letter", expectedRevision: 1, sessionId: "session", senderLinked: true });
+	await letterAdapter.save(edited, baseline, "session", false, "fixture", undefined, "v1");
+	assert.deepEqual(calls.pop(), {
+		id: "letter",
+		expectedRevision: 1,
+		sessionId: "session",
+		proposalSafety: "v1",
+		senderLinked: true,
+	});
 });
 
 test("typing during unlink preserves fresh server sender fields and saves only the concurrent edit", async () => {
@@ -80,11 +89,71 @@ test("typing during unlink preserves fresh server sender fields and saves only t
 	assert.equal(merged.style.basics.email, "current-resume@example.test");
 	assert.equal(merged.style.basics.location, "Updated city");
 	assert.equal(merged.style.metadata.template, "onyx");
-	await letterAdapter.save(merged, saved, "session", false, "fixture");
+	await letterAdapter.save(merged, saved, "session", false, "fixture", undefined, "v1");
 	assert.deepEqual(calls.pop(), {
 		id: "letter",
 		expectedRevision: 2,
 		sessionId: "session",
+		proposalSafety: "v1",
 		sender: { name: "Independent name" },
+	});
+});
+
+test("an unlinked letter saves the header details it prints: headline, links and whether the photo shows", async () => {
+	const edited = structuredClone(baseline);
+	edited.style.basics.headline = "";
+	edited.style.basics.website = { url: "", label: "" };
+	edited.style.basics.customFields = [];
+	edited.style.picture.hidden = true;
+	await letterAdapter.save(edited, baseline, "session", false, "fixture", undefined, "v1");
+	assert.deepEqual(calls.pop(), {
+		id: "letter",
+		expectedRevision: 1,
+		sessionId: "session",
+		proposalSafety: "v1",
+		sender: { headline: "", website: { url: "", label: "" }, customFields: [], picture: { hidden: true } },
+	});
+
+	// Hiding the photo while the unlink request was out survives the server's fresh copy of the resume's details.
+	const saved = structuredClone(baseline);
+	saved.revision = 2;
+	saved.style.picture.url = "/uploads/current.png";
+	const current = structuredClone(baseline);
+	current.style.picture.hidden = true;
+	const merged = letterAdapter.merge(saved, baseline, current);
+	assert.deepEqual(merged.style.picture, { url: "/uploads/current.png", hidden: true, size: 64 });
+});
+
+test("native body undo saves source removal atomically and keeps newer sources while an earlier save returns", async () => {
+	const kept = {
+		...structuredClone(baseline),
+		content: "Kept body",
+		aiOperationIds: ["kept-op"],
+		aiUsage: { requests: 1, models: [] },
+	};
+	const undone = letterAdapter.withData(kept, { ...baseline, content: "Authored body" });
+	assert.deepEqual(undone.aiOperationIds, []);
+	assert.equal(undone.aiUsage, null);
+	await letterAdapter.save(undone, kept, "session", false, "fixture", undefined, "v1");
+	assert.deepEqual(calls.pop(), {
+		id: "letter",
+		expectedRevision: 1,
+		sessionId: "session",
+		proposalSafety: "v1",
+		content: "Authored body",
+		aiOperationIds: [],
+	});
+	const current = { ...kept, content: "Newer body", aiOperationIds: ["newer-op"] };
+	const merged = letterAdapter.merge({ ...kept, revision: 2 }, kept, current);
+	assert.deepEqual(merged.aiOperationIds, ["newer-op"]);
+	assert.equal(merged.aiUsage, null);
+	await letterAdapter.save(merged, { ...kept, revision: 2 }, "session", false, "fixture", undefined, "v1");
+	assert.deepEqual(calls.pop(), {
+		id: "letter",
+		expectedRevision: 2,
+		sessionId: "session",
+		proposalSafety: "v1",
+		content: "Newer body",
+		aiOperationIds: ["newer-op"],
 	});
 });

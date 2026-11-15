@@ -1,6 +1,9 @@
 import type { Application } from "../types";
+import { t } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useState } from "react";
+import { postingReadReceipt } from "@reactive-resume/schema/applications/posting-source";
 import { Button, buttonVariants } from "@reactive-resume/ui/components/button";
 import {
 	Dialog,
@@ -11,6 +14,7 @@ import {
 } from "@reactive-resume/ui/components/dialog";
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { cn } from "@reactive-resume/utils/style";
+import { useNow } from "@/features/career/shared";
 
 type ViewPostingButtonProps = { application: Application; size?: "default" | "sm"; className?: string };
 
@@ -52,9 +56,14 @@ type PostingDialogProps = { application: Application; open: boolean; onOpenChang
 
 /** The saved posting: its link, what it asks for, and its text. */
 function PostingDialog({ application, open, onOpenChange }: PostingDialogProps) {
+	const now = useNow();
+	const { i18n } = useLingui();
+	const receipt = postingReadReceipt(application.postingSource, i18n.locale, now.getTime());
+	const readAt = receipt?.readAt;
+	const sourceHost = receipt?.sourceHost ?? t`the posting page`;
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-xl">
+			<DialogContent closeLabel={t`Close`} className="max-h-[85svh] overflow-y-auto sm:max-w-xl">
 				<DialogHeader>
 					<DialogTitle>
 						{application.role} · {application.company}
@@ -78,11 +87,12 @@ function PostingDialog({ application, open, onOpenChange }: PostingDialogProps) 
 					<p className="text-xs text-ink-3">
 						{application.postingSource.method === "paste" ? (
 							<Trans>Pasted description</Trans>
-						) : (
+						) : readAt ? (
 							<Trans>
-								Retrieved {application.postingSource.retrievedAt} using {application.postingSource.method}. Retrieval
-								time does not establish origin freshness.
+								Read {readAt} from {sourceHost}. The employer may have changed it since.
 							</Trans>
+						) : (
+							<Trans>The employer may have changed it since.</Trans>
 						)}
 					</p>
 				)}
@@ -93,7 +103,7 @@ function PostingDialog({ application, open, onOpenChange }: PostingDialogProps) 
 				)}
 				{application.requirements.length > 0 && (
 					<section aria-labelledby="posting-requirements" className="grid gap-2">
-						<h3 id="posting-requirements" className="text-xs font-semibold text-ink-3 uppercase">
+						<h3 id="posting-requirements" className="text-xs font-semibold text-ink-3">
 							<Trans>What it asks for</Trans>
 						</h3>
 						<ul className="flex flex-wrap gap-1.5">

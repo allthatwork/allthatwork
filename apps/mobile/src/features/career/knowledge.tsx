@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useWindowDimensions } from "react-native";
 import { Facts } from "./facts";
 import { useCareerQueries } from "./hooks";
@@ -7,11 +7,14 @@ import { Preferences } from "./preferences";
 import { LoadState } from "./shared";
 import { Stories } from "./stories";
 import { useSession } from "@/auth/session";
-import { Screen, Segmented, Text, useTheme } from "@/ui";
+import { StoryPractice } from "@/features/workspace/tabs/practise";
+import { Screen, Segmented, Text, Button, useTheme } from "@/ui";
 
 export function KnowledgeScreen() {
 	const { t } = useLingui();
-	const [tab, setTab] = useState("facts");
+	const params = useLocalSearchParams<{ tab?: string; practice?: string }>();
+	const router = useRouter();
+	const tab = params.tab === "preferences" || params.tab === "stories" ? params.tab : "facts";
 	const { fontScale } = useWindowDimensions();
 	const { size } = useTheme();
 	const session = useSession();
@@ -24,7 +27,7 @@ export function KnowledgeScreen() {
 				orientation={fontScale > 1.3 ? "vertical" : "horizontal"}
 				label={t`Knowledge`}
 				value={tab}
-				onChange={setTab}
+				onChange={(tab) => router.setParams({ tab })}
 				options={[
 					{ value: "facts", label: t`Facts` },
 					{ value: "stories", label: t`Stories` },
@@ -33,6 +36,17 @@ export function KnowledgeScreen() {
 			/>
 		</>
 	);
+	if (params.practice)
+		return (
+			<Screen>
+				<Button
+					variant="ghost"
+					label={t`Back to stories`}
+					onPress={() => router.setParams({ practice: undefined, tab: "stories" })}
+				/>
+				<StoryPractice key={params.practice} storyId={params.practice} />
+			</Screen>
+		);
 	// Facts can run to hundreds, so that tab scrolls as a virtualized list with the intro as its header.
 	if (tab === "facts")
 		return (

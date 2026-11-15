@@ -37,6 +37,7 @@ function row(id: string, { list = false } = {}) {
 		status: "closed",
 		jobDescription: "full description",
 		notes: "private note",
+		followUpDateOnly: false,
 		tags: ["engineering"],
 		requirements: [],
 		targetingReviews: [],
@@ -69,6 +70,10 @@ function summaryRow(id: string) {
 		"closed",
 		"not-selected",
 		null,
+		null, // resume file URL
+		null, // cover letter file URL
+		null,
+		null,
 		null,
 		"referral",
 		["engineering"],
@@ -76,6 +81,7 @@ function summaryRow(id: string) {
 		88,
 		null,
 		null,
+		false, // exact-time/date-only discriminator
 		[],
 		[
 			{ id: "stage", type: "stage", stage: "applied", at: "2026-07-01T12:00:00.000Z" },
@@ -96,9 +102,7 @@ function summaryRow(id: string) {
 		"2026-07-01T12:00:00.000Z",
 		"2026-07-02T12:00:00.000Z",
 		null, // optional lane metadata follows the legacy summary projection
-		// The fork's fields follow: company, attached files, search and targeting.
-		null,
-		null,
+		// The fork's fields follow: company, search and targeting (upstream's list now has the attached files).
 		null,
 		"Search agent",
 		81,
@@ -117,7 +121,7 @@ function candidateSummary(id: string, status: string, updatedAt: string) {
 	const value = summaryRow(id);
 	value[6] = status;
 	value[7] = null;
-	value[20] = updatedAt;
+	value[23] = updatedAt;
 	return value;
 }
 
@@ -147,11 +151,9 @@ beforeEach(() => {
 	fixture.query.mockImplementation(async ({ text }: { text: string }, params) => ({
 		rows: text.includes("count(")
 			? [[fixture.total]]
-			: text.includes("jsonb_path_query_array")
-				? fixture.rows
-				: fixture.fullRowsActive
-					? fixture.fullRows.filter((values) => params.includes(values[0]))
-					: fixture.rows,
+			: fixture.fullRowsActive && text.includes('"job_description"')
+				? fixture.fullRows.filter((values) => params.includes(values[0]))
+				: fixture.rows,
 	}));
 });
 
@@ -173,7 +175,6 @@ describe("application list summary", () => {
 		expect(resHeaders.get("X-Offset")).toBe("2");
 
 		const page = queries().find((query) => !query.sql.includes("count("));
-		expect(page?.sql).toContain("jsonb_path_query_array");
 		expect(page?.sql).not.toContain('"job_description"');
 		expect(page?.sql).not.toContain('"notes"');
 		expect(page?.params).toEqual(["owner", "closed", ["engineering"], 1, 2]);

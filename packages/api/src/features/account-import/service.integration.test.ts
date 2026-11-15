@@ -596,4 +596,44 @@ describe.skipIf(!databaseUrl)("account import", () => {
 		expect(postings).toContain(posting.slice(0, 20_000));
 		expect(result.shortened).toEqual([{ kind: "applications", field: "jobDescription", max: 20_000, count: 1 }]);
 	});
+
+	it("brings a trashed application back in Trash, out of the list and the Directory", async () => {
+		const { applicationService } = await import("../applications/service");
+		const trashedId = "import-trashed";
+		await getDb().insert(tables.user).values({
+			id: trashedId,
+			name: "Trashed",
+			email: "trashed@example.test",
+			username: "import-trashed",
+			displayUsername: "Trashed",
+		});
+		const trashedAt = "2026-11-10T09:00:00.000Z";
+		const result = await service.run(trashedId, {
+			area: "applications",
+			mode: "append",
+			ids: {},
+			applications: [
+				{ ...archive.application, id: "live", resumeId: null, coverLetterId: null, company: "Kept Co" },
+				{
+					...archive.application,
+					id: "binned",
+					resumeId: null,
+					coverLetterId: null,
+					company: "Binned Co",
+					trashedAt,
+				},
+			],
+			views: [],
+			workspaces: [],
+			letterLinks: [],
+		});
+		expect(result.added.applications).toBe(2);
+		const rows = await getDb().select().from(tables.application).where(eq(tables.application.userId, trashedId));
+		expect(rows.find((row) => row.company === "Binned Co")?.trashedAt?.toISOString()).toBe(trashedAt);
+		expect(rows.find((row) => row.company === "Kept Co")?.trashedAt).toBeNull();
+		const list = (await applicationService.list({ userId: trashedId })).items;
+		expect(list.map((application) => application.company)).toEqual(["Kept Co"]);
+		const companies = await getDb().select().from(tables.company).where(eq(tables.company.userId, trashedId));
+		expect(companies.map((company) => company.name)).toEqual(["Kept Co"]);
+	});
 });

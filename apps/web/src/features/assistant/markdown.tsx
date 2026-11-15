@@ -28,7 +28,7 @@ type AssistantMarkdownProps = {
 export const AssistantMarkdown = function AssistantMarkdown({ text, literalHtml = false }: AssistantMarkdownProps) {
 	const plugins: NonNullable<Options["remarkPlugins"]> = literalHtml ? [remarkGfm, remarkHtmlAsText] : [remarkGfm];
 	return (
-		<div className="typeset typeset-chat min-w-0">
+		<div dir="auto" className="typeset typeset-chat min-w-0">
 			<ReactMarkdown
 				skipHtml
 				remarkPlugins={plugins}

@@ -24,7 +24,6 @@ import { Route as AuthConsentRouteImport } from "./routes/auth/consent";
 import { Route as AuthErrorRouteImport } from "./routes/auth/error";
 import { Route as AuthForgotPasswordRouteImport } from "./routes/auth/forgot-password";
 import { Route as AuthLoginRouteImport } from "./routes/auth/login";
-import { Route as AuthNativeCallbackRouteImport } from "./routes/auth/native-callback";
 import { Route as AuthRegisterRouteImport } from "./routes/auth/register";
 import { Route as AuthResetPasswordRouteImport } from "./routes/auth/reset-password";
 import { Route as AuthVerify2faRouteImport } from "./routes/auth/verify-2fa";
@@ -35,9 +34,11 @@ import { Route as DashboardCareerRouteRouteImport } from "./routes/dashboard/car
 import { Route as DashboardCoverLettersRouteImport } from "./routes/dashboard/cover-letters";
 import { Route as DashboardSettingsRouteRouteImport } from "./routes/dashboard/settings/route";
 import { Route as DashboardTrashRouteImport } from "./routes/dashboard/trash";
+import { Route as FeedbackTokenRouteImport } from "./routes/feedback/$token";
 import { Route as BuilderResumeIdIndexRouteImport } from "./routes/builder/$resumeId/index";
 import { Route as BuilderLetterCoverLetterIdRouteImport } from "./routes/builder/letter/$coverLetterId";
 import { Route as DashboardApplicationsIndexRouteImport } from "./routes/dashboard/applications/index";
+import { Route as DashboardApplicationsTrashRouteImport } from "./routes/dashboard/applications/trash";
 import { Route as DashboardCareerIndexRouteImport } from "./routes/dashboard/career/index";
 import { Route as DashboardCareerKnowledgeRouteRouteImport } from "./routes/dashboard/career/knowledge/route";
 import { Route as DashboardCareerOffersRouteImport } from "./routes/dashboard/career/offers";
@@ -134,11 +135,6 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: "/login",
   getParentRoute: () => AuthRouteRoute,
 } as any);
-const AuthNativeCallbackRoute = AuthNativeCallbackRouteImport.update({
-  id: "/native-callback",
-  path: "/native-callback",
-  getParentRoute: () => AuthRouteRoute,
-} as any);
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
   id: "/register",
   path: "/register",
@@ -189,6 +185,11 @@ const DashboardTrashRoute = DashboardTrashRouteImport.update({
   path: "/trash",
   getParentRoute: () => DashboardRouteRoute,
 } as any);
+const FeedbackTokenRoute = FeedbackTokenRouteImport.update({
+  id: "/feedback/$token",
+  path: "/feedback/$token",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const BuilderResumeIdIndexRoute = BuilderResumeIdIndexRouteImport.update({
   id: "/",
   path: "/",
@@ -204,6 +205,12 @@ const DashboardApplicationsIndexRoute =
   DashboardApplicationsIndexRouteImport.update({
     id: "/applications/",
     path: "/applications/",
+    getParentRoute: () => DashboardRouteRoute,
+  } as any);
+const DashboardApplicationsTrashRoute =
+  DashboardApplicationsTrashRouteImport.update({
+    id: "/applications/trash",
+    path: "/applications/trash",
     getParentRoute: () => DashboardRouteRoute,
   } as any);
 const DashboardCareerIndexRoute = DashboardCareerIndexRouteImport.update({
@@ -343,19 +350,20 @@ export interface FileRoutesByFullPath {
   "/auth/error": typeof AuthErrorRoute;
   "/auth/forgot-password": typeof AuthForgotPasswordRoute;
   "/auth/login": typeof AuthLoginRoute;
-  "/auth/native-callback": typeof AuthNativeCallbackRoute;
   "/auth/register": typeof AuthRegisterRoute;
   "/auth/reset-password": typeof AuthResetPasswordRoute;
   "/auth/verify-2fa": typeof AuthVerify2faRoute;
   "/auth/verify-2fa-backup": typeof AuthVerify2faBackupRoute;
   "/dashboard/cover-letters": typeof DashboardCoverLettersRoute;
   "/dashboard/trash": typeof DashboardTrashRoute;
+  "/feedback/$token": typeof FeedbackTokenRoute;
   "/agent/": typeof AgentIndexRoute;
   "/auth/": typeof AuthIndexRoute;
   "/dashboard/": typeof DashboardIndexRoute;
   "/dashboard/career/knowledge": typeof DashboardCareerKnowledgeRouteRouteWithChildren;
   "/dashboard/settings/integrations": typeof DashboardSettingsIntegrationsRouteRoute;
   "/builder/letter/$coverLetterId": typeof BuilderLetterCoverLetterIdRoute;
+  "/dashboard/applications/trash": typeof DashboardApplicationsTrashRoute;
   "/dashboard/career/offers": typeof DashboardCareerOffersRoute;
   "/dashboard/settings/account": typeof DashboardSettingsAccountRoute;
   "/dashboard/settings/ai": typeof DashboardSettingsAiRoute;
@@ -387,13 +395,13 @@ export interface FileRoutesByTo {
   "/auth/error": typeof AuthErrorRoute;
   "/auth/forgot-password": typeof AuthForgotPasswordRoute;
   "/auth/login": typeof AuthLoginRoute;
-  "/auth/native-callback": typeof AuthNativeCallbackRoute;
   "/auth/register": typeof AuthRegisterRoute;
   "/auth/reset-password": typeof AuthResetPasswordRoute;
   "/auth/verify-2fa": typeof AuthVerify2faRoute;
   "/auth/verify-2fa-backup": typeof AuthVerify2faBackupRoute;
   "/dashboard/cover-letters": typeof DashboardCoverLettersRoute;
   "/dashboard/trash": typeof DashboardTrashRoute;
+  "/feedback/$token": typeof FeedbackTokenRoute;
   "/": typeof HomeIndexRoute;
   "/agent": typeof AgentIndexRoute;
   "/auth": typeof AuthIndexRoute;
@@ -401,6 +409,7 @@ export interface FileRoutesByTo {
   "/dashboard/career/knowledge": typeof DashboardCareerKnowledgeRouteRouteWithChildren;
   "/dashboard/settings/integrations": typeof DashboardSettingsIntegrationsRouteRoute;
   "/builder/letter/$coverLetterId": typeof BuilderLetterCoverLetterIdRoute;
+  "/dashboard/applications/trash": typeof DashboardApplicationsTrashRoute;
   "/dashboard/career/offers": typeof DashboardCareerOffersRoute;
   "/dashboard/settings/account": typeof DashboardSettingsAccountRoute;
   "/dashboard/settings/ai": typeof DashboardSettingsAiRoute;
@@ -440,13 +449,13 @@ export interface FileRoutesById {
   "/auth/error": typeof AuthErrorRoute;
   "/auth/forgot-password": typeof AuthForgotPasswordRoute;
   "/auth/login": typeof AuthLoginRoute;
-  "/auth/native-callback": typeof AuthNativeCallbackRoute;
   "/auth/register": typeof AuthRegisterRoute;
   "/auth/reset-password": typeof AuthResetPasswordRoute;
   "/auth/verify-2fa": typeof AuthVerify2faRoute;
   "/auth/verify-2fa-backup": typeof AuthVerify2faBackupRoute;
   "/dashboard/cover-letters": typeof DashboardCoverLettersRoute;
   "/dashboard/trash": typeof DashboardTrashRoute;
+  "/feedback/$token": typeof FeedbackTokenRoute;
   "/_home/": typeof HomeIndexRoute;
   "/agent/": typeof AgentIndexRoute;
   "/auth/": typeof AuthIndexRoute;
@@ -454,6 +463,7 @@ export interface FileRoutesById {
   "/dashboard/career/knowledge": typeof DashboardCareerKnowledgeRouteRouteWithChildren;
   "/dashboard/settings/integrations": typeof DashboardSettingsIntegrationsRouteRoute;
   "/builder/letter/$coverLetterId": typeof BuilderLetterCoverLetterIdRoute;
+  "/dashboard/applications/trash": typeof DashboardApplicationsTrashRoute;
   "/dashboard/career/offers": typeof DashboardCareerOffersRoute;
   "/dashboard/settings/account": typeof DashboardSettingsAccountRoute;
   "/dashboard/settings/ai": typeof DashboardSettingsAiRoute;
@@ -494,19 +504,20 @@ export interface FileRouteTypes {
     | "/auth/error"
     | "/auth/forgot-password"
     | "/auth/login"
-    | "/auth/native-callback"
     | "/auth/register"
     | "/auth/reset-password"
     | "/auth/verify-2fa"
     | "/auth/verify-2fa-backup"
     | "/dashboard/cover-letters"
     | "/dashboard/trash"
+    | "/feedback/$token"
     | "/agent/"
     | "/auth/"
     | "/dashboard/"
     | "/dashboard/career/knowledge"
     | "/dashboard/settings/integrations"
     | "/builder/letter/$coverLetterId"
+    | "/dashboard/applications/trash"
     | "/dashboard/career/offers"
     | "/dashboard/settings/account"
     | "/dashboard/settings/ai"
@@ -538,13 +549,13 @@ export interface FileRouteTypes {
     | "/auth/error"
     | "/auth/forgot-password"
     | "/auth/login"
-    | "/auth/native-callback"
     | "/auth/register"
     | "/auth/reset-password"
     | "/auth/verify-2fa"
     | "/auth/verify-2fa-backup"
     | "/dashboard/cover-letters"
     | "/dashboard/trash"
+    | "/feedback/$token"
     | "/"
     | "/agent"
     | "/auth"
@@ -552,6 +563,7 @@ export interface FileRouteTypes {
     | "/dashboard/career/knowledge"
     | "/dashboard/settings/integrations"
     | "/builder/letter/$coverLetterId"
+    | "/dashboard/applications/trash"
     | "/dashboard/career/offers"
     | "/dashboard/settings/account"
     | "/dashboard/settings/ai"
@@ -590,13 +602,13 @@ export interface FileRouteTypes {
     | "/auth/error"
     | "/auth/forgot-password"
     | "/auth/login"
-    | "/auth/native-callback"
     | "/auth/register"
     | "/auth/reset-password"
     | "/auth/verify-2fa"
     | "/auth/verify-2fa-backup"
     | "/dashboard/cover-letters"
     | "/dashboard/trash"
+    | "/feedback/$token"
     | "/_home/"
     | "/agent/"
     | "/auth/"
@@ -604,6 +616,7 @@ export interface FileRouteTypes {
     | "/dashboard/career/knowledge"
     | "/dashboard/settings/integrations"
     | "/builder/letter/$coverLetterId"
+    | "/dashboard/applications/trash"
     | "/dashboard/career/offers"
     | "/dashboard/settings/account"
     | "/dashboard/settings/ai"
@@ -633,6 +646,7 @@ export interface RootRouteChildren {
   AuthRouteRoute: typeof AuthRouteRouteWithChildren;
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren;
   BuilderResumeIdRouteRoute: typeof BuilderResumeIdRouteRouteWithChildren;
+  FeedbackTokenRoute: typeof FeedbackTokenRoute;
   BuilderLetterCoverLetterIdRoute: typeof BuilderLetterCoverLetterIdRoute;
 }
 
@@ -743,13 +757,6 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthLoginRouteImport;
       parentRoute: typeof AuthRouteRoute;
     };
-    "/auth/native-callback": {
-      id: "/auth/native-callback";
-      path: "/native-callback";
-      fullPath: "/auth/native-callback";
-      preLoaderRoute: typeof AuthNativeCallbackRouteImport;
-      parentRoute: typeof AuthRouteRoute;
-    };
     "/auth/register": {
       id: "/auth/register";
       path: "/register";
@@ -820,6 +827,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardTrashRouteImport;
       parentRoute: typeof DashboardRouteRoute;
     };
+    "/feedback/$token": {
+      id: "/feedback/$token";
+      path: "/feedback/$token";
+      fullPath: "/feedback/$token";
+      preLoaderRoute: typeof FeedbackTokenRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/builder/$resumeId/": {
       id: "/builder/$resumeId/";
       path: "/";
@@ -839,6 +853,13 @@ declare module "@tanstack/react-router" {
       path: "/applications";
       fullPath: "/dashboard/applications/";
       preLoaderRoute: typeof DashboardApplicationsIndexRouteImport;
+      parentRoute: typeof DashboardRouteRoute;
+    };
+    "/dashboard/applications/trash": {
+      id: "/dashboard/applications/trash";
+      path: "/applications/trash";
+      fullPath: "/dashboard/applications/trash";
+      preLoaderRoute: typeof DashboardApplicationsTrashRouteImport;
       parentRoute: typeof DashboardRouteRoute;
     };
     "/dashboard/career/": {
@@ -1028,7 +1049,6 @@ interface AuthRouteRouteChildren {
   AuthErrorRoute: typeof AuthErrorRoute;
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute;
   AuthLoginRoute: typeof AuthLoginRoute;
-  AuthNativeCallbackRoute: typeof AuthNativeCallbackRoute;
   AuthRegisterRoute: typeof AuthRegisterRoute;
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute;
   AuthVerify2faRoute: typeof AuthVerify2faRoute;
@@ -1041,7 +1061,6 @@ const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthErrorRoute: AuthErrorRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
-  AuthNativeCallbackRoute: AuthNativeCallbackRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthVerify2faRoute: AuthVerify2faRoute,
@@ -1134,6 +1153,7 @@ interface DashboardRouteRouteChildren {
   DashboardCoverLettersRoute: typeof DashboardCoverLettersRoute;
   DashboardTrashRoute: typeof DashboardTrashRoute;
   DashboardIndexRoute: typeof DashboardIndexRoute;
+  DashboardApplicationsTrashRoute: typeof DashboardApplicationsTrashRoute;
   DashboardApplicationsIndexRoute: typeof DashboardApplicationsIndexRoute;
   DashboardDirectoryIndexRoute: typeof DashboardDirectoryIndexRoute;
   DashboardResumesIndexRoute: typeof DashboardResumesIndexRoute;
@@ -1146,6 +1166,7 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardCoverLettersRoute: DashboardCoverLettersRoute,
   DashboardTrashRoute: DashboardTrashRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardApplicationsTrashRoute: DashboardApplicationsTrashRoute,
   DashboardApplicationsIndexRoute: DashboardApplicationsIndexRoute,
   DashboardDirectoryIndexRoute: DashboardDirectoryIndexRoute,
   DashboardResumesIndexRoute: DashboardResumesIndexRoute,
@@ -1174,6 +1195,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRouteRoute: AuthRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   BuilderResumeIdRouteRoute: BuilderResumeIdRouteRouteWithChildren,
+  FeedbackTokenRoute: FeedbackTokenRoute,
   BuilderLetterCoverLetterIdRoute: BuilderLetterCoverLetterIdRoute,
 };
 export const routeTree = rootRouteImport

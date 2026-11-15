@@ -86,6 +86,83 @@ it("validates release tags against the built version and distinguishes prereleas
 	}
 });
 
+const commit = "a".repeat(40);
+const healthy = { service: "reactive-resume", status: "healthy", version: "6.0.0", revision: commit };
+
+it.each([
+	["matching release", [healthy], 0, 3],
+	["previous commit with same version", [{ ...healthy, revision: "b".repeat(40) }], 1, 60],
+	[
+		"rolling deployment and transient failures reset consecutive matches",
+		[
+			healthy,
+			healthy,
+			{ ...healthy, version: "5.0.0" },
+			healthy,
+			healthy,
+			"HTTP_ERROR",
+			healthy,
+			healthy,
+			"not JSON",
+			healthy,
+			healthy,
+			{ ...healthy, status: "unhealthy" },
+			healthy,
+			healthy,
+			{ ...healthy, service: "other" },
+			healthy,
+			healthy,
+			healthy,
+		],
+		0,
+		18,
+	],
+] as const)("waits for published release before cache purge: %s", (_name, responses, status, probes) => {
+	const workflow = readFileSync(new URL("../.github/workflows/docker-publish.yml", import.meta.url), "utf8");
+	const script = workflow.match(
+		/      - name: Deploy production app[\s\S]*?      - name: Wait for healthy production version[\s\S]*?        run: \|\n([\s\S]*?)(?=\n      - name: Purge production Cloudflare cache)/,
+	)?.[1];
+	if (!script) throw new Error("Production readiness check must run between deployment and cache purge");
+	const directory = mkdtempSync(join(tmpdir(), "docker-readiness-"));
+	try {
+		writeFileSync(
+			join(directory, "responses"),
+			responses.map((response) => (typeof response === "string" ? response : JSON.stringify(response))).join("\n") +
+				"\n",
+		);
+		writeFileSync(join(directory, "count"), "0");
+		writeFileSync(join(directory, "sleep"), "#!/usr/bin/env bash\nexit 0\n", { mode: 0o755 });
+		writeFileSync(
+			join(directory, "curl"),
+			`#!/usr/bin/env bash
+set -eu
+count=$(cat "$FIXTURE/count")
+count=$((count + 1))
+echo "$count" > "$FIXTURE/count"
+line=$(sed -n "${"$"}{count}p" "$FIXTURE/responses")
+if [[ -z "$line" ]]; then line=$(tail -n 1 "$FIXTURE/responses"); fi
+if [[ "$line" == HTTP_ERROR ]]; then exit 22; fi
+printf '%s\\n' "$line"
+`,
+			{ mode: 0o755 },
+		);
+		const result = spawnSync("bash", ["-eu", "-c", script], {
+			encoding: "utf8",
+			env: {
+				...process.env,
+				PATH: `${directory}:${process.env.PATH}`,
+				FIXTURE: directory,
+				COMMIT_SHA: commit,
+				VERSION: healthy.version,
+			},
+		});
+		expect(result.status, result.stderr).toBe(status);
+		expect(Number(readFileSync(join(directory, "count"), "utf8"))).toBe(probes);
+	} finally {
+		rmSync(directory, { recursive: true, force: true });
+	}
+});
+
 it.each([
 	["complete GHCR index", "", false, false, 0, 1],
 	["missing GHCR source", "ghcr.io/example/app", false, false, 1, 0],

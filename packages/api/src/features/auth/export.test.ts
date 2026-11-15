@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
 	exportCareer: vi.fn(),
 	exportDirectory: vi.fn().mockResolvedValue({ companies: [], contacts: [], employment: [], notes: [] }),
 	listViews: vi.fn(),
+	getApplicationProfile: vi.fn(),
 	getPipeline: vi.fn(),
 }));
 vi.mock("@reactive-resume/db/client", () => ({ db: { select: mocks.select } }));
@@ -18,6 +19,10 @@ vi.mock("@reactive-resume/db/schema", () => ({
 	coverLetter: { userId: "coverLetter.userId" },
 	application: { userId: "application.userId" },
 	aiContentReport: { userId: "aiContentReport.userId" },
+	resumeVersion: { userId: "resumeVersion.userId" },
+	coverLetterVersion: { userId: "coverLetterVersion.userId" },
+	aiRequest: { userId: "aiRequest.userId" },
+	resumeWritingReview: { userId: "resumeWritingReview.userId" },
 }));
 vi.mock("drizzle-orm", () => ({ eq: (column: unknown, value: unknown) => ({ column, value }) }));
 vi.mock("@reactive-resume/env/server", () => ({ env: {} }));
@@ -28,6 +33,10 @@ vi.mock("../applications/lanes", () => ({ applicationLaneService: { get: mocks.g
 vi.mock("../career/service", () => ({ careerService: { exportData: mocks.exportCareer } }));
 vi.mock("../directory/service", () => ({ directoryService: { exportData: mocks.exportDirectory } }));
 vi.mock("../applications/views", () => ({ applicationViewService: { list: mocks.listViews } }));
+vi.mock("../application-profile/service", () => ({ applicationProfileService: { get: mocks.getApplicationProfile } }));
+vi.mock("../feedback/service", () => ({
+	feedbackService: { exportData: vi.fn().mockResolvedValue({ links: [], comments: [], events: [] }) },
+}));
 const { authService } = await import("./service");
 
 describe("account backup", () => {
@@ -35,6 +44,11 @@ describe("account backup", () => {
 		vi.clearAllMocks();
 		mocks.predicates.length = 0;
 		mocks.getPipeline.mockResolvedValue({ revision: 0, lanes: [] });
+		mocks.getApplicationProfile.mockResolvedValue({
+			data: { email: "private@example.test" },
+			reviewedAt: "2030-01-01T00:00:00.000Z",
+			revision: "profile-revision",
+		});
 	});
 
 	it.each([false, true])(
@@ -85,13 +99,27 @@ describe("account backup", () => {
 			mocks.exportCareer.mockResolvedValue(career);
 			const view = { id: "view", name: "Ready to apply", filters: {}, layout: {}, isDefault: true, position: 0 };
 			mocks.listViews.mockResolvedValue([view]);
+			const aiRequests = [{ id: "request", operationId: "operation", action: "writing-review", model: "model" }];
+			const writingReviews = [{ resumeId: "resume", aiOperationId: "operation", inputText: "Owned wording" }];
 			const application = { id: "application", userId: "owner", company: "Lumen", role: "Designer" };
 			for (const rows of [
 				[{ id: "owner", name: "Owner" }],
 				[{ id: "resume", data: defaultResumeData }],
 				[letter],
 				[application],
+				[
+					{
+						id: "approved-resume-version",
+						userId: "owner",
+						resumeId: "resume",
+						kind: "named",
+						data: defaultResumeData,
+					},
+				],
+				[{ id: "approved-letter-version", userId: "owner", coverLetterId: "letter", kind: "named", data: letter }],
 				[{ id: "report", userId: "owner", content: "Reported output" }],
+				aiRequests,
+				writingReviews,
 			]) {
 				mocks.select.mockReturnValueOnce({
 					from: () => ({
@@ -111,10 +139,24 @@ describe("account backup", () => {
 			// Saved views come along beside the applications.
 			expect(mocks.listViews).toHaveBeenCalledExactlyOnceWith("owner");
 			expect(exported.applicationViews).toEqual([view]);
-			expect(exported.career).toEqual(career);
+			expect(exported.career).toEqual({ ...career, aiRequests, writingReviews });
 			expect(mocks.exportDirectory).toHaveBeenCalledExactlyOnceWith("owner");
 			expect(exported.directory).toEqual({ companies: [], contacts: [], employment: [], notes: [] });
+			expect(mocks.predicates).toContainEqual({ column: "aiRequest.userId", value: "owner" });
+			expect(mocks.predicates).toContainEqual({ column: "resumeWritingReview.userId", value: "owner" });
+			expect(mocks.getApplicationProfile).toHaveBeenCalledExactlyOnceWith("owner");
+			expect(exported.applicationProfile).toMatchObject({
+				data: { email: "private@example.test" },
+				revision: "profile-revision",
+			});
 			expect(exported.applicationPipeline).toEqual({ revision: 0, lanes: [] });
+			expect(exported.documentVersions).toMatchObject({
+				resumes: [{ id: "approved-resume-version", resumeId: "resume" }],
+				letters: [{ id: "approved-letter-version", coverLetterId: "letter" }],
+			});
+			expect(exported.documentVersions.resumes[0]).not.toHaveProperty("userId");
+			expect(mocks.predicates).toContainEqual({ column: "resumeVersion.userId", value: "owner" });
+			expect(mocks.predicates).toContainEqual({ column: "coverLetterVersion.userId", value: "owner" });
 			expect(mocks.getPipeline).toHaveBeenCalledExactlyOnceWith("owner");
 			expect(exported.aiContentReports).toEqual([{ id: "report", userId: "owner", content: "Reported output" }]);
 			expect(mocks.predicates).toContainEqual({ column: "aiContentReport.userId", value: "owner" });

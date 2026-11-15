@@ -105,8 +105,8 @@ function hover(element: HTMLElement) {
 	fireEvent.mouseEnter(element);
 	fireEvent.mouseMove(element);
 }
-/** The desktop Jobs ↗ button (the phone line has its own link). */
-const jobsButtons = () => screen.getAllByRole("button", { name: "Jobs ↗" });
+/** The desktop Jobs ↗ button, a link to assistive tech (the phone line has its own link). */
+const jobsButtons = () => screen.getAllByRole("link", { name: "Jobs ↗" });
 
 beforeEach(() => {
 	vi.clearAllMocks();
@@ -178,7 +178,7 @@ describe("CompanyRow", () => {
 		const box = renderRow(company({ name: "Brightline" }));
 		expect(box.hasAttribute("data-disabled")).toBe(true);
 		expect(screen.getByText("—")).toBeTruthy();
-		expect(screen.queryByRole("button", { name: "Jobs ↗" })).toBeNull();
+		expect(screen.queryByRole("link", { name: "Jobs ↗" })).toBeNull();
 		fireEvent.click(box);
 		expect(api.watch).not.toHaveBeenCalled();
 		hover(box.parentElement as HTMLElement);

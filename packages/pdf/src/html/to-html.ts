@@ -134,6 +134,11 @@ function toCssDeclarations(input: Style, context: Context) {
 			LENGTH_KEYS.has(key) && key.endsWith("Radius") && typeof raw === "string" && PERCENT.test(raw.trim());
 		const css = percentCorner ? raw.trim() : cssValue(key, converted[key], fontSize);
 		if (css === undefined) continue;
+		// Templates already mirror geometry; direction must reach text without flipping browser flex axes again.
+		if (key === "direction") {
+			declarations.push(["--rr-text-direction", css]);
+			continue;
+		}
 		for (const target of EXPANDED[key] ?? [key]) declarations.push([kebab(target), css]);
 	}
 	return { declarations, fontSize, hidden };
@@ -148,6 +153,25 @@ function className(declarations: [string, string][], context: Context): string |
 		context.classes.set(body, name);
 	}
 	return name;
+}
+
+/**
+ * A text box laid out as a row places its runs by `justify-content`, not `text-align`, and its direction orders them:
+ * a left-to-right sentence on a right-to-left page would sit at the far left, away from its bullet. Its alignment
+ * becomes the row's, read in the box's own direction.
+ */
+function alignFlexText(declarations: [string, string][]) {
+	const value = (property: string) => declarations.findLast(([name]) => name === property)?.[1];
+	if (value("display") !== "flex" || value("justify-content") !== undefined) return;
+	if (!["row", "row-reverse", undefined].includes(value("flex-direction"))) return;
+	const align = value("text-align");
+	if (align !== "left" && align !== "right" && align !== "center") return;
+	const rtl = value("--rr-text-direction") === "rtl";
+	const reversed = value("flex-direction") === "row-reverse";
+	// Right in a left-to-right row is its end; a right-to-left or reversed row flips that once each.
+	const flips = [align === "right", rtl, reversed].filter(Boolean).length;
+	const end = flips % 2 === 1;
+	declarations.push(["justify-content", align === "center" ? "center" : end ? "flex-end" : "flex-start"]);
 }
 
 const isText = (node: HostNode) => "text" in node || node.type === HOST.text || node.type === HOST.link;
@@ -283,11 +307,16 @@ function convertNode(node: HostNode, parent: Context): string {
 			const isRow = direction === "row" || direction === "row-reverse";
 			const inHeader = region === "header" || parent.inHeader === true;
 			const fold = isRow && !split && (tag === "section" || (inHeader && holdsBlocks(node)));
+			// A box that paints its own band (Pikachu's coloured header) spans a folded row instead of hugging its text.
+			const fill =
+				typeof flat.backgroundColor === "string" &&
+				!/^(transparent|none|rgba\([^)]*,\s*0\))$/i.test(flat.backgroundColor);
 			const extra = [
 				semantic?.attributes ?? "",
 				region ? ` data-region="${region}"` : "",
 				split ? " data-split" : "",
 				fold ? " data-fold" : "",
+				fill ? " data-fill" : "",
 				props.fixed === true ? " data-fixed" : "",
 			].join("");
 			const inner = { ...context, inHeader };
@@ -297,6 +326,7 @@ function convertNode(node: HostNode, parent: Context): string {
 		case HOST.link: {
 			const { declarations, fontSize, hidden } = styleOf(node, parent);
 			if (hidden) return "";
+			alignFlexText(declarations);
 			const context = { ...parent, fontSize };
 			const href =
 				node.type === HOST.link && typeof props.src === "string" ? (toSafeLink(props.src) ?? undefined) : undefined;
@@ -386,11 +416,16 @@ function bandColor(page: HostElement): string | undefined {
 	return undefined;
 }
 
-/** The base rules every web page uses: Yoga's box model, the sheet, and how the layout folds on narrow screens. */
+/**
+ * The base rules every web page uses: Yoga's box model, the sheet, and how the layout folds on narrow screens. A folded
+ * part never grows but may still shrink: a header that sits in a row (Pikachu's) narrows to the phone, so its contact
+ * line wraps instead of running off the screen.
+ */
 const BASE_CSS = `
 .rr,.rr *{box-sizing:border-box;margin:0;padding:0;border:0 solid}
-.rr .v{display:flex;flex-direction:column;position:relative;min-width:0;align-content:flex-start}
+.rr .v{display:flex;flex-direction:column;direction:ltr;position:relative;min-width:0;align-content:flex-start}
 .rr .t{display:block;min-width:0;overflow-wrap:break-word}
+.rr .t,.rr .t span,.rr .t a{direction:var(--rr-text-direction,ltr)}
 .rr a{color:inherit;text-decoration:none}
 .rr h1,.rr h2{font:inherit}
 .rr .s,.rr .i{flex-shrink:0;display:block}
@@ -398,7 +433,7 @@ const BASE_CSS = `
 @media (max-width:640px){
 .rr .rr-page{min-height:0!important;padding:24px 20px!important}
 .rr [data-split]{flex-direction:column!important;row-gap:20px!important}
-.rr [data-split]>*,.rr [data-region]{width:auto!important;max-width:none!important;flex:none!important}
+.rr [data-split]>*,.rr [data-region]{width:auto!important;max-width:none!important;flex:0 1 auto!important}
 .rr [data-part=main]{order:1}
 .rr [data-part=sidebar]{order:2}
 .rr [data-part=header-sidebar]{display:contents!important}
@@ -406,7 +441,10 @@ const BASE_CSS = `
 .rr [data-part=header-sidebar]>[data-region=header]{order:0}
 .rr [data-region=sidebar]{background-color:var(--rr-band,transparent)}
 .rr [data-fold]{flex-direction:column!important;align-items:flex-start!important;row-gap:8px}
+.rr:dir(rtl) [data-fold]{align-items:flex-end!important}
 .rr [data-fold]>*{width:auto!important;max-width:100%!important;flex:none!important}
+.rr [data-fold]>[data-fill]{align-self:stretch!important}
+.rr [data-region][data-fill]{flex-grow:1!important}
 .rr [data-fixed]{display:none!important}
 }
 `;

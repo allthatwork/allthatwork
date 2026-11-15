@@ -21,6 +21,7 @@ const MAX_PASSAGE_CHARS = 4_000;
 
 export const atsReviewInputSchema = z.object({
 	aiProviderId: z.string().optional(),
+	resumeId: z.string().optional(),
 	extractedText: z.string().trim().min(1).max(MAX_EXTRACTED_TEXT_CHARS),
 	findings: z
 		.array(
@@ -103,6 +104,7 @@ export type AtsReviewOutput = z.infer<typeof atsReviewOutputSchema>;
 type AtsReviewServiceInput = AtsReviewInput & {
 	/** "Rewrite suggestions in one review". */
 	maxSuggestions: number;
+	usage: Parameters<typeof getModel>[0]["usage"];
 	provider: Parameters<typeof getModel>[0]["provider"];
 	model: string;
 	apiKey: string;

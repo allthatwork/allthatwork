@@ -6,6 +6,7 @@ import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { directoryKey } from "@reactive-resume/schema/directory";
 import { contactNames } from "@reactive-resume/schema/directory-names";
+import { activeApplications } from "../applications/access";
 import { boardsService } from "../boards/service";
 import { ensureCompany, lockDirectoryOwner, ownedCompany, ownedContact, refreshContactLinks } from "./links";
 
@@ -31,7 +32,7 @@ export const directoryService = {
 					company: schema.company,
 					// Spelled out: Drizzle leaves a one-table select's columns unqualified, which a subquery would misread.
 					contactCount: sql<number>`(select count(*)::int from "contact" as c where c."company_id" = "company"."id" and c."user_id" = ${userId})`,
-					applicationCount: sql<number>`(select count(*)::int from "application" as a where a."company_id" = "company"."id" and a."user_id" = ${userId})`,
+					applicationCount: sql<number>`(select count(*)::int from "application" as a where a."company_id" = "company"."id" and a."user_id" = ${userId} and a."trashed_at" is null)`,
 				})
 				.from(schema.company)
 				.where(
@@ -76,7 +77,8 @@ export const directoryService = {
 					at: schema.application.appliedAt,
 				})
 				.from(schema.application)
-				.where(and(eq(schema.application.userId, userId), eq(schema.application.companyId, id)))
+				// Trashed applications stay out of the Directory until they're restored.
+				.where(and(activeApplications(userId), eq(schema.application.companyId, id)))
 				.orderBy(desc(schema.application.updatedAt)),
 		]);
 		return { company: stripOwner(company), contacts, applications };
@@ -180,7 +182,7 @@ export const directoryService = {
 			db
 				.select()
 				.from(schema.application)
-				.where(eq(schema.application.userId, userId))
+				.where(activeApplications(userId))
 				.orderBy(desc(schema.application.updatedAt)),
 		]);
 		const summary = (row: typeof schema.application.$inferSelect) => ({

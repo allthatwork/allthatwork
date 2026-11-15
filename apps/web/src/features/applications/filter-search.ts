@@ -43,7 +43,17 @@ export const filterSearchShape = {
 	dir: scalarParam,
 	/** Old links' Show closed: adds Closed to the stages. */
 	closed: z.boolean().optional().catch(undefined),
+	/** Upstream's follow-up banner (Show): the attention filter's late replies and due follow-ups. */
+	followUp: z.boolean().optional().catch(undefined),
+	/** Upstream's Needs you chip: the attention filter's late replies, due follow-ups and interviews. */
+	needsYou: z.boolean().optional().catch(undefined),
 };
+
+/** The attention values upstream's two Applications params stand for. */
+const LEGACY_ATTENTION = {
+	followUp: ["no-reply", "follow-up"],
+	needsYou: ["no-reply", "follow-up", "interview"],
+} as const;
 
 const filterSearchSchema = z.object(filterSearchShape);
 export type FilterSearch = z.output<typeof filterSearchSchema>;
@@ -77,6 +87,11 @@ export function filtersFromSearch(search: FilterSearch): { filters: ApplicationF
 	}
 	if (search.closed && !filters.stage.includes("closed")) {
 		filters.stage = search.stage === undefined ? [...OPEN_STAGES, "closed"] : [...filters.stage, "closed"];
+	}
+	for (const key of ["followUp", "needsYou"] as const) {
+		if (!search[key]) continue;
+		const missing = LEGACY_ATTENTION[key].filter((kind) => !filters.attention.includes(kind));
+		filters.attention = [...filters.attention, ...missing];
 	}
 
 	return { filters, sort: sortFromSearch(search) ?? DEFAULT_APPLICATION_SORT };

@@ -6,7 +6,20 @@ import { useState } from "react";
 import { Linking, View } from "react-native";
 import { cvDomainRegistrationUrl, formatTimeSince } from "@reactive-resume/resume/sharing";
 import { orpc } from "@/api/client";
-import { Banner, Button, Icon, ListGroup, ListRow, Sheet, Text, TextField, haptics, showToast, useTheme } from "@/ui";
+import {
+	Banner,
+	Button,
+	ConfirmDialog,
+	Icon,
+	ListGroup,
+	ListRow,
+	Sheet,
+	Text,
+	TextField,
+	haptics,
+	showToast,
+	useTheme,
+} from "@/ui";
 
 const CODE = "RX";
 
@@ -32,6 +45,7 @@ export function CustomDomain({ offline, suggest }: CustomDomainProps) {
 	});
 	const [hostname, setHostname] = useState("");
 	const [recordsOpen, setRecordsOpen] = useState(false);
+	const [confirmRemove, setConfirmRemove] = useState(false);
 	const store = (next: RouterOutput["customDomain"]["get"]) =>
 		queryClient.setQueryData(orpc.customDomain.get.queryKey(), next);
 	const set = useMutation({
@@ -114,8 +128,21 @@ export function CustomDomain({ offline, suggest }: CustomDomainProps) {
 						variant="ghost"
 						label={t`Remove`}
 						loading={remove.isPending}
-						disabled={offline}
-						onPress={() => remove.mutate({})}
+						disabled={offline || set.isPending || verify.isPending}
+						onPress={() => setConfirmRemove(true)}
+					/>
+					<ConfirmDialog
+						open={confirmRemove}
+						title={t`Remove the custom domain?`}
+						message={t`Your domain will stop opening your primary resume. You can reconnect it later.`}
+						confirmLabel={t`Remove domain`}
+						cancelLabel={t`Keep domain`}
+						destructive
+						onCancel={() => setConfirmRemove(false)}
+						onConfirm={() => {
+							setConfirmRemove(false);
+							if (!offline && !remove.isPending) remove.mutate({});
+						}}
 					/>
 					<DnsRecordsSheet
 						domain={current}
@@ -151,8 +178,8 @@ function CvDomainCard({ suggestion: { domain, checked, price }, connecting, disa
 	const [visited, setVisited] = useState(false);
 	const money = (amount: number, currency: string) =>
 		i18n.number(amount, { style: "currency", currency, maximumFractionDigits: Number.isInteger(amount) ? 0 : 2 });
-	const cost = price ? money(price.amount, price.currency) : null;
-	const yearly = price?.renewal === price?.amount;
+	const originalCost = price ? money(price.amount, price.currency) : null;
+	const cost = price ? money(price.amount / 2, price.currency) : null;
 
 	return (
 		<View style={{ gap: space.s3, padding: space.s4, borderRadius: radius.rLg, backgroundColor: colors.sunken }}>
@@ -164,7 +191,15 @@ function CvDomainCard({ suggestion: { domain, checked, price }, connecting, disa
 					{checked ? (
 						<>
 							<Text variant="caption" color="accentText">{t`Available`}</Text>
-							{cost ? ` · ${yearly ? t`${cost} a year` : t`${cost} the first year`}` : ""}
+							{cost && (
+								<>
+									{" · "}
+									<Text variant="caption" color="ink3" style={{ textDecorationLine: "line-through" }}>
+										{originalCost}
+									</Text>{" "}
+									<Text variant="caption" weight={500}>{t`${cost} the first year`}</Text>
+								</>
+							)}
 						</>
 					) : (
 						t`May be available`

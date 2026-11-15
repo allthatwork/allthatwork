@@ -1,7 +1,7 @@
 import type { SaveStatus } from "@/draft/types";
 import type { IconName } from "@/ui";
 import type { Href } from "expo-router";
-import type { ReactNode } from "react";
+import type { ComponentRef, ReactNode, Ref } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { useRouter, Stack, useNavigation, useSegments } from "expo-router";
 import { createContext, use, useEffect, useState } from "react";
@@ -36,12 +36,15 @@ export type BuilderChromeSlots = {
 	save?: SaveStatusSlot | undefined;
 	/** Opens the document menu (rename, duplicate, lock, notes, history, trash). Makes the name a button with a caret. */
 	onMenu?: (() => void) | undefined;
+	/** The document-menu trigger, for restoring accessibility focus after help. */
+	menuRef?: Ref<ComponentRef<typeof Pressable>> | undefined;
 	/** Replaces what the Download button does (resumes default to the Download & history route). */
 	onExport?: (() => void) | undefined;
 	/** Buttons before Download: Assistant on phone; History, Assistant and Download PDF on tablet. */
 	actions?: ReactNode;
 	/** Under the top bar, full width: the locked banner. The offline strip shows by itself when `save.status` is offline. */
 	banner?: ReactNode;
+	applicationId?: string | null | undefined;
 	/** Counts on the pane tabs (`warn` badges), by pane, for example `{ check: 3 }` for open issues. */
 	badges?: Partial<Record<string, number | string>> | undefined;
 };
@@ -68,7 +71,10 @@ type BuilderChromeProps<T extends string> = {
 	title: string;
 	/** What the Download button does unless a screen sets `onExport`. No Download button when neither is set. */
 	onExport?: (() => void) | undefined;
-	/** Child routes presented as modals (Download & history, the assistant). Every other child route pushes. */
+	/** Back from an application: its validated label and the application it returns to. Defaults to Documents. */
+	back?: { label: string; onBack: () => void } | undefined /**
+	 * Child routes presented as modals (Download & history, the assistant). Every other child route pushes.
+	 */;
 	modals?: string[] | undefined /**
 	 * Rendered inside the chrome, outside the Stack, so a layout can fill slots once for every pane, for example a
 	 * component that reads the draft store and calls `useBuilderChrome({ title, save })`.
@@ -80,6 +86,7 @@ type FrameValue = {
 	title: string;
 	onExport: (() => void) | undefined;
 	leave: () => void;
+	backLabel: string;
 	/** The tablet Write / Design / Check switch. */
 	modes: ReactNode;
 };
@@ -107,7 +114,15 @@ export function BuilderChrome<T extends string>(props: BuilderChromeProps<T>) {
 	);
 }
 
-function Frame<T extends string>({ panes, tabletPanes, page, title, onExport, modals = [] }: BuilderChromeProps<T>) {
+function Frame<T extends string>({
+	panes,
+	tabletPanes,
+	page,
+	title,
+	onExport,
+	back,
+	modals = [],
+}: BuilderChromeProps<T>) {
 	const router = useRouter();
 	const { t } = useLingui();
 	const tablet = useIsTablet();
@@ -161,7 +176,8 @@ function Frame<T extends string>({ panes, tabletPanes, page, title, onExport, mo
 		title,
 		onExport,
 		// Back leaves the editor (the root stack), even with an entry open in the tablet panel.
-		leave: () => (navigation.canGoBack() ? navigation.goBack() : router.replace(routes.documents())),
+		leave: back?.onBack ?? (() => (navigation.canGoBack() ? navigation.goBack() : router.replace(routes.documents()))),
+		backLabel: back?.label ?? t`Back to Documents`,
 		modes: activePane ? (
 			<Segmented
 				compact
@@ -244,10 +260,11 @@ function ChromeTopBar() {
 	return (
 		<>
 			<TopBar
-				backLabel={t`Back to Documents`}
+				backLabel={frame.backLabel}
 				onBack={frame.leave}
 				title={slots.title ?? frame.title}
 				onTitlePress={slots.onMenu}
+				titleRef={slots.menuRef}
 				titleLabel={t`Document menu`}
 				subtitle={slots.save ? <SaveStatusLine {...slots.save} /> : null}
 				center={frame.modes}

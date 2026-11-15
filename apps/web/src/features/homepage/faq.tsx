@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { i18n } from "@lingui/core";
 import { t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
@@ -86,7 +87,7 @@ const underlinePath = "M2 7C30 4 58 9 96 6S160 3 196 7S262 9 298 5";
 type FaqItemProps = { item: Question; index: number };
 
 function FaqItem({ item, index }: FaqItemProps) {
-	const number = String(index + 1).padStart(2, "0");
+	const number = i18n.number(index + 1, { minimumIntegerDigits: 2 });
 	const linkClass =
 		"mt-3 inline-flex items-center gap-1 font-medium font-ui text-[14px] text-[oklch(0.42_0.154_258)] underline underline-offset-[3px] transition-colors hover:text-[oklch(0.32_0.118_258)]";
 
@@ -182,16 +183,7 @@ export function Faq() {
 					</Trans>
 				</h2>
 				<p className="max-w-[24em] font-display text-[clamp(17px,1.4vw,21px)] leading-normal text-pretty text-ink-2">
-					<Trans>
-						9 short answers to what people ask before they start. Anything else, ask on{" "}
-						<a
-							href="https://discord.gg/jSVSJyWd2k"
-							className="text-accent-text italic underline underline-offset-[3px] transition-colors hover:text-accent-hover"
-						>
-							Discord
-						</a>
-						.
-					</Trans>
+					<Trans>9 short answers to what people ask before they start.</Trans>
 				</p>
 				{/* In the sticky column, so it travels with the heading instead of crossing it. */}
 				<div aria-hidden="true" className="relative mt-4 aspect-[800/746] w-[11vw] max-[900px]:hidden">

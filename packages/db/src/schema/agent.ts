@@ -31,6 +31,9 @@ export const aiProvider = pg.pgTable(
 		label: pg.text("label").notNull(),
 		provider: pg.text("provider").notNull(),
 		model: pg.text("model").notNull(),
+		/** Optional overrides; a blank one keeps that task on `model` for existing and new connections. */
+		fastModel: pg.text("fast_model"),
+		capableModel: pg.text("capable_model"),
 		baseUrl: pg.text("base_url"),
 		/** Reasoning sent with every request (none, or an effort); null sends nothing, so the model's default applies. */
 		reasoning: pg.text("reasoning"),
@@ -42,6 +45,8 @@ export const aiProvider = pg.pgTable(
 		apiKeyPreview: pg.text("api_key_preview").notNull(),
 		testStatus: pg.text("test_status").notNull().default("untested"),
 		testError: pg.text("test_error"),
+		testErrorKind: pg.text("test_error_kind"),
+		userDisabled: pg.boolean("user_disabled").notNull().default(false),
 		lastTestedAt: pg.timestamp("last_tested_at", { withTimezone: true }),
 		lastUsedAt: pg.timestamp("last_used_at", { withTimezone: true }),
 		enabled: pg.boolean("enabled").notNull().default(false),

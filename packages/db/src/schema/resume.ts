@@ -20,8 +20,11 @@ export const resume = pg.pgTable(
 		/** The owner set the address on purpose; otherwise going public swaps a guessable address for a random one. */
 		slugChosen: pg.boolean("slug_chosen").notNull().default(false),
 		tags: pg.text("tags").array().notNull().default([]),
+		// Private request lineage stays outside portable resume data.
+		aiOperationIds: pg.text("ai_operation_ids").array().notNull().default([]),
 		isPublic: pg.boolean("is_public").notNull().default(false),
 		showDownloadButtons: pg.boolean("show_download_buttons").notNull().default(true),
+		allowWordDownload: pg.boolean("allow_word_download").notNull().default(false),
 		// Share settings that decide who sees what. They live here, not in `data`, so a JSON patch, an import or a
 		// version restore can never change them.
 		showInSearchEngines: pg.boolean("show_in_search_engines").notNull().default(false),
@@ -37,6 +40,9 @@ export const resume = pg.pgTable(
 		trashedAt: pg.timestamp("trashed_at", { withTimezone: true }),
 		// A blank resume's name follows its headline until the user renames it.
 		autoName: pg.boolean("auto_name").notNull().default(false),
+		// The address was made by the app and nobody has been sent it: it follows the name until the resume is
+		// published or someone chooses an address.
+		autoSlug: pg.boolean("auto_slug").notNull().default(false),
 		data: pg
 			.jsonb("data")
 			.notNull()
@@ -52,6 +58,10 @@ export const resume = pg.pgTable(
 			.notNull()
 			.defaultNow()
 			.$onUpdate(() => /* @__PURE__ */ new Date()),
+		// When the content (`data`) last changed, for "Last edited". Existing documents were backfilled from
+		// `updated_at` (the time the library already showed); metadata writes move only `updated_at`, the concurrency
+		// check, and stay out of this. A trigger in the migration keeps this one current on every write path.
+		editedAt: pg.timestamp("edited_at", { withTimezone: true }).defaultNow(),
 	},
 	(t) => [
 		pg.unique().on(t.slug, t.userId),
@@ -105,6 +115,7 @@ export const resumeVersion = pg.pgTable(
 			.references(() => user.id, { onDelete: "cascade" }),
 		// Snapshot of the resume data. A session's autosave is refreshed while the session lasts; the rest are immutable.
 		data: pg.jsonb("data").notNull().$type<ResumeData>(),
+		aiOperationIds: pg.text("ai_operation_ids").array().notNull().default([]),
 		kind: pg.text("kind", { enum: RESUME_VERSION_KINDS }).notNull().default("auto"),
 		// The user's name for a `named` version.
 		name: pg.text("name"),
@@ -203,4 +214,23 @@ export const usernameRedirect = pg.pgTable("username_redirect", {
 		.references(() => user.id, { onDelete: "cascade" }),
 	expiresAt: pg.timestamp("expires_at", { withTimezone: true }).notNull(),
 	createdAt: pg.timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One paid writing review per resume, kept independently of the editable document revision. */
+export const resumeWritingReview = pg.pgTable("resume_writing_review", {
+	resumeId: pg
+		.text("resume_id")
+		.primaryKey()
+		.references(() => resume.id, { onDelete: "cascade" }),
+	userId: pg
+		.text("user_id")
+		.notNull()
+		.references(() => user.id, { onDelete: "cascade" }),
+	requestGeneration: pg.integer("request_generation").notNull().default(1),
+	inputText: pg.text("input_text"),
+	passages: pg.jsonb("passages").$type<{ id: string; where: string; text: string }[]>(),
+	review: pg.jsonb("review").$type<Record<string, unknown>>(),
+	aiOperationId: pg.text("ai_operation_id"),
+	requestedAt: pg.timestamp("requested_at", { withTimezone: true }),
+	reviewedAt: pg.timestamp("reviewed_at", { withTimezone: true }),
 });

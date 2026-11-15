@@ -115,11 +115,16 @@ export const applicationRecord = z.object({
 	coverLetterName: nullableText(500),
 	followUpAt: nullableStamp,
 	followUpNote: nullableText(2000),
+	followUpDateOnly: z.boolean().catch(false).default(false),
 	contacts: z.array(contactSchema).max(200).catch([]).default([]),
 	activity: z.array(applicationTimelineEntrySchema).max(2000).catch([]).default([]),
 	appliedAt: stamp,
 	createdAt: stamp,
 	updatedAt: stamp,
+	// The first recorded submission (upstream v6.1.0); older exports leave it out.
+	submittedAt: nullableStamp,
+	// An application in Trash comes back in Trash with its deleted time, as the export kept it, never as live.
+	trashedAt: nullableStamp,
 });
 
 export const workspaceRecord = z.object({ applicationId: id, data: careerWorkspaceSchema, updatedAt: stamp });

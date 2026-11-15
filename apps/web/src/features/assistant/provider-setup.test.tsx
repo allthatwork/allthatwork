@@ -11,6 +11,16 @@ vi.mock("@/libs/orpc/client", () => ({
 	client: { aiProviders: { create: vi.fn(), test: vi.fn() } },
 	orpc: { aiProviders: { list: { key: () => ["aiProviders"] } } },
 }));
+// No saved connections: the setup offers the three choices.
+vi.mock("@/features/settings/integrations/hooks/use-has-usable-ai-provider", () => ({
+	useHasUsableAiProvider: () => ({
+		isUnavailable: false,
+		providers: [],
+		usableProviders: [],
+		hasUsableProvider: false,
+	}),
+}));
+vi.mock("@/features/settings/ai/providers", () => ({ ProvidersSection: () => null }));
 
 i18n.loadAndActivate({ locale: "en", messages: {} });
 
@@ -40,7 +50,7 @@ const modelInput = () => screen.getByLabelText("Model") as HTMLInputElement;
 describe("Assistant provider setup", () => {
 	afterEach(() => vi.restoreAllMocks());
 
-	it("suggests the newest models.dev model without filling the box, so every model stays listed", async () => {
+	it("suggests the newest models.dev model without filling the box", async () => {
 		vi.spyOn(globalThis, "fetch").mockResolvedValue(
 			Response.json({
 				openai: { models: { old: entry("gpt-old", "2025-04-14"), new: entry("gpt-new", "2026-09-29") } },
@@ -52,15 +62,13 @@ describe("Assistant provider setup", () => {
 		expand(/^OpenAI$/);
 		await waitFor(() => expect(modelInput().placeholder).toBe("gpt-new"));
 		expect(modelInput().value).toBe("");
-		const options = [...(modelInput().list?.options ?? [])].map((option) => option.value);
-		expect(options).toEqual(["gpt-new", "gpt-old"]);
 
 		expand(/^Anthropic$/);
 		await waitFor(() => expect(modelInput().placeholder).toBe("claude-new"));
 		expect(modelInput().value).toBe("");
 
 		expand(/OpenAI-compatible/);
-		await waitFor(() => expect(screen.getByLabelText("Base URL")).toBeTruthy());
+		await waitFor(() => expect(screen.getByLabelText("Base URL (required)")).toBeTruthy());
 		expect(modelInput().placeholder).toBe("");
 	});
 

@@ -6,9 +6,10 @@ import type { MouseEvent } from "react";
 import { plural, t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Plural, Trans } from "@lingui/react/macro";
+import { HotkeysProvider, useHotkeys } from "@tanstack/react-hotkeys";
 import { useMutation } from "@tanstack/react-query";
 import { AnimatePresence, m } from "motion/react";
-import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { defaultSortDirection } from "@reactive-resume/schema/applications/filters";
 import { LIST_COLUMN_MAX_WIDTH, LIST_COLUMN_WIDTHS, ROLE_MIN_WIDTH } from "@reactive-resume/schema/applications/layout";
 import { Button } from "@reactive-resume/ui/components/button";
@@ -25,16 +26,19 @@ import { Input } from "@reactive-resume/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
+import { useFloatingToolbarSpace } from "@reactive-resume/ui/hooks/use-floating-toolbar-space";
 import { cn } from "@reactive-resume/utils/style";
-import { getCategoryLane, getLaneLabel, laneMoveInput } from "../lanes";
+import { getCategoryLane, getDisplayLane, getLaneLabel } from "../lanes";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
+import { offerHintFor, useOfferHints } from "../queries";
 import { sortApplications } from "../sort";
-import { getStageColor, getStageLabel, LIST_ORDER } from "../stages";
-import { useInvalidateApplications } from "../use-application-actions";
+import { getStageColor, getStageLabel, LIST_ORDER, PIPELINE } from "../stages";
+import { useApplicationActions, useInvalidateApplications, useMoveWithUndo } from "../use-application-actions";
 import { useApplicationLanes } from "../use-application-lanes";
 import { ClosedLaneItems } from "./application-actions-menu";
 import { StaleNote } from "./application-card";
 import { LIST_COLUMNS } from "./list-columns";
+import { TagChips } from "./tag-chips";
 import { useCareerTime } from "@/features/career/shared";
 import { useConfirm } from "@/hooks/use-confirm";
 import { D2, EASE, EXIT } from "@/libs/motion";
@@ -59,6 +63,8 @@ type ListViewProps = {
 	onColumnResize: (id: ListColumnId, width: number | null) => void;
 	selectedId: string | null;
 	onOpen: (application: ApplicationSummary) => void;
+	/** A tag chip filters the page's existing search, rather than starting a second filter state. */
+	onTagSelect?: ((tag: string) => void) | undefined;
 };
 
 const NO_STALE: ReadonlyMap<string, ApplicationStatus> = new Map();
@@ -74,7 +80,8 @@ const groupFor = (
  * Applications grouped by stage in the order that needs you first (Interview, Offer, Screening, Applied, Saved, then
  * Closed), for the stages the filters show, sorted within each group. Role comes first and takes the width the other
  * columns leave; the rest are the account's choice, each with its own width, dragged by the line between two headings.
- * Groups collapse, sortable headings sort, and row checkboxes select for bulk moves, tags, closing and deleting.
+ * Groups collapse, sortable headings sort, and row checkboxes select for bulk moves, tags, closing and deleting. A
+ * focused row takes keyboard triage (J and K to step, Enter to open, 1 to 5 to move, X to select, F for followed up).
  * Phones get two-line rows.
  */
 export function ApplicationList({
@@ -87,22 +94,28 @@ export function ApplicationList({
 	onColumnResize,
 	selectedId,
 	onOpen,
+	onTagSelect,
 }: ListViewProps) {
 	const phone = useBreakpoint() === "mobile";
+	const { lanes, isPending: lanesPending, error: lanesError } = useApplicationLanes();
+	const moveWithUndo = useMoveWithUndo();
+	const { logFollowUp } = useApplicationActions();
+	const rowButtons = useRef(new Map<string, HTMLButtonElement>());
+	const restoreFocus = useRef<string | null>(null);
 	const [collapsed, setCollapsed] = useState<ReadonlySet<ApplicationStatus>>(new Set());
 	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
+	const { ref: selectionBarRef, space: selectionBarSpace } = useFloatingToolbarSpace();
 	// The column being dragged and its width so far; it's saved when the drag ends.
 	const [resizing, setResizing] = useState<ShownColumn | null>(null);
 	const wrapRef = useRef<HTMLDivElement>(null);
 	const guideRef = useRef<HTMLDivElement>(null);
 
 	// Selections only cover what's on screen.
-	const checkedIds = applications
-		.filter((application) => {
-			const group = groupFor(application, stages, stale);
-			return checked.has(application.id) && stages.includes(group) && !collapsed.has(group);
-		})
-		.map((application) => application.id);
+	const visible = applications.filter((application) => {
+		const group = groupFor(application, stages, stale);
+		return stages.includes(group) && !collapsed.has(group);
+	});
+	const checkedIds = visible.filter((application) => checked.has(application.id)).map((application) => application.id);
 	if (checkedIds.length !== checked.size) setChecked(new Set(checkedIds));
 
 	const groups = useMemo(
@@ -118,6 +131,39 @@ export function ApplicationList({
 				.filter((group) => group.rows.length > 0),
 		[applications, stages, stale, sort],
 	);
+
+	// Keyboard triage walks the rows as shown, skipping collapsed groups.
+	const ordered = groups.flatMap(({ status, rows }) => (collapsed.has(status) ? [] : rows));
+	const rowRef = (id: string, node: HTMLButtonElement | null) => {
+		const previous = rowButtons.current.get(id);
+		if (!node && previous === document.activeElement) restoreFocus.current = id;
+		if (node) rowButtons.current.set(id, node);
+		else rowButtons.current.delete(id);
+	};
+	useLayoutEffect(() => {
+		const id = restoreFocus.current;
+		restoreFocus.current = null;
+		if (id && document.activeElement === document.body) rowButtons.current.get(id)?.focus();
+	});
+	const step = (id: string, direction: number) => {
+		const index = ordered.findIndex((row) => row.id === id);
+		if (index < 0) return;
+		const next = ordered[Math.max(0, Math.min(ordered.length - 1, index + direction))];
+		if (next) rowButtons.current.get(next.id)?.focus();
+	};
+	const move = (id: string, status: ApplicationStatus) => {
+		const application = ordered.find((row) => row.id === id);
+		if (!application || lanesPending || lanesError) return;
+		const lane = getCategoryLane(lanes, status);
+		if (getDisplayLane(lanes, application).id === lane.id) return;
+		moveWithUndo({ applications: [application], lane, description: t`Moved to ${getLaneLabel(lane)}` });
+	};
+	const followedUp = (id: string) => {
+		const application = ordered.find((row) => row.id === id);
+		if (!application || application.status === "saved" || application.status === "closed" || logFollowUp.isPending)
+			return;
+		logFollowUp.mutate({ id });
+	};
 
 	const shown = columns.map((column) => (resizing?.id === column.id ? resizing : column));
 	const minWidth = CHECK_WIDTH + ROLE_MIN_WIDTH + shown.reduce((total, column) => total + column.width, 0);
@@ -184,7 +230,10 @@ export function ApplicationList({
 		key && sort.sort === key ? (sort.dir === "asc" ? "ascending" : "descending") : undefined;
 
 	return (
-		<div className="grid min-w-0 content-start gap-3">
+		<div
+			className="grid min-w-0 content-start gap-3"
+			style={{ paddingBottom: checkedIds.length ? selectionBarSpace : undefined }}
+		>
 			<div ref={wrapRef} className="relative min-w-0 overflow-x-auto">
 				{/* Phones keep the automatic layout: their rows are one cell, and a fixed layout would split them by the group headings' span. */}
 				<table
@@ -207,6 +256,15 @@ export function ApplicationList({
 									<span className="sr-only">
 										<Trans>Select</Trans>
 									</span>
+									<Checkbox
+										checked={visible.length > 0 && checkedIds.length === visible.length}
+										indeterminate={checkedIds.length > 0 && checkedIds.length < visible.length}
+										disabled={visible.length === 0}
+										onCheckedChange={(on) =>
+											setChecked(on ? new Set(visible.map((application) => application.id)) : new Set())
+										}
+										aria-label={t`Select all visible applications`}
+									/>
 								</th>
 								<th scope="col" aria-sort={ariaSort("role")} className="px-2 text-start font-medium">
 									{heading("role", t`Role`)}
@@ -285,6 +343,11 @@ export function ApplicationList({
 											checked={checked.has(application.id)}
 											onCheck={toggleRow}
 											onOpen={onOpen}
+											onTagSelect={onTagSelect}
+											rowRef={rowRef}
+											onStep={step}
+											onMove={move}
+											onFollowUp={followedUp}
 										/>
 									))}
 							</tbody>
@@ -305,13 +368,19 @@ export function ApplicationList({
 				{checkedIds.length > 0 && (
 					<m.div
 						key="bulk-bar"
+						ref={selectionBarRef}
 						initial={{ opacity: 0, transform: "translateY(100%)" }}
 						animate={{ opacity: 1, transform: "translateY(0%)" }}
 						exit={{ opacity: 0, transform: "translateY(100%)", transition: { duration: D2 * EXIT, ease: EASE } }}
 						transition={{ duration: D2, ease: EASE }}
 						className="fixed inset-x-0 bottom-6 z-30 mx-auto w-fit max-w-[calc(100vw-32px)] max-sm:bottom-[calc(69px+env(safe-area-inset-bottom))]"
 					>
-						<BulkBar ids={checkedIds} onDone={() => setChecked(new Set())} />
+						<BulkBar
+							ids={checkedIds}
+							allSelected={checkedIds.length === visible.length}
+							onSelectAll={() => setChecked(new Set(visible.map((application) => application.id)))}
+							onDone={() => setChecked(new Set())}
+						/>
 					</m.div>
 				)}
 			</AnimatePresence>
@@ -423,8 +492,13 @@ type ApplicationRowProps = {
 	/** Changed and no longer matching the filters: faded, with a note under the company. */
 	stale: boolean;
 	checked: boolean;
+	rowRef: (id: string, node: HTMLButtonElement | null) => void;
+	onStep: (id: string, direction: number) => void;
+	onMove: (id: string, status: ApplicationStatus) => void;
+	onFollowUp: (id: string) => void;
 	onCheck: (id: string) => void;
 	onOpen: (application: ApplicationSummary) => void;
+	onTagSelect?: ((tag: string) => void) | undefined;
 };
 
 // Memoized with id-taking callbacks, so one row's change doesn't re-render the other rows. The whole row opens the
@@ -437,13 +511,55 @@ const ApplicationRow = memo(function ApplicationRow({
 	selected,
 	stale,
 	checked,
+	rowRef,
+	onStep,
+	onMove,
+	onFollowUp,
 	onCheck,
 	onOpen,
+	onTagSelect,
 }: ApplicationRowProps) {
+	const openRef = useRef<HTMLButtonElement>(null);
+	useHotkeys(
+		[
+			{ hotkey: "J" as const, callback: () => onStep(application.id, 1), meta: { name: t`Next application` } },
+			{ hotkey: "K" as const, callback: () => onStep(application.id, -1), meta: { name: t`Previous application` } },
+			{ hotkey: "Enter" as const, callback: () => onOpen(application), meta: { name: t`Open application` } },
+			{ hotkey: "X" as const, callback: () => onCheck(application.id), meta: { name: t`Toggle selection` } },
+			{ hotkey: "F" as const, callback: () => onFollowUp(application.id), meta: { name: t`Followed up` } },
+			...PIPELINE.map((status, index) => ({
+				hotkey: `${index + 1}` as "1" | "2" | "3" | "4" | "5",
+				callback: () => onMove(application.id, status),
+				meta: { name: t`Moved to ${getStageLabel(status)}` },
+			})),
+		].map(({ callback, meta, ...binding }) => ({
+			...binding,
+			options: { meta },
+			callback: (event: KeyboardEvent) => {
+				if (
+					!event.repeat &&
+					!event.isComposing &&
+					event.keyCode !== 229 &&
+					!event.ctrlKey &&
+					!event.metaKey &&
+					!event.altKey &&
+					!event.shiftKey
+				)
+					callback();
+			},
+		})),
+		{ target: openRef, requireReset: true, ignoreInputs: true },
+	);
 	const { i18n } = useLingui();
 	const { timeZone } = useCareerTime();
 	const noReplyDays = useNoReplyDays();
-	const next = describeNextStep(getNextStep(application, { noReplyDays }), application, i18n.locale, timeZone);
+	const hints = useOfferHints(application.status === "offer");
+	const next = describeNextStep(
+		getNextStep(application, undefined, timeZone, offerHintFor(hints, application.id), noReplyDays),
+		application,
+		i18n.locale,
+		timeZone,
+	);
 
 	const fade = stale && "opacity-55";
 	const initial = (
@@ -459,13 +575,29 @@ const ApplicationRow = memo(function ApplicationRow({
 	);
 
 	const openButton = (
-		<button type="button" data-application-open className="grid min-w-0 cursor-pointer text-start">
-			<span className={cn("truncate font-medium", fade)}>{application.role}</span>
-			<span className={cn("truncate text-xs text-ink-3", fade)}>
-				{phone
-					? `${application.company} · ${next.title}`
-					: [application.company, application.location].filter(Boolean).join(" · ")}
+		<button
+			type="button"
+			ref={(node) => {
+				openRef.current = node;
+				rowRef(application.id, node);
+			}}
+			data-application-open
+			aria-keyshortcuts="j k Enter 1 2 3 4 5 x f"
+			className="focus-visible:outline-focus grid min-w-0 cursor-pointer rounded-sm text-start focus-visible:outline-2 focus-visible:outline-offset-4"
+		>
+			<span dir="auto" className={cn("truncate font-medium", fade)}>
+				{application.role}
 			</span>
+			{/* The company keeps its own direction; on phones the next step after it is interface text. */}
+			{phone ? (
+				<span className={cn("truncate text-xs text-ink-3", fade)}>
+					<bdi>{application.company}</bdi> · {next.title}
+				</span>
+			) : (
+				<span dir="auto" className={cn("truncate text-xs text-ink-3", fade)}>
+					{[application.company, application.location].filter(Boolean).join(" · ")}
+				</span>
+			)}
 			{stale && <StaleNote />}
 		</button>
 	);
@@ -480,7 +612,10 @@ const ApplicationRow = memo(function ApplicationRow({
 				<td className="py-2.5 ps-1">
 					<div className="flex items-center gap-3">
 						{initial}
-						{openButton}
+						<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+							{openButton}
+							<TagChips tags={application.tags} onSelect={onTagSelect} className="ms-0" />
+						</div>
 						<Icon name="caret-right" size={20} className="ms-auto shrink-0 text-ink-3" />
 					</div>
 				</td>
@@ -509,7 +644,14 @@ const ApplicationRow = memo(function ApplicationRow({
 			<td className="py-2 pe-2">
 				<div className="flex min-w-0 items-center gap-3">
 					{initial}
-					{openButton}
+					<div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-1.5">
+						<div className="col-start-1 row-span-2 min-w-0">{openButton}</div>
+						<TagChips
+							tags={application.tags}
+							onSelect={onTagSelect}
+							className="col-start-2 row-start-2 ms-0 self-center"
+						/>
+					</div>
 				</div>
 			</td>
 			{columns.map((column) => {
@@ -528,13 +670,21 @@ const ApplicationRow = memo(function ApplicationRow({
 	);
 });
 
-type BulkBarProps = { ids: string[]; onDone: () => void };
+type BulkBarProps = {
+	ids: string[];
+	allSelected: boolean;
+	onSelectAll: () => void;
+	onDone: () => void;
+};
 
-/** For the checked rows: move them, tag them, close them with a reason, or delete them (after asking). */
-function BulkBar({ ids, onDone }: BulkBarProps) {
+/** For the checked rows: move them or close them (with Undo), tag them, or delete them (after asking). */
+function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
+	const scope = `applications-bulk-${useId()}`;
 	const invalidate = useInvalidateApplications();
+	const moveWithUndo = useMoveWithUndo();
+	const rows = ids.map((id) => ({ id }));
 	const confirm = useConfirm();
-	const { lanes, active, mode } = useApplicationLanes();
+	const { lanes, active } = useApplicationLanes();
 	const [tag, setTag] = useState("");
 
 	const bulkUpdate = useMutation({
@@ -549,16 +699,17 @@ function BulkBar({ ids, onDone }: BulkBarProps) {
 		onError: () => toast.add({ type: "error", description: t`Couldn't update the applications. Try again.` }),
 	});
 	const bulkDelete = useMutation({
-		...orpc.applications.bulkDelete.mutationOptions(),
+		...orpc.applications.bulkTrash.mutationOptions(),
 		onSuccess: (result) => {
 			invalidate();
 			onDone();
 			toast.add({
-				description: plural(result.deleted, { one: "# application deleted", other: "# applications deleted" }),
+				description: t`Moved ${result.deleted} to Trash.`,
 			});
 		},
 		onError: () => toast.add({ type: "error", description: t`Couldn't delete the applications. Try again.` }),
 	});
+	const disabled = ids.length > 200 || bulkUpdate.isPending || bulkDelete.isPending;
 
 	return (
 		<div
@@ -569,85 +720,116 @@ function BulkBar({ ids, onDone }: BulkBarProps) {
 			<span className="px-2 text-sm font-semibold whitespace-nowrap" aria-live="polite">
 				<Plural value={ids.length} one="# selected" other="# selected" />
 			</span>
-
-			<DropdownMenu>
-				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" />}>
-					<Icon name="arrow-right" />
-					<Trans>Move to…</Trans>
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="start">
-					{active
-						.filter((lane) => lane.category !== "closed")
-						.map((lane) => (
-							<DropdownMenuItem key={lane.id} onClick={() => bulkUpdate.mutate({ ids, ...laneMoveInput(lane, mode) })}>
-								<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: lane.color }} />
-								<span className="truncate">{getLaneLabel(lane)}</span>
-							</DropdownMenuItem>
-						))}
-				</DropdownMenuContent>
-			</DropdownMenu>
+			{!allSelected && (
+				<Button size="sm" variant="ghost" disabled={disabled} onClick={onSelectAll}>
+					<Trans>Select all</Trans>
+				</Button>
+			)}
+			{ids.length > 200 && (
+				<p role="status" className="w-full px-2 text-sm text-warn-text">
+					<Trans>Choose up to 200 applications per bulk action.</Trans>
+				</p>
+			)}
 
 			<Popover>
-				<PopoverTrigger render={<Button size="sm" variant="ghost" />}>
+				<PopoverTrigger render={<Button size="sm" variant="ghost" disabled={disabled} />}>
 					<Icon name="tag" />
-					<Trans>Add tag</Trans>
+					<Trans>Tags…</Trans>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-60 p-2">
-					<form
-						className="flex gap-1.5"
-						onSubmit={(event) => {
-							event.preventDefault();
-							if (!tag.trim()) return;
-							bulkUpdate.mutate({ ids, addTags: [tag.trim()] });
-							setTag("");
-						}}
-					>
-						<Input aria-label={t`Tag`} value={tag} onChange={(event) => setTag(event.target.value)} autoFocus />
-						<Button size="sm" type="submit" disabled={!tag.trim()}>
-							<Trans>Add</Trans>
-						</Button>
-					</form>
+					<HotkeysProvider scope={`${scope}-tags`} exclusive>
+						<form
+							className="flex gap-1.5"
+							onSubmit={(event) => {
+								event.preventDefault();
+								if (disabled || !tag.trim()) return;
+								bulkUpdate.mutate({ ids, addTags: [tag.trim()] });
+								setTag("");
+							}}
+						>
+							<Input aria-label={t`Tag`} value={tag} onChange={(event) => setTag(event.target.value)} autoFocus />
+							<Button size="sm" type="submit" disabled={disabled || !tag.trim()}>
+								<Trans>Add</Trans>
+							</Button>
+						</form>
+					</HotkeysProvider>
 				</PopoverContent>
 			</Popover>
 
 			<DropdownMenu>
-				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" />}>
-					<Trans>Close…</Trans>
+				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" disabled={disabled} />}>
+					<Icon name="arrow-right" />
+					<Trans>Move to…</Trans>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start">
-					<ClosedLaneItems
-						lanes={active}
-						onPick={(lane, reason) =>
-							bulkUpdate.mutate(
-								lane
-									? { ids, ...laneMoveInput(lane, mode, reason) }
-									: { ids, ...laneMoveInput(getCategoryLane(lanes, "closed"), mode, reason ?? null) },
-							)
-						}
-					/>
+					<HotkeysProvider scope={`${scope}-0`} exclusive>
+						{active
+							.filter((lane) => lane.category !== "closed")
+							.map((lane) => (
+								<DropdownMenuItem
+									key={lane.id}
+									onClick={() => {
+										const label = getLaneLabel(lane);
+										moveWithUndo({
+											applications: rows,
+											lane,
+											description: plural(ids.length, {
+												one: `# application moved to ${label}`,
+												other: `# applications moved to ${label}`,
+											}),
+										});
+										onDone();
+									}}
+								>
+									<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: lane.color }} />
+									<span className="truncate">{getLaneLabel(lane)}</span>
+								</DropdownMenuItem>
+							))}
+					</HotkeysProvider>
 				</DropdownMenuContent>
 			</DropdownMenu>
 
+			<DropdownMenu>
+				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" disabled={disabled} />}>
+					<Trans>Close…</Trans>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="start">
+					<HotkeysProvider scope={`${scope}-1`} exclusive>
+						<ClosedLaneItems
+							lanes={active}
+							onPick={(lane, reason) => {
+								moveWithUndo({
+									applications: rows,
+									lane: lane ?? getCategoryLane(lanes, "closed"),
+									closedReason: lane ? reason : (reason ?? null),
+									description: plural(ids.length, { one: "# application closed", other: "# applications closed" }),
+								});
+								onDone();
+							}}
+						/>
+					</HotkeysProvider>
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			<IconButton icon="x" size="icon-sm" label={t`Clear selection`} className="text-ink-2" onClick={onDone} />
 			<Button
 				size="sm"
 				variant="ghost"
+				disabled={disabled}
 				className="text-danger-text hover:bg-danger-soft"
 				onClick={async () => {
-					const confirmed = await confirm(
-						plural(ids.length, { one: "Delete # application?", other: "Delete # applications?" }),
-						{
-							description: t`They and their timelines are deleted permanently. This can't be undone.`,
-							confirmText: plural(ids.length, { one: "Delete # application", other: "Delete # applications" }),
-						},
-					);
+					const confirmed = await confirm(t`Move to Trash`, {
+						description: t`Applications and their timelines can be restored from Trash.`,
+						confirmText: t`Move to Trash`,
+						cancelText: plural(ids.length, { one: "Keep application", other: "Keep applications" }),
+						variant: "danger",
+					});
 					if (confirmed) bulkDelete.mutate({ ids });
 				}}
 			>
 				<Icon name="trash" />
-				<Trans>Delete…</Trans>
+				<Trans>Move to Trash</Trans>
 			</Button>
-
-			<IconButton icon="x" size="icon-sm" label={t`Clear selection`} className="text-ink-2" onClick={onDone} />
 		</div>
 	);
 }

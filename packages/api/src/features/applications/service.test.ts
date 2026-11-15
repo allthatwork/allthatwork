@@ -32,12 +32,14 @@ vi.mock("@reactive-resume/db/schema", () => ({
 		resumeFileUrl: "resume_file_url",
 		coverLetterUrl: "cover_letter_url",
 	},
+	careerJob: { userId: "job_user_id", scheduleId: "schedule_id", status: "job_status" },
 	agentThread: {
 		id: "thread_id",
 		userId: "user_id",
 		applicationId: "application_id",
 		activeRunId: "active_run_id",
 	},
+	careerWorkspace: { applicationId: "workspace_application_id", userId: "workspace_user_id" },
 	careerSchedule: {
 		id: "schedule_id",
 		userId: "user_id",
@@ -87,9 +89,11 @@ const existing = {
 	laneId: "application-lane:user-1:saved",
 	closedReason: null,
 	tags: [],
+	contacts: [],
 	activity: [{ id: "e0", type: "stage" as const, stage: "saved" as const, at: new Date("2026-07-01T12:00:00.000Z") }],
 	appliedAt: new Date("2026-07-01T12:00:00.000Z"),
 	createdAt: new Date("2026-07-01T12:00:00.000Z"),
+	updatedAt: new Date("2026-07-01T12:00:00.000Z"),
 	resumeFileUrl: "http://localhost:3000/api/uploads/user-1/pictures/resume.pdf",
 	coverLetterUrl: "/api/uploads/user-1/pictures/cover.pdf",
 };
@@ -125,12 +129,15 @@ beforeEach(() => {
 		callback({
 			...dbMock,
 			insert: (table: unknown) =>
-				table === testSchema.applicationLane || table === testSchema.applicationPipeline
-					? { values: () => ({ onConflictDoNothing: () => Promise.resolve() }) }
-					: dbMock.insert(table),
+				table === testSchema.careerWorkspace
+					? { values: () => ({ onConflictDoUpdate: () => Promise.resolve() }) }
+					: table === testSchema.applicationLane || table === testSchema.applicationPipeline
+						? { values: () => ({ onConflictDoNothing: () => Promise.resolve() }) }
+						: dbMock.insert(table),
 			select: (...args: unknown[]) => ({
 				from: (table: unknown) => {
 					if (table === testSchema.applicationPipeline) return { where: () => Promise.resolve([{ revision: 0 }]) };
+					if (table === testSchema.careerWorkspace) return { where: () => Promise.resolve([]) };
 					if (table === testSchema.applicationLane)
 						return { where: () => ({ orderBy: () => Promise.resolve(createDefaultOwnedApplicationLanes("user-1")) }) };
 					return dbMock.select(...args).from(table);
@@ -383,7 +390,11 @@ describe("applicationService sent resume", () => {
 				expect.anything(),
 				expect.objectContaining({ resumeId: "resume-1", kind: "sent", name: "Stripe", data }),
 			);
-			expect(setSent).toHaveBeenCalledWith({ sentResumeVersionId: "version-1", sentCheckScore: expect.any(Number) });
+			expect(setSent).toHaveBeenCalledWith({
+				submittedAt: expect.any(Date),
+				sentResumeVersionId: "version-1",
+				sentCheckScore: expect.any(Number),
+			});
 		},
 	);
 
@@ -604,8 +615,9 @@ describe("applicationService.attachDocument", () => {
 });
 
 describe("applicationService.bulkDelete", () => {
-	it("deletes uploaded attachments for deleted owned applications", async () => {
+	it("retains uploaded attachments and coaching when applications move to Trash", async () => {
 		setSelectResults(
+			[{ id: "user-1" }],
 			[
 				{ ...existing, id: "app-1" },
 				{
@@ -616,8 +628,6 @@ describe("applicationService.bulkDelete", () => {
 				},
 			],
 			[{ id: "coach-1", runId: null }],
-			[{ id: "user-1" }],
-			[],
 		);
 		dbMock.delete.mockReturnValue({
 			where: () => ({ returning: () => Promise.resolve([{ id: "app-1" }, { id: "app-2" }]) }),
@@ -626,22 +636,19 @@ describe("applicationService.bulkDelete", () => {
 		const result = await applicationService.bulkDelete({ userId: "user-1", ids: ["app-1", "app-2"] });
 
 		expect(result).toEqual({ deleted: 2 });
-		expect(storageDeleteMock).toHaveBeenCalledWith("uploads/user-1/pictures/resume.pdf");
-		expect(storageDeleteMock).toHaveBeenCalledWith("uploads/user-1/pictures/cover.pdf");
-		expect(storageDeleteMock).toHaveBeenCalledWith("uploads/user-1/agent/coach-1");
-		expect(storageDeleteMock).not.toHaveBeenCalledWith("uploads/user-2/pictures/ignored.pdf");
+		expect(storageDeleteMock).not.toHaveBeenCalled();
+		expect(dbMock.delete).not.toHaveBeenCalled();
 	});
 
 	it("never deletes a folder or non-PDF that an edited document URL points at", async () => {
 		setSelectResults(
+			[{ id: "user-1" }],
 			[
 				{ ...existing, resumeFileUrl: "/api/uploads/user-1", coverLetterUrl: "/api/uploads/user-1/agent/coach-1" },
 				{ ...existing, id: "app-2", resumeFileUrl: "/uploads/user-1/pictures", coverLetterUrl: null },
 				{ ...existing, id: "app-3", resumeFileUrl: "/api/uploads/user-1/pictures/a/b.pdf", coverLetterUrl: null },
 				{ ...existing, id: "app-4", resumeFileUrl: "/api/uploads/user-1/pictures/photo.jpeg", coverLetterUrl: null },
 			],
-			[],
-			[{ id: "user-1" }],
 			[],
 		);
 		dbMock.delete.mockReturnValue({
@@ -863,6 +870,10 @@ describe("applicationService.importMany", () => {
 			expect.anything(),
 			expect.objectContaining({ resumeId: "resume-1", kind: "sent", data }),
 		);
-		expect(set).toHaveBeenCalledWith({ sentResumeVersionId: "version-1", sentCheckScore: expect.any(Number) });
+		expect(set).toHaveBeenCalledWith({
+			submittedAt: expect.any(Date),
+			sentResumeVersionId: "version-1",
+			sentCheckScore: expect.any(Number),
+		});
 	});
 });

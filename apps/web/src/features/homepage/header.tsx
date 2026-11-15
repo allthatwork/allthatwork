@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Wordmark } from "@reactive-resume/ui/components/wordmark";
 import { cn } from "@reactive-resume/utils/style";
 import { goToScene, SCENE, useLanding } from "./scroll";
-import { CtaLink } from "./ui";
+import { LanguageDoorway } from "./sections";
+import { CtaLink, SignInLink } from "./ui";
 import { useTheme } from "@/features/theme/provider";
 
 const getStoryScenes = () => [
@@ -16,7 +17,9 @@ const getStoryScenes = () => [
 	{ scene: SCENE.remember, label: t`Remember` },
 ];
 
-export function LandingHeader() {
+type LandingHeaderProps = { story?: boolean };
+
+export function LandingHeader({ story = true }: LandingHeaderProps) {
 	const scrolled = useLanding((state) => state.scrolled);
 	const activeScene = useLanding((state) => state.activeScene);
 
@@ -24,47 +27,64 @@ export function LandingHeader() {
 		<header
 			className={cn(
 				// The ink fades to light with Share's sky (--nt), so it never jumps against a half-dark background.
-				"night-ink fixed inset-x-0 top-0 z-70 flex h-16 items-center gap-7 ps-(--gutter) pe-[calc(var(--gutter)+30px)] whitespace-nowrap",
+				"night-ink fixed inset-x-0 top-0 z-70 flex h-16 items-center gap-2 ps-(--gutter) pe-[calc(var(--gutter)+30px)] whitespace-nowrap sm:gap-7",
+				!story && "blur-ok:backdrop-blur-lg border-b border-line bg-bg/95",
 			)}
 		>
 			<div
 				aria-hidden="true"
 				className={cn(
 					"header-taper pointer-events-none absolute inset-x-0 top-0 -z-1 h-28 transition-opacity duration-[.4s]",
-					scrolled ? "opacity-[calc(1-var(--nt,0))]" : "opacity-0",
+					story && scrolled ? "opacity-[calc(1-var(--nt,0))]" : "opacity-0",
 				)}
 			/>
 
 			{/* "allthat" follows the header's night ink; the mark and "work" keep the brand blue. */}
-			<a href="#top" className="flex items-center rounded-md">
+			<a href={story ? "#top" : "/"} className="flex items-center rounded-md">
 				<Wordmark height={30} className="text-inherit" />
 			</a>
 
-			<nav aria-label={t`Story`} className="mx-auto hidden items-center gap-0.5 min-[1240px]:flex">
-				{getStoryScenes().map(({ scene, label }) => {
-					const active = activeScene === scene;
-					return (
-						<button
-							key={scene}
-							type="button"
-							aria-current={active ? "step" : undefined}
-							onClick={() => goToScene(scene, 0.04)}
-							className={cn(
-								"font-martian flex h-[34px] items-center gap-[7px] rounded-sm px-[11px] text-xs leading-none font-medium font-stretch-[87.5%] transition-opacity duration-300",
-								!active && "opacity-65 hover:opacity-100",
-							)}
-						>
-							<span
-								aria-hidden="true"
-								className={cn("size-1.5 rounded-sm transition-colors duration-300", active && "bg-accent")}
-							/>
-							{label}
-						</button>
-					);
-				})}
-			</nav>
+			{story && (
+				<nav aria-label={t`Story`} className="mx-auto hidden items-center gap-0.5 min-[1240px]:flex">
+					{getStoryScenes().map(({ scene, label }) => {
+						const active = activeScene === scene;
+						return (
+							<button
+								key={scene}
+								type="button"
+								aria-current={active ? "step" : undefined}
+								onClick={() => goToScene(scene, 0.04)}
+								className={cn(
+									"font-martian relative flex h-[34px] items-center gap-[7px] rounded-sm px-[11px] text-xs leading-none font-medium font-stretch-[87.5%] transition-opacity duration-300",
+									!active && "opacity-65 hover:opacity-100",
+								)}
+							>
+								<span
+									aria-hidden="true"
+									className={cn("size-1.5 rounded-sm transition-colors duration-300", active && "bg-accent")}
+								/>
+								{label}
+								{/* How much of the current scene is left: a line that fills with its scroll progress (--sp). */}
+								{active && (
+									<span
+										aria-hidden="true"
+										className="absolute inset-x-[11px] bottom-[3px] h-0.5 origin-left rounded-full bg-accent rtl:origin-right"
+										style={{ transform: "scaleX(var(--sp, 0))" }}
+									/>
+								)}
+							</button>
+						);
+					})}
+				</nav>
+			)}
 
 			<div className="ms-auto flex items-center gap-2">
+				<LanguageDoorway
+					story={story}
+					className="font-martian h-[34px] gap-[7px] rounded-sm px-[11px] text-xs leading-none font-medium font-stretch-[87.5%] opacity-65 transition-opacity duration-300 hover:opacity-100"
+					nameClassName="max-[639px]:sr-only"
+				/>
+				<SignInLink />
 				<CtaLink size="header" />
 			</div>
 		</header>
@@ -103,7 +123,7 @@ export function ThemeCord() {
 			aria-label={label}
 			title={label}
 			className={cn(
-				"night-ink fixed end-[clamp(8px,1.2vw,18px)] top-0 z-72 flex w-[30px] origin-top flex-col items-center [transition:height_.45s_cubic-bezier(.3,1.7,.5,1)]",
+				"night-ink touch-target fixed end-[clamp(8px,1.2vw,18px)] top-0 z-72 flex w-[30px] origin-top flex-col items-center [transition:height_.45s_cubic-bezier(.3,1.7,.5,1)]",
 				pulling ? "h-[124px]" : "h-[92px] hover:h-[112px]",
 				!pulledOnce && "motion-safe:animate-swing",
 			)}

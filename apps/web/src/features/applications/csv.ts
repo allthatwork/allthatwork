@@ -1,433 +1,11 @@
 import type { ApplicationLane } from "./lanes";
 import type { Application } from "./types";
-import type {
-	ApplicationClosedReason,
-	ApplicationStatus,
-	Contact,
-	PostingSource,
-	TargetingBuildStatus,
-} from "@reactive-resume/schema/applications/data";
-import {
-	applicationClosedReasonSchema,
-	applicationStatusSchema,
-	contactSchema,
-	INTERVIEW_KINDS,
-	postingSourceSchema,
-	STAGES,
-	targetingBuildStatusSchema,
-} from "@reactive-resume/schema/applications/data";
+import { csvCell } from "@reactive-resume/schema/applications/csv";
+import { INTERVIEW_KINDS, STAGES } from "@reactive-resume/schema/applications/data";
 import { getApplicationLane } from "@reactive-resume/schema/applications/lanes";
-import { parseFit } from "./suggestions";
+import { applicationSentAt } from "@reactive-resume/schema/applications/outcomes";
 
-// Minimal RFC-4180-ish CSV parser: handles quoted fields, escaped quotes (""), commas and
-// newlines inside quotes, and \r\n. Enough for spreadsheet exports; not a full streaming parser.
-export function parseCsv(input: string): string[][] {
-	// Strip a UTF-8 BOM (Excel prepends one) — trim() doesn't remove ﻿, so the first header
-	// would otherwise become "﻿company" and never match an alias.
-	const text = input.replace(/^﻿/, "");
-	const rows: string[][] = [];
-	let row: string[] = [];
-	let field = "";
-	let inQuotes = false;
-
-	for (let i = 0; i < text.length; i++) {
-		const char = text[i];
-
-		if (inQuotes) {
-			if (char === '"') {
-				if (text[i + 1] === '"') {
-					field += '"';
-					i++;
-				} else {
-					inQuotes = false;
-				}
-			} else {
-				field += char;
-			}
-			continue;
-		}
-
-		if (char === '"') inQuotes = true;
-		else if (char === ",") {
-			row.push(field);
-			field = "";
-		} else if (char === "\n" || char === "\r") {
-			if (char === "\r" && text[i + 1] === "\n") i++;
-			row.push(field);
-			rows.push(row);
-			row = [];
-			field = "";
-		} else {
-			field += char;
-		}
-	}
-	// Flush the trailing field/row if the file didn't end in a newline.
-	if (field !== "" || row.length > 0) {
-		row.push(field);
-		rows.push(row);
-	}
-
-	return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
-}
-
-/** A lane named in a CSV, by what it counts as; another account's IDs are never trusted. */
-export type CsvLane = { label: string; category: ApplicationStatus; closedReason: ApplicationClosedReason | null };
-
-type ParsedApplication = {
-	company: string;
-	role: string;
-	status?: ApplicationStatus;
-	lane?: CsvLane;
-	location?: string;
-	salary?: string;
-	source?: string;
-	foundBy?: string;
-	searchFit?: number;
-	searchNotes?: string;
-	targetingBuildStatus?: TargetingBuildStatus;
-	targetingPrimaryLane?: string;
-	targetingSecondaryLane?: string;
-	notes?: string;
-	sourceUrl?: string;
-	jobDescription?: string;
-	postingSource?: PostingSource;
-	stageEnteredAt?: string;
-	tags?: string[];
-	contacts?: Contact[];
-};
-
-type CsvApplication = ParsedApplication & {
-	contactName?: string;
-	contactRole?: string;
-	contactType?: string;
-	contactEmail?: string;
-	contactPhone?: string;
-	/** Exports from before the closed stage mark archived applications here. */
-	archived?: string;
-	laneLabel?: string;
-	laneCategory?: ApplicationStatus;
-	laneClosedReason?: ApplicationClosedReason;
-};
-
-/** A column's destination, or null to leave the column out. */
-export type CsvField = Exclude<keyof CsvApplication, "lane">;
-
-function dateOnly(value: string) {
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
-	const [year, month, day] = value.split("-").map(Number);
-	const date = new Date(Date.UTC(year ?? 0, (month ?? 1) - 1, day ?? 0));
-	return date.toISOString().slice(0, 10) === value ? value : undefined;
-}
-
-// Header aliases → canonical field. Matched case-insensitively after trimming.
-const HEADER_ALIASES: Record<string, CsvField> = {
-	company: "company",
-	employer: "company",
-	organization: "company",
-	role: "role",
-	title: "role",
-	position: "role",
-	"job title": "role",
-	status: "status",
-	stage: "status",
-	"applied date": "stageEnteredAt",
-	"stage date": "stageEnteredAt",
-	"stage entered at": "stageEnteredAt",
-	location: "location",
-	salary: "salary",
-	"salary range": "salary",
-	compensation: "salary",
-	source: "source",
-	"found on": "source",
-	"found by": "foundBy",
-	"search fit": "searchFit",
-	"search notes": "searchNotes",
-	"build status": "targetingBuildStatus",
-	"primary lane": "targetingPrimaryLane",
-	"secondary lane": "targetingSecondaryLane",
-	notes: "notes",
-	note: "notes",
-	url: "sourceUrl",
-	link: "sourceUrl",
-	"job url": "sourceUrl",
-	"job posting": "sourceUrl",
-	"job description": "jobDescription",
-	"posting source": "postingSource",
-	tags: "tags",
-	"contact name": "contactName",
-	"contact role": "contactRole",
-	"contact type": "contactType",
-	"contact email": "contactEmail",
-	"contact phone": "contactPhone",
-	archived: "archived",
-	lane: "laneLabel",
-	"lane category": "laneCategory",
-	"lane closed reason": "laneClosedReason",
-};
-
-/** The fields a column can be matched to, in the order the match list offers them. */
-export const CSV_FIELDS: readonly CsvField[] = [
-	"company",
-	"role",
-	"status",
-	"laneLabel",
-	"laneCategory",
-	"laneClosedReason",
-	"stageEnteredAt",
-	"location",
-	"salary",
-	"source",
-	"foundBy",
-	"sourceUrl",
-	"jobDescription",
-	"postingSource",
-	"searchFit",
-	"searchNotes",
-	"targetingBuildStatus",
-	"targetingPrimaryLane",
-	"targetingSecondaryLane",
-	"notes",
-	"tags",
-	"contactName",
-	"contactRole",
-	"contactType",
-	"contactEmail",
-	"contactPhone",
-	"archived",
-];
-
-/** Each header's field by name (case and spacing ignored), or null when nothing matches. */
-export const autoMapHeaders = (headers: readonly string[]): (CsvField | null)[] =>
-	headers.map((header) => HEADER_ALIASES[header.trim().toLowerCase()] ?? null);
-
-const csvLine = (cells: readonly string[]) =>
-	cells.map((cell) => `"${(isFormulaLike(cell) ? `'${cell}` : cell).replaceAll('"', '""')}"`).join(",");
-
-/** Rows back to CSV text (for downloading the rows an import skipped), header first. */
-export const rowsToCsv = (headers: readonly string[], rows: readonly string[][]) =>
-	`${[headers, ...rows].map(csvLine).join("\r\n")}\r\n`;
-
-// Values a spreadsheet would evaluate as a formula: leading =, +, -, @ (and full-width variants),
-// possibly hidden behind whitespace/control characters, or a leading tab/newline.
-function isFormulaLike(value: string) {
-	return /^[\s\p{Cc}]*[=+@\-＝＋－＠]/u.test(value) || /^[\t\r\n]/.test(value);
-}
-
-// Drops the apostrophe the export adds as a CSV-injection guard, so a re-imported cell reads back
-// as the value that was exported. A user value that genuinely starts with an apostrophe is only
-// touched when the rest would also have been guarded — the same ambiguity spreadsheets have.
-function stripFormulaGuard(value: string) {
-	return value.startsWith("'") && isFormulaLike(value.slice(1)) ? value.slice(1) : value;
-}
-
-function parseTags(value: string) {
-	try {
-		const parsed: unknown = JSON.parse(value);
-		if (Array.isArray(parsed) && parsed.every((tag): tag is string => typeof tag === "string")) {
-			return parsed.map((tag) => tag.trim()).filter(Boolean);
-		}
-	} catch {
-		// Preserve support for existing comma, semicolon, and pipe-delimited imports.
-	}
-
-	return value
-		.split(/[;,|]/)
-		.map((tag) => tag.trim())
-		.filter(Boolean);
-}
-
-export type CsvMapResult = {
-	rows: ParsedApplication[];
-	skipped: number;
-	/** The source rows left out (no company or role), to download and fix. */
-	skippedRows: string[][];
-	contactsSkipped: number;
-	invalidValues: {
-		row: number;
-		field:
-			| "status"
-			| "stageEnteredAt"
-			| "postingSource"
-			| "searchFit"
-			| "targetingBuildStatus"
-			| "laneCategory"
-			| "laneClosedReason";
-		value: string;
-	}[];
-	headers: string[];
-	recognized: string[];
-};
-
-// Maps parsed CSV rows to application inputs using the header row. Rows missing company or role
-// are skipped (and counted). Invalid stages, dates and metadata require correction before import. A contact that fails
-// validation (bad email, or contact columns with no name) is dropped on its own — the application
-// still imports, since losing the whole row would silently discard company/role/salary/tags too.
-export function mapCsvToApplications(table: string[][], mapping?: readonly (CsvField | null)[]): CsvMapResult {
-	const [headerRow, ...dataRows] = table;
-	if (!headerRow)
-		return {
-			rows: [],
-			skipped: 0,
-			skippedRows: [],
-			contactsSkipped: 0,
-			invalidValues: [],
-			headers: [],
-			recognized: [],
-		};
-
-	const headers = headerRow.map((h) => h.trim());
-	// The confirmed match, else the automatic one.
-	const fieldFor = mapping ?? autoMapHeaders(headers);
-	const recognized = [...new Set(fieldFor.filter((f): f is CsvField => !!f))];
-	// Older exports also carry an Archived column.
-	const isReactiveResumeExport = ["Stage History", "Timeline", "Created At", "Updated At"].every((header) =>
-		headers.includes(header),
-	);
-
-	const rows: ParsedApplication[] = [];
-	const skippedRows: string[][] = [];
-	let contactsSkipped = 0;
-	const invalidValues: CsvMapResult["invalidValues"] = [];
-
-	for (const [index, raw] of dataRows.entries()) {
-		const record: Partial<CsvApplication> = {};
-		const invalid: CsvMapResult["invalidValues"] = [];
-		raw.forEach((rawValue, i) => {
-			const field = fieldFor[i];
-			if (!field) return;
-			const value = (isReactiveResumeExport ? stripFormulaGuard(rawValue) : rawValue).trim();
-			if (!value) return;
-			if (field === "tags") record.tags = parseTags(value);
-			else if (field === "status") {
-				// Older exports may still say `rejected`, the stage `closed` replaced.
-				const stage = value.toLowerCase();
-				const parsed = applicationStatusSchema.safeParse(stage === "rejected" ? "closed" : stage);
-				if (parsed.success) record.status = parsed.data;
-				else invalid.push({ row: index + 2, field, value });
-			} else if (field === "laneCategory") {
-				const parsed = applicationStatusSchema.safeParse(value.toLowerCase());
-				if (parsed.success) record.laneCategory = parsed.data;
-				else invalid.push({ row: index + 2, field, value });
-			} else if (field === "laneClosedReason") {
-				const parsed = applicationClosedReasonSchema.safeParse(value.toLowerCase());
-				if (parsed.success) record.laneClosedReason = parsed.data;
-				else invalid.push({ row: index + 2, field, value });
-			} else if (field === "laneLabel") record.laneLabel = value.slice(0, 80);
-			else if (field === "stageEnteredAt") {
-				const date = dateOnly(value);
-				if (date !== undefined) record.stageEnteredAt = date;
-				else invalid.push({ row: index + 2, field, value });
-			} else if (field === "postingSource") {
-				try {
-					const source = postingSourceSchema.safeParse(JSON.parse(value));
-					if (source.success) record.postingSource = source.data;
-					else invalid.push({ row: index + 2, field, value });
-				} catch {
-					invalid.push({ row: index + 2, field, value });
-				}
-			} else if (field === "searchFit") {
-				const fit = parseFit(value);
-				if (typeof fit === "number") record[field] = fit;
-				else invalid.push({ row: index + 2, field, value });
-			} else if (field === "targetingBuildStatus") {
-				const parsed = targetingBuildStatusSchema.safeParse(value.toLowerCase());
-				if (parsed.success) record.targetingBuildStatus = parsed.data;
-				else invalid.push({ row: index + 2, field, value });
-			} else if (field === "jobDescription") record.jobDescription = value.slice(0, 20_000);
-			else record[field] = value as never;
-		});
-
-		if (!record.company || !record.role) {
-			skippedRows.push(raw);
-			continue;
-		}
-		if (invalid.length > 0) {
-			invalidValues.push(...invalid);
-			continue;
-		}
-
-		const {
-			contactName,
-			contactRole,
-			contactType,
-			contactEmail,
-			contactPhone,
-			archived,
-			laneLabel,
-			laneCategory,
-			laneClosedReason,
-			...application
-		} = record;
-		// Archived applications from older exports are closed ones.
-		if (archived?.toLowerCase() === "true") application.status = "closed";
-		if (laneLabel) {
-			const category = laneCategory ?? application.status ?? "saved";
-			// A lane must count as the row's stage; a preset outcome only belongs to a Closed lane.
-			if ((application.status && application.status !== category) || (laneClosedReason && category !== "closed")) {
-				invalidValues.push({ row: index + 2, field: "laneCategory", value: laneCategory ?? category });
-				continue;
-			}
-			application.status = category;
-			application.lane = { label: laneLabel, category, closedReason: laneClosedReason ?? null };
-		}
-		if (contactName || contactRole || contactType || contactEmail || contactPhone) {
-			const contact = contactSchema.safeParse({
-				name: contactName,
-				role: contactRole ?? "",
-				type: contactType ?? "",
-				email: contactEmail ?? "",
-				phone: contactPhone ?? "",
-			});
-			if (contact.success) application.contacts = [contact.data];
-			else contactsSkipped++;
-		}
-		rows.push(application as ParsedApplication);
-	}
-
-	return { rows, skipped: skippedRows.length, skippedRows, contactsSkipped, invalidValues, headers, recognized };
-}
-
-const laneKey = (lane: CsvLane) => `${lane.category}|${lane.closedReason ?? ""}|${lane.label.trim().toLowerCase()}`;
-
-/** The distinct lanes the rows name, each to be matched to one of this account's lanes or created. */
-export function collectCsvLanes(rows: readonly { lane?: CsvLane }[]): (CsvLane & { key: string })[] {
-	const found = new Map<string, CsvLane & { key: string }>();
-	for (const { lane } of rows)
-		if (lane && !found.has(laneKey(lane))) found.set(laneKey(lane), { ...lane, key: laneKey(lane) });
-	return [...found.values()];
-}
-
-/** This account's lanes a CSV lane may go to: active, counting the same, with the same preset outcome. */
-export const compatibleLanes = (csvLane: CsvLane, lanes: readonly ApplicationLane[]) =>
-	lanes.filter(
-		(lane) => !lane.retiredAt && lane.category === csvLane.category && lane.closedReason === csvLane.closedReason,
-	);
-
-/** A suggested match: a compatible lane with the same name (default lanes by their standard name), else none. */
-export function suggestLane(csvLane: CsvLane, lanes: readonly ApplicationLane[]): string | null {
-	const name = csvLane.label.trim().toLowerCase();
-	return (
-		compatibleLanes(csvLane, lanes).find((lane) => (lane.label ?? stageName(lane.category)).toLowerCase() === name)
-			?.id ?? null
-	);
-}
-
-const stageName = (stage: ApplicationStatus) => STAGES.find((item) => item.value === stage)?.label ?? stage;
-
-/** The row's lane by the confirmed match; rows without a lane keep their stage. */
-export function applyLaneMapping<T extends { lane?: CsvLane }>(
-	rows: readonly T[],
-	laneIds: ReadonlyMap<string, string>,
-): (Omit<T, "lane"> & { laneId?: string; closedReason?: ApplicationClosedReason })[] {
-	return rows.map(({ lane, ...row }) => {
-		const laneId = lane ? laneIds.get(laneKey(lane)) : undefined;
-		return {
-			...row,
-			...(laneId ? { laneId } : {}),
-			...(lane?.closedReason ? { closedReason: lane.closedReason } : {}),
-		};
-	});
-}
+const stageName = (stage: Application["status"]) => STAGES.find((item) => item.value === stage)?.label ?? stage;
 
 export type ApplicationExportOptions = {
 	scope: "filtered" | "all";
@@ -441,16 +19,12 @@ export function selectApplicationsForExport(
 	{ scope, from, to }: ApplicationExportOptions,
 ): Application[] {
 	return (scope === "all" ? applications : filtered).filter((application) => {
+		if (!from && !to) return true;
+		const sent = applicationSentAt(application);
+		if (!sent) return false;
 		const date = new Date(application.appliedAt).toISOString().slice(0, 10);
 		return (!from || date >= from) && (!to || date <= to);
 	});
-}
-
-function csvCell(value: string): string {
-	// Quote every cell to contain separators/newlines. Prefix formula-triggering values,
-	// including whitespace-obscured and full-width variants, so spreadsheets read text.
-	const safe = isFormulaLike(value) ? `'${value}` : value;
-	return `"${safe.replaceAll('"', '""')}"`;
 }
 
 /** `lanes` adds each application's lane; Stage stays the standard step, so older importers keep working. */
@@ -492,12 +66,16 @@ export function exportApplicationsCsv(
 	const dateOnly = (date: Date) => new Date(date).toISOString().slice(0, 10);
 	const stageLabel = stageName;
 	const timelineText = (entry: Application["activity"][number]) => {
-		if (entry.type === "stage") return entry.laneLabel ?? stageLabel(entry.stage);
+		if (entry.type === "stage") {
+			const label = entry.laneLabel ?? stageLabel(entry.stage);
+			return entry.dateUnknown ? `Imported in ${label}; stage date not recorded` : label;
+		}
 		if (entry.type === "note") return entry.text;
 		const kind = INTERVIEW_KINDS.find((item) => item.value === entry.kind)?.label ?? entry.kind;
 		return `${kind} interview (${new Date(entry.at).toISOString()})`;
 	};
 	const rows = applications.map((application) => {
+		const sent = applicationSentAt(application);
 		const timeline = [...application.activity].sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 		const stages = timeline.filter((entry) => entry.type === "stage");
 		const currentStage = stages.findLast((entry) => entry.stage === application.status);
@@ -509,8 +87,8 @@ export function exportApplicationsCsv(
 			lane ? (lane.label ?? stageLabel(lane.category)) : "",
 			lane?.category ?? "",
 			lane?.closedReason ?? "",
-			currentStage ? dateOnly(currentStage.at) : "",
-			dateOnly(application.appliedAt),
+			currentStage && !currentStage.dateUnknown ? dateOnly(currentStage.at) : "",
+			sent ? dateOnly(application.appliedAt) : "",
 			application.location ?? "",
 			application.salary ?? "",
 			application.source ?? "",
@@ -524,7 +102,10 @@ export function exportApplicationsCsv(
 			application.targetingFit === null ? "" : String(application.targetingFit),
 			application.targetingPrimaryLane ?? "",
 			application.targetingSecondaryLane ?? "",
-			application.tags.length > 0 ? JSON.stringify(application.tags) : "",
+			// "; " reads in a spreadsheet and imports back; tags that contain a separator keep the JSON list, so they do too.
+			application.tags.some((tag) => /[;,|]/.test(tag))
+				? JSON.stringify(application.tags)
+				: application.tags.join("; "),
 			application.contacts
 				.map(({ name, role, type }) => {
 					const details = [role, type].filter(Boolean).join(", ");
@@ -533,7 +114,9 @@ export function exportApplicationsCsv(
 				.join("\n"),
 			application.notes ?? "",
 			application.closedReason ?? "",
-			stages.map((entry) => `${stageLabel(entry.stage)} (${dateOnly(entry.at)})`).join(" → "),
+			stages
+				.map((entry) => `${stageLabel(entry.stage)} (${entry.dateUnknown ? "date not recorded" : dateOnly(entry.at)})`)
+				.join(" → "),
 			timeline.map((entry) => `${dateOnly(entry.at)}: ${timelineText(entry)}`).join("\n"),
 			new Date(application.createdAt).toISOString(),
 			new Date(application.updatedAt).toISOString(),

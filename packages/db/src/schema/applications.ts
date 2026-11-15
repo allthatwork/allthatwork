@@ -127,10 +127,15 @@ export const application = pg.pgTable(
 		coverLetterUrl: pg.text("cover_letter_url"),
 		coverLetterName: pg.text("cover_letter_name"),
 		followUpAt: pg.timestamp("follow_up_at", { withTimezone: true }),
+		followUpDateOnly: pg.boolean("follow_up_date_only").notNull().default(false),
 		followUpNote: pg.text("follow_up_note"),
 		contacts: pg.jsonb("contacts").notNull().$type<Contact[]>().default([]),
 		activity: pg.jsonb("activity").notNull().$type<ApplicationTimelineEntry[]>().default([]),
+		trashedAt: pg.timestamp("trashed_at", { withTimezone: true }),
 		appliedAt: pg.timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
+		// Durable lifetime submission marker: set on the first sent stage or explicit submit, never cleared by timeline
+		// edits. It distinguishes a genuine first submission from reopening a job that was applied earlier.
+		submittedAt: pg.timestamp("submitted_at", { withTimezone: true }),
 		createdAt: pg.timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 		updatedAt: pg
 			.timestamp("updated_at", { withTimezone: true })
@@ -141,6 +146,7 @@ export const application = pg.pgTable(
 	(t) => [
 		pg.index().on(t.userId),
 		pg.index().on(t.userId, t.updatedAt.desc()),
+		pg.index().on(t.userId, t.trashedAt),
 		pg.foreignKey({
 			name: "application_lane_owner_fk",
 			columns: [t.userId, t.laneId],

@@ -221,7 +221,7 @@ async function importDocuments(userId: string, input: AreaInput<"documents">) {
 					updatedAt: resume.updatedAt,
 				}),
 			);
-			await writeVersion(tx, { resumeId: id, userId, data, kind: "import" });
+			await writeVersion(tx, { resumeId: id, userId, data, aiOperationIds: [], kind: "import" });
 			if (resume.isPublic) report.madePrivate++;
 			report.map("resume", resume.id, id);
 			report.add("resumes");
@@ -510,7 +510,8 @@ async function importApplications(userId: string, input: AreaInput<"applications
 		});
 		for (const part of chunks(rows)) {
 			const inserted = await tx.insert(schema.application).values(part).returning();
-			for (const row of inserted) await linkApplicationDirectory(tx, row);
+			// Trashed applications stay out of the Directory, like everywhere else, until they're restored.
+			for (const row of inserted) if (!row.trashedAt) await linkApplicationDirectory(tx, row);
 		}
 		report.add("applications", rows.length);
 

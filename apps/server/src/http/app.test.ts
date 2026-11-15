@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 	handleUpload: vi.fn(),
 	handleMcp: vi.fn(),
 	handleResumePdfDownload: vi.fn(),
-	handlePublicResumePdf: vi.fn(),
+	handlePublicResumeDownload: vi.fn(),
 	handleMcpServerCard: vi.fn(),
 	handleIntegrations: vi.fn(),
 	handleApiCatalog: vi.fn(),
@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => ({
 	handleLlms: vi.fn(),
 	serveWebDistStatic: vi.fn(),
 	handleWebApp: vi.fn(),
+	isProfilePath: vi.fn((_path: string) => false),
+	serveResumePage: vi.fn(),
 }));
 
 vi.mock("@reactive-resume/env/server", async (original) => {
@@ -76,7 +78,11 @@ vi.mock("../static/web", () => ({
 	serveWebDistStatic: mocks.serveWebDistStatic,
 	handleWebApp: mocks.handleWebApp,
 	isPublicResumePath: () => false,
-	isProfilePath: () => false,
+	isProfilePath: mocks.isProfilePath,
+}));
+
+vi.mock("../static/resume-page", () => ({
+	serveResumePage: mocks.serveResumePage,
 }));
 
 vi.mock("../mcp/handler", () => ({
@@ -87,8 +93,8 @@ vi.mock("./resume-pdf", () => ({
 	handleResumePdfDownload: mocks.handleResumePdfDownload,
 }));
 
-vi.mock("./public-resume-pdf", () => ({
-	handlePublicResumePdf: mocks.handlePublicResumePdf,
+vi.mock("./public-resume-download", () => ({
+	handlePublicResumeDownload: mocks.handlePublicResumeDownload,
 }));
 
 const transportEnv = (remoteAddress: string) =>
@@ -107,7 +113,7 @@ beforeEach(() => {
 	mocks.handleUpload.mockResolvedValue(new Response("upload"));
 	mocks.handleMcp.mockResolvedValue(new Response("mcp"));
 	mocks.handleResumePdfDownload.mockResolvedValue(new Response("pdf"));
-	mocks.handlePublicResumePdf.mockResolvedValue(new Response("public-pdf"));
+	mocks.handlePublicResumeDownload.mockResolvedValue(new Response("public-pdf"));
 	mocks.handleMcpServerCard.mockReturnValue(new Response("server-card"));
 	mocks.handleIntegrations.mockReturnValue(new Response("integrations"));
 	mocks.handleApiCatalog.mockReturnValue(new Response("api-catalog"));
@@ -126,12 +132,17 @@ beforeEach(() => {
 
 describe("createApp", () => {
 	// The first case pays for the cold import of the whole app, which takes seconds under a parallel run.
-	it("serves /index.html through the shared HTML response before static files", async () => {
-		const { createApp } = await import("./app");
-		const response = await createApp().request("/index.html");
-		expect(await response.text()).toBe("web");
-		expect(mocks.serveWebDistStatic).not.toHaveBeenCalled();
-	}, 15_000);
+	it.each(["/index.html", "/"])(
+		"serves %s through the shared HTML response before static files",
+		async (path) => {
+			const { createApp } = await import("./app");
+			const response = await createApp().request(path);
+			expect(response.status).toBe(200);
+			expect(await response.text()).toBe("web");
+			expect(mocks.serveWebDistStatic).not.toHaveBeenCalled();
+		},
+		15_000,
+	);
 
 	it.each([
 		["127.0.0.1", "127.0.0.1", "198.51.100.1", "198.51.100.1"],
@@ -182,8 +193,8 @@ describe("createApp", () => {
 		await app.fetch(rotated, env);
 
 		await expect(response.text()).resolves.toBe("public-pdf");
-		expect(mocks.handlePublicResumePdf).toHaveBeenNthCalledWith(1, first, "jane", "resume", "203.0.113.9");
-		expect(mocks.handlePublicResumePdf).toHaveBeenNthCalledWith(2, rotated, "jane", "resume", "203.0.113.9");
+		expect(mocks.handlePublicResumeDownload).toHaveBeenNthCalledWith(1, first, "jane", "resume", "203.0.113.9");
+		expect(mocks.handlePublicResumeDownload).toHaveBeenNthCalledWith(2, rotated, "jane", "resume", "203.0.113.9");
 		expect(mocks.handleResumePdfDownload).not.toHaveBeenCalled();
 		expect(mocks.serveWebDistStatic).not.toHaveBeenCalled();
 		expect(mocks.handleWebApp).not.toHaveBeenCalled();
@@ -226,18 +237,6 @@ describe("createApp", () => {
 
 		expect(await response.text()).toBe(body);
 		expect(mocks.handleWellKnownFallback).not.toHaveBeenCalled();
-	});
-
-	it("routes GET / to the web app before static files", async () => {
-		const { createApp } = await import("./app");
-		const app = createApp();
-		const request = new Request("http://localhost:3001/");
-
-		const response = await app.fetch(request);
-
-		expect(response.status).toBe(200);
-		expect(await response.text()).toBe("web");
-		expect(mocks.serveWebDistStatic).not.toHaveBeenCalled();
 	});
 
 	it("compresses the web app's HTML but never API streams or the Vercel app", async () => {
@@ -296,4 +295,47 @@ it.each([
 	expect(await response.json()).toMatchObject({ code: "PAYLOAD_TOO_LARGE", status: 413 });
 	expect(response.headers.get("cache-control")).toBe("no-store");
 	expect(handler).not.toHaveBeenCalled();
+});
+
+describe("sign-in addresses", () => {
+	const page = (status: number) => new Response(status === 200 ? "resume" : "unavailable", { status });
+
+	beforeEach(() => {
+		// No file of that name: the request moves on past the static files.
+		mocks.serveWebDistStatic.mockImplementation(async (_context: unknown, next: () => Promise<void>) => next());
+	});
+
+	it.each([
+		["/Sign-In?redirect=%2Fdashboard", "/auth/login?redirect=%2Fdashboard"],
+		["/pricing", "/"],
+	])("sends %s to %s when no shared resume lives there", async (path, location) => {
+		const { createApp } = await import("./app");
+		mocks.isProfilePath.mockReturnValue(true);
+		mocks.serveResumePage.mockResolvedValue(page(404));
+
+		const response = await createApp().request(`http://localhost:3000${path}`);
+
+		expect(response.status).toBe(302);
+		expect(response.headers.get("location")).toBe(location);
+	});
+
+	it("keeps the page of an account that took the name before, and its password form", async () => {
+		const { createApp } = await import("./app");
+		mocks.isProfilePath.mockReturnValue(true);
+		mocks.serveResumePage.mockResolvedValueOnce(page(200)).mockResolvedValueOnce(page(401));
+
+		expect(await (await createApp().request("http://localhost:3000/login")).text()).toBe("resume");
+		expect((await createApp().request("http://localhost:3000/login")).status).toBe(401);
+	});
+
+	it("leaves other usernames and a password submission on the resume page", async () => {
+		const { createApp } = await import("./app");
+		mocks.isProfilePath.mockReturnValue(true);
+		mocks.serveResumePage.mockImplementation(async () => page(404));
+
+		expect((await createApp().request("http://localhost:3000/career")).status).toBe(404);
+		expect((await createApp().request("http://localhost:3000/constructor")).status).toBe(404);
+		expect((await createApp().request("http://localhost:3000/__proto__")).status).toBe(404);
+		expect((await createApp().request("http://localhost:3000/login", { method: "POST" })).status).toBe(404);
+	});
 });

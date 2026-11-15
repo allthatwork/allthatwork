@@ -1,10 +1,12 @@
 import type { PageSettings } from "./entries";
 import type { Entry, WriteSection } from "./model";
+import type { DndLabel } from "@/libs/dnd";
 import type { MessageDescriptor } from "@lingui/core";
 import type { KeyboardEvent, ReactNode, RefObject } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { msg, t } from "@lingui/core/macro";
+import { i18n } from "@lingui/core";
+import { msg, ph, t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
 import { Trans } from "@lingui/react/macro";
 import { useMemo, useRef } from "react";
@@ -23,16 +25,16 @@ import {
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { IconButton } from "@reactive-resume/ui/components/icon-button";
 import { Sheet, SheetClose, SheetContent } from "@reactive-resume/ui/components/sheet";
-import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
 import { useEditorStore } from "../store";
 import { EntryFields } from "./entries";
 import { useEntry, useEntryWriter } from "./fields";
-import { createEntry, describeEntry, getEntries, getPrimaryField, isDraftEntry } from "./model";
+import { createEntry, describeEntry, getEntries, getPrimaryField, getSectionObject, isDraftEntry } from "./model";
 import { entryElementId, keepOpenedEntryInView } from "./reveal";
 import { useSectionTitle } from "./section-row";
 import { useCurrentResume, useResumeStore, useUpdateResumeData } from "@/features/resume/builder/draft";
+import { undoToast } from "@/features/resume/builder/undo-toast";
 import { DRAG_SETTLE } from "@/libs/motion";
 import { getCompatibleMoveTargets, getSourceSectionTitle, moveItem } from "@/libs/resume/move-item";
 
@@ -69,6 +71,7 @@ export function EntryCard({ section, entryId, index, count, page, locked, onMove
 	const autoFocus = useEditorStore((state) => state.focusEntryId === entryId);
 	const { setNodeRef, transform, transition, isDragging, attributes, listeners } = useSortable({
 		id: entryId,
+		data: { label: (entry && describeEntry(section.type, entry).title) || t`Untitled` } satisfies DndLabel,
 		disabled: locked,
 		transition: DRAG_SETTLE,
 	});
@@ -127,7 +130,7 @@ export function EntryCard({ section, entryId, index, count, page, locked, onMove
 					ref={triggerRef}
 					type="button"
 					aria-expanded={open}
-					aria-label={t`${title || t`Untitled`}, entry ${index + 1} of ${count}`}
+					aria-label={t`${title || t`Untitled`}, entry ${i18n.number(index + 1)} of ${ph({ count: i18n.number(count) })}`}
 					onClick={toggle}
 					onKeyDown={onTitleKeyDown}
 					className={cn(
@@ -251,17 +254,46 @@ function PhoneEntryScreen({
 }
 
 function deleteEntry(section: WriteSection, entryId: string) {
-	const { updateResumeData, undo } = useResumeStore.getState();
+	const { resume, updateResumeData } = useResumeStore.getState();
+	const entries = resume ? getEntries(resume.data, section) : [];
+	const index = entries.findIndex((entry) => entry.id === entryId);
+	const deleted = entries[index];
+	if (!deleted) return;
+	if (entries.length === 1) useEditorStore.getState().markSectionAdded(section.id);
 	updateResumeData(
 		(draft) => {
-			const entries = getEntries(draft, section);
-			const index = entries.findIndex((entry) => entry.id === entryId);
-			if (index !== -1) entries.splice(index, 1);
+			const items = getEntries(draft, section);
+			const at = items.findIndex((entry) => entry.id === entryId);
+			if (at !== -1) items.splice(at, 1);
 		},
 		{ newStep: true },
 	);
 	useEditorStore.setState({ selection: null });
-	toast.add({ description: t`Entry deleted`, actionProps: { children: t`Undo`, onClick: undo } });
+	// Keyboard and screen-reader users keep their place: the entry before (or after) it, else the section's Add.
+	const neighbour = entries[index - 1] ?? entries[index + 1];
+	requestAnimationFrame(() => {
+		const target = neighbour
+			? document.getElementById(entryElementId(neighbour.id))?.querySelector<HTMLElement>("button[aria-expanded]")
+			: document.querySelector<HTMLElement>(`[data-add-entry="${globalThis.CSS.escape(section.id)}"]`);
+		target?.focus();
+	});
+	undoToast(t`Entry deleted`, {
+		// Later edits came after the delete: put the entry back where it was.
+		restore: () => {
+			const current = useResumeStore.getState().resume;
+			// Its section was deleted since: there's nowhere to put it back.
+			if (!current || !getSectionObject(current.data, section)) return false;
+			if (getEntries(current.data, section).some((entry) => entry.id === entryId)) return false;
+			useResumeStore.getState().updateResumeData(
+				(draft) => {
+					const items = getEntries(draft, section);
+					items.splice(Math.min(index, items.length), 0, structuredClone(deleted));
+				},
+				{ newStep: true },
+			);
+			return true;
+		},
+	});
 }
 
 type EntryMenuProps = { section: WriteSection; entry: Entry };
@@ -330,7 +362,7 @@ function EntryMenu({ section, entry }: EntryMenuProps) {
 							<DropdownMenuSub key={pageIndex}>
 								<DropdownMenuSubTrigger>
 									<Icon name="file-text" />
-									<Trans>Page {pageIndex + 1}</Trans>
+									<Trans>Page {i18n.number(pageIndex + 1)}</Trans>
 								</DropdownMenuSubTrigger>
 								<DropdownMenuSubContent>
 									{sections.map(({ sectionId, sectionTitle }) => (

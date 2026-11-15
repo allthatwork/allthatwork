@@ -13,6 +13,7 @@ import Animated, {
 	withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNewAction } from "./use-new-action";
 import { routes } from "@/routes";
 import { Button, Icon, IconButton, Text, haptics, useReducedMotion, useTheme } from "@/ui";
 import { useKeyboardVisible } from "@/ui/keyboard";
@@ -108,6 +109,8 @@ type BarItemProps = {
 
 /** One cell of a bottom bar: the app tab bar and the editor's Write / Page / Design / Check bar share it. */
 export function BarItem({ label, icon, focused, onPress, badge, badgeTone = "accent" }: BarItemProps) {
+	const { i18n } = useLingui();
+	const badgeText = typeof badge === "number" ? i18n.number(badge) : badge;
 	const { colors, radius, size, space } = useTheme();
 	const android = Platform.OS === "android";
 
@@ -115,7 +118,7 @@ export function BarItem({ label, icon, focused, onPress, badge, badgeTone = "acc
 		<Pressable
 			accessibilityRole={icon ? "tab" : "button"}
 			accessibilityState={icon ? { selected: focused } : {}}
-			accessibilityLabel={badge === undefined ? label : `${label}, ${badge}`}
+			accessibilityLabel={badgeText === undefined ? label : `${label}, ${badgeText}`}
 			onPress={() => {
 				if (icon && !focused) haptics.selection();
 				onPress();
@@ -136,7 +139,7 @@ export function BarItem({ label, icon, focused, onPress, badge, badgeTone = "acc
 			{icon ? (
 				<View style={{ height: size.newPill.height, alignItems: "center", justifyContent: "center" }}>
 					<Icon name={icon} filled={focused} color={focused ? colors.ink : colors.ink2} size={size.icon.bar} />
-					{badge === undefined ? null : <TabBadge value={badge} tone={badgeTone} />}
+					{badgeText === undefined ? null : <TabBadge value={badgeText} tone={badgeTone} />}
 				</View>
 			) : (
 				<View
@@ -312,13 +315,15 @@ function SidebarItem({
 	compact = false,
 	role = "tab",
 }: SidebarItemProps) {
+	const { i18n } = useLingui();
+	const badgeText = typeof badge === "number" ? i18n.number(badge) : badge;
 	const { colors, radius, size, space } = useTheme();
 
 	return (
 		<Pressable
 			accessibilityRole={role}
 			accessibilityState={{ selected: active }}
-			accessibilityLabel={badge === undefined ? label : `${label}, ${badge}`}
+			accessibilityLabel={badgeText === undefined ? label : `${label}, ${badgeText}`}
 			onPress={() => {
 				if (!active) haptics.selection();
 				onPress();
@@ -346,7 +351,7 @@ function SidebarItem({
 			</Text>
 			{badge === undefined ? null : quiet ? (
 				<Text variant="callout" color={active ? "ink2" : "ink3"}>
-					{badge}
+					{badgeText}
 				</Text>
 			) : (
 				<View
@@ -359,7 +364,7 @@ function SidebarItem({
 					}}
 				>
 					<Text variant="micro" color="onAccent">
-						{badge}
+						{badgeText}
 					</Text>
 				</View>
 			)}
@@ -374,6 +379,7 @@ function SidebarItem({
 export function AppSidebar(props: BottomTabBarProps) {
 	const router = useRouter();
 	const { t } = useLingui();
+	const openNew = useNewAction();
 	const { state, insets } = props;
 	const pathname = usePathname();
 	const { colors, radius, size, space, type } = useTheme();
@@ -430,7 +436,7 @@ export function AppSidebar(props: BottomTabBarProps) {
 				>
 					<Icon name="magnifying-glass" size={size.icon.meta} color={colors.ink3} />
 					<Text variant="callout" color="ink3" numberOfLines={1} style={{ flex: 1 }}>
-						{t`Search or run…`}
+						{t`Search`}
 					</Text>
 					<Text variant="caption" color="ink3">
 						⌘K
@@ -467,16 +473,9 @@ export function AppSidebar(props: BottomTabBarProps) {
 				/>
 				<View style={{ paddingVertical: space.s2 }}>
 					{compact ? (
-						<SidebarItem
-							icon="plus"
-							label={t`New`}
-							active={false}
-							compact
-							role="button"
-							onPress={() => router.push(routes.new())}
-						/>
+						<SidebarItem icon="plus" label={t`New`} active={false} compact role="button" onPress={openNew} />
 					) : (
-						<Button icon="plus" label={t`New`} fullWidth onPress={() => router.push(routes.new())} />
+						<Button icon="plus" label={t`New`} fullWidth onPress={openNew} />
 					)}
 				</View>
 				{compact ? (

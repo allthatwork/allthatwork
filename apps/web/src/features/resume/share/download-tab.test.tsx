@@ -33,7 +33,12 @@ it("downloads without a Discord invite or donation ask, and falls back to PDF af
 			<DownloadTab onReview={() => undefined} />
 		</I18nProvider>,
 	);
+	const invite = () => screen.queryByRole("link", { name: "Get resume feedback on Discord" });
+	expect(invite()).toBeNull();
+	expect(screen.queryByRole("link", { name: "Donate" })).toBeNull();
 	fireEvent.click(screen.getByRole("button", { name: "Download PDF" }));
+	expect(invite()).toBeNull();
+	expect(screen.queryByRole("link", { name: "Donate" })).toBeNull();
 	finish(file);
 	await vi.waitFor(() => expect(mocks.download).toHaveBeenCalledWith(file, "resume.pdf"));
 	expect(screen.queryByRole("link", { name: "Get resume feedback on Discord" })).toBeNull();
@@ -41,9 +46,13 @@ it("downloads without a Discord invite or donation ask, and falls back to PDF af
 	expect(document.body.innerHTML).not.toMatch(/discord|opencollective/i);
 
 	fireEvent.click(screen.getByRole("radio", { name: /Word/ }));
+	expect(invite()).toBeNull();
+	expect(screen.queryByRole("link", { name: "Donate" })).toBeNull();
 	mocks.generate.mockRejectedValueOnce(new Error("Export unavailable"));
 	fireEvent.click(screen.getByRole("button", { name: "Download Word" }));
 	await screen.findByRole("alert");
+	expect(invite()).toBeNull();
+	expect(screen.queryByRole("link", { name: "Donate" })).toBeNull();
 	expect(mocks.download).toHaveBeenCalledTimes(1);
 	mocks.generate.mockResolvedValueOnce(file);
 	fireEvent.click(screen.getByRole("button", { name: "Download PDF instead" }));

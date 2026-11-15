@@ -8,7 +8,6 @@ export function handleAppleAppSiteAssociation() {
 			details: env.MOBILE_IOS_APP_IDS.map((appID) => ({
 				appID,
 				paths: [
-					"/auth/native-callback",
 					"/builder/*",
 					"NOT /auth/*",
 					"NOT /api/*",

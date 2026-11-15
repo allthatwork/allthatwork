@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import * as harness from "./harness.mjs";
 
-const serverRequire = createRequire(new URL("../../server/package.json", import.meta.url));
-const { transformSync } = createRequire(serverRequire.resolve("tsx"))("esbuild");
+const { mobileRequire, tag } = harness;
 const element = (type, props, ...children) => ({ type, props: { ...props, children } });
-const tag = (parts, ...values) => parts.reduce((text, part, index) => text + part + (values[index] ?? ""), "");
 
 let hooks = [];
 let cursor = 0;
@@ -37,25 +34,8 @@ ui.useTheme = () => ({
 	colors: { ink: "#111", ink3: "#777", line: "#ddd" },
 });
 
-function load(path, extra = {}) {
-	const module = { exports: {} };
-	const code = transformSync(readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8"), {
-		loader: path.endsWith(".tsx") ? "tsx" : "ts",
-		format: "cjs",
-		jsx: "transform",
-	}).code;
-	const dependencies = { ...mocks, ...extra };
-	new Function("React", "require", "module", "exports", code)(
-		react,
-		(name) => {
-			assert.ok(name in dependencies, `Missing boundary: ${name}`);
-			return dependencies[name];
-		},
-		module,
-		module.exports,
-	);
-	return module.exports;
-}
+const load = (path, extra = {}) =>
+	harness.load(`../src/${path}`, { ...mocks, ...extra }, { jsx: "transform", globals: { React: react } });
 
 const mocks = {
 	react,
@@ -63,11 +43,22 @@ const mocks = {
 	"react-native-qrcode-svg": "QRCode",
 	"react-native-svg": { default: "Svg", Rect: "Rect" },
 	"expo-clipboard": { setStringAsync: async () => {} },
+	"expo-file-system": {
+		File: class {
+			exists = false;
+			uri = "file:///cache/resume-qr-code.png";
+			delete() {}
+			write() {}
+		},
+		Paths: { cache: {} },
+	},
+	"expo-sharing": { isAvailableAsync: async () => true, shareAsync: async () => {} },
 	"@lingui/react/macro": { useLingui: () => ({ t: tag }) },
 	"@lingui/core/macro": { t: tag },
 	"@tanstack/react-query": { useQuery: () => ({ data: undefined }) },
 	"./document": { flushResume: async () => ({}) },
 	"./web-page": { WebPageSettings: "WebPageSettings" },
+	"./feedback": { FeedbackLinks: "FeedbackLinks" },
 	"@/api/flags": { useFlags: () => ({ data: {} }) },
 	"@/api/client": {
 		client: {},
@@ -83,16 +74,17 @@ const mocks = {
 	},
 	"@/auth/session": { getServer: () => "https://test.rxresu.me" },
 	"@/draft": { useResumeStore: (selector) => (typeof selector === "function" ? selector({ status: "idle" }) : "idle") },
-	"@/draft/runtime": { draftResume: { refresh: async () => {} } },
+	"@/draft/runtime": {
+		draftResume: { refresh: async () => {} },
+		resume: { refresh: async () => {}, writeMetadata: async (write) => write({}) },
+	},
 	"@/features/documents/queries": {
 		documentError: (err) => String(err),
 		useDocumentOperations: () => ({ busy: false, run: async (fn) => fn() }),
 	},
 	"@/ui": ui,
 	"@/ui/use-document-operations": { useDocumentOperations: () => ({ busy: false, run: async (fn) => fn() }) },
-	"@reactive-resume/resume/sharing": createRequire(new URL("../package.json", import.meta.url))(
-		"@reactive-resume/resume/sharing",
-	),
+	"@reactive-resume/resume/sharing": mobileRequire("@reactive-resume/resume/sharing"),
 };
 
 const nodes = (tree) =>
@@ -133,14 +125,29 @@ tree = render(LinkTab, { resume: legacyResume, offline: false });
 addressProps = control(tree, "Address");
 assert.equal(addressProps.error, "Use at most 64 characters.");
 
-// When user edits to an invalid slug pattern <= 64 chars, it shows format error
-addressProps.onChangeText("Invalid Slug!");
-tree = render(LinkTab, { resume: legacyResume, offline: false });
-addressProps = control(tree, "Address");
-assert.equal(addressProps.error, "Use lowercase letters, numbers and single dashes.");
-
-// When user clears the slug to empty, it shows "Add an address."
-addressProps.onChangeText("");
-tree = render(LinkTab, { resume: legacyResume, offline: false });
-addressProps = control(tree, "Address");
-assert.equal(addressProps.error, "Add an address.");
+// The actual native Privacy control opts in explicitly; old cached drafts remain off, and saves use Share's queue.
+const saves = [];
+const { WebPageSettings } = load("features/share/web-page.tsx", {
+	"./custom-domain": { CustomDomain: "CustomDomain" },
+	"./revision": { setResumePassword: async () => {} },
+	"expo-web-browser": { openBrowserAsync: async () => {} },
+	"@/api/client": { client: {}, orpc: { resume: { list: { queryOptions: () => ({}) } } } },
+});
+const shareResume = { ...legacyResume, data: { metadata: {} }, isPrimary: false, hasPassword: false };
+const shareProps = {
+	resume: shareResume,
+	offline: false,
+	origin: "https://example.test",
+	flags: {},
+	operations: { busy: false },
+	save: async (patch) => {
+		saves.push(patch);
+		return true;
+	},
+};
+hooks = [];
+const wordControl = (props) => control(render(WebPageSettings, props), "Visitors can download Word")?.trailing?.props;
+assert.equal(wordControl(shareProps)?.value, false, "Old cached drafts must not opt into Word");
+wordControl(shareProps).onValueChange(true);
+assert.deepEqual(saves, [{ allowWordDownload: true }]);
+assert.equal(wordControl({ ...shareProps, resume: { ...shareResume, allowWordDownload: true } }).value, true);

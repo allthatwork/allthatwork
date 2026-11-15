@@ -6,6 +6,8 @@ import type { Application } from "@/features/applications/types";
 import type { InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import type { WorkspaceTab } from "@reactive-resume/schema/career";
 import type { ReactNode } from "react";
+import { i18n } from "@lingui/core";
+import { ph } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -26,7 +28,7 @@ import { useWorkspaceChrome } from "@/shell/workspace-chrome";
 import { Banner, Button, EmptyState, Screen, Text, useTheme } from "@/ui";
 import { useKeyboardScrollSpace } from "@/ui/keyboard";
 
-export type WorkspaceSearch = { version?: string; speak?: boolean; story?: string };
+export type WorkspaceSearch = { version?: string; speak?: boolean; story?: string; warmup?: boolean; round?: string };
 
 /** What every tab receives: the application, and a saved version to show read-only ("Open in Prepare"). */
 export type WorkspaceTabProps = {
@@ -39,6 +41,7 @@ export type WorkspaceTabProps = {
 	speak: boolean;
 	/** Practise: a story from Knowledge to practise. */
 	story: string | undefined;
+	warmup?: boolean;
 	now: Date;
 	go: (tab: WorkspaceTab, search?: WorkspaceSearch) => void;
 	/** Opens the interview editor for a new round. */
@@ -61,6 +64,8 @@ export function workspaceHref(id: string, tab: WorkspaceTab, search: WorkspaceSe
 		search.version ? `version=${encodeURIComponent(search.version)}` : "",
 		search.speak ? "speak=1" : "",
 		search.story ? `story=${encodeURIComponent(search.story)}` : "",
+		search.warmup ? "warmup=1" : "",
+		search.round ? `round=${encodeURIComponent(search.round)}` : "",
 	].filter(Boolean);
 	return `${routes.application(id, tab)}${query.length > 0 ? `?${query.join("&")}` : ""}` as const;
 }
@@ -72,7 +77,14 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 	const { space } = useTheme();
 	const keyboardSpace = useKeyboardScrollSpace();
 	const router = useRouter();
-	const params = useLocalSearchParams<{ id: string; version?: string; speak?: string; story?: string }>();
+	const params = useLocalSearchParams<{
+		id: string;
+		version?: string;
+		speak?: string;
+		story?: string;
+		warmup?: string;
+		round?: string;
+	}>();
 	const id = params.id;
 	const now = useNow();
 	const query = useApplication(id);
@@ -105,7 +117,14 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 			</Screen>
 		);
 
-	const interview = currentInterview(application.activity, now);
+	// A link to a later round names it; otherwise the next one to come (web workspace).
+	const named = params.round
+		? (application.activity.find((entry) => entry.type === "interview" && entry.id === params.round) as
+				| ReturnType<typeof currentInterview>
+				| undefined)
+		: undefined;
+	const interview =
+		params.warmup === "1" && params.round ? named : (named ?? currentInterview(application.activity, now));
 	const version = params.version ? saved.data?.find((item) => item.id === params.version) : undefined;
 	const archived = params.version !== undefined;
 	const archiveUnavailable = archived && (!version || version.data.kind !== archiveKinds[tab]);
@@ -114,7 +133,8 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 		(saved.isError && saved.data === undefined) ||
 		(!archived && tab !== "saved" && workspace.query.isError && workspace.query.data === undefined);
 	const blocked = waiting || failed || archiveUnavailable;
-	const go = (next: WorkspaceTab, search: WorkspaceSearch = {}) => router.push(workspaceHref(id, next, search));
+	const go = (next: WorkspaceTab, search: WorkspaceSearch = {}) =>
+		router.push(workspaceHref(id, next, { ...(params.round ? { round: params.round } : {}), ...search }));
 	const backToCurrent = () => router.replace(workspaceHref(id, tab));
 	const props: WorkspaceTabProps = {
 		application,
@@ -124,12 +144,18 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 		go,
 		speak: params.speak === "1",
 		story: params.story,
+		warmup: params.warmup === "1",
 		addInterview: () => setAddingInterview(true),
 	};
 
 	return (
 		<View style={{ flex: 1 }}>
 			<Stack.Screen options={{ title: application.company }} />
+			<Button
+				label={t`Stage, details and timeline`}
+				variant="secondary"
+				onPress={() => router.push(routes.applicationDetails(application.id))}
+			/>
 			<KeyboardAwareScrollView
 				extraKeyboardSpace={keyboardSpace}
 				bottomOffset={space.s6}
@@ -155,7 +181,7 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 											? t`This saved version couldn't be loaded.`
 											: t`This workspace couldn't be loaded.`
 										: version
-											? t`This saved version belongs to a different tab. Open it from Saved.`
+											? t`This saved version belongs to a different tab. Open it from Library.`
 											: t`This saved version is no longer available.`
 								}
 							/>
@@ -202,6 +228,7 @@ export function WorkspaceScreen({ tab, children }: WorkspaceScreenProps) {
 type HeaderProps = { application: Application; onAskCoach: () => void };
 
 function Header({ application, onAskCoach }: HeaderProps) {
+	const saved = useSavedItems(application.id);
 	const lanes = useApplicationLanes();
 	const { t } = useLingui();
 	const { radius, space } = useTheme();
@@ -245,7 +272,14 @@ function Header({ application, onAskCoach }: HeaderProps) {
 						variant="secondary"
 						icon="scales"
 						label={t`Compare offers`}
-						onPress={() => router.push(routes.career("offers"))}
+						loading={saved.isPending}
+						disabled={saved.isPending || saved.isError || !saved.data}
+						onPress={() =>
+							router.push({
+								pathname: routes.career("offers"),
+								params: { a: saved.data?.find((item) => item.data.kind === "offer")?.id },
+							})
+						}
 					/>
 				) : null}
 			</View>
@@ -271,10 +305,14 @@ function TabBadges({ saved, interview, now }: TabBadgesProps) {
 	const badge = (tab: WorkspaceTab) => {
 		if (tab === "prepare" && minutes !== null && minutes > 0 && minutes < 7 * 24 * 60) {
 			const hours = Math.round(minutes / 60);
-			return { tone: minutes <= 60 ? "warn" : "accent", text: minutes <= 60 ? t`${minutes} min` : t`${hours} h` };
+			return {
+				tone: minutes <= 60 ? "warn" : "accent",
+				text:
+					minutes <= 60 ? t`${ph({ minutes: i18n.number(minutes) })} min` : t`${ph({ hours: i18n.number(hours) })} h`,
+			};
 		}
-		if (tab === "messages" && unread > 0) return { tone: "info", text: String(unread) };
-		if (tab === "saved" && (saved?.length ?? 0) > 0) return { tone: "plain", text: String(saved?.length) };
+		if (tab === "messages" && unread > 0) return { tone: "info", text: i18n.number(unread) };
+		if (tab === "saved" && (saved?.length ?? 0) > 0) return { tone: "plain", text: i18n.number(saved?.length ?? 0) };
 		return null;
 	};
 	const badgeColors = {

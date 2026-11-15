@@ -7,16 +7,11 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { env } from "@reactive-resume/env/server";
 import { jsonLdScript, socialMetaTags } from "@reactive-resume/pdf/web-page-document";
 import { templateSchema } from "@reactive-resume/schema/templates";
-import { isAppSectionPath, RESERVED_SEGMENTS } from "@reactive-resume/utils/app-paths";
+import { isAppSectionPath, isFeedbackPath, RESERVED_SEGMENTS } from "@reactive-resume/utils/app-paths";
 import { APP_NAME, APP_REPOSITORY_URL } from "@reactive-resume/utils/brand";
-import {
-	defaultLocale,
-	getLocaleAlternates,
-	isLocale,
-	localizedUrl,
-	supportedLocales,
-} from "@reactive-resume/utils/locale";
+import { defaultLocale, getLocaleAlternates, languageTag, localizedUrl } from "@reactive-resume/utils/locale";
 import { escapeHtml } from "@reactive-resume/utils/string";
+import { getPageLocale } from "./locale";
 
 function resolveWebDistPath() {
 	const candidates = [
@@ -57,7 +52,12 @@ export function isPublicResumePath(pathname: string): boolean {
 	const segments = getPathSegments(pathname);
 	const [firstSegment] = segments;
 
-	return segments.length === 2 && firstSegment !== undefined && !reservedPublicResumeSegments.has(firstSegment);
+	return (
+		segments.length === 2 &&
+		firstSegment !== undefined &&
+		!reservedPublicResumeSegments.has(firstSegment) &&
+		!isFeedbackPath(pathname)
+	);
 }
 
 // Single-segment addresses the app or the server answer themselves, so they can never be a username's page.
@@ -173,7 +173,33 @@ function organization(origin: string): StructuredData {
 	};
 }
 
-function homepageStructuredData(origin: string): StructuredData {
+const FEATURE_LIST = [
+	"Resume editor with a live page preview",
+	`${templateSchema.options.length} templates`,
+	"PDF, Word (DOCX), Markdown and JSON export",
+	"Import from PDF, LinkedIn and JSON Resume, or Word with an AI provider",
+	"ATS readability checker",
+	"Public or password-protected sharing links",
+	"Cover letters and a job application tracker",
+	"Optional AI assistant with your own API key",
+	"Self-hosting with Docker",
+];
+
+/** The page's own words, as its prerendered HTML has them in the visitor's language, for the structured data. */
+type PageText = { locale: Locale; title: string; description: string };
+
+const decodeHtml = (value: string) =>
+	value
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;|&#x27;/g, "'")
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&amp;/g, "&");
+
+// "ATS Checker | Reactive Resume" → "ATS Checker": the page's name without the site's.
+const pageName = (title: string) => decodeHtml(title).split(" | ")[0]?.trim() || decodeHtml(title);
+
+function homepageStructuredData(origin: string, text: PageText): StructuredData {
 	const rootUrl = `${origin}/`;
 	return {
 		"@context": "https://schema.org",
@@ -190,39 +216,32 @@ function homepageStructuredData(origin: string): StructuredData {
 				"@type": ["SoftwareApplication", "WebApplication"],
 				name: APP_NAME,
 				url: rootUrl,
-				description: ROOT_DESCRIPTION,
+				description: decodeHtml(text.description),
+				inLanguage: languageTag(text.locale),
 				applicationCategory: "BusinessApplication",
 				operatingSystem: "Web",
 				isAccessibleForFree: true,
 				offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
 				license: `${githubUrl}/blob/main/LICENSE`,
 				publisher: { "@id": `${origin}/#organization` },
-				featureList: [
-					"Resume editor with a live page preview",
-					`${templateSchema.options.length} templates`,
-					"PDF, Word (DOCX), Markdown and JSON export",
-					"Import from PDF, LinkedIn and JSON Resume, or Word with an AI provider",
-					"ATS readability checker",
-					"Public or password-protected sharing links",
-					"Cover letters and a job application tracker",
-					"Optional AI assistant with your own API key",
-					"Self-hosting with Docker",
-				],
+				// The feature list is written in English; other languages leave it out rather than mix languages.
+				...(text.locale === defaultLocale ? { featureList: FEATURE_LIST } : {}),
 			},
 		],
 	};
 }
 
-function atsCheckerStructuredData(origin: string): StructuredData {
+function atsCheckerStructuredData(origin: string, text: PageText): StructuredData {
 	return {
 		"@context": "https://schema.org",
 		"@graph": [
 			organization(origin),
 			{
 				"@type": "WebApplication",
-				name: "ATS Checker",
+				name: pageName(text.title),
 				url: `${origin}/ats-checker`,
-				description: ATS_CHECKER_DESCRIPTION,
+				description: decodeHtml(text.description),
+				inLanguage: languageTag(text.locale),
 				applicationCategory: "BusinessApplication",
 				operatingSystem: "Web",
 				isAccessibleForFree: true,
@@ -301,6 +320,15 @@ function getFallbackResponseHeaders(pathname: string) {
 	if (pathname === "/" || indexableAppPaths.has(pathname)) {
 		return { "Content-Type": "text/html; charset=UTF-8", ...BASE_SECURITY_HEADERS };
 	}
+	// A feedback link's page is private to whoever holds the link: never indexed, never sent on as a referrer.
+	if (isFeedbackPath(pathname)) {
+		return {
+			"Content-Type": "text/html; charset=UTF-8",
+			"X-Robots-Tag": "noindex, nofollow",
+			...BASE_SECURITY_HEADERS,
+			"Referrer-Policy": "no-referrer",
+		};
+	}
 	if (isAppSectionPath(pathname)) {
 		return {
 			"Content-Type": "text/html; charset=UTF-8",
@@ -310,19 +338,6 @@ function getFallbackResponseHeaders(pathname: string) {
 	}
 
 	return null;
-}
-
-/**
- * A prerendered page's language: a `?locale=` address first (its hreflang alternates), then the visitor's saved
- * choice, in the order the app reads them (apps/web/src/libs/locale.ts).
- */
-function getPageLocale(request: Request) {
-	const requested = new URL(request.url).searchParams.get("locale");
-	if (isLocale(requested))
-		return { locale: supportedLocales.includes(requested) ? requested : defaultLocale, requested: true };
-
-	const saved = request.headers.get("cookie")?.match(/(?:^|;\s*)locale=([^;]*)/)?.[1] ?? "";
-	return { locale: isLocale(saved) && supportedLocales.includes(saved) ? saved : defaultLocale, requested: false };
 }
 
 /** Swaps the page's <title> and description. Function replacers keep `$&`, `$'` etc. in user text literal. */
@@ -338,7 +353,7 @@ const prerenderedPages: Record<
 		name: string;
 		meta: { title: string; description: string };
 		image: string;
-		structuredData: (origin: string) => StructuredData;
+		structuredData: (origin: string, text: PageText) => StructuredData;
 	}
 > = {
 	"/": {
@@ -357,12 +372,13 @@ const prerenderedPages: Record<
 		name: "resume-templates",
 		meta: { title: TEMPLATES_TITLE, description: TEMPLATES_DESCRIPTION },
 		image: "/opengraph/banner.jpg",
-		structuredData: (origin) => ({
+		structuredData: (origin, text) => ({
 			"@context": "https://schema.org",
 			"@type": "CollectionPage",
-			name: "Free resume templates",
+			name: pageName(text.title),
 			url: `${origin}/resume-templates`,
-			description: TEMPLATES_DESCRIPTION,
+			description: decodeHtml(text.description),
+			inLanguage: languageTag(text.locale),
 			mainEntity: {
 				"@type": "ItemList",
 				itemListElement: templateSchema.options.map((template, index) => ({
@@ -379,12 +395,17 @@ const prerenderedPages: Record<
 export type ReadWebFile = (path: string) => Promise<string>;
 
 export async function handleWebApp(request: Request, readFile: ReadWebFile = (path) => fs.readFile(path, "utf-8")) {
-	const requestedPath = new URL(request.url).pathname;
+	const requestUrl = new URL(request.url);
+	const requestedPath = requestUrl.pathname;
 	const pathname = requestedPath === "/index.html" ? "/" : requestedPath;
 
 	if (!isAppSectionPath(pathname) && isAssetPath(pathname)) {
 		return new Response("Not Found", { status: 404 });
 	}
+
+	// The footer's "Templates" and old links: the gallery lives at /resume-templates. Old per-template previews stay gone.
+	if (pathname === "/templates" || pathname === "/templates/")
+		return new Response(null, { status: 301, headers: { Location: `/resume-templates${requestUrl.search}` } });
 
 	const headers = getFallbackResponseHeaders(pathname);
 	if (!headers)
@@ -400,24 +421,36 @@ export async function handleWebApp(request: Request, readFile: ReadWebFile = (pa
 
 	const prerendered = prerenderedPages[pathname];
 	if (prerendered) {
-		const { locale, requested } = getPageLocale(request);
+		const { locale, requested } = getPageLocale(request) ?? { locale: defaultLocale, requested: false };
 		const origin = new URL(env.APP_URL).origin;
 		// Without a prerendered page (a build that skipped it), the app shell titled for the page renders it in the browser.
-		const page = await readFile(`${prerenderRoot}/${prerendered.name}/${locale}.html`).catch(() =>
-			withMeta(html, prerendered.meta),
-		);
+		let textLocale: Locale = locale;
+		const page = await readFile(`${prerenderRoot}/${prerendered.name}/${locale}.html`).catch(() => {
+			// The shell's title and description are English: the structured data says so too.
+			textLocale = defaultLocale;
+			return withMeta(html, prerendered.meta);
+		});
+		const meta = readPageMeta(page, prerendered.meta);
 		const markup = createPageSeoMarkup({
 			canonicalUrl: new URL(pathname, env.APP_URL).toString(),
 			locale,
 			requested,
-			...readPageMeta(page, prerendered.meta),
+			...meta,
 			imageUrl: `${origin}${prerendered.image}`,
-			structuredData: prerendered.structuredData(origin),
+			structuredData: prerendered.structuredData(origin, { locale: textLocale, ...meta }),
 		});
+		const body =
+			pathname === "/"
+				? page.replace(/href="\/\?locale=([^"#&]+)#languages"/g, (_match, language: string) => {
+						const search = new URLSearchParams(requestUrl.search);
+						search.set("locale", language);
+						return `href="/?${escapeHtml(search.toString())}#languages"`;
+					})
+				: page;
 
 		// The saved locale changes what this address shows, so caches have to key on the cookie.
 		return htmlResponse(
-			page.replace("</head>", () => `${markup}</head>`),
+			body.replace("</head>", () => `${markup}</head>`),
 			{ ...headers, Vary: "Cookie" },
 			page,
 		);

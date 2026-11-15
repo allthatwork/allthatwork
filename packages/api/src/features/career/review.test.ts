@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
 	facts: [] as unknown[],
 	clean: vi.fn(),
 	limits: {} as Record<string, unknown>,
+	getModel: vi.fn((_input: unknown) => ({})),
 }));
 vi.mock("@reactive-resume/db/client", () => {
 	const chain = {
@@ -17,8 +18,8 @@ vi.mock("@reactive-resume/db/client", () => {
 	};
 	return { db: { insert: () => chain } };
 });
-vi.mock("../applications/ai", () => ({ generateJson: mocks.generate }));
-vi.mock("../ai/service", () => ({ getModel: () => ({}) }));
+vi.mock("../ai/application-generation", () => ({ generateJson: mocks.generate }));
+vi.mock("../ai/service", () => ({ getModel: mocks.getModel }));
 vi.mock("../ai-providers/service", () => ({
 	aiProvidersService: {
 		getDefaultRunnable: async () => ({
@@ -147,6 +148,23 @@ describe("Knowledge review", () => {
 		expect(await knowledgeReview.run({ userId: "alice" })).toMatchObject({ reviewed: 2, total: 3 });
 		expect(mocks.generate).toHaveBeenCalledTimes(2);
 		expect(mocks.generate.mock.calls[0]?.[3]).toMatchObject({ maxOutputTokens: 2048 });
+	});
+
+	it("counts its requests in AI usage as a Knowledge review on the connection it used", async () => {
+		mocks.generate.mockResolvedValue({ findings: [] });
+		mocks.getModel.mockClear();
+		await knowledgeReview.run({ userId: "alice" });
+		expect(mocks.getModel).toHaveBeenCalledWith(
+			expect.objectContaining({
+				model: "m",
+				usage: expect.objectContaining({
+					userId: "alice",
+					action: "knowledge-review",
+					providerId: "p",
+					label: "Test connection",
+				}),
+			}),
+		);
 	});
 
 	it("explains a review that reaches the time limit", async () => {

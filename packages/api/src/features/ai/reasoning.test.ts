@@ -2,6 +2,19 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { generateText } from "ai";
 
 vi.mock("@reactive-resume/env/server", () => ({ env: { FLAG_ALLOW_UNSAFE_AI_BASE_URL: false } }));
+// Each provider attempt records an AI usage row first; these tests read request bodies, not the ledger.
+vi.mock("@reactive-resume/db/client", () => {
+	const database = { insert: () => ({ values: async () => undefined }) };
+	return { db: { ...database, transaction: async (run: (tx: typeof database) => Promise<void>) => run(database) } };
+});
+vi.mock("../ai-providers/identity", async (original) => ({
+	...(await original<typeof import("../ai-providers/identity")>()),
+	assertProviderAvailable: async () => undefined,
+}));
+vi.mock("../documents/ownership", async (original) => ({
+	...(await original<typeof import("../documents/ownership")>()),
+	lockUser: async () => undefined,
+}));
 // Provider requests still reach the stubbed global fetch; fetchPublic's own network checks are tested in utils.
 vi.mock("@reactive-resume/utils/url-security.node", async (original) => ({
 	...(await original<typeof import("@reactive-resume/utils/url-security.node")>()),
@@ -43,7 +56,16 @@ const send = async (input: Parameters<typeof getModel>[0]) => {
 	return bodies[0] ?? {};
 };
 
+const usage = {
+	userId: "user",
+	operationId: "test",
+	action: "improve" as const,
+	providerId: "connection",
+	label: "Test connection",
+};
+
 const compatible = {
+	usage,
 	provider: "openai-compatible" as const,
 	model: "m",
 	apiKey: "k",
@@ -68,6 +90,7 @@ describe("connection reasoning", () => {
 		expect(await send({ ...compatible, reasoning: "ultra" })).toMatchObject({ reasoning_effort: "ultra" });
 		expect(
 			await send({
+				usage,
 				provider: "openrouter",
 				model: "m",
 				apiKey: "k",
@@ -79,6 +102,7 @@ describe("connection reasoning", () => {
 
 	it("translates the level for OpenAI chat models", async () => {
 		const body = await send({
+			usage,
 			provider: "openai",
 			model: "o4-mini",
 			apiKey: "k",

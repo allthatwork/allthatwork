@@ -4,8 +4,10 @@ import type { ApplicationSummary as Application } from "@/features/applications/
 import type { ComponentRef } from "react";
 import type { ScrollView } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
+import { i18n } from "@lingui/core";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshControl, Pressable, View, useWindowDimensions } from "react-native";
@@ -19,17 +21,23 @@ import Animated, {
 	withSpring,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
-import { keepPending, pendingAfterError, stageAt } from "./board";
+import { keepPending, pendingAfterError, stageAt, tabletColumnWidth } from "./board";
 import { useApplicationSearch } from "./search";
 import { ApplicationsViewFrame } from "./views";
-import { useUserTime } from "@/features/application-detail/hooks";
+import { useNow, useUserTime } from "@/features/application-detail/hooks";
 import { CloseSheet, MarkAppliedSheet } from "@/features/application-detail/sheets";
 import { applicationError } from "@/features/applications/error";
 import { useApplicationLanes } from "@/features/applications/lane-queries";
-import { getLaneLabel, laneInput, resolveLane, visibleLanes } from "@/features/applications/lanes";
+import { getLaneLabel, laneInput, resolveLane, undoLaneInput, visibleLanes } from "@/features/applications/lanes";
 import { filterApplications } from "@/features/applications/list";
 import { describeNextStep, getNextStep } from "@/features/applications/next-step";
 import { useApplicationMutations, useApplications } from "@/features/applications/queries";
+import {
+	listedApplication,
+	offerHintFor,
+	useOfferHints,
+	useStageMovedToast,
+} from "@/features/applications/stage-actions";
 import { routes } from "@/routes";
 import { useIsTablet } from "@/shell/use-is-tablet";
 import {
@@ -51,9 +59,8 @@ import {
 } from "@/ui";
 import { usePullRefresh } from "@/ui/use-pull-refresh";
 
-// Column widths from the mockup (career.html `.column`): phone 268 pt, tablet 250 pt.
+// Preferred column widths from the mockup (career.html `.column`); tablet lanes can shrink to fit.
 const PHONE_COLUMN = 268;
-const TABLET_COLUMN = 250;
 // Cards mounted per column at first; the rest show in batches, as web.
 const COLUMN_PAGE_SIZE = 50;
 const LONG_PRESS_MS = 400;
@@ -84,16 +91,22 @@ export function BoardScreen() {
  */
 function Board() {
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const { t } = useLingui();
 	const { motion, radius, shadows, space } = useTheme();
 	const { width: windowWidth } = useWindowDimensions();
 	const tablet = useIsTablet();
+	const [boardWidth, setBoardWidth] = useState(0);
 	const reduceMotion = useReducedMotion();
 	const query = useApplications();
 	const laneQuery = useApplicationLanes();
 	const [actionLane, setActionLane] = useState<ApplicationLane | undefined>();
-	const { search } = useApplicationSearch();
+	const { search, needsYou, clearFilters } = useApplicationSearch();
+	const now = useNow();
+	const { timeZone } = useUserTime();
+	const offers = useOfferHints();
 	const { update } = useApplicationMutations();
+	const stageMoved = useStageMovedToast();
 	// One open flag per sheet: a sheet's late dismissal can never close the one that replaced it.
 	const [moving, setMoving] = useState<Application | null>(null);
 	const [moveOpen, setMoveOpen] = useState(false);
@@ -124,7 +137,13 @@ function Board() {
 	const hovered = useRef<string | null>(null);
 	const dragged = useRef<Application | null>(null);
 
-	const applications = filterApplications(query.data ?? [], { search, tag: "", showClosed: true });
+	const applications = filterApplications(
+		query.data ?? [],
+		{ search, tag: "", showClosed: true, needsYou },
+		now,
+		timeZone,
+		offers,
+	);
 	if (pending && !keepPending(pending, query.data ?? [])) setPending(null);
 	const statusOf = (application: Application) =>
 		pending?.id === application.id ? pending.to : resolveLane(laneQuery.lanes, application).id;
@@ -133,26 +152,36 @@ function Board() {
 	const byStage = new Map<string, Application[]>(stageIds.map((stage) => [stage, []]));
 	for (const application of applications) byStage.get(statusOf(application))?.push(application);
 
-	const columnWidth = tablet ? TABLET_COLUMN : Math.min(PHONE_COLUMN, windowWidth - space.s4 * 2 - space.s8);
+	const columnWidth = tablet
+		? boardWidth
+			? tabletColumnWidth(boardWidth, stages.filter((lane) => lane.category !== "closed").length, space.s4, space.s3)
+			: 250
+		: Math.min(PHONE_COLUMN, windowWidth - space.s4 * 2 - space.s8);
 	const cardWidth = columnWidth - space.s3 * 2;
 
 	const moveTo = (application: Application, stage: string) => {
+		const before = listedApplication(queryClient, application.id);
 		const lane = laneQuery.active.find((item) => item.id === stage);
-		if (!laneQuery.ready || !lane || update.isPending || stage === statusOf(application)) return;
+		if (!before || !laneQuery.ready || !lane || update.isPending || stage === statusOf(before)) return;
 		setActionLane(lane);
 		if (lane.category === "closed" && !lane.closedReason) {
-			setClosing(application);
+			setClosing(before);
 			return setCloseOpen(true);
 		}
-		if (application.status === "saved" && lane.category === "applied") {
-			setMarking(application);
+		if (before.status === "saved" && lane.category === "applied") {
+			setMarking(before);
 			return setMarkOpen(true);
 		}
-		setPending({ id: application.id, from: application.laneId ?? application.status, to: stage });
+		setPending({ id: application.id, from: before.laneId ?? before.status, to: stage });
 		update.mutate(
 			{ id: application.id, ...laneInput(lane, laneQuery.supported) },
 			{
-				onSuccess: () => showToast({ message: t`Moved to ${getLaneLabel(lane)}` }),
+				onSuccess: () => {
+					const from = resolveLane(laneQuery.lanes, before);
+					stageMoved(application, lane, undefined, () =>
+						update.mutateAsync({ id: application.id, ...undoLaneInput(from, before, laneQuery.supported) }),
+					);
+				},
 				onError: (error) => {
 					setPending((current) => pendingAfterError(current, application.id, stage));
 					showToast({ message: applicationError(error) });
@@ -310,17 +339,20 @@ function Board() {
 	if (applications.length === 0) {
 		return (
 			<EmptyState
+				variant="card"
 				icon="briefcase"
-				title={search.trim() && query.data?.length ? t`No matching applications` : t`Your job search starts here`}
+				title={
+					(search.trim() || needsYou) && query.data?.length ? t`No matching applications` : t`Track your first job`
+				}
 				message={
-					search.trim() && query.data?.length
+					(search.trim() || needsYou) && query.data?.length
 						? t`Try different words or clear your filters.`
-						: t`Save a job link, paste a posting, or fill in the details manually.`
+						: t`Paste a job link. We'll save the posting so Check, the assistant and your letter can use it.`
 				}
 				action={
-					search.trim() && query.data?.length
-						? { label: t`Clear filters`, onPress: () => useApplicationSearch.getState().setSearch("") }
-						: { label: t`Open the list`, onPress: () => router.replace(routes.applications()) }
+					(search.trim() || needsYou) && query.data?.length
+						? { label: t`Clear filters`, onPress: clearFilters }
+						: { label: t`Save a job`, onPress: () => router.setParams({ create: "1" }) }
 				}
 			/>
 		);
@@ -331,12 +363,13 @@ function Board() {
 			<View
 				ref={board}
 				style={{ flex: 1 }}
-				onLayout={() =>
+				onLayout={(event) => {
+					setBoardWidth(event.nativeEvent.layout.width);
 					board.current?.measureInWindow((x, y, width) => {
 						boardRect.current = { x, y, width };
 						bounds.set({ x, width });
-					})
-				}
+					});
+				}}
 			>
 				<AnimatedScrollView
 					ref={scrollRef}
@@ -443,6 +476,7 @@ function Column({
 	const shown = applications.slice(0, visible);
 	// Columns mount once the board has data, so cards stagger in when the board opens.
 	const firstAppearance = useFirstAppearance(true);
+	const reduced = useReducedMotion();
 	const remaining = applications.length - shown.length;
 
 	return (
@@ -483,7 +517,7 @@ function Column({
 					{getLaneLabel(stage)}
 				</Text>
 				<Text variant="mono" color="ink3">
-					{applications.length}
+					{i18n.number(applications.length)}
 				</Text>
 			</View>
 			<LegacyScrollView
@@ -495,7 +529,11 @@ function Column({
 					<Text variant="callout" color="ink3">{t`Drop here to close with a reason.`}</Text>
 				) : null}
 				{shown.map((application, index) => (
-					<Animated.View key={application.id} {...listItemMotion(index, firstAppearance)} layout={listLayout}>
+					<Animated.View
+						key={application.id}
+						{...listItemMotion(index, firstAppearance, { reduced })}
+						layout={listLayout}
+					>
 						<DraggableCard
 							application={application}
 							width={cardWidth}
@@ -509,7 +547,7 @@ function Column({
 					<Button
 						variant="ghost"
 						size="sm"
-						label={t`Show ${Math.min(remaining, COLUMN_PAGE_SIZE)} more`}
+						label={t`Show ${i18n.number(Math.min(remaining, COLUMN_PAGE_SIZE))} more`}
 						onPress={() => setVisible((count) => count + COLUMN_PAGE_SIZE)}
 					/>
 				) : null}
@@ -571,7 +609,13 @@ function BoardCard({ application, onMove }: BoardCardProps) {
 	const { space } = useTheme();
 	const { timeZone } = useUserTime();
 	const lanes = useApplicationLanes();
-	const next = describeNextStep(getNextStep(application, undefined, lanes.lanes), application, i18n.locale, timeZone);
+	const hints = useOfferHints();
+	const next = describeNextStep(
+		getNextStep(application, undefined, lanes.lanes, timeZone, offerHintFor(hints, application.id)),
+		application,
+		i18n.locale,
+		timeZone,
+	);
 
 	return (
 		<Card>

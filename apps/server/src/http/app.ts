@@ -9,6 +9,7 @@ import { compress } from "hono/compress";
 import { prepareStagedBody, withStagedBody } from "@reactive-resume/api/features/storage/transport";
 import { env } from "@reactive-resume/env/server";
 import { prepareMcpDiscovery } from "@reactive-resume/mcp";
+import { SITE_PATH_ALIASES } from "@reactive-resume/utils/app-paths";
 import { handleMcp } from "../mcp/handler";
 import { handleOpenApi, handleOpenApiDocument } from "../openapi/handler";
 import {
@@ -36,7 +37,7 @@ import { handleAuth, handleOAuth } from "./auth";
 import { handleCareerJobs } from "./career-jobs";
 import { handleCustomDomain, handleTraefikProvider } from "./custom-domain";
 import { handleHealth } from "./health";
-import { handlePublicResumePdf } from "./public-resume-pdf";
+import { handlePublicResumeDownload } from "./public-resume-download";
 import { handleResumePdfDownload } from "./resume-pdf";
 
 type ServerEnvironment = { Bindings: HttpBindings | Http2Bindings };
@@ -128,7 +129,10 @@ export function createApp(options: AppOptions = {}) {
 	app.get("/api/internal/traefik", (c) => handleTraefikProvider(c.req.raw));
 	app.on(["GET", "POST"], "/api/career/run", (c) => handleCareerJobs(c.req.raw));
 	app.get("/api/resumes/:username/:slug/pdf", (c) =>
-		handlePublicResumePdf(c.req.raw, c.req.param("username"), c.req.param("slug"), client(c)),
+		handlePublicResumeDownload(c.req.raw, c.req.param("username"), c.req.param("slug"), client(c)),
+	);
+	app.get("/api/resumes/:username/:slug/docx", (c) =>
+		handlePublicResumeDownload(c.req.raw, c.req.param("username"), c.req.param("slug"), client(c), "docx"),
 	);
 	app.get("/api/resumes/:id/pdf", (c) => handleResumePdfDownload(c.req.raw, c.req.param("id")));
 	// Outside /api/resumes, which robots.txt keeps crawlers out of: link previews need to fetch these.
@@ -188,11 +192,18 @@ export function createApp(options: AppOptions = {}) {
 			? serveResumePage(c.req.raw, { username: c.req.param("username"), slug: c.req.param("slug") }, client(c))
 			: next(),
 	);
-	app.on(["GET", "POST"], "/:username", limitBody(16 * 1024), (c, next) =>
-		isProfilePath(c.req.path)
-			? serveResumePage(c.req.raw, { username: c.req.param("username"), primary: true }, client(c))
-			: next(),
-	);
+	app.on(["GET", "POST"], "/:username", limitBody(16 * 1024), async (c, next) => {
+		if (!isProfilePath(c.req.path)) return next();
+		const page = await serveResumePage(c.req.raw, { username: c.req.param("username"), primary: true }, client(c));
+		// `/login`, `/pricing` and the like go to the real page, unless an account of that name shares a page there. Every unavailable page
+		// reads the same, so this tells nobody whether such an account exists.
+		const username = c.req.param("username").toLowerCase();
+		const alias = Object.hasOwn(SITE_PATH_ALIASES, username) ? SITE_PATH_ALIASES[username] : undefined;
+		if (alias && page.status === 404 && c.req.method !== "POST") {
+			return new Response(null, { status: 302, headers: { Location: `${alias}${new URL(c.req.url).search}` } });
+		}
+		return page;
+	});
 	app.get("/*", (c) => handleWebApp(c.req.raw, options.readWebFile));
 
 	return app;

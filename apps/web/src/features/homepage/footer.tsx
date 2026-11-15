@@ -12,19 +12,21 @@ import { appVersionLabel } from "@/libs/app-version";
 const githubUrl = APP_REPOSITORY_URL;
 const licenseUrl = `${githubUrl}/blob/main/LICENSE`;
 const upstreamUrl = "https://github.com/reactive-resume/reactive-resume";
-const linkClass = "text-ink transition-colors hover:text-accent-text";
+// On touch, each link is a 44px row; the column gap closes so the columns don't grow.
+const linkClass =
+	"text-ink transition-colors hover:text-accent-text pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center";
 
 type FooterLink =
 	| { label: string; href: string }
 	| { label: string; to: "/ats-checker" | "/auth/login" | "/auth/register" | "/resume-templates" };
 
-const getColumns = (): { id: string; title: string; links: FooterLink[] }[] => [
+const getColumns = (story: boolean): { id: string; title: string; links: FooterLink[] }[] => [
 	{
 		id: "product",
 		title: t`Product`,
 		links: [
 			{ label: t`Templates`, to: "/resume-templates" },
-			{ label: t`Features`, href: "#write" },
+			{ label: t`Features`, href: story ? "#write" : "/#write" },
 			{ label: t`ATS checker`, to: "/ats-checker" },
 			{ label: t`Get started`, to: "/auth/register" },
 			{ label: t`Sign in`, to: "/auth/login" },
@@ -72,8 +74,13 @@ function FooterLinkItem({ link }: { link: FooterLink }): ReactNode {
 	);
 }
 
-/** 13 Footer, ending on the logo's stacked name rising into view, cropped by the page's edge. */
-export function LandingFooter() {
+/**
+ * 13 Footer, ending on the logo's stacked name rising into view, cropped by the page's edge. Off the homepage's story
+ * (the ATS checker and template pages share this chrome), its Features link leads back to the homepage.
+ */
+type LandingFooterProps = { story?: boolean };
+
+export function LandingFooter({ story = true }: LandingFooterProps) {
 	return (
 		<footer data-scene={SCENE.footer} className="relative overflow-hidden border-t border-line">
 			<div className="mx-auto grid max-w-[1440px] grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-x-8 gap-y-10 px-(--gutter) pt-16">
@@ -107,7 +114,7 @@ export function LandingFooter() {
 					</div>
 				</div>
 
-				{getColumns().map((column) => (
+				{getColumns(story).map((column) => (
 					<nav
 						key={column.id}
 						aria-labelledby={`footer-${column.id}`}
@@ -116,7 +123,7 @@ export function LandingFooter() {
 						<h2 id={`footer-${column.id}`} className={cn(labelClass, "mb-1 text-ink-3")}>
 							{column.title}
 						</h2>
-						<ul className="flex flex-col gap-2.5">
+						<ul className="flex flex-col gap-2.5 pointer-coarse:gap-0">
 							{column.links.map((link) => (
 								<li key={link.label}>
 									<FooterLinkItem link={link} />

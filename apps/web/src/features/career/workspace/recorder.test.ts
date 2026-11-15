@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { dictate, recordingBitrate, writeNumbersAsDigits } from "./recorder";
+import { clock, dictate, recordingBitrate, writeNumbersAsDigits } from "./recorder";
 
 describe("recording length", () => {
 	afterEach(() => {
@@ -39,6 +39,12 @@ describe("recording length", () => {
 		expect(sessions[0]?.stop).toHaveBeenCalledOnce();
 		expect(onStop).toHaveBeenCalledWith("", 300, true);
 	});
+});
+
+it("formats elapsed time with locale digits and two-digit seconds", () => {
+	expect(clock(67, "en-US")).toBe("1:07");
+	expect(clock(67, "ar-SA")).toBe("١:٠٧");
+	expect(clock(0, "ar-SA")).toBe("٠:٠٠");
 });
 
 describe("writeNumbersAsDigits", () => {

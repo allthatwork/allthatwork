@@ -10,6 +10,7 @@ import { Button } from "@reactive-resume/ui/components/button";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Spinner } from "@reactive-resume/ui/components/spinner";
 import { toast } from "@reactive-resume/ui/components/toast";
+import { SettingsSection } from "../section";
 import { BudgetMeter } from "@/features/career/knowledge/budget";
 import { getOrpcErrorMessage } from "@/libs/error-message";
 import { orpc } from "@/libs/orpc/client";
@@ -35,7 +36,6 @@ type LimitGroup = { legend: ReactNode; description?: ReactNode; limits: LimitSpe
 
 /** How much Knowledge goes with each AI request and how long it may run. Larger limits suit larger, slower models. */
 export function AiLimitsSection() {
-	const id = useId();
 	const characters = t`characters`;
 	const seconds = t`seconds`;
 	const requirements = t`requirements`;
@@ -44,22 +44,18 @@ export function AiLimitsSection() {
 	const automatic = t`Automatic`;
 
 	return (
-		<section aria-labelledby={`${id}-title`} className="overflow-hidden rounded-xl border border-line bg-surface">
-			<header className="grid gap-1 border-b border-line px-5 py-4 max-sm:px-4">
-				<h2 id={`${id}-title`} className="text-[17px] font-semibold">
-					<Trans>AI limits</Trans>
-				</h2>
-				<p className="max-w-[60ch] text-[13px] leading-5 text-ink-3">
-					<Trans>
-						How much of your switched-on Knowledge goes with each AI request, and how long a request may run. The
-						defaults suit fast models with small context windows; raise them for models that can read more or need more
-						time. Larger Knowledge limits send more of your Knowledge to your AI provider.
-					</Trans>
-				</p>
-			</header>
-			<div className="border-b border-line px-5 py-4 max-sm:px-4">
-				<BudgetMeter bare />
-			</div>
+		<SettingsSection
+			id="ai-limits"
+			title={<Trans>AI limits</Trans>}
+			description={
+				<Trans>
+					How much of your switched-on Knowledge goes with each AI request, and how long a request may run. The defaults
+					suit fast models with small context windows; raise them for models that can read more or need more time.
+					Larger Knowledge limits send more of your Knowledge to your AI provider.
+				</Trans>
+			}
+		>
+			<BudgetMeter bare />
 			<AiLimitsForm
 				groups={[
 					{
@@ -228,7 +224,7 @@ export function AiLimitsSection() {
 					},
 				]}
 			/>
-		</section>
+		</SettingsSection>
 	);
 }
 
@@ -243,7 +239,7 @@ export function AiLimitsForm({ groups }: AiLimitsFormProps) {
 	if (query.data) return <LimitsForm initial={query.data} groups={groups} />;
 	if (query.isError)
 		return (
-			<div className="flex flex-wrap items-center gap-3 px-5 py-4 text-sm text-ink-2 max-sm:px-4">
+			<div className="flex flex-wrap items-center gap-3 py-4 text-sm text-ink-2">
 				<Trans>Couldn't load your AI limits.</Trans>
 				<Button size="sm" variant="secondary" onClick={() => void query.refetch()}>
 					<Trans>Retry</Trans>
@@ -251,7 +247,7 @@ export function AiLimitsForm({ groups }: AiLimitsFormProps) {
 			</div>
 		);
 	return (
-		<div className="flex justify-center px-5 py-6">
+		<div className="flex justify-center py-6">
 			<Spinner />
 		</div>
 	);
@@ -303,7 +299,7 @@ function LimitsForm({ initial, groups }: LimitsFormProps) {
 
 	return (
 		<form
-			className="grid gap-5 px-5 py-4 max-sm:px-4"
+			className="grid gap-5 border-t border-line pt-4"
 			onSubmit={(event) => {
 				event.preventDefault();
 				if (!valid) return;

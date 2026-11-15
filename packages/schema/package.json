@@ -4,8 +4,14 @@
 	"type": "module",
 	"private": true,
 	"exports": {
+		"./ai-usage": "./src/ai-usage.ts",
+		"./application-answers": "./src/application-answers.ts",
 		"./boards": "./src/boards.ts",
+		"./career-disclosure": "./src/career-disclosure.ts",
+		"./career-schedule": "./src/career-schedule.ts",
 		"./career-offer": "./src/career-offer.ts",
+		"./career-starters": "./src/career-starters.ts",
+		"./career-practice": "./src/career-practice.ts",
 		"./directory-import": "./src/directory-import.ts",
 		"./directory": "./src/directory.ts",
 		"./directory-names": "./src/directory-names.ts",
@@ -15,7 +21,8 @@
 		"./icons": "./src/icons.ts",
 		"./resume/stylesheet": "./src/resume/stylesheet.ts",
 		"./resume/*": "./src/resume/*.ts",
-		"./templates": "./src/templates.ts"
+		"./templates": "./src/templates.ts",
+		"./application-profile": "./src/application-profile.ts"
 	},
 	"scripts": {
 		"typecheck": "tsrs --noEmit",

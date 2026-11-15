@@ -9,19 +9,20 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@reactive-r
 import { Icon } from "@reactive-resume/ui/components/icon";
 import { NativeSelect } from "@reactive-resume/ui/components/native-select";
 import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs";
-import { toast } from "@reactive-resume/ui/components/toast";
 import { cn } from "@reactive-resume/utils/style";
 import { CustomStylesSectionBuilder } from "../-sidebar/right/sections/custom-styles";
 import { DesignSectionBuilder } from "../-sidebar/right/sections/design";
 import { LayoutSectionBuilder } from "../-sidebar/right/sections/layout";
 import { PageSectionBuilder } from "../-sidebar/right/sections/page";
 import { TypographySectionBuilder } from "../-sidebar/right/sections/typography";
-import { useIsResumeLocked, useResumeData, useResumeStore, useUpdateResumeData } from "@/features/resume/builder/draft";
+import { useIsResumeLocked, useResumeData, useUpdateResumeData } from "@/features/resume/builder/draft";
+import { undoToast } from "@/features/resume/builder/undo-toast";
 import { EntriesGroup } from "@/features/resume/editor/design/entries-group";
 import { ColorGroup, PageGroup, TypeGroup } from "@/features/resume/editor/design/style-groups";
 import { TemplateGroup } from "@/features/resume/editor/design/template-group";
 import { OfflineBanner } from "@/features/resume/editor/save-status";
 import { getScrollBehavior } from "@/features/resume/editor/write/reveal";
+import { LockedNote } from "@/features/resume/editor/write/write-panel";
 import { D2 } from "@/libs/motion";
 import { getSectionTitle } from "@/libs/resume/section";
 
@@ -93,6 +94,12 @@ export function DesignPanel() {
 				))}
 			</nav>
 
+			{/* Outside the disabled controls, so Unlock stays usable. */}
+			{locked && (
+				<div className="px-4 pt-4">
+					<LockedNote />
+				</div>
+			)}
 			<fieldset disabled={locked} className="m-0 min-w-0 divide-y divide-line border-0 p-0">
 				<Group id="template" title={<Trans>Template</Trans>}>
 					<TemplateGroup />
@@ -108,6 +115,7 @@ export function DesignPanel() {
 				</Group>
 				<Group id="page" title={<Trans>Page</Trans>}>
 					<PageGroup />
+					<PagesEditor />
 				</Group>
 				<AdvancedGroup open={advancedOpen} onOpenChange={setAdvancedOpen} />
 			</fieldset>
@@ -155,6 +163,11 @@ export function DesignSheet() {
 					))}
 				</TabsList>
 
+				{locked && (
+					<div className="shrink-0 px-4 pt-3">
+						<LockedNote />
+					</div>
+				)}
 				<fieldset disabled={locked} className="m-0 min-h-0 min-w-0 flex-1 overflow-y-auto border-0 p-4">
 					<OfflineBanner className="mb-4" />
 					{tab === "template" && <TemplateGroup layout="strip" />}
@@ -171,8 +184,9 @@ export function DesignSheet() {
 					{tab === "color" && <ColorGroup />}
 					{tab === "page" && (
 						<div className="-mx-4 divide-y divide-line">
-							<div className="px-4 pb-5">
+							<div className="grid gap-3 px-4 pb-5">
 								<PageGroup />
+								<PagesEditor />
 							</div>
 							<AdvancedGroup open={advancedOpen} onOpenChange={setAdvancedOpen} />
 						</div>
@@ -192,12 +206,27 @@ const DATE_FORMATS: { value: DateFormat; label: string }[] = [
 	{ value: "iso", label: "2022-03" },
 ];
 
+/** Each page's sections and the sidebar width, beside the page presets: adding a page shouldn't need Advanced. */
+function PagesEditor() {
+	return (
+		<section
+			id="design-page-layout"
+			aria-labelledby="design-page-layout-title"
+			className="grid scroll-mt-14 gap-3 pt-2"
+		>
+			<h3 id="design-page-layout-title" className="text-[13px] font-semibold text-ink-2">
+				<Trans>Pages and sections</Trans>
+			</h3>
+			<LayoutSectionBuilder />
+		</section>
+	);
+}
+
 // The exact-value editors, each under its own heading. They mount only while Advanced is open.
 const EXACT_SECTIONS = [
 	["typography", TypographySectionBuilder],
 	["design", DesignSectionBuilder],
 	["page", PageSectionBuilder],
-	["layout", LayoutSectionBuilder],
 	["styles", CustomStylesSectionBuilder],
 ] as const;
 
@@ -230,10 +259,7 @@ function AdvancedGroup({ open, onOpenChange }: AdvancedGroupProps) {
 			},
 			{ newStep: true },
 		);
-		toast.add({
-			description: t`Design reset to defaults`,
-			actionProps: { children: t`Undo`, onClick: () => useResumeStore.getState().undo() },
-		});
+		undoToast(t`Design reset to defaults`);
 	};
 
 	return (

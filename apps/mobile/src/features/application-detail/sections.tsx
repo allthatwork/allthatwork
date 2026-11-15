@@ -3,6 +3,7 @@ import type { ApplicationLane } from "@/features/applications/lanes";
 import type { Application } from "@/features/applications/types";
 import type { ApplicationTimelineEntry, InterviewTimelineEntry } from "@reactive-resume/schema/applications/data";
 import type { ReactNode } from "react";
+import { i18n } from "@lingui/core";
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,10 +11,13 @@ import * as DocumentPicker from "expo-document-picker";
 import { File } from "expo-file-system";
 import { useRouter } from "expo-router";
 import Storage from "expo-sqlite/kv-store";
-import { openBrowserAsync } from "expo-web-browser";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, View } from "react-native";
+import { AppState, Pressable, View } from "react-native";
+import { suggestApplicationDocuments } from "@reactive-resume/schema/applications/document-suggestions";
+import { applicationSentAt } from "@reactive-resume/schema/applications/outcomes";
 import { attachmentProblem } from "./attachment";
+import { AttachmentPreview } from "./attachment-preview";
+import { showInterviewCancellation } from "./calendar";
 import {
 	followUpReminder,
 	interviewReminder,
@@ -26,23 +30,25 @@ import {
 import { createNotesQueue } from "./notes-queue";
 import { ContactsSheet, FollowUpSheet, ReminderSheet, TimelineEntrySheet } from "./sheets";
 import { client, orpc } from "@/api/client";
-import { getServer } from "@/auth/session";
+import { getAccountScope, getServer } from "@/auth/session";
 import { getDraftScope } from "@/draft";
 import { applicationError } from "@/features/applications/error";
-import { canonicalStageEntries, currentLaneEntry, laneSince } from "@/features/applications/history";
+import { currentLaneEntry, laneSince } from "@/features/applications/history";
 import { LaneNotice } from "@/features/applications/lane-notice";
 import { useApplicationLanes } from "@/features/applications/lane-queries";
 import {
 	getLaneHistoryLabel,
 	getLaneLabel,
 	laneInput,
+	undoLaneInput,
 	nextActiveLane,
 	resolveLane,
 } from "@/features/applications/lanes";
 import { describeNextStep, getNextStep } from "@/features/applications/next-step";
 import { useApplicationMutations } from "@/features/applications/queries";
-import { PIPELINE } from "@/features/applications/stages";
+import { acceptedStage, offerHintFor, useOfferHints, useStageMovedToast } from "@/features/applications/stage-actions";
 import { followUpEvent, icsFileName, interviewEvent, shareIcs, zonedParts } from "@/features/reminders";
+import { shareDocumentPdf } from "@/features/share/files";
 import { routes } from "@/routes";
 import {
 	Button,
@@ -54,6 +60,7 @@ import {
 	ListGroup,
 	ListRow,
 	SelectSheet,
+	Sheet,
 	showToast,
 	Text,
 	TextArea,
@@ -81,12 +88,14 @@ export function Section({ title, children }: SectionBlockProps) {
 type StageStepperProps = SectionProps & {
 	onMarkApplied: (lane: ApplicationLane) => void;
 	onCloseLane: (lane: ApplicationLane) => void;
+	/** Opens a new interview; offered after a move to Interview when none is scheduled. */
+	onSchedule?: () => void;
 };
 
 /** Lane identity is independent of canonical progress; the picker accommodates any lane count and label length. */
-export function StageStepper({ application, onMarkApplied, onCloseLane }: StageStepperProps) {
+export function StageStepper({ application, onMarkApplied, onCloseLane, onSchedule }: StageStepperProps) {
 	const { t } = useLingui();
-	const { radius, space } = useTheme();
+	const { colors, radius, space } = useTheme();
 	const { update } = useApplicationMutations();
 	const lanes = useApplicationLanes();
 	const current = resolveLane(lanes.lanes, application);
@@ -97,8 +106,11 @@ export function StageStepper({ application, onMarkApplied, onCloseLane }: StageS
 				? resolveLane(lanes.lanes, { status: update.variables.status })
 				: current;
 	const now = useNow();
-	const days = Math.max(0, Math.floor((now.getTime() - laneSince(application, lanes.lanes).getTime()) / 86_400_000));
+	const since = laneSince(application, lanes.lanes);
+	const days = since ? Math.max(0, Math.floor((now.getTime() - since.getTime()) / 86_400_000)) : null;
 	const next = nextActiveLane(lanes.lanes, application);
+	const stageMoved = useStageMovedToast();
+	const accepted = acceptedStage(lanes.lanes, application);
 	const move = (id: string) => {
 		const target = lanes.active.find((item) => item.id === id);
 		if (!lanes.ready || !target || id === lane.id) return;
@@ -107,7 +119,14 @@ export function StageStepper({ application, onMarkApplied, onCloseLane }: StageS
 		update.mutate(
 			{ id: application.id, ...laneInput(target, lanes.supported) },
 			{
-				onSuccess: () => showToast({ message: t`Moved to ${getLaneLabel(target)}` }),
+				onSuccess: () => {
+					const scheduled = application.activity.some(
+						(entry) => entry.type === "interview" && new Date(entry.at).getTime() > Date.now(),
+					);
+					stageMoved(application, target, scheduled ? undefined : onSchedule, () =>
+						update.mutateAsync({ id: application.id, ...undoLaneInput(lane, application, lanes.supported) }),
+					);
+				},
 				onError: (error) => showToast({ message: applicationError(error) }),
 			},
 		);
@@ -116,12 +135,15 @@ export function StageStepper({ application, onMarkApplied, onCloseLane }: StageS
 		<View style={{ gap: space.s3 }}>
 			<LaneNotice />
 			<View style={{ flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: space.s2 }}>
-				<View style={{ width: 8, height: 8, borderRadius: radius.rSm, backgroundColor: lane.color }} />
+				<View
+					style={{ width: 8, height: 8, borderRadius: radius.rSm, backgroundColor: accepted?.color ?? lane.color }}
+				/>
+				{accepted ? <Icon name="check" size={16} color={colors.accentText} /> : null}
 				<Text variant="label" style={{ flexShrink: 1 }}>
-					{getLaneLabel(lane)}
+					{accepted?.label ?? getLaneLabel(lane)}
 				</Text>
 				<Text color="ink3">
-					{application.status === "closed"
+					{application.status === "closed" || days === null
 						? ""
 						: plural(days, { 0: "· since today", one: "· for # day", other: "· for # days" })}
 				</Text>
@@ -157,23 +179,29 @@ export function NextStepCard({ application, onOpenInterview }: SectionProps & In
 	const [followUpOpen, setFollowUpOpen] = useState(false);
 	const [reminderOpen, setReminderOpen] = useState(false);
 	const lanes = useApplicationLanes();
-	const step = getNextStep(application, undefined, lanes.lanes);
+	const hints = useOfferHints();
+	const step = getNextStep(application, undefined, lanes.lanes, timeZone, offerHintFor(hints, application.id));
 	const text = describeNextStep(step, application, locale, timeZone);
 	const followUpDue = step.kind === "no-reply" || (step.kind === "follow-up" && step.overdue);
 	const tab = step.kind === "interview" ? "prepare" : followUpDue ? "messages" : workspaceTabFor(application);
 	const actionLabel = followUpDue
 		? t`Draft a follow-up`
-		: {
-				fit: t`Prepare application`,
-				apply: t`Review application`,
-				prepare: t`Prepare for interview`,
-				debrief: t`Debrief interview`,
-				messages: t`Prepare a reply`,
-				saved: t`View saved work`,
-			}[tab];
+		: step.kind === "offer"
+			? step.terms
+				? t`Compare offers`
+				: t`Add the offer's terms`
+			: {
+					fit: t`Prepare application`,
+					apply: application.status === "saved" ? t`Prepare application` : t`Review application`,
+					prepare: t`Prepare for interview`,
+					debrief: t`Debrief interview`,
+					messages: t`Prepare a reply`,
+					saved: t`View saved work`,
+				}[tab];
 	const interview = step.kind === "interview" ? step.interview : null;
 	const dated = step.kind === "interview" || step.kind === "follow-up";
-	const target = interview ? interviewReminder(application, interview) : followUpReminder(application);
+	const calendarAt = dated ? step.at : step.kind === "offer" ? step.respondBy : null;
+	const target = interview ? interviewReminder(application, interview) : followUpReminder(application, timeZone);
 	const zone = interview?.timezone && interview.timezone !== timeZone ? interview.timezone : null;
 	const subtitle = interview
 		? `${when(interview.at)}–${time(new Date(new Date(interview.at).getTime() + interview.durationMinutes * 60_000))} · ${timeZone}`
@@ -182,16 +210,21 @@ export function NextStepCard({ application, onOpenInterview }: SectionProps & In
 			: "";
 
 	const addToCalendar = () => {
-		if (!dated) return;
+		if (!calendarAt) return;
 		const title = `${text.title} · ${application.role}, ${application.company}`;
 		void shareIcs(
-			interview ? interviewEvent(interview, title) : followUpEvent(application.id, step.at, title),
-			icsFileName(application.company, zonedParts(step.at, timeZone).date),
+			interview
+				? interviewEvent(interview, title)
+				: {
+						...followUpEvent(application.id, calendarAt, title),
+						...(step.kind === "offer" ? { uid: `offer-${application.id}` } : {}),
+					},
+			icsFileName(application.company, zonedParts(calendarAt, timeZone).date),
 		).catch(() => showToast({ message: t`Couldn't share the calendar event. Try again.` }));
 	};
 
 	return (
-		<Section title={t`Next step`}>
+		<Section title={step.kind === "closed" ? t`Outcome` : t`Next step`}>
 			<Card style={text.tone === "warn" ? { borderColor: colors.warn, backgroundColor: colors.warnSoft } : undefined}>
 				<View style={{ gap: space.s3 }}>
 					<View style={{ flexDirection: "row", gap: space.s3 }}>
@@ -217,7 +250,13 @@ export function NextStepCard({ application, onOpenInterview }: SectionProps & In
 						fullWidth
 						icon="arrow-right"
 						label={actionLabel}
-						onPress={() => router.push(routes.application(application.id, tab))}
+						onPress={() =>
+							step.kind === "offer"
+								? step.terms
+									? router.push(routes.career("offers"))
+									: router.push({ pathname: routes.application(application.id, "messages"), params: { offer: "new" } })
+								: router.push(routes.application(application.id, tab))
+						}
 					/>
 					{step.kind !== "closed" ? (
 						<View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.s2 }}>
@@ -249,6 +288,15 @@ export function NextStepCard({ application, onOpenInterview }: SectionProps & In
 									/>
 								</>
 							) : null}
+							{step.kind === "offer" && calendarAt ? (
+								<Button
+									size="sm"
+									variant="ghost"
+									icon="calendar-plus"
+									label={t`Add to calendar`}
+									onPress={addToCalendar}
+								/>
+							) : null}
 							<Button
 								size="sm"
 								variant="ghost"
@@ -271,43 +319,120 @@ export function NextStepCard({ application, onOpenInterview }: SectionProps & In
 	);
 }
 
-/** When it was sent: its first stage entry at Applied or beyond. */
-function sentOn(application: Application) {
-	const applied = PIPELINE.indexOf("applied");
-	const entry = canonicalStageEntries(application)
-		.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
-		.find((item) => item.type === "stage" && PIPELINE.indexOf(item.stage) >= applied);
-	return entry?.at ?? application.appliedAt;
-}
-
 /** WHAT YOU SENT: the linked resume and letter (linked is not the same as submitted), or ways to prepare them. */
-export function WhatYouSent({ application }: SectionProps) {
+type WhatYouSentProps = SectionProps & {
+	/** Apply tab: a heading, the recorded submission line, and each row's current-draft actions (edit, download PDF). */
+	drafts?: boolean | undefined;
+};
+
+export function WhatYouSent({ application, drafts = false }: WhatYouSentProps) {
 	const { t } = useLingui();
-	const { space } = useTheme();
+	const { colors, size, space } = useTheme();
 	const router = useRouter();
 	const { utcDay } = useUserTime();
 	const documents = useDocuments();
-	const { createLetter } = useDetailMutations(application.id);
+	const queryClient = useQueryClient();
+	const [linking, setLinking] = useState(false);
+	const documentBusy = linking;
+	const linkDocument = async (document: NonNullable<typeof documents.data>[number]) => {
+		setLinking(true);
+		try {
+			await client.documents.linkApplication({
+				type: document.type,
+				id: document.id,
+				applicationId: application.id,
+				...(document.type === "resume" ? { expectedUpdatedAt: document.updatedAt } : {}),
+			});
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: orpc.applications.key() }),
+				queryClient.invalidateQueries({ queryKey: orpc.documents.key() }),
+			]);
+		} catch (error) {
+			showToast({ message: applicationError(error) });
+			void queryClient.invalidateQueries({ queryKey: orpc.applications.key() });
+			void queryClient.invalidateQueries({ queryKey: orpc.documents.key() });
+		} finally {
+			setLinking(false);
+		}
+	};
+	const [menu, setMenu] = useState<"resume" | "letter" | null>(null);
+	const [downloading, setDownloading] = useState<string | null>(null);
+	const download = async (kind: "resume" | "letter", id: string, name: string) => {
+		setDownloading(id);
+		try {
+			await shareDocumentPdf(kind, id, name);
+		} catch {
+			showToast({ message: t`Couldn't generate the PDF. Try again.` });
+		} finally {
+			setDownloading(null);
+		}
+	};
 	const resume = documents.data?.find((item) => item.type === "resume" && item.id === application.resumeId);
 	const letter = documents.data?.find((item) => item.type === "letter" && item.id === application.coverLetterId);
-	const date = utcDay(sentOn(application));
+	const sentDate = applicationSentAt(application);
+	const date = sentDate ? utcDay(sentDate) : "—";
 	const { resumeId, coverLetterId, sentResumeVersionId, sentCoverLetterVersionId } = application;
 
 	const writeLetter = () =>
-		createLetter.mutate(
-			{
-				name: t`Cover letter — ${application.company}`.slice(0, 100),
+		router.push({
+			pathname: routes.new(),
+			params: {
+				context: "letters",
 				applicationId: application.id,
-				...(resumeId ? { resumeId } : {}),
+				...(resumeId ? { sourceResumeId: resumeId } : {}),
 			},
-			{
-				onSuccess: (created) => router.push(routes.letter(created.id)),
-				onError: () => showToast({ message: t`Couldn't create the letter. Try again.` }),
-			},
-		);
+		});
 
-	return (
-		<Section title={application.status === "saved" ? t`Documents for this job` : t`What you sent`}>
+	// Current drafts stay editable after submission; the sent versions never change.
+	const draftMenu = (kind: "resume" | "letter", id: string, name: string) =>
+		drafts ? (
+			<>
+				<IconButton
+					icon="dots-three"
+					label={kind === "resume" ? t`Resume options` : t`Cover letter options`}
+					size={20}
+					color="ink2"
+					onPress={() => setMenu(kind)}
+				/>
+				<Sheet
+					open={menu === kind}
+					onClose={() => setMenu(null)}
+					title={kind === "resume" ? t`Resume options` : t`Cover letter options`}
+				>
+					<ListRow
+						leading="pencil-simple"
+						title={t`Edit current draft`}
+						onPress={() => {
+							setMenu(null);
+							router.push(
+								kind === "resume"
+									? routes.builder(id, "write", application.id)
+									: routes.letter(id, "write", undefined, application.id),
+							);
+						}}
+					/>
+					<ListRow
+						leading="download-simple"
+						title={downloading === id ? t`Generating PDF…` : t`Download current PDF`}
+						disabled={downloading !== null}
+						onPress={() => {
+							setMenu(null);
+							void download(kind, id, name);
+						}}
+					/>
+				</Sheet>
+			</>
+		) : undefined;
+	const body = (
+		<>
+			{drafts ? (
+				<View style={{ flexDirection: "row", alignItems: "flex-start", gap: space.s2 }}>
+					<Icon name="check-circle" size={size.icon.meta} color={colors.accentText} />
+					<Text variant="callout" color="ink2" style={{ flex: 1 }}>
+						{t`Submission recorded ${date}. The sent versions never change; current drafts stay editable. This record does not confirm employer receipt.`}
+					</Text>
+				</View>
+			) : null}
 			{resumeId || coverLetterId ? (
 				<Card style={{ padding: 0 }}>
 					{resumeId ? (
@@ -317,14 +442,18 @@ export function WhatYouSent({ application }: SectionProps) {
 							subtitle={
 								sentResumeVersionId
 									? application.sentCheckScore !== null
-										? t`Version sent ${date} · Check ${application.sentCheckScore}`
+										? t`Version sent ${date} · Check ${i18n.number(application.sentCheckScore)}`
 										: t`Version sent ${date}`
 									: t`Linked · not sent yet`
 							}
-							chevron
+							chevron={!drafts}
+							trailing={draftMenu("resume", resumeId, resume?.name ?? "resume")}
+							accessibilityHint={sentResumeVersionId ? t`Opens the version you sent, read-only` : undefined}
 							onPress={() =>
 								router.push(
-									sentResumeVersionId ? routes.history(resumeId, sentResumeVersionId) : routes.builder(resumeId),
+									sentResumeVersionId
+										? routes.history(resumeId, sentResumeVersionId, application.id)
+										: routes.builder(resumeId, "write", application.id),
 								)
 							}
 						/>
@@ -334,19 +463,69 @@ export function WhatYouSent({ application }: SectionProps) {
 							leading="envelope-simple"
 							title={letter?.name ?? t`Cover letter`}
 							subtitle={sentCoverLetterVersionId ? t`Version sent ${date}` : t`Linked · not sent yet`}
-							chevron
-							onPress={() => router.push(routes.letter(coverLetterId, "write", sentCoverLetterVersionId ?? undefined))}
+							chevron={!drafts}
+							trailing={draftMenu("letter", coverLetterId, letter?.name ?? "letter")}
+							accessibilityHint={sentCoverLetterVersionId ? t`Opens the version you sent, read-only` : undefined}
+							onPress={() =>
+								router.push(
+									routes.letter(coverLetterId, "write", sentCoverLetterVersionId ?? undefined, application.id),
+								)
+							}
 						/>
 					) : null}
 				</Card>
 			) : null}
-			{!resumeId || !coverLetterId ? (
+			{application.status === "saved" && !sentCoverLetterVersionId && (
+				<SelectSheet
+					label={t`Use an existing letter`}
+					value={coverLetterId ?? ""}
+					options={(documents.data ?? [])
+						.filter(
+							(item) =>
+								item.type === "letter" &&
+								!item.isLocked &&
+								(!item.application || item.application.id === application.id),
+						)
+						.map((item) => ({ value: item.id, label: item.name }))}
+					disabled={documentBusy}
+					onChange={(id) => {
+						const document = documents.data?.find((item) => item.type === "letter" && item.id === id);
+						if (document) void linkDocument(document);
+					}}
+				/>
+			)}
+			{suggestApplicationDocuments(application, documents.data ?? []).map((document) => {
+				const name = document.name;
+				const kind = document.type === "resume" ? t`Resume` : t`Cover letter`;
+				return (
+					<Button
+						key={`${document.type}:${document.id}`}
+						size="sm"
+						variant="secondary"
+						icon={document.type === "resume" ? "file-text" : "envelope-simple"}
+						label={`${t`Use ${name}`} · ${kind}`}
+						disabled={documentBusy}
+						onPress={() => void linkDocument(document)}
+					/>
+				);
+			})}
+			{/* A closed or offer-stage application has an outcome, not a preparation task: nothing more will be sent. */}
+			{(application.status === "closed" || application.status === "offer") &&
+			!resumeId &&
+			!coverLetterId &&
+			!application.resumeFileUrl &&
+			!application.coverLetterUrl ? (
+				<Text color="ink3">{t`Nothing recorded as sent.`}</Text>
+			) : null}
+			{application.status !== "closed" && application.status !== "offer" && (!resumeId || !coverLetterId) ? (
 				<View style={{ flexDirection: "row", flexWrap: "wrap", gap: space.s2 }}>
 					{!resumeId ? (
 						<Button
 							size="sm"
 							icon="copy"
 							label={t`Prepare a resume`}
+							variant={application.resumeFileUrl ? "secondary" : "primary"}
+							disabled={documentBusy}
 							onPress={() =>
 								router.push(`${routes.new()}?step=copy&applicationId=${encodeURIComponent(application.id)}`)
 							}
@@ -358,13 +537,23 @@ export function WhatYouSent({ application }: SectionProps) {
 							variant="secondary"
 							icon="envelope-simple"
 							label={t`Write a letter`}
-							loading={createLetter.isPending}
+							disabled={documentBusy}
 							onPress={writeLetter}
 						/>
 					) : null}
 				</View>
 			) : null}
-		</Section>
+		</>
+	);
+	if (drafts)
+		return (
+			<View style={{ gap: space.s3 }}>
+				<Text variant="heading" accessibilityRole="header">{t`What you sent`}</Text>
+				{body}
+			</View>
+		);
+	return (
+		<Section title={application.status === "saved" ? t`Documents for this job` : t`What you sent`}>{body}</Section>
 	);
 }
 
@@ -455,11 +644,12 @@ const isHttpUrl = (value: string) => {
 	}
 };
 
-/** FACTS: role, company, location, salary, source and posting link edit in place; Applied is the stage date. */
+/** FACTS: role, company, location, salary, source and posting link edit in place; Applied shows the recorded submission date. */
 export function Facts({ application }: SectionProps) {
 	const { t } = useLingui();
 	const { space } = useTheme();
 	const { date } = useUserTime();
+	const appliedDate = applicationSentAt(application) ? application.appliedAt : null;
 	const { update } = useApplicationMutations();
 	const save = (patch: Omit<Parameters<typeof update.mutate>[0], "id">) =>
 		update.mutateAsync({ id: application.id, ...patch });
@@ -487,7 +677,9 @@ export function Facts({ application }: SectionProps) {
 					/>
 					<View style={{ flexDirection: "row", justifyContent: "space-between", minHeight: 44, alignItems: "center" }}>
 						<Text color="ink3">{t`Applied`}</Text>
-						<Text variant="label">{application.status === "saved" ? "—" : date(application.appliedAt)}</Text>
+						<Text variant="label">
+							{application.status === "saved" ? "—" : appliedDate ? date(appliedDate) : t`Not recorded`}
+						</Text>
 					</View>
 				</View>
 			</Card>
@@ -517,7 +709,7 @@ export function Contacts({ application }: SectionProps) {
 				<ListRow
 					leading="user-circle"
 					title={primary ? (primary.type ? `${primary.name} · ${primary.type}` : primary.name) : t`No contacts yet.`}
-					subtitle={others.length > 0 ? t`and ${others.length} more` : primary?.role || undefined}
+					subtitle={others.length > 0 ? t`and ${i18n.number(others.length)} more` : primary?.role || undefined}
 					chevron
 					accessibilityHint={t`Manage contacts`}
 					onPress={() => setOpen(true)}
@@ -545,6 +737,8 @@ export function Notes({ application }: SectionProps) {
 	const [key, setKey] = useState<string | null>(null);
 	const [notes, setNotes] = useState(application.notes ?? "");
 	const [failed, setFailed] = useState(false);
+	const recovered = useRef(false);
+	const [hasRecovered, setHasRecovered] = useState(false);
 	// Typed but not handed to the queue yet.
 	const unsent = useRef<string | null>(null);
 
@@ -555,6 +749,9 @@ export function Notes({ application }: SectionProps) {
 			const kept = notesQueue.kept(resolved);
 			if (kept !== null && unsent.current === null) {
 				unsent.current = kept;
+				recovered.current = kept !== (application.notes ?? "");
+				setFailed(recovered.current);
+				setHasRecovered(recovered.current);
 				setNotes(kept);
 			} else if (unsent.current !== null) notesQueue.keep(resolved, unsent.current);
 			setKey(resolved);
@@ -562,15 +759,16 @@ export function Notes({ application }: SectionProps) {
 		return () => {
 			live = false;
 		};
-	}, [id]);
+	}, [id, application.notes]);
 
 	const flush = useCallback(() => {
 		const value = unsent.current;
-		if (key === null || value === null) return;
+		if (key === null || value === null || recovered.current) return;
 		unsent.current = null;
 		setFailed(false);
 		notesQueue
 			.save(key, value, async (text) => {
+				if ((await notesKey(id)) !== key) throw new Error("Account changed");
 				await client.applications.update({ id, notes: text.trim() ? text : null });
 				void queryClient.invalidateQueries({ queryKey: orpc.applications.key() });
 			})
@@ -586,7 +784,15 @@ export function Notes({ application }: SectionProps) {
 		return () => clearTimeout(timeout);
 	}, [notes, flush]);
 	// Leaving mid-sentence still saves what was typed; the queue outlives this screen.
-	useEffect(() => () => flush(), [flush]);
+	useEffect(() => {
+		const listener = AppState.addEventListener("change", (state) => {
+			if (state !== "active") flush();
+		});
+		return () => {
+			listener.remove();
+			flush();
+		};
+	}, [flush]);
 
 	return (
 		<Section title={t`Notes`}>
@@ -601,15 +807,44 @@ export function Notes({ application }: SectionProps) {
 				}}
 				onBlur={flush}
 			/>
+			{failed && hasRecovered && (
+				<Text color="warnText">{t`Recovered an unsaved draft. Review it before saving over the current version.`}</Text>
+			)}
 			{failed ? (
-				<Button
-					variant="link"
-					label={t`Retry save`}
-					onPress={() => {
-						unsent.current = notes;
-						flush();
-					}}
-				/>
+				<>
+					<Button
+						variant="link"
+						label={t`Retry save`}
+						onPress={() => {
+							recovered.current = false;
+							setHasRecovered(false);
+							unsent.current = notes;
+							flush();
+						}}
+					/>
+					{hasRecovered && (
+						<Button
+							variant="ghost"
+							label={t`Use saved version`}
+							onPress={() => {
+								void client.applications
+									.getById({ id })
+									.then(async (server) => {
+										if (key === null || (await notesKey(id)) !== key) return;
+										notesQueue.discard(key);
+										unsent.current = null;
+										recovered.current = false;
+										setHasRecovered(false);
+										setNotes(server.notes ?? "");
+										setFailed(false);
+									})
+									.catch(() =>
+										showToast({ message: t`The server version couldn't be loaded. Your text is kept; try again.` }),
+									);
+							}}
+						/>
+					)}
+				</>
 			) : null}
 		</Section>
 	);
@@ -621,7 +856,7 @@ type DatedEntry = Exclude<ApplicationTimelineEntry, { type: "interview" }>;
 export function Timeline({ application, onOpenInterview }: SectionProps & InterviewOpener) {
 	const { t } = useLingui();
 	const { colors, radius, space } = useTheme();
-	const { when, utcDay } = useUserTime();
+	const { when, utcDay, day } = useUserTime();
 	const { addNote, updateEntry, deleteEntry } = useDetailMutations(application.id);
 	const [note, setNote] = useState("");
 	const [editing, setEditing] = useState<DatedEntry | null>(null);
@@ -634,10 +869,23 @@ export function Timeline({ application, onOpenInterview }: SectionProps & Interv
 		entry.type === "stage"
 			? {
 					dot: resolveLane(lanes.lanes, { status: entry.stage, laneId: entry.laneId }).color,
-					text: t`Moved to ${getLaneHistoryLabel(lanes.lanes, entry)}`,
+					text: entry.dateUnknown
+						? `${t`Imported`} · ${getLaneHistoryLabel(lanes.lanes, entry)}`
+						: t`Moved to ${getLaneHistoryLabel(lanes.lanes, entry)}`,
 				}
 			: entry.type === "note"
-				? { dot: colors.ink3, text: entry.text }
+				? {
+						dot: colors.ink3,
+						text: entry.followedUp
+							? entry.followedUp.kind === "reply"
+								? entry.text === "Replied" || entry.text === t`Replied`
+									? t`Replied`
+									: `${t`Replied`} · ${entry.text}`
+								: entry.text === "Followed up" || entry.text === t`Followed up`
+									? t`Followed up`
+									: `${t`Followed up`} · ${entry.text}`
+							: entry.text,
+					}
 				: {
 						dot: colors.accent,
 						text: [t`${interviewTypeLabel(entry.kind)} interview`, entry.location].filter(Boolean).join(" · "),
@@ -653,9 +901,9 @@ export function Timeline({ application, onOpenInterview }: SectionProps & Interv
 			<View style={{ flexDirection: "row", alignItems: "flex-end", gap: space.s2 }}>
 				<View style={{ flex: 1 }}>
 					<TextField
-						label={t`Add a note`}
+						label={t`Log an update`}
 						value={note}
-						placeholder={t`Add a note…`}
+						placeholder={t`Log an update…`}
 						returnKeyType="send"
 						editable={!addNote.isPending}
 						onChangeText={setNote}
@@ -664,12 +912,16 @@ export function Timeline({ application, onOpenInterview }: SectionProps & Interv
 				</View>
 				<Button
 					variant="secondary"
-					label={t`Add`}
+					label={t`Log`}
 					disabled={!note.trim()}
 					loading={addNote.isPending}
 					onPress={submit}
 				/>
 			</View>
+			<Text
+				variant="caption"
+				color="ink3"
+			>{t`Dated updates. For things to remember and share with the coach, use Notes.`}</Text>
 			<Card style={{ padding: 0 }}>
 				{sorted.map((entry) => {
 					const { dot, text } = describe(entry);
@@ -678,7 +930,13 @@ export function Timeline({ application, onOpenInterview }: SectionProps & Interv
 							key={entry.id}
 							leading={<View style={{ width: 8, height: 8, borderRadius: radius.rSm, backgroundColor: dot }} />}
 							title={text}
-							subtitle={entry.type === "interview" ? when(entry.at) : utcDay(entry.at)}
+							subtitle={
+								entry.type === "stage" && entry.dateUnknown
+									? t`Not recorded`
+									: entry.type === "interview" || (entry.type === "note" && entry.followedUp)
+										? when(entry.at)
+										: utcDay(entry.at)
+							}
 							accessibilityHint={entry.type === "interview" ? t`Edit interview` : t`Edit entry`}
 							onPress={() => (entry.type === "interview" ? onOpenInterview(entry) : setEditing(entry))}
 							trailing={
@@ -712,24 +970,40 @@ export function Timeline({ application, onOpenInterview }: SectionProps & Interv
 						: undefined
 				}
 			/>
+			{/* An interview is named, and leaving the calendar too (web activity.tsx). */}
 			<ConfirmDialog
 				open={deleting !== null}
-				title={t`Delete this entry?`}
-				message={t`It's removed from the timeline for good.`}
-				confirmLabel={t`Delete entry`}
+				title={
+					deleting?.type === "interview"
+						? t`Delete the ${interviewTypeLabel(deleting.kind)} interview on ${day(new Date(deleting.at))}?`
+						: t`Delete this entry?`
+				}
+				message={
+					deleting?.type === "interview"
+						? t`It's removed from this application. Download a cancellation afterward to update your calendar.`
+						: t`It's removed from the timeline for good.`
+				}
+				confirmLabel={deleting?.type === "interview" ? t`Delete interview` : t`Delete entry`}
 				destructive
 				onCancel={() => setDeleting(null)}
 				onConfirm={() => {
-					if (deleting) deleteEntry.mutate({ id: application.id, entryId: deleting.id }, { onError: failed });
+					const scope = getAccountScope();
+					if (deleting)
+						deleteEntry.mutate(
+							{ id: application.id, entryId: deleting.id },
+							{
+								onError: failed,
+								onSuccess: () => {
+									if (deleting.type === "interview") showInterviewCancellation(application, deleting, scope);
+								},
+							},
+						);
 					setDeleting(null);
 				}}
 			/>
 		</Section>
 	);
 }
-
-/** Stored attachment URLs are same-origin uploads, often relative. */
-const absoluteUrl = (url: string) => (url.startsWith("/") ? `${getServer()}${url}` : url);
 
 /** ATTACHMENTS: the PDFs actually sent (≤ 10 MB each), apart from linked Reactive Resume documents. */
 export function Attachments({ application }: SectionProps) {
@@ -780,11 +1054,9 @@ export function Attachments({ application }: SectionProps) {
 			{files.map((file) =>
 				file.url ? (
 					<Card key={file.kind} style={{ padding: 0 }}>
-						<ListRow
-							leading="file-pdf"
-							title={file.name}
-							subtitle={t`PDF · tap to preview`}
-							onPress={() => void openBrowserAsync(absoluteUrl(file.url ?? ""))}
+						<AttachmentPreview
+							url={file.url}
+							name={file.name}
 							trailing={
 								<IconButton icon="x" label={t`Remove file`} disabled={busy} onPress={() => setRemoving(file.kind)} />
 							}
@@ -804,7 +1076,7 @@ export function Attachments({ application }: SectionProps) {
 				),
 			)}
 			<Text variant="callout" color="ink3" style={{ paddingHorizontal: space.s1 }}>
-				{t`PDF only · up to 10 MB each. Linking a Reactive Resume enables AI match scoring and tailoring.`}
+				{t`PDF only · up to 10 MB each. Linking a Reactive Resume enables a fit check against each requirement and tailoring.`}
 			</Text>
 			<ConfirmDialog
 				open={removing !== null}
@@ -832,7 +1104,7 @@ const DAY_MS = 86_400_000;
 export function workspaceTabFor(application: Application, now = new Date()) {
 	switch (application.status) {
 		case "saved":
-			return "fit";
+			return "apply";
 		case "applied":
 			return "apply";
 		case "screening":

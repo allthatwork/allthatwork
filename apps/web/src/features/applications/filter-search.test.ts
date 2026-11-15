@@ -48,6 +48,17 @@ describe("filtersFromSearch", () => {
 		expect([filters.fit, filters.tfit, filters.added, filters.updated]).toEqual(["42", "100", "365", "any"]);
 	});
 
+	it("maps upstream's followUp and needsYou links onto the attention filter", () => {
+		expect(filtersFromSearch({ followUp: true }).filters.attention).toEqual(["no-reply", "follow-up"]);
+		expect(filtersFromSearch({ needsYou: true, attention: "questions" }).filters.attention).toEqual([
+			"questions",
+			"no-reply",
+			"follow-up",
+			"interview",
+		]);
+		expect(filtersFromSearch({ followUp: false }).filters.attention).toEqual([]);
+	});
+
 	it("maps old closed=true links onto the stages", () => {
 		expect(filtersFromSearch({ closed: true }).filters.stage).toEqual([...OPEN_STAGES, "closed"]);
 		expect(filtersFromSearch({ closed: true, stage: "saved" }).filters.stage).toEqual(["saved", "closed"]);

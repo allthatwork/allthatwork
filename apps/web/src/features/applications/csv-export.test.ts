@@ -1,16 +1,15 @@
 import type { Application } from "./types";
 import type { ApplicationLane } from "@reactive-resume/schema/applications/lanes";
 import { describe, expect, it } from "vite-plus/test";
-import { createDefaultApplicationLanes } from "@reactive-resume/schema/applications/lanes";
 import {
 	applyLaneMapping,
 	collectCsvLanes,
-	exportApplicationsCsv,
 	mapCsvToApplications,
 	parseCsv,
-	selectApplicationsForExport,
 	suggestLane,
-} from "./csv";
+} from "@reactive-resume/schema/applications/csv";
+import { createDefaultApplicationLanes } from "@reactive-resume/schema/applications/lanes";
+import { exportApplicationsCsv, selectApplicationsForExport } from "./csv";
 
 const application: Application = {
 	id: "application",
@@ -119,6 +118,7 @@ describe("application CSV export", () => {
 				role: "Engineer",
 				status: "interview",
 				stageEnteredAt: "2026-08-12",
+				applicationDate: "2026-08-03",
 				location: "Berlin",
 				salary: "€70,000",
 				source: "Referral",

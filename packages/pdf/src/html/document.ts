@@ -24,49 +24,80 @@ export type WebPageDocumentOptions = {
 	messages: WebPageMessages;
 	/** The PDF's address, when the owner allows downloads. */
 	downloadUrl?: string | undefined;
+	/** The editable Word file, only when the owner explicitly allows it. */
+	wordDownloadUrl?: string | undefined;
 	/** Where the footer credit links; absent when the owner turned it off. */
 	creditUrl?: string | undefined;
 };
 
 /**
- * The desk around the sheet, the floating actions and the footer. Phones pin the actions to the bottom edge, so the
- * page leaves room for them.
+ * The desk around the sheet, the floating actions and the footer, in the product's Desk & Paper values: a warm desk
+ * (dark at night; the paper stays white), the green accent, small radii and the system font. Below 1280px, where
+ * floating actions would sit on the paper, they dock in a bar under it; phones pin the actions
+ * to the bottom edge, so the page leaves room for them.
  */
 const SHELL_CSS = `
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:#ececef;color:#111;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;background:#f8f7f3;color:#111;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){body{background:#100f0c}.rr .rr-credit:hover{color:#d6d3cc}}
 .rr.rr-desk{padding:40px 16px 112px}
 .rr-page{box-shadow:0 1px 2px rgb(0 0 0/.06),0 8px 32px rgb(0 0 0/.08)}
-.rr-actions a:focus-visible,.rr-actions button:focus-visible,.rr .rr-credit:focus-visible{outline:2px solid #2563eb;outline-offset:4px}
+.rr-actions a:focus-visible,.rr-actions button:focus-visible,.rr-actions summary:focus-visible,.rr .rr-credit:focus-visible{outline:2px solid #337344;outline-offset:4px}
 .rr .rr-credit{display:flex;flex-direction:column;align-items:center;gap:6px;width:max-content;margin:36px auto 0;color:#8e8e96;opacity:.7;text-decoration:none;font:500 11px/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:.02em;border-radius:6px;transition:opacity .2s,color .2s}
 .rr .rr-credit svg{width:18px;height:18px}
 .rr .rr-credit:hover{opacity:1;color:#3f3f46}
 .rr-actions{position:fixed;right:24px;bottom:24px;display:flex;gap:8px;z-index:10}
-.rr-actions a,.rr-actions button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:999px;font:500 14px/1 system-ui,-apple-system,"Segoe UI",sans-serif;background:#fff;color:#111;box-shadow:0 1px 2px rgb(0 0 0/.08),0 4px 16px rgb(0 0 0/.12)}
-.rr-actions .rr-primary{background:#111;color:#fff}
-.rr-toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#111;color:#fff;font:500 14px system-ui,sans-serif;padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+.rr-actions a,.rr-actions button,.rr-actions summary{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:3px;font:500 14px/1 system-ui,-apple-system,"Segoe UI",sans-serif;background:#fff;color:#111;box-shadow:0 1px 2px rgb(0 0 0/.08),0 4px 16px rgb(0 0 0/.12)}
+.rr-download{position:relative}
+.rr-download summary{display:flex;list-style:none}
+.rr-download summary::-webkit-details-marker{display:none}
+.rr-download summary::after{content:"▾"}
+.rr-download-options{position:absolute;bottom:calc(100% + 8px);inset-inline-start:0;min-width:180px;padding:4px;background:#fff;border:1px solid #ddd;border-radius:4px;box-shadow:0 4px 16px rgb(0 0 0/.12)}
+.rr-actions .rr-download-options a{display:flex;box-shadow:none;border:0;white-space:nowrap}
+.rr-actions .rr-download-options a:hover{background:#f0f0eb}
+.rr-actions .rr-primary{background:#337344;color:#f7fef8}
+.rr-toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);background:#111;color:#fff;font:500 14px system-ui,sans-serif;padding:10px 16px;border-radius:4px;opacity:0;transition:opacity .2s;pointer-events:none}
 .rr-toast[data-on]{opacity:1}
+@media (min-width:641px) and (max-width:1279px){
+.rr-actions{left:0;right:0;bottom:0;justify-content:center;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgb(255 255 255/.92);backdrop-filter:blur(12px);box-shadow:0 -1px 0 rgb(0 0 0/.08)}
+.rr-actions a,.rr-actions button,.rr-actions summary{box-shadow:none;border:1px solid rgb(0 0 0/.12)}
+.rr-actions .rr-primary{border-color:#337344}
+}
 @media (max-width:640px){
+.rr-download{flex:1}
 .rr.rr-desk{padding:0 0 96px}
 .rr-page{box-shadow:none}
 .rr-actions{left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgb(255 255 255/.92);backdrop-filter:blur(12px);box-shadow:0 -1px 0 rgb(0 0 0/.08)}
-.rr-actions a,.rr-actions button{flex:1;justify-content:center;height:48px;font-size:16px;box-shadow:none;border:1px solid rgb(0 0 0/.12)}
-.rr-actions .rr-primary{border-color:#111}
+.rr-actions a,.rr-actions button,.rr-actions summary{flex:1;justify-content:center;height:48px;font-size:16px;box-shadow:none;border:1px solid rgb(0 0 0/.12)}
+.rr-actions .rr-primary{border-color:#337344}
 }
 @media print{body{background:#fff}.rr.rr-desk{padding:0}.rr-page{box-shadow:none}.rr-actions,.rr-credit,.rr-toast{display:none}}
 `;
 
 const MESSAGE_CSS = `
-body{margin:0;min-height:100vh;display:grid;place-items:center;background:#ececef;color:#111;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px;box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f8f7f3;color:#111;color-scheme:light;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px;box-sizing:border-box}
 main{max-width:380px;text-align:center;display:grid;gap:12px}
 h1{font-size:24px;line-height:1.25;margin:0;font-weight:600}
 p{margin:0;color:#4b4b52;font-size:15px;line-height:1.5}
 form{display:grid;gap:12px;margin-top:12px;text-align:start}
 label{font-size:14px;font-weight:500}
-input{font:inherit;height:44px;padding:0 12px;border:1px solid #c9c9d0;border-radius:8px;background:#fff}
-input:focus{outline:2px solid #2563eb;outline-offset:1px}
-button{font:inherit;font-weight:600;height:44px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer}
+input{font:inherit;height:44px;padding:0 12px;border:1px solid #8c887f;border-radius:4px;background:#fff;color:inherit}
+input:focus{outline:2px solid #337344;outline-offset:1px}
+button{font:inherit;font-weight:600;height:44px;border:0;border-radius:4px;background:#337344;color:#f7fef8;cursor:pointer}
+button:focus-visible{outline:2px solid #337344;outline-offset:3px}
 .error{color:#b42318;font-size:14px}
+.home{display:inline-flex;align-items:center;justify-self:center;gap:8px;min-height:44px;margin-top:12px;padding:0 12px;border-radius:4px;color:#111;font-size:15px;font-weight:500;text-decoration:underline;text-underline-offset:3px}
+.home svg{width:20px;height:20px}
+.home:focus-visible{outline:2px solid #337344;outline-offset:2px}
+@media (prefers-color-scheme:dark){
+body{background:#100f0c;color:#e8e5dd;color-scheme:dark}
+p{color:#b5b1a7}
+input{background:#1d1c17;border-color:#807b6e}
+input:focus,button:focus-visible,.home:focus-visible{outline-color:#82b787}
+button{background:#82b787;color:#10170f}
+.error{color:#ff9c91}
+.home{color:inherit}
+}
 `;
 
 /**
@@ -135,11 +166,17 @@ export function renderWebPageDocument({
 	head,
 	messages,
 	downloadUrl,
+	wordDownloadUrl,
 	creditUrl,
 }: WebPageDocumentOptions): string {
-	const download = downloadUrl
-		? `<a class="rr-primary" href="${escapeHtml(downloadUrl)}" download>${escapeHtml(messages.downloadPdf)}</a>`
+	const pdf = downloadUrl
+		? `<a href="${escapeHtml(downloadUrl)}" download>${escapeHtml(messages.downloadPdf)}</a>`
 		: "";
+	const download = wordDownloadUrl
+		? `<details class="rr-download"><summary class="rr-primary">${escapeHtml(messages.download)}</summary><div class="rr-download-options">${pdf}<a href="${escapeHtml(wordDownloadUrl)}" download>${escapeHtml(messages.downloadWord)}</a></div></details>`
+		: downloadUrl
+			? `<a class="rr-primary" href="${escapeHtml(downloadUrl)}" download>${escapeHtml(messages.downloadPdf)}</a>`
+			: "";
 	const body = [
 		`<main id="main-content" class="rr rr-desk">${page.html}`,
 		creditUrl
@@ -170,13 +207,26 @@ export function renderPasswordDocument(options: {
 	);
 }
 
-/** Off, unknown or trashed resumes read the same, with nothing about the owner. */
-export function renderUnavailableDocument(options: { lang: string; messages: WebPageMessages }): string {
-	const { messages } = options;
+/**
+ * Off, unknown or trashed resumes read the same, with nothing about the owner. A link to the app's home (`homeUrl`)
+ * gives a visitor who guessed the address somewhere to go.
+ */
+export function renderUnavailableDocument(options: {
+	lang: string;
+	messages: WebPageMessages;
+	homeUrl: string;
+	/** Set when the viewer owns the unpublished resume: they're told so and sent to its Share panel. */
+	shareUrl?: string | undefined;
+}): string {
+	const { messages, shareUrl } = options;
+	const hint = shareUrl ? messages.ownerUnavailableHint : messages.unavailableHint;
+	const action = shareUrl
+		? `<a class="home" href="${escapeHtml(shareUrl)}">${LOGO}${escapeHtml(messages.ownerPublish)}</a>`
+		: `<a class="home" href="${escapeHtml(options.homeUrl)}">${LOGO}${escapeHtml(messages.home)}</a>`;
 	return shell(
 		options.lang,
 		`<title>${escapeHtml(messages.unavailableTitle)}</title><meta name="robots" content="noindex, nofollow">`,
 		MESSAGE_CSS,
-		`<main><h1>${escapeHtml(messages.unavailableTitle)}</h1><p>${escapeHtml(messages.unavailableHint)}</p></main>`,
+		`<main><h1>${escapeHtml(messages.unavailableTitle)}</h1><p>${escapeHtml(hint)}</p>${action}</main>`,
 	);
 }

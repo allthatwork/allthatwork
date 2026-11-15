@@ -1,10 +1,18 @@
 import { aiRouter } from "./ai";
 import { crudRouter } from "./crud";
 import { applicationLanesRouter } from "./lane-router";
+import { packetRouter } from "./packet-router";
 import { viewsRouter } from "./views";
 
 export const applicationsRouter = {
+	listTrash: crudRouter.listTrash,
+	trash: crudRouter.trash,
+	bulkTrash: crudRouter.bulkTrash,
+	restore: crudRouter.restore,
+	purge: crudRouter.purge,
+	packet: packetRouter,
 	lanes: applicationLanesRouter,
+	findPosting: crudRouter.findPosting,
 	priorNoResponse: crudRouter.priorNoResponse,
 	list: crudRouter.list,
 	listSummary: crudRouter.listSummary,
@@ -12,10 +20,13 @@ export const applicationsRouter = {
 	create: crudRouter.create,
 	import: crudRouter.import,
 	update: crudRouter.update,
+	deleteContact: crudRouter.deleteContact,
 	attachDocument: crudRouter.attachDocument,
 	removeDocument: crudRouter.removeDocument,
 	updateQuestion: crudRouter.updateQuestion,
 	addNote: crudRouter.addNote,
+	logFollowUp: crudRouter.logFollowUp,
+	logReply: crudRouter.logReply,
 	addInterview: crudRouter.addInterview,
 	updateInterview: crudRouter.updateInterview,
 	updateTimelineEntry: crudRouter.updateTimelineEntry,

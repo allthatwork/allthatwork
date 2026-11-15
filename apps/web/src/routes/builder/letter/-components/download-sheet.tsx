@@ -73,7 +73,10 @@ function LetterDownloadTab() {
 		...others.map((option) =>
 			option.id === "json"
 				? { ...option, description: t`A backup of this letter. Imports back into ${APP_NAME} as a letter.` }
-				: option,
+				: option.id === "md"
+					? // A letter has no headings.
+						{ ...option, description: t`Plain text. Paste into application forms and emails.` }
+					: option,
 		),
 	];
 	const selected = formats.find((option) => option.id === format) ?? (formats[0] as DownloadFormat<LetterFormat>);
@@ -160,7 +163,9 @@ function useLetterHistory(open: boolean): HistorySource {
 			void refresh();
 		},
 		restore: async (versionId) => {
-			await useLetterEditorStore.getState().change(() => client.coverLetters.restoreVersion({ id, versionId }));
+			await useLetterEditorStore
+				.getState()
+				.change(() => client.coverLetters.restoreVersion({ id, versionId, proposalSafety: "v1" }));
 			void refresh();
 		},
 		rename: async (versionId, name) => {

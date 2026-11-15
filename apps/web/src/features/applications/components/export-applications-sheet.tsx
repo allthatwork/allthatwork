@@ -37,7 +37,7 @@ export function ExportApplicationsSheet({ open, onOpenChange, applications, filt
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent side="right" className="w-full gap-0 data-[side=right]:sm:max-w-lg">
+			<SheetContent closeLabel={t`Close`} side="right" className="w-full gap-0 data-[side=right]:sm:max-w-lg">
 				<SheetHeader>
 					<SheetTitle>
 						<Trans>Export applications</Trans>
@@ -58,7 +58,7 @@ export function ExportApplicationsSheet({ open, onOpenChange, applications, filt
 						onOpenChange(false);
 					}}
 				>
-					<div className="-mt-1 flex flex-1 flex-col gap-4 overflow-y-auto px-4 pt-1 pb-4">
+					<div className="-mt-1 flex flex-1 flex-col gap-4 overflow-y-auto px-6 pt-1 pb-4">
 						<div className="space-y-1.5">
 							<Label htmlFor={`${id}-scope`}>
 								<Trans>Applications to export</Trans>

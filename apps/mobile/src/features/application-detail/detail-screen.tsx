@@ -13,7 +13,7 @@ import { useApplication, useApplicationMutations } from "@/features/applications
 import { getClosedReasonLabel } from "@/features/applications/stages";
 import { syncReminders } from "@/features/reminders";
 import { routes } from "@/routes";
-import { Banner, Button, Card, ConfirmDialog, EmptyState, Screen, showToast, Text, useTheme } from "@/ui";
+import { Banner, Button, Card, ConfirmDialog, EmptyState, Icon, Screen, showToast, Text, useTheme } from "@/ui";
 
 type ApplicationDetailProps = { id: string };
 
@@ -28,12 +28,12 @@ type Overlay =
 /** One application: stage stepper, next step, what was sent, facts, contacts, notes, timeline and attachments. */
 export function ApplicationDetail({ id }: ApplicationDetailProps) {
 	const { t } = useLingui();
-	const { space, size } = useTheme();
+	const { colors, space, size } = useTheme();
 	const router = useRouter();
 	const session = useSession();
 	const query = useApplication(id);
-	const { update, remove } = useApplicationMutations();
-	const { date } = useUserTime();
+	const { update, remove, logFollowUp } = useApplicationMutations();
+	const { date, timeZone } = useUserTime();
 	const [overlay, setOverlay] = useState<Overlay>(null);
 	const application = query.data;
 	const close = () => setOverlay(null);
@@ -41,8 +41,8 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 	// Interviews moved or deleted elsewhere (the web, another device) move or cancel this device's reminders.
 	// Query results keep their identity while unchanged, so this runs once per stored version.
 	useEffect(() => {
-		if (application) void syncReminders(application.id, reminderTargets(application)).catch(() => undefined);
-	}, [application]);
+		if (application) void syncReminders(application.id, reminderTargets(application, timeZone)).catch(() => undefined);
+	}, [application, timeZone]);
 
 	if (session.status !== "signed-in") return <EmptyState icon="briefcase" title={t`Sign in to view applications`} />;
 	if (query.isPending)
@@ -101,12 +101,17 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 				<Card>
 					<View style={{ gap: space.s2 }}>
 						<Text variant="label">{t`Outcome`}</Text>
-						<Text>
-							{[
-								application.closedReason ? getClosedReasonLabel(application.closedReason) : t`Closed`,
-								date(application.updatedAt),
-							].join(" · ")}
-						</Text>
+						<View style={{ flexDirection: "row", alignItems: "center", gap: space.s2 }}>
+							{application.closedReason === "accepted" ? (
+								<Icon name="check" size={16} color={colors.accentText} />
+							) : null}
+							<Text style={{ flexShrink: 1 }}>
+								{[
+									application.closedReason ? getClosedReasonLabel(application.closedReason) : t`Closed`,
+									date(application.updatedAt),
+								].join(" · ")}
+							</Text>
+						</View>
 						<Button
 							label={t`Reopen`}
 							loading={update.isPending}
@@ -124,9 +129,18 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 				application={application}
 				onMarkApplied={(lane) => setOverlay({ kind: "applied", lane })}
 				onCloseLane={(lane) => setOverlay({ kind: "close", lane })}
+				onSchedule={() => openInterview(null)}
 			/>
 
 			<NextStepCard application={application} onOpenInterview={openInterview} />
+			{!closed && application.status !== "saved" ? (
+				<Button
+					variant="secondary"
+					label={t`Followed up`}
+					loading={logFollowUp.isPending}
+					onPress={() => logFollowUp.mutate({ id: application.id })}
+				/>
+			) : null}
 			<WhatYouSent application={application} />
 			<Facts application={application} />
 			<Contacts application={application} />
@@ -139,7 +153,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 					<Button
 						variant="secondary"
 						fullWidth
-						label={t`Close application…`}
+						label={t`Mark as closed…`}
 						onPress={() => setOverlay({ kind: "close" })}
 					/>
 				) : null}
@@ -147,7 +161,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 					variant="danger"
 					fullWidth
 					icon="trash"
-					label={t`Delete application…`}
+					label={t`Move to Trash`}
 					disabled={remove.isPending}
 					onPress={() => setOverlay({ kind: "delete" })}
 				/>
@@ -174,9 +188,10 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 			<PostingSheet application={application} open={overlay?.kind === "posting"} onClose={close} />
 			<ConfirmDialog
 				open={overlay?.kind === "delete"}
-				title={t`Delete this application?`}
-				message={t`“${application.role} · ${application.company}” and its timeline are deleted permanently. This can't be undone.`}
-				confirmLabel={t`Delete application`}
+				title={t`Move to Trash`}
+				message={t`Applications and their timelines can be restored from Trash.`}
+				confirmLabel={t`Move to Trash`}
+				cancelLabel={t`Keep application`}
 				destructive
 				onCancel={close}
 				onConfirm={() => {
@@ -186,7 +201,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 						{
 							onSuccess: () => {
 								void syncReminders(application.id, []).catch(() => undefined);
-								showToast({ message: t`Application deleted` });
+								showToast({ message: t`Moved to Trash` });
 								router.replace(routes.applications());
 							},
 							onError: (error) => showToast({ message: applicationError(error) }),

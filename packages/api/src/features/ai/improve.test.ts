@@ -4,7 +4,8 @@ const mocks = vi.hoisted(() => ({ generate: vi.fn() }));
 vi.mock("./generate-json", () => ({ generateJson: mocks.generate }));
 vi.mock("./service", () => ({ getModel: () => ({}) }));
 
-const { contextAround, improveInputSchema, improveLine, improveOutputSchema } = await import("./improve");
+const { buildUserPrompt, contextAround, improveInputSchema, improveLine, improveOutputSchema } =
+	await import("./improve");
 
 describe("improve", () => {
 	it("flattens the line and treats an unclear addsFacts as needing a check", () => {
@@ -14,6 +15,22 @@ describe("improve", () => {
 			addsFacts: true,
 		});
 		expect(() => improveOutputSchema.parse({ text: "  " })).toThrow();
+	});
+
+	it("sends the result the user gave for Add a result, and asks for one without it", () => {
+		const base = { line: "Ran usability tests every sprint.", action: "result" } as const;
+		expect(buildUserPrompt(improveInputSchema.parse({ ...base, request: "Cut support tickets by 20%" }))).toContain(
+			"Request: Add a result. The user says the result was: Cut support tickets by 20%",
+		);
+		expect(buildUserPrompt(improveInputSchema.parse(base))).toContain("Request: Add a result\n");
+	});
+
+	it("gives Tie to the posting the posting as data, and says None without one", () => {
+		const input = improveInputSchema.parse({ line: "I rebuilt our rating service.", action: "posting" });
+		const prompt = buildUserPrompt({ ...input, posting: "You will own shipment pricing." });
+		expect(prompt).toContain("Request: Tie to the posting\n");
+		expect(prompt).toContain("<<<POSTING_START>>>\nYou will own shipment pricing.\n<<<POSTING_END>>>");
+		expect(buildUserPrompt(input)).toContain("<<<POSTING_START>>>\nNone\n<<<POSTING_END>>>");
 	});
 });
 
@@ -48,6 +65,7 @@ describe("improve on long text", () => {
 		const context = fieldWith(line, 50_000);
 		await improveLine({
 			...improveInputSchema.parse({ action: "shorter", line, context }),
+			usage: { userId: "u", operationId: "o", action: "improve", providerId: "p", label: "L" },
 			provider: "openai",
 			model: "m",
 			apiKey: "k",
