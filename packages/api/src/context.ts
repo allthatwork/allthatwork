@@ -7,6 +7,7 @@ import { getTrustedOrigins } from "@reactive-resume/auth/trusted-origins";
 import { db } from "@reactive-resume/db/client";
 import { user } from "@reactive-resume/db/schema";
 import { env } from "@reactive-resume/env/server";
+import { APP_NAME } from "@reactive-resume/utils/brand";
 import { withAiDestination, withWebDestination } from "./features/ai/destination";
 
 export type RequestPermission = "read" | "write" | "delete";
@@ -122,7 +123,7 @@ export async function resolveAuthenticationFromRequestHeaders(headers: Headers):
 		((origin && !TRUSTED_ORIGINS.includes(origin)) || headers.get("sec-fetch-site") === "cross-site")
 	) {
 		throw new ORPCError("FORBIDDEN", {
-			message: "This request came from another site. Open Reactive Resume directly and try again.",
+			message: `This request came from another site. Open ${APP_NAME} directly and try again.`,
 		});
 	}
 	// Do not let Better Auth turn an API key into an unrestricted synthetic session.

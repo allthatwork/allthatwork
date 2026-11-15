@@ -72,7 +72,7 @@ You can also use **Next step → Edit** in an application workspace. Then fill i
   />
 </Frame>
 
-The interview appears in the application's **Activity**, on the calendar, and as the **Next step** until it has finished. Interview times in **Next step**, **Activity** and **Calendar**, including day grouping and **Today**/**Tomorrow**, use your account timezone in **Settings → Preferences**, as **Career → Today** does. Stage changes and notes keep their recorded whole-day dates. Editing an interview keeps its saved timezone, and calendar export keeps the same instant.
+The interview appears in the application's **Activity**, on the calendar, and as the **Next step** until it has finished. Interview times in **Next step**, **Activity** and **Calendar**, including day grouping and **Today**/**Tomorrow**, use your account timezone in **Settings → Preferences**, as **Today** does. Stage changes and notes keep their recorded whole-day dates. Editing an interview keeps its saved timezone, and calendar export keeps the same instant.
 
 Scheduling an interview does not change the application's stage; move it to **Interview** when appropriate.
 
@@ -82,9 +82,9 @@ Select the interview on the calendar, in **Upcoming interviews**, or in the appl
 
 A date and time skipped by a daylight-saving change is rejected. Pick a valid local time instead of accepting an automatic shift.
 
-To remove it, select **Delete** (**Delete interview** in the native app). The notice offers **Undo** for six seconds. Undo keeps the original round and its linked schedules. Removing an interview pauses its briefing schedules; rescheduling moves them to the new time. Check **Career → Today → Schedules** after a change.
+To remove it, select **Delete**. The notice offers **Undo** for six seconds. Undo keeps the original round and its linked schedules. Removing an interview pauses its briefing schedules; rescheduling moves them to the new time, or pauses one whose lead has already passed. Check **Career → Schedules** after a change.
 
-The current application must load before the pending deletion is ready and its notice appears. Reloading, closing the tab or putting the native app in the background sends that acknowledged deletion. Undo cancels it and reloads the current application; a round already deleted in another session is not recreated. If that read fails, use **Retry** to refresh it. Device reminders are canceled only after the deletion succeeds.
+The current application must load before the pending deletion is ready and its notice appears. Reloading or closing the tab sends that acknowledged deletion. Undo cancels it and reloads the current application; a round already deleted in another session is not recreated. If that read fails, use **Retry** to refresh it. Device reminders are canceled only after the deletion succeeds.
 
 <Frame caption="Phone browser: the prepared interview deletion offers Undo">
   <img
@@ -100,7 +100,7 @@ The current application must load before the pending deletion is ready and its n
   />
 </Frame>
 
-After you save an edited interview, select **Update your calendar** in the notice to download its updated `.ics` file. After a deletion completes, select **Download cancellation** to download a cancellation for the same event. These actions are available on web and in the native app. Undo does not generate a cancellation. Deleting through **Activity** (**Timeline** in the native app) asks for confirmation instead of offering Undo, then offers the same cancellation action.
+After you save an edited interview, select **Update your calendar** in the notice to download its updated `.ics` file. After a deletion completes, select **Download cancellation** to download a cancellation for the same event. Undo does not generate a cancellation. Deleting through **Timeline** asks for confirmation instead of offering Undo, then offers the same cancellation action.
 
 <Frame caption="After changing an interview, download its updated calendar file from the save notice.">
   <img
@@ -129,10 +129,10 @@ In the web app, the **Calendar** tab shows one month of interviews across your a
 - **Upcoming interviews**, on the right, lists every interview that hasn't finished yet, grouped by day. Select a card to edit the interview, or **View application** to open the application.
 - The legend under the calendar shows the color of each interview type.
 
-<Frame caption="Calendar and upcoming interviews">
+<Frame caption="See upcoming interviews in Calendar">
   <img
     src="/images/guides/scheduling-interviews/applications-calendar-view.webp"
-    alt="Applications Calendar with a month grid and a fictional upcoming technical interview listed with its time and duration"
+    alt="Applications Calendar showing the fictional Orbital Health and Lumen interviews"
   />
 </Frame>
 
@@ -146,10 +146,10 @@ The **Calendar** tab stays available, including when you open a Calendar link di
 - Select a card to edit the interview, or **View application** to open its application details.
 - Select **Schedule interview** to add another appointment.
 
-<Frame caption="The phone agenda keeps interview dates, times and editing available without a desktop calendar grid. These fictional appointments span two months.">
+<Frame caption="See upcoming interviews in Calendar">
   <img
     src="/images/guides/scheduling-interviews/phone-interview-agenda.png"
-    alt="Calendar on a phone browser showing October 2026 month navigation and upcoming Northstar Labs interviews under Tomorrow and Wednesday, November 4, with time ranges and View application"
+    alt="Applications Calendar showing the fictional Orbital Health and Lumen interviews"
   />
 </Frame>
 
@@ -165,8 +165,7 @@ A follow-up is a reminder to check in, for example to email the recruiter a week
   <Step title="Pick a date, time and what to do">
     Choose a **Date** and **Time** in your account timezone and, if you like, fill in **What to do**, such as "Email the
     recruiter". Existing follow-ups open with their saved date, time and note. New follow-ups start at 09:00. If
-    daylight saving skips your selected time, choose another time before saving. Web and native editors use the same
-    rules.
+    daylight saving skips your selected time, choose another time before saving.
   </Step>
   <Step title="Save">Select **Save**. To remove the reminder, select **Clear**.</Step>
 </Steps>

@@ -5,10 +5,9 @@ import type { ListColumnId } from "@reactive-resume/schema/applications/layout";
 import type { MouseEvent } from "react";
 import { plural, t } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react";
-import { Plural, Trans } from "@lingui/react/macro";
+import { Trans } from "@lingui/react/macro";
 import { HotkeysProvider, useHotkeys } from "@tanstack/react-hotkeys";
 import { useMutation } from "@tanstack/react-query";
-import { AnimatePresence, m } from "motion/react";
 import { memo, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { defaultSortDirection } from "@reactive-resume/schema/applications/filters";
 import { LIST_COLUMN_MAX_WIDTH, LIST_COLUMN_WIDTHS, ROLE_MIN_WIDTH } from "@reactive-resume/schema/applications/layout";
@@ -21,28 +20,36 @@ import {
 	DropdownMenuTrigger,
 } from "@reactive-resume/ui/components/dropdown-menu";
 import { Icon } from "@reactive-resume/ui/components/icon";
-import { IconButton } from "@reactive-resume/ui/components/icon-button";
 import { Input } from "@reactive-resume/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@reactive-resume/ui/components/popover";
 import { toast } from "@reactive-resume/ui/components/toast";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
-import { useFloatingToolbarSpace } from "@reactive-resume/ui/hooks/use-floating-toolbar-space";
+import { getInitials } from "@reactive-resume/utils/string";
 import { cn } from "@reactive-resume/utils/style";
 import { getCategoryLane, getDisplayLane, getLaneLabel } from "../lanes";
 import { describeNextStep, getNextStep, useNoReplyDays } from "../next-step";
 import { offerHintFor, useOfferHints } from "../queries";
 import { sortApplications } from "../sort";
-import { getStageColor, getStageLabel, LIST_ORDER, PIPELINE } from "../stages";
-import { useApplicationActions, useInvalidateApplications, useMoveWithUndo } from "../use-application-actions";
+import { getStageLabel, LIST_ORDER, PIPELINE } from "../stages";
+import {
+	useApplicationActions,
+	useInvalidateApplications,
+	useMoveWithUndo,
+	useTrashWithUndo,
+} from "../use-application-actions";
 import { useApplicationLanes } from "../use-application-lanes";
-import { ClosedLaneItems } from "./application-actions-menu";
+import { ClosedLaneItems, LaneDot } from "./application-actions-menu";
 import { StaleNote } from "./application-card";
 import { LIST_COLUMNS } from "./list-columns";
 import { TagChips } from "./tag-chips";
+import { IconTile } from "@/components/calm/list-row";
+import { SelectionBar } from "@/components/calm/selection-bar";
+import { StageDot } from "@/components/calm/stage-dot";
 import { useCareerTime } from "@/features/career/shared";
-import { useConfirm } from "@/hooks/use-confirm";
-import { D2, EASE, EXIT } from "@/libs/motion";
 import { orpc } from "@/libs/orpc/client";
+
+/** "OH" for Orbital Health, "PC" for Parcel & Co., "LU" for Lumen: the one monogram rule people use too. */
+export const companyInitials = getInitials;
 
 /** The checkbox column; Role takes what the others leave. */
 const CHECK_WIDTH = 40;
@@ -104,7 +111,7 @@ export function ApplicationList({
 	const restoreFocus = useRef<string | null>(null);
 	const [collapsed, setCollapsed] = useState<ReadonlySet<ApplicationStatus>>(new Set());
 	const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
-	const { ref: selectionBarRef, space: selectionBarSpace } = useFloatingToolbarSpace();
+	const [selectionBarSpace, setSelectionBarSpace] = useState(0);
 	// The column being dragged and its width so far; it's saved when the drag ends.
 	const [resizing, setResizing] = useState<ShownColumn | null>(null);
 	const wrapRef = useRef<HTMLDivElement>(null);
@@ -321,13 +328,8 @@ export function ApplicationList({
 												size={18}
 												className={cn("text-ink-3 transition-transform duration-standard", open && "rotate-90")}
 											/>
-											<span
-												aria-hidden="true"
-												className="size-2 rounded-full"
-												style={{ background: getStageColor(status) }}
-											/>
-											{getStageLabel(status)}
-											<span className="font-mono text-xs font-normal text-ink-3">{rows.length}</span>
+											<StageDot status={status} />
+											<span className="font-mono text-xs font-medium text-ink-3">{rows.length}</span>
 										</button>
 									</th>
 								</tr>
@@ -363,27 +365,17 @@ export function ApplicationList({
 				)}
 			</div>
 
-			{/* The bulk bar rises from the bottom edge and floats over the page, so the rows never move. */}
-			<AnimatePresence>
-				{checkedIds.length > 0 && (
-					<m.div
-						key="bulk-bar"
-						ref={selectionBarRef}
-						initial={{ opacity: 0, transform: "translateY(100%)" }}
-						animate={{ opacity: 1, transform: "translateY(0%)" }}
-						exit={{ opacity: 0, transform: "translateY(100%)", transition: { duration: D2 * EXIT, ease: EASE } }}
-						transition={{ duration: D2, ease: EASE }}
-						className="fixed inset-x-0 bottom-6 z-30 mx-auto w-fit max-w-[calc(100vw-32px)] max-sm:bottom-[calc(69px+env(safe-area-inset-bottom))]"
-					>
-						<BulkBar
-							ids={checkedIds}
-							allSelected={checkedIds.length === visible.length}
-							onSelectAll={() => setChecked(new Set(visible.map((application) => application.id)))}
-							onDone={() => setChecked(new Set())}
-						/>
-					</m.div>
-				)}
-			</AnimatePresence>
+			{/* The bar floats over the list from the first tick to the last, so the rows never move; the list's foot keeps
+			    the last rows clear of it. */}
+			{checkedIds.length > 0 && (
+				<BulkBar
+					ids={checkedIds}
+					total={visible.length}
+					onSelectAll={() => setChecked(new Set(visible.map((application) => application.id)))}
+					onDone={() => setChecked(new Set())}
+					onHeight={setSelectionBarSpace}
+				/>
+			)}
 		</div>
 	);
 }
@@ -563,15 +555,9 @@ const ApplicationRow = memo(function ApplicationRow({
 
 	const fade = stale && "opacity-55";
 	const initial = (
-		<span
-			aria-hidden="true"
-			className={cn(
-				"grid size-8 shrink-0 place-items-center rounded-lg bg-sunken text-[13px] font-semibold text-ink-2",
-				fade,
-			)}
-		>
-			{application.company.slice(0, 1).toUpperCase()}
-		</span>
+		<IconTile aria-hidden="true" className={cn("shrink-0", fade)}>
+			{companyInitials(application.company)}
+		</IconTile>
 	);
 
 	const openButton = (
@@ -585,16 +571,16 @@ const ApplicationRow = memo(function ApplicationRow({
 			aria-keyshortcuts="j k Enter 1 2 3 4 5 x f"
 			className="focus-visible:outline-focus grid min-w-0 cursor-pointer rounded-sm text-start focus-visible:outline-2 focus-visible:outline-offset-4"
 		>
-			<span dir="auto" className={cn("truncate font-medium", fade)}>
+			<span dir="auto" className={cn("truncate text-[15px]/[22px] font-medium text-ink", fade)}>
 				{application.role}
 			</span>
 			{/* The company keeps its own direction; on phones the next step after it is interface text. */}
 			{phone ? (
-				<span className={cn("truncate text-xs text-ink-3", fade)}>
+				<span className={cn("truncate text-[13px]/[18px] text-ink-3", fade)}>
 					<bdi>{application.company}</bdi> · {next.title}
 				</span>
 			) : (
-				<span dir="auto" className={cn("truncate text-xs text-ink-3", fade)}>
+				<span dir="auto" className={cn("truncate text-[13px]/[18px] text-ink-3", fade)}>
 					{[application.company, application.location].filter(Boolean).join(" · ")}
 				</span>
 			)}
@@ -607,7 +593,7 @@ const ApplicationRow = memo(function ApplicationRow({
 			<tr
 				data-application-id={application.id}
 				onClick={() => onOpen(application)}
-				className={cn("cursor-pointer border-b border-line", selected && "bg-accent-soft/50")}
+				className={cn("h-(--row) cursor-pointer border-b border-line", selected && "bg-accent-soft/50")}
 			>
 				<td className="py-2.5 ps-1">
 					<div className="flex items-center gap-3">
@@ -630,7 +616,7 @@ const ApplicationRow = memo(function ApplicationRow({
 			data-application-id={application.id}
 			onClick={() => onOpen(application)}
 			className={cn(
-				"cursor-pointer border-b border-line transition-colors duration-quick hover:bg-hover",
+				"h-(--row) cursor-pointer border-b border-line transition-colors duration-quick hover:bg-hover",
 				selected && "bg-accent-soft/50",
 			)}
 		>
@@ -670,22 +656,29 @@ const ApplicationRow = memo(function ApplicationRow({
 	);
 });
 
+// A bar button keeps its hover look while its menu is open. Menus open 14px above the bar's own edge.
+const openTrigger = "data-popup-open:bg-hover data-popup-open:text-ink";
+const above = { side: "top", align: "start", sideOffset: 14, alignOffset: -4 } as const;
+
 type BulkBarProps = {
 	ids: string[];
-	allSelected: boolean;
+	total: number;
 	onSelectAll: () => void;
 	onDone: () => void;
+	/** The bar's height and margin, so the list keeps its last rows clear of it. */
+	onHeight: (height: number) => void;
 };
 
-/** For the checked rows: move them or close them (with Undo), tag them, or delete them (after asking). */
-function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
+/** For the checked rows: tag them, or move them, close them or move them to Trash, each at once with Undo. */
+function BulkBar({ ids, total, onSelectAll, onDone, onHeight }: BulkBarProps) {
 	const scope = `applications-bulk-${useId()}`;
 	const invalidate = useInvalidateApplications();
 	const moveWithUndo = useMoveWithUndo();
+	const trashWithUndo = useTrashWithUndo();
 	const rows = ids.map((id) => ({ id }));
-	const confirm = useConfirm();
 	const { lanes, active } = useApplicationLanes();
 	const [tag, setTag] = useState("");
+	const count = ids.length;
 
 	const bulkUpdate = useMutation({
 		...orpc.applications.bulkUpdate.mutationOptions(),
@@ -698,48 +691,47 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 		},
 		onError: () => toast.add({ type: "error", description: t`Couldn't update the applications. Try again.` }),
 	});
-	const bulkDelete = useMutation({
-		...orpc.applications.bulkTrash.mutationOptions(),
-		onSuccess: (result) => {
-			invalidate();
-			onDone();
-			toast.add({
-				description: t`Moved ${result.deleted} to Trash.`,
-			});
-		},
-		onError: () => toast.add({ type: "error", description: t`Couldn't delete the applications. Try again.` }),
-	});
-	const disabled = ids.length > 200 || bulkUpdate.isPending || bulkDelete.isPending;
+	const disabled = count > 200 || bulkUpdate.isPending;
+	const barRef = useRef<HTMLDivElement>(null);
+	useLayoutEffect(() => {
+		const bar = barRef.current;
+		if (!bar) return;
+		const observer = new ResizeObserver(() => onHeight(bar.offsetHeight + 48));
+		observer.observe(bar);
+		return () => {
+			observer.disconnect();
+			onHeight(0);
+		};
+	}, [onHeight]);
 
 	return (
-		<div
-			role="toolbar"
-			aria-label={t`Applications`}
-			className="flex flex-wrap items-center gap-1 rounded-xl border border-line bg-raised p-1.5 text-ink shadow-e3"
+		<SelectionBar
+			ref={barRef}
+			label={plural(count, { one: "# application selected", other: "# applications selected" })}
+			count={count}
+			total={total}
+			onSelectAll={onSelectAll}
+			onClear={onDone}
+			className="fixed max-sm:bottom-[calc(var(--app-tabbar,0px)+16px)] sm:start-[calc(50%+32px)] lg:start-[calc(50%+var(--app-sidebar)/2)]"
 		>
-			<span className="px-2 text-sm font-semibold whitespace-nowrap" aria-live="polite">
-				<Plural value={ids.length} one="# selected" other="# selected" />
-			</span>
-			{!allSelected && (
-				<Button size="sm" variant="ghost" disabled={disabled} onClick={onSelectAll}>
-					<Trans>Select all</Trans>
-				</Button>
-			)}
-			{ids.length > 200 && (
-				<p role="status" className="w-full px-2 text-sm text-warn-text">
+			{count > 200 && (
+				<span role="status" className="px-2 text-sm text-warn-text">
 					<Trans>Choose up to 200 applications per bulk action.</Trans>
-				</p>
+				</span>
 			)}
 
 			<Popover>
-				<PopoverTrigger render={<Button size="sm" variant="ghost" disabled={disabled} />}>
+				<PopoverTrigger render={<Button size="sm" variant="ghost" disabled={disabled} className={openTrigger} />}>
 					<Icon name="tag" />
 					<Trans>Tags…</Trans>
 				</PopoverTrigger>
-				<PopoverContent align="start" className="w-60 p-2">
+				<PopoverContent {...above} className="grid w-60 gap-2 p-3">
 					<HotkeysProvider scope={`${scope}-tags`} exclusive>
+						<p className="text-sm font-medium">
+							{plural(count, { one: "Add a tag to # application", other: "Add a tag to # applications" })}
+						</p>
 						<form
-							className="flex gap-1.5"
+							className="flex gap-2"
 							onSubmit={(event) => {
 								event.preventDefault();
 								if (disabled || !tag.trim()) return;
@@ -748,7 +740,7 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 							}}
 						>
 							<Input aria-label={t`Tag`} value={tag} onChange={(event) => setTag(event.target.value)} autoFocus />
-							<Button size="sm" type="submit" disabled={disabled || !tag.trim()}>
+							<Button type="submit" variant="secondary" disabled={disabled || !tag.trim()}>
 								<Trans>Add</Trans>
 							</Button>
 						</form>
@@ -757,11 +749,15 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 			</Popover>
 
 			<DropdownMenu>
-				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" disabled={disabled} />}>
+				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" disabled={disabled} className={openTrigger} />}>
 					<Icon name="arrow-right" />
 					<Trans>Move to…</Trans>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="start">
+				<DropdownMenuContent
+					{...above}
+					className="min-w-[190px]"
+					aria-label={plural(count, { one: "Move # application to", other: "Move # applications to" })}
+				>
 					<HotkeysProvider scope={`${scope}-0`} exclusive>
 						{active
 							.filter((lane) => lane.category !== "closed")
@@ -773,7 +769,7 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 										moveWithUndo({
 											applications: rows,
 											lane,
-											description: plural(ids.length, {
+											description: plural(count, {
 												one: `# application moved to ${label}`,
 												other: `# applications moved to ${label}`,
 											}),
@@ -781,8 +777,8 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 										onDone();
 									}}
 								>
-									<span aria-hidden="true" className="size-2 shrink-0 rounded-sm" style={{ background: lane.color }} />
-									<span className="truncate">{getLaneLabel(lane)}</span>
+									<LaneDot lane={lane} />
+									{getLaneLabel(lane)}
 								</DropdownMenuItem>
 							))}
 					</HotkeysProvider>
@@ -790,10 +786,11 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 			</DropdownMenu>
 
 			<DropdownMenu>
-				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" disabled={disabled} />}>
+				<DropdownMenuTrigger render={<Button size="sm" variant="ghost" disabled={disabled} className={openTrigger} />}>
+					<Icon name="check-circle" />
 					<Trans>Close…</Trans>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="start">
+				<DropdownMenuContent {...above} className="min-w-[190px]">
 					<HotkeysProvider scope={`${scope}-1`} exclusive>
 						<ClosedLaneItems
 							lanes={active}
@@ -802,7 +799,7 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 									applications: rows,
 									lane: lane ?? getCategoryLane(lanes, "closed"),
 									closedReason: lane ? reason : (reason ?? null),
-									description: plural(ids.length, { one: "# application closed", other: "# applications closed" }),
+									description: plural(count, { one: "# application closed", other: "# applications closed" }),
 								});
 								onDone();
 							}}
@@ -811,25 +808,18 @@ function BulkBar({ ids, allSelected, onSelectAll, onDone }: BulkBarProps) {
 				</DropdownMenuContent>
 			</DropdownMenu>
 
-			<IconButton icon="x" size="icon-sm" label={t`Clear selection`} className="text-ink-2" onClick={onDone} />
 			<Button
 				size="sm"
-				variant="ghost"
+				variant="danger-text"
 				disabled={disabled}
-				className="text-danger-text hover:bg-danger-soft"
-				onClick={async () => {
-					const confirmed = await confirm(t`Move to Trash`, {
-						description: t`Applications and their timelines can be restored from Trash.`,
-						confirmText: t`Move to Trash`,
-						cancelText: plural(ids.length, { one: "Keep application", other: "Keep applications" }),
-						variant: "danger",
-					});
-					if (confirmed) bulkDelete.mutate({ ids });
+				onClick={() => {
+					trashWithUndo(rows);
+					onDone();
 				}}
 			>
 				<Icon name="trash" />
 				<Trans>Move to Trash</Trans>
 			</Button>
-		</div>
+		</SelectionBar>
 	);
 }

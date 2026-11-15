@@ -46,6 +46,39 @@ function Editor({ initial, single = false, locale = "en-US" }: EditorProps) {
 	return <DatesField dates={dates} locale={locale} format="short" single={single} onChange={setDates} />;
 }
 
+describe("editing a printed date", () => {
+	const mount = (locale: string) =>
+		render(
+			<I18nProvider i18n={i18n}>
+				<Editor initial={{ start: "2022-03", end: null, present: false }} single locale={locale} />
+			</I18nProvider>,
+		);
+
+	it("edits a date whose printed form can't be read back, then shows it printed again", () => {
+		mount("ja-JP");
+		const input = screen.getByRole<HTMLInputElement>("textbox", { name: "Date" });
+		expect(input.value).toBe("2022年3月");
+
+		fireEvent.focus(input);
+		expect(input.value).toBe("2022-03");
+
+		fireEvent.change(input, { target: { value: "2023-03" } });
+		expect(screen.queryByText(/isn't saved/)).toBeNull();
+
+		fireEvent.blur(input);
+		expect(input.value).toBe("2023年3月");
+	});
+
+	it("keeps the printed form while editing when it can be read back", () => {
+		mount("en-US");
+		const input = screen.getByRole<HTMLInputElement>("textbox", { name: "Date" });
+
+		fireEvent.focus(input);
+
+		expect(input.value).toBe("Mar 2022");
+	});
+});
+
 describe("custom date text", () => {
 	const mount = (initial: ResumeDates, single = false, locale = "en-US") =>
 		render(
@@ -56,14 +89,14 @@ describe("custom date text", () => {
 
 	it("keeps custom wording through blur and reopening, with a non-blocking warning", async () => {
 		const view = mount({ start: "2022-03", end: null, present: true });
-		await userEvent.click(screen.getByRole("switch", { name: "Custom date text" }));
+		await userEvent.click(screen.getByRole("checkbox", { name: "Custom text" }));
 		const input = screen.getByRole("textbox", { name: "Dates" });
 		expect(input).toHaveValue("Mar 2022 – Present");
 		fireEvent.change(input, { target: { value: "During university / bis heute" } });
 		fireEvent.blur(input);
 		expect(input).toHaveValue("During university / bis heute");
 		expect(screen.getByText(/Saved as written/)).toBeInTheDocument();
-		expect(screen.getByRole("switch", { name: "Custom date text" })).toHaveAttribute("data-disabled");
+		expect(screen.getByRole("checkbox", { name: "Custom text" })).toHaveAttribute("data-disabled");
 		view.unmount();
 		mount({ start: null, end: null, present: false, raw: "During university / bis heute" });
 		expect(screen.getByRole("textbox", { name: "Dates" })).toHaveValue("During university / bis heute");
@@ -75,25 +108,25 @@ describe("custom date text", () => {
 		fireEvent.blur(input);
 		expect(input).toHaveValue("March 2022");
 		expect(screen.queryByText(/Saved as written/)).not.toBeInTheDocument();
-		await userEvent.click(screen.getByRole("switch", { name: "Custom date text" }));
+		await userEvent.click(screen.getByRole("checkbox", { name: "Custom text" }));
 		expect(screen.getByRole("textbox", { name: "Date" })).toHaveValue("Mar 2022");
 	});
 
 	it("restores untouched Japanese preset dates without reparsing the formatted wording", async () => {
 		mount({ start: "2022-03", end: null, present: true }, false, "ja-JP");
-		await userEvent.click(screen.getByRole("switch", { name: "Custom date text" }));
+		await userEvent.click(screen.getByRole("checkbox", { name: "Custom text" }));
 		expect(screen.getByRole("textbox", { name: "Dates" })).toHaveValue("2022年3月 – 現在");
-		expect(screen.getByRole("switch", { name: "Custom date text" })).not.toHaveAttribute("data-disabled");
-		await userEvent.click(screen.getByRole("switch", { name: "Custom date text" }));
+		expect(screen.getByRole("checkbox", { name: "Custom text" })).not.toHaveAttribute("data-disabled");
+		await userEvent.click(screen.getByRole("checkbox", { name: "Custom text" }));
 		expect(screen.getByRole("textbox", { name: "Start" })).toHaveValue("2022年3月");
-		expect(screen.getByRole("switch", { name: "Present" })).toHaveAttribute("aria-checked", "true");
+		expect(screen.getByRole("checkbox", { name: "Present" })).toHaveAttribute("aria-checked", "true");
 	});
 
 	it("clears unreadable custom text before returning to empty preset fields", async () => {
 		mount({ start: null, end: null, present: false, raw: "whenever" });
 		fireEvent.change(screen.getByRole("textbox", { name: "Dates" }), { target: { value: "" } });
-		expect(screen.getByRole("switch", { name: "Custom date text" })).not.toHaveAttribute("data-disabled");
-		await userEvent.click(screen.getByRole("switch", { name: "Custom date text" }));
+		expect(screen.getByRole("checkbox", { name: "Custom text" })).not.toHaveAttribute("data-disabled");
+		await userEvent.click(screen.getByRole("checkbox", { name: "Custom text" }));
 		expect(screen.getByRole("textbox", { name: "Start" })).toHaveValue("");
 		expect(screen.getByRole("textbox", { name: "End" })).toHaveValue("");
 	});
@@ -112,13 +145,13 @@ describe("expected end date", () => {
 
 	it("lets an education entry mark its end date as still to come", () => {
 		const onChange = mount({ start: "2023-09", end: "2027-05", present: false }, true);
-		fireEvent.click(screen.getByRole("switch", { name: "Expected" }));
+		fireEvent.click(screen.getByRole("checkbox", { name: "Expected" }));
 		expect(onChange).toHaveBeenLastCalledWith({ start: "2023-09", end: "2027-05", present: false, expected: true });
 	});
 
 	it("drops Expected when the entry becomes ongoing", () => {
 		const onChange = mount({ start: "2023-09", end: "2027-05", present: false, expected: true }, true);
-		fireEvent.click(screen.getByRole("switch", { name: "Present" }));
+		fireEvent.click(screen.getByRole("checkbox", { name: "Present" }));
 		// The end date stays while Present hides it, so switching Present back off restores it.
 		expect(onChange).toHaveBeenLastCalledWith({ start: "2023-09", end: "2027-05", present: true });
 	});

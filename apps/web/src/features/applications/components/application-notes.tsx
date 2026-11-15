@@ -1,4 +1,5 @@
 import type { Application } from "../types";
+import type { ReactNode } from "react";
 import { t } from "@lingui/core/macro";
 import { Trans } from "@lingui/react/macro";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,8 @@ type ApplicationNotesProps = {
 	label?: string;
 	placeholder?: string;
 	rows?: number;
+	/** Draws the field's label, given its text and the field's id. A small label when not given. */
+	renderLabel?: (label: ReactNode, htmlFor: string) => ReactNode;
 };
 
 // Pending saves are kept per application and per field.
@@ -31,6 +34,7 @@ export function ApplicationNotes({
 	label,
 	placeholder,
 	rows = 3,
+	renderLabel,
 }: ApplicationNotesProps) {
 	const id = useId();
 	const generation = useRef(getAccountGeneration());
@@ -78,14 +82,19 @@ export function ApplicationNotes({
 	};
 	const flush = useDebouncedSave(draft.restored ? saved : draft.value, saved, save, 800);
 	return (
-		<section className="grid gap-2">
+		<section className={renderLabel ? "grid" : "grid gap-2"}>
 			<DraftRecovery {...draft} />
-			<label htmlFor={id} className="text-xs font-semibold text-ink-3">
-				{label ?? <Trans>Notes</Trans>}
-			</label>
+			{renderLabel ? (
+				renderLabel(label ?? <Trans>Notes</Trans>, id)
+			) : (
+				<label htmlFor={id} className="text-xs font-semibold text-ink-3">
+					{label ?? <Trans>Notes</Trans>}
+				</label>
+			)}
 			<Textarea
 				id={id}
 				rows={rows}
+				className={renderLabel ? "min-h-0 resize-none px-3 py-2 text-[13px]/[19px]" : undefined}
 				value={draft.value}
 				placeholder={placeholder ?? t`Anything to remember about this job`}
 				onBlur={flush}

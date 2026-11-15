@@ -85,15 +85,16 @@ For DNS, HTTPS, alias routing and the custom-domain provider endpoint, see
 
 ## Font mirror
 
-| Variable            | Default | Description                                                                                                                                                                                                        |
-| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `WEB_FONT_BASE_URL` | unset   | Absolute HTTP(S) base URL for the five Computer Modern families during server-side PDF rendering, for example `https://fonts.example.com/cm`. No query string or fragment. Unset or empty keeps the original URLs. |
+| Variable            | Default | Description                                                                                                                                                                                                                 |
+| ------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FONT_MIRROR_URL`   | unset   | Public HTTP(S) base URL for all catalog fonts in the web app, server PDFs and public resume pages. No credentials, query or fragment. Takes precedence over `WEB_FONT_BASE_URL`; see [Font mirroring](/self-hosting/fonts). |
+| `WEB_FONT_BASE_URL` | unset   | Absolute HTTP(S) base URL for the five Computer Modern families during server-side PDF rendering, for example `https://fonts.example.com/cm`. No query string or fragment. Unset or empty keeps the original URLs.          |
 
-Preserve the upstream `font/<family>/<file>.woff` paths below this base URL. Set the variable before the server starts;
+For the legacy `WEB_FONT_BASE_URL`, preserve the upstream `font/<family>/<file>.woff` paths below its base URL. Set the variable before the server starts;
 restart or redeploy after changes. No web rebuild is needed for this server-side setting.
 
 <Warning>
-  This server-only variable is not exposed to the Vite browser app. Browser PDF rendering and font-picker previews still
+  `WEB_FONT_BASE_URL` alone is not exposed to the Vite browser app. Browser PDF rendering and font-picker previews still
   use their original URLs. Google-hosted families and fallback fonts are not rewritten, including during server
   rendering. This setting does not provide offline or Google-free font loading.
 </Warning>
@@ -133,21 +134,6 @@ For Apple, use your Services ID as `APPLE_CLIENT_ID` and a signed client-secret 
 Renew the JWT before it expires; Apple permits at most six months. Both variables must be set to enable the
 provider and trust Apple's `https://appleid.apple.com` POST callback origin. This browser flow does not need
 an app bundle identifier in Better Auth.
-
-### Native app links
-
-Association files are optional. Leave these unset to return 404 from their endpoints. Values are comma-separated;
-whitespace around each value is ignored.
-
-| Variable                     | Description                                                                                                                                                                                   |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MOBILE_IOS_APP_IDS`         | Apple application identifiers, such as `ABCDE12345.me.rxresu` (`TEAMID.bundle.id`). Serves `/.well-known/apple-app-site-association` with `applinks` and `webcredentials`.                    |
-| `MOBILE_ANDROID_PACKAGES`    | Android package names, such as `me.rxresu`. Together with the fingerprints below, serves `/.well-known/assetlinks.json`.                                                                      |
-| `MOBILE_ANDROID_CERT_SHA256` | Colon-separated SHA-256 certificate fingerprints (32 hexadecimal byte pairs). Every listed package trusts every listed fingerprint; include the Play app-signing certificate for Play builds. |
-
-The app must also configure its associated domains or Android intent filters for your HTTPS host. Links cover
-public resume URLs and `/builder/*`. This fork ships no native app and has no `/auth/native-callback` page. Hosting
-these files alone does not verify device handoff.
 
 ### Custom OAuth or OpenID Connect provider
 
@@ -233,24 +219,26 @@ Switching backends does not move files that are already stored. Copy them yourse
 For setup instructions and official provider guides, see [Job search and AI](/self-hosting/job-search-and-ai).
 
 To let people bring their own keys, set `ENCRYPTION_SECRET`. They can then add providers in
-**Settings → AI & developer**; see [Connecting an AI provider](/guides/using-ai).
+**Settings → AI**; see [Connecting an AI provider](/guides/using-ai).
 
 Alternatively, configure a shared provider with `AI_PROVIDER`, `AI_MODEL` and `AI_API_KEY` (the key is optional for
-Ollama). Server configuration takes precedence over personal providers for every AI feature, including the Assistant.
-Settings show that AI is enabled globally and hide personal provider controls; the API also rejects personal provider
-changes. Existing personal providers remain stored and become available again if you remove the server configuration.
-Shared credentials stay in the environment and do not require `ENCRYPTION_SECRET`.
+Ollama and OpenAI-compatible servers). Server configuration takes precedence over personal providers for every AI
+feature, including the Assistant. Settings show that AI is enabled globally and hide personal provider controls; the API
+also rejects personal provider changes. Existing personal providers remain stored and become available again if you
+remove the server configuration. Shared credentials stay in the environment and do not require `ENCRYPTION_SECRET`.
 
-| Variable                | Default          | Description                                                                                                                                                                                                                          |
-| ----------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ENCRYPTION_SECRET`     | unset            | Encrypts personal AI and web-access keys. At least 32 characters; generate one with `openssl rand -hex 32` and keep it different from `AUTH_SECRET`. A shorter value stops the server at startup. Required for saving personal keys. |
-| `AI_PROVIDER`           | unset            | Shared provider identifier, such as `openai`, `anthropic`, `gemini`, `ollama` or `openai-compatible`. Uses the same providers as the personal provider settings.                                                                     |
-| `AI_MODEL`              | unset            | Shared model name, such as `gpt-5-mini`. Required with `AI_PROVIDER`.                                                                                                                                                                |
-| `AI_API_KEY`            | unset            | Shared provider key. Required with `AI_PROVIDER`, except for Ollama. Never returned to the browser.                                                                                                                                  |
-| `AI_BASE_URL`           | provider default | Optional shared provider endpoint; required for `openai-compatible`. Local or private endpoints need `FLAG_ALLOW_UNSAFE_AI_BASE_URL=true`.                                                                                           |
-| `REDIS_URL`             | unset            | Redis connection string, `redis://` or `rediss://`. Optional.                                                                                                                                                                        |
-| `AI_TEST_TIMEOUT_MS`    | `30000`          | How long **Save and test** waits for a provider to answer, in milliseconds. Raise it for local models that load slowly on first use.                                                                                                 |
-| `AI_REQUEST_TIMEOUT_MS` | `300000`         | How long a single AI action (importing a resume, reviewing, improving, reading a posting) waits for a provider, in milliseconds. Raise it for slow local models.                                                                     |
+| Variable                   | Default          | Description                                                                                                                                                                                                                                                                                                                                                     |
+| -------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ENCRYPTION_SECRET`        | unset            | Encrypts personal AI and web-access keys. At least 32 characters; generate one with `openssl rand -hex 32` and keep it different from `AUTH_SECRET`. A shorter value stops the server at startup. Required for saving personal keys.                                                                                                                            |
+| `AI_PROVIDER`              | unset            | Shared provider identifier, such as `openai`, `anthropic`, `gemini`, `ollama` or `openai-compatible`. Uses the same providers as the personal provider settings.                                                                                                                                                                                                |
+| `AI_MODEL`                 | unset            | Shared model name, such as `gpt-5-mini`. Required with `AI_PROVIDER`.                                                                                                                                                                                                                                                                                           |
+| `AI_API_KEY`               | unset            | Shared provider key. Required with `AI_PROVIDER`, except for Ollama and OpenAI-compatible servers. Never returned to the browser.                                                                                                                                                                                                                               |
+| `AI_BASE_URL`              | provider default | Optional shared provider endpoint; required for `openai-compatible`. Local or private endpoints need `FLAG_ALLOW_UNSAFE_AI_BASE_URL=true`.                                                                                                                                                                                                                      |
+| `REDIS_URL`                | unset            | Redis connection string, `redis://` or `rediss://`. Optional.                                                                                                                                                                                                                                                                                                   |
+| `AI_TEST_TIMEOUT_MS`       | `30000`          | How long **Save and test** waits for a provider to answer, in milliseconds. Raise it for local models that load slowly on first use.                                                                                                                                                                                                                            |
+| `AI_REQUEST_TIMEOUT_MS`    | `300000`         | How long a single AI action (importing a resume, reviewing, improving, reading a posting) waits for a provider, in milliseconds. Raise it for slow local models.                                                                                                                                                                                                |
+| `AI_AGENT_STEP_TIMEOUT_MS` | `120000`         | How long a single Assistant model step may run, in milliseconds. Raise it for slow local inference; it is independent of `AI_REQUEST_TIMEOUT_MS`. Capped at `300000`: Node stops waiting for a provider that sends nothing for five minutes. A reverse proxy must wait at least this long for streamed data (the nginx example uses `proxy_read_timeout 300s`). |
+| `AI_AGENT_RUN_TIMEOUT_MS`  | `240000`         | How long a whole Assistant reply may run, in milliseconds. Must be at least the step timeout, or the server does not start. Raise it when replies keep reaching the "Time limit reached" message. Capped at `600000` self-hosted and `240000` on Vercel.                                                                                                        |
 
 <Warning>
   Changing `ENCRYPTION_SECRET` makes every saved AI and web-access key unreadable. People then need to enter their keys
@@ -286,7 +274,7 @@ Without `CRON_SECRET`, the HTTP runner returns `404`; an invalid bearer token re
 ## Web access
 
 The built-in reader is active without credentials. Search and enhanced reading use one optional connection:
-Firecrawl, Tavily or Exa. People can select a provider and save one personal key in **Settings → AI & developer →
+Firecrawl, Tavily or Exa. People can select a provider and save one personal key in **Settings → AI →
 Web access** when `ENCRYPTION_SECRET` is configured. Personal connections use official cloud endpoints.
 
 For a shared service, set `WEB_ACCESS_PROVIDER` and `WEB_ACCESS_API_KEY`. Only Firecrawl accepts a custom
@@ -372,7 +360,6 @@ These appear in `.env.example` but are not used by a running server:
 | Variable                                                                                      | Used by                                                                                                         |
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `GOOGLE_CLOUD_API_KEY`                                                                        | The script that regenerates the font list.                                                                      |
-| `CROWDIN_PROJECT_ID`, `CROWDIN_API_TOKEN`                                                     | Translation sync tooling.                                                                                       |
 | `COVER_LETTER_TEST_DATABASE_URL`, `OAUTH_TEST_DATABASE_URL`, `INTEGRATIONS_TEST_DATABASE_URL` | Test suites that need a disposable database. Integration credential tests create and remove an isolated schema. |
 
 See [Development setup](/contributing/development) for working on the code.

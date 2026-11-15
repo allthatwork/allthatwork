@@ -11,7 +11,20 @@ import type {
 } from "@reactive-resume/schema/applications/data";
 import { createHash } from "node:crypto";
 import { ORPCError } from "@orpc/client";
-import { and, arrayContains, count, desc, eq, getTableColumns, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+	and,
+	arrayContains,
+	asc,
+	count,
+	desc,
+	eq,
+	getTableColumns,
+	inArray,
+	isNotNull,
+	isNull,
+	lt,
+	sql,
+} from "drizzle-orm";
 import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { lintResumeForAts } from "@reactive-resume/resume/ats";
@@ -588,6 +601,19 @@ async function trashApplications(userId: string, ids: string[]) {
 	return { deleted: result.deleted };
 }
 
+/** Trash keeps an application for 30 days, the same rule as documents (documents/service.ts). */
+const TRASH_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+/**
+ * Applications had no expiry before this rule shipped. Anything already in Trash then counts its 30 days from this
+ * date, so nothing a person parked there under the old promise disappears early. Set to the release date.
+ */
+const TRASH_RETENTION_FROM = Date.UTC(2026, 11, 1);
+
+/** When an application trashed at this time is deleted permanently. */
+function trashExpiresAt(trashedAt: Date) {
+	return new Date(Math.max(trashedAt.getTime(), TRASH_RETENTION_FROM) + TRASH_RETENTION_MS);
+}
+
 async function lockedTrash(tx: DbOrTx, input: { userId: string; id: string; trashedAt: Date }) {
 	await lockUser(tx, input.userId);
 	const [row] = await tx
@@ -638,18 +664,25 @@ async function followInterviewSchedules(
 				inArray(schema.careerJob.status, ["queued", "running"]),
 			),
 		);
-	for (const schedule of schedules)
+	const now = Date.now();
+	for (const schedule of schedules) {
+		const nextRunAt = at
+			? prepareRunAt(at, (schedule.lead ?? "24h") as "24h" | "2h" | "morning", schedule.timezone)
+			: null;
 		await tx
 			.update(schema.careerSchedule)
 			.set(
-				at
+				nextRunAt
 					? {
-							nextRunAt: prepareRunAt(at, (schedule.lead ?? "24h") as "24h" | "2h" | "morning", schedule.timezone),
+							nextRunAt,
 							lastQueuedAt: null,
+							// As when a schedule is saved: a lead that has already passed never becomes an immediate paid run.
+							...(nextRunAt.getTime() <= now ? { enabled: false } : {}),
 						}
 					: { enabled: false },
 			)
 			.where(eq(schema.careerSchedule.id, schedule.id));
+	}
 	if (at || !schedules.some((schedule) => schedule.enabled)) return;
 	await tx.insert(schema.careerNotification).values({
 		userId,
@@ -1637,6 +1670,8 @@ export const applicationService = {
 					id: schema.application.id,
 					company: schema.application.company,
 					role: schema.application.role,
+					location: schema.application.location,
+					status: schema.application.status,
 					trashedAt: schema.application.trashedAt,
 				})
 				.from(schema.application)
@@ -1647,7 +1682,9 @@ export const applicationService = {
 			db.select({ count: count() }).from(schema.application).where(scope),
 		]);
 		return {
-			items: items.flatMap((row) => (row.trashedAt ? [{ ...row, trashedAt: row.trashedAt }] : [])),
+			items: items.flatMap((row) =>
+				row.trashedAt ? [{ ...row, trashedAt: row.trashedAt, expiresAt: trashExpiresAt(row.trashedAt) }] : [],
+			),
 			total: total?.count ?? 0,
 		};
 	},
@@ -1688,6 +1725,47 @@ export const applicationService = {
 			threads.map((thread) => getStorageService().delete(`uploads/${input.userId}/agent/${thread.id}`)),
 		);
 		await deleteApplicationAttachments(input.userId, [row]);
+	},
+
+	/**
+	 * Empty Trash: permanently deletes every application this account has in Trash, server-side, one generation at a
+	 * time. A concurrent restore wins: that row's purge is refused and it stays.
+	 */
+	emptyTrash: async (input: { userId: string }) => {
+		const rows = await db
+			.select({ id: schema.application.id, trashedAt: schema.application.trashedAt })
+			.from(schema.application)
+			.where(and(eq(schema.application.userId, input.userId), isNotNull(schema.application.trashedAt)));
+		const results = await Promise.allSettled(
+			rows.flatMap((row) =>
+				row.trashedAt ? [applicationService.purge({ userId: input.userId, id: row.id, trashedAt: row.trashedAt })] : [],
+			),
+		);
+		return { deleted: results.filter((result) => result.status === "fulfilled").length };
+	},
+
+	/**
+	 * Applications trashed more than 30 days ago go for good, across all accounts, a batch per scheduler tick. Rows
+	 * trashed before the rule shipped count from TRASH_RETENTION_FROM.
+	 */
+	purgeExpiredTrash: async (limit = 50) => {
+		const now = Date.now();
+		if (now < TRASH_RETENTION_FROM + TRASH_RETENTION_MS) return;
+		const rows = await db
+			.select({
+				id: schema.application.id,
+				userId: schema.application.userId,
+				trashedAt: schema.application.trashedAt,
+			})
+			.from(schema.application)
+			.where(lt(schema.application.trashedAt, new Date(now - TRASH_RETENTION_MS)))
+			.orderBy(asc(schema.application.trashedAt))
+			.limit(limit);
+		await Promise.allSettled(
+			rows.flatMap((row) =>
+				row.trashedAt ? [applicationService.purge({ userId: row.userId, id: row.id, trashedAt: row.trashedAt })] : [],
+			),
+		);
 	},
 
 	bulkUpdate: (input: {

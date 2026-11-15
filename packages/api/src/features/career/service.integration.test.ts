@@ -723,8 +723,8 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 		expect((await reviewedAnswers.list("bob", "alice-app"))[0]).toMatchObject({
 			id: row.id,
 			answer: row.answer,
-			stale: true,
-			canReuse: false,
+			stale: false,
+			canReuse: true,
 		});
 	});
 
@@ -3762,8 +3762,15 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 				story(kind === "unbacked" ? [] : [backing.id], kind === "private" ? "alice-app" : null),
 			);
 			if (kind === "excluded") await service.updateFact(userId, { id: backing.id, status: "excluded" });
-			if (kind === "changed")
-				await service.updateFact(userId, { id: backing.id, text: "I restored a different service." });
+			if (kind === "changed") {
+				vi.useFakeTimers({ toFake: ["Date"] });
+				try {
+					vi.setSystemTime(selected.updatedAt);
+					await service.updateFact(userId, { id: backing.id, text: "I restored a different service." });
+				} finally {
+					vi.useRealTimers();
+				}
+			}
 			const { generateCareer } = await import("./generate");
 			await expect(
 				generateCareer({
@@ -3784,6 +3791,17 @@ describe.skipIf(!databaseUrl)("career knowledge, context and data lifecycle", ()
 			expect(fixture.provider).not.toHaveBeenCalled();
 			expect(fixture.generate).not.toHaveBeenCalled();
 			expect(await service.savedItems({ userId: "alice", applicationId: null })).toEqual([]);
+			if (kind === "changed") {
+				vi.useFakeTimers({ toFake: ["Date"] });
+				try {
+					vi.setSystemTime(selected.updatedAt);
+					await service.saveStory(userId, selected.data, selected.id);
+				} finally {
+					vi.useRealTimers();
+				}
+				const context = await service.context({ userId, applicationId: null });
+				expect(context.stories.map((entry) => entry.id)).toEqual([selected.id]);
+			}
 		},
 	);
 

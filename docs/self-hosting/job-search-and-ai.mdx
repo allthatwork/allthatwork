@@ -27,7 +27,7 @@ WEB_ACCESS_PROVIDER="tavily" # firecrawl, tavily or exa
 WEB_ACCESS_API_KEY="replace-with-your-provider-key"
 ```
 
-**Settings → AI & developer → Web access** then says **Provided by the server**, and personal connection changes are
+**Settings → AI → Web access** then says **Provided by the server**, and personal connection changes are
 disabled. Paid usage is charged to the shared account. Existing personal connections stay stored and become available
 again if you remove shared configuration. AI has its own existing shared/personal configuration.
 
@@ -168,7 +168,7 @@ Other [supported providers](/guides/using-ai#supported-providers) use the same s
 identifier and model. An OpenAI-compatible gateway also needs `AI_BASE_URL`. For a local model, see
 [Ollama setup](/self-hosting/examples#use-a-local-ai-model-with-ollama) and the
 [AI environment reference](/self-hosting/environment-variables#ai-and-redis). Local or private AI endpoints need
-`FLAG_ALLOW_UNSAFE_AI_BASE_URL=true`; enable it only where you trust every user. Ollama can omit `AI_API_KEY`.
+`FLAG_ALLOW_UNSAFE_AI_BASE_URL=true`; enable it only where you trust every user. Ollama and OpenAI-compatible servers, such as LM Studio, can omit `AI_API_KEY`.
 
 The AI key belongs to Reactive Resume for this workflow. Web services receive search queries and selected public URLs;
 they do not need the AI-provider key or candidate resume data.
@@ -180,7 +180,7 @@ For the [Docker guide's setup](/self-hosting/docker), put Reactive Resume variab
 For local development, edit `.env.local` and restart `pnpm dev`. On other platforms, update the server's environment
 and restart or redeploy it. Keep keys in server configuration or secret storage, never browser build variables.
 
-1. Open **Settings → AI & developer → Web access**. The built-in reader should show **Active**. The selected web service
+1. Open **Settings → AI → Web access**. The built-in reader should show **Active**. The selected web service
    should show its provider and ownership.
 2. Click **Test connection**. Search and reading are tested separately; a built-in fallback cannot make this pass.
 3. Open **Applications**, enter search keywords, choose a result and review the role, company and retained description.
@@ -224,7 +224,7 @@ credentials. Do not commit credentials or shell output containing them.
 
 ## Career schedules
 
-The same web connection supports [automatic role discovery](/guides/finding-roles-automatically). Users enable a search schedule in **Career → Today**. Interview briefings use AI separately, and users must enable their preparation schedule too. Work runs on the server while the browser is closed.
+The same web connection supports [automatic role discovery](/guides/finding-roles-automatically). Users enable a search schedule in **Today**. Interview briefings use AI separately, and users must enable their preparation schedule too. Work runs on the server while the browser is closed.
 
 Node.js and Docker run the scheduler in the long-running server. Vercel uses the checked-in cron configuration and requires `CRON_SECRET`; Cloudflare uses its Cron Trigger. Check platform limits and verify a due reminder in a dedicated test installation. See [Operating scheduled work](/contributing/career-platform#operate-scheduled-work) for setup, delivery and retry details.
 
@@ -236,12 +236,12 @@ AI role suggestions are optional and separate from retrieval. Preferences requir
 
 Enabling discovery requires available web search. A paused schedule can retain its query while the provider is unavailable. In-app results and failure notices appear in Today; email copies require verified email and SMTP. Scheduled discovery sends no push notification and never applies for a job. Saved schedule timezones remain fixed when account preferences change. Repeating runs preserve local time across daylight-saving changes and combine missed occurrences into one run. Configuration alone does not prove the runner is delivering ticks.
 
-The additive `career_opportunity.discovery_source` column records the successful posting check time and query for new or rechecked results. Null means historical provenance is unknown. Account export includes this metadata and account deletion cascades it with opportunities. This metadata does not certify current availability, publication date, completeness or hiring success. Apply migrations before deploying the new backend and mobile bundle.
+The additive `career_opportunity.discovery_source` column records the successful posting check time and query for new or rechecked results. Null means historical provenance is unknown. Account export includes this metadata and account deletion cascades it with opportunities. This metadata does not certify current availability, publication date, completeness or hiring success. Apply migrations before deploying the new backend.
 
-## Browser capture and native shares
+## Browser capture
 
 The browser helper connects to an explicit HTTPS installation origin and opens its normal authenticated review form. It stores no API key or OAuth token and needs no extra backend service, CORS allowlist, broad host permission or scraping account. Serve the built `capture-helper.zip` alongside web assets. Build from source with `pnpm --filter @reactive-resume/tooling capture:build`; the normal web build includes it. HTTP localhost is supported only for development.
 
-Users can disconnect the helper and reconnect to another installation. Native mobile sharing uses the app's existing server picker and OAuth sign-in; it never takes a destination server from an employer posting. Native receive targets require new app-store binaries on both platforms. iOS keeps raw text in the private app group, makes it available for review for 15 minutes, discards expired text on next activation, completes the extension normally, and requires the user to reopen the app. Sign out or change server to clear its pending text and connection context. Neither capture path transfers browser cookies or session credentials. See [capture and review](/guides/adding-an-application#capture-from-your-browser).
+Users can disconnect the helper and reconnect to another installation. The helper never transfers browser cookies or session credentials. See [capture and review](/guides/adding-an-application#capture-from-your-browser).
 
 Capture, review and manual save require no AI provider. **Read with AI** explicitly names the provider receiving the posting. Saved descriptions remain untrusted source data in downstream AI prompts. No new capture database record or retention setting is introduced; existing application export and account deletion cover saved postings.

@@ -12,6 +12,7 @@ import { db } from "@reactive-resume/db/client";
 import * as schema from "@reactive-resume/db/schema";
 import { detachEmbeddedLetters } from "@reactive-resume/resume/cover-letter";
 import { applyResumePatches, describeResumePatchError, ResumePatchError } from "@reactive-resume/resume/patch";
+import { withWebPageCss } from "@reactive-resume/schema/resume/data";
 import { defaultResumeData } from "@reactive-resume/schema/resume/default";
 import { isValidSlug } from "@reactive-resume/schema/resume/slug";
 import { generateId, isRandomSlug } from "@reactive-resume/utils/string";
@@ -437,7 +438,7 @@ function toSharedResumeResponse(
 	};
 }
 
-async function notifyResumeUpdated(event: ResumeUpdatedEvent) {
+export async function notifyResumeUpdated(event: ResumeUpdatedEvent) {
 	try {
 		await publishResumeUpdated(event);
 	} catch (error) {
@@ -552,7 +553,8 @@ export const resumeService = {
 			const updated = await resumeService.update({
 				id: input.resumeId,
 				userId: input.userId,
-				data: version.data,
+				// A version saved without the web page's custom CSS is restored without it.
+				data: withWebPageCss(version.data),
 				aiOperationIds: version.aiOperationIds,
 				expectedUpdatedAt: current.updatedAt,
 				skipAutoSnapshot: true,
@@ -839,6 +841,11 @@ export const resumeService = {
 				}
 
 				const normalizedData = input.data ? parseWritableResumeData(input.data) : undefined;
+				// Apps built before the web page's custom CSS drop `metadata.web.css` from the data they send; keep the
+				// saved stylesheet then. Clearing it sends an empty string.
+				const savedCss = (existing.data as ResumeData | null)?.metadata?.web?.css;
+				if (normalizedData && savedCss && normalizedData.metadata.web?.css === undefined)
+					normalizedData.metadata.web = { showCredit: true, ...normalizedData.metadata.web, css: savedCss };
 				if (normalizedData)
 					await adoptEmbeddedLetters(tx, {
 						userId: input.userId,

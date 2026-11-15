@@ -73,6 +73,8 @@ vi.mock("@/features/settings/integrations/hooks/use-has-usable-ai-provider", () 
 		retry: vi.fn(),
 	}),
 }));
+// The Knowledge header and tabs around the page are not under test here.
+vi.mock("./frame", () => ({ KnowledgeFrame: ({ children }: { children: ReactNode }) => children }));
 vi.mock("@tanstack/react-router", () => ({
 	Link: ({ children }: { children: ReactNode }) => <a href="#facts">{children}</a>,
 }));

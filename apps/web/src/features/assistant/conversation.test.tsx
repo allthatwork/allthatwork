@@ -126,7 +126,6 @@ it("keeps composition and newlines local, submits Enter, and offers Stop while s
 				document={document}
 				context={{ document: false, posting: false }}
 				onContextChange={() => {}}
-				providerLabel="Local"
 				streaming={streaming}
 				disabled={false}
 				threadId={null}
@@ -161,7 +160,6 @@ it("uploads a file in the initial composer before sending its first message", as
 				document={document}
 				context={{ document: false, posting: false }}
 				onContextChange={() => {}}
-				providerLabel="Local"
 				streaming={false}
 				disabled={false}
 				threadId={null}
@@ -201,7 +199,6 @@ it("attaches a long paste as a file holding the exact text", async () => {
 				document={document}
 				context={{ document: false, posting: false }}
 				onContextChange={() => {}}
-				providerLabel="Local"
 				streaming={false}
 				disabled={false}
 				threadId={null}
@@ -822,7 +819,6 @@ it.each(["success", "failure", "changed"])(
 					streaming={false}
 					disabled={false}
 					threadId="thread-1"
-					providerLabel="Local"
 					onSend={mocks.send}
 					onStop={() => {}}
 					initialText={pasted}
@@ -876,7 +872,6 @@ it("restores owned unsent files as visible chips and waits for explicit Send", (
 				document={document}
 				context={{ document: false, posting: false }}
 				onContextChange={() => {}}
-				providerLabel="Local"
 				streaming={false}
 				disabled={false}
 				threadId="original-thread"
@@ -892,4 +887,38 @@ it("restores owned unsent files as visible chips and waits for explicit Send", (
 	fireEvent.click(screen.getByRole("button", { name: "Send" }));
 	expect(send).toHaveBeenCalledWith("Review this recovered file", files);
 	expect(screen.queryByText("Fictional draft.txt")).toBeNull();
+});
+
+it("restores the interrupted reply notice after reopening and continues only on request", () => {
+	const messages = [
+		{
+			id: "interrupted-reply",
+			role: "assistant" as const,
+			parts: [{ type: "text" as const, text: "I started checking the summary." }],
+		},
+	];
+	mocks.chat.mockReturnValue({ messages, sendMessage: mocks.send, status: "ready", clearError: vi.fn() });
+	render(
+		<I18nProvider i18n={i18n}>
+			<Conversation
+				document={document}
+				threadId="thread-1"
+				initialMessages={messages}
+				interrupted={["interrupted-reply"]}
+				activeRun={false}
+				readOnly={false}
+				providerLabel="Local"
+				initialContext={{ document: true, posting: true }}
+				prompt={null}
+				promptAttachments={[]}
+				onPromptSent={() => {}}
+				onSwitchModel={() => {}}
+			/>
+		</I18nProvider>,
+	);
+	expect(screen.getByText("Stopped. No edits were proposed.")).toBeDefined();
+	expect(mocks.send).not.toHaveBeenCalled();
+	fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+	expect(mocks.send).toHaveBeenCalledWith({ text: "Continue" }, { body: { attachmentIds: [] } });
+	expect(screen.queryByText("Stopped. No edits were proposed.")).toBeNull();
 });

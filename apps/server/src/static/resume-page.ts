@@ -7,6 +7,7 @@ import { env } from "@reactive-resume/env/server";
 import { renderResumeWebPage, webPageImageUrl } from "@reactive-resume/pdf/web-page";
 import {
 	localeFromAcceptLanguage,
+	PASSWORD_PAGE_SCRIPT,
 	renderPasswordDocument,
 	renderUnavailableDocument,
 	renderWebPageDocument,
@@ -21,7 +22,7 @@ import { BASE_SECURITY_HEADERS, contentSecurityPolicy } from "./web";
 
 const origin = () => new URL(env.APP_URL).origin;
 
-function html(body: string, status: number, headers: Record<string, string> = {}) {
+function html(body: string, status: number, headers: Record<string, string> = {}, script = WEB_PAGE_SCRIPT) {
 	return new Response(body, {
 		status,
 		headers: {
@@ -29,7 +30,7 @@ function html(body: string, status: number, headers: Record<string, string> = {}
 			"Content-Type": "text/html; charset=UTF-8",
 			// Views are counted per request and the page follows every edit, so no cache may keep it.
 			"Cache-Control": "private, no-store",
-			"Content-Security-Policy": contentSecurityPolicy(`<script>${WEB_PAGE_SCRIPT}</script>`),
+			"Content-Security-Policy": contentSecurityPolicy(`<script>${script}</script>`),
 			...headers,
 		},
 	});
@@ -43,7 +44,11 @@ async function renderSheet(data: ResumeData) {
 	const key = createHash("sha256").update(JSON.stringify(data)).digest("hex");
 	const hit = rendered.get(key);
 	if (hit) return hit;
-	const page = await renderResumeWebPage({ data, imageUrl: webPageImageUrl(origin()) });
+	const page = await renderResumeWebPage({
+		data,
+		imageUrl: webPageImageUrl(origin()),
+		fontMirrorUrl: env.FONT_MIRROR_URL,
+	});
 	if (rendered.size >= 100) rendered.clear();
 	rendered.set(key, page);
 	return page;
@@ -85,7 +90,13 @@ function unavailableResponse(request: Request, ownerResumeId?: string) {
 	const shareUrl = ownerResumeId ? `${origin()}/builder/${encodeURIComponent(ownerResumeId)}?mode=share` : undefined;
 	// `html` sends it private and no-store, so the owner's version is never cached for anyone else.
 	return html(
-		renderUnavailableDocument({ lang, messages: webPageMessages(lang), homeUrl: `${origin()}/`, shareUrl }),
+		renderUnavailableDocument({
+			lang,
+			messages: webPageMessages(lang),
+			homeUrl: `${origin()}/`,
+			shareUrl,
+			fontMirrorUrl: env.FONT_MIRROR_URL,
+		}),
 		404,
 	);
 }
@@ -147,7 +158,22 @@ async function showPage(request: Request, match: ResumeMatch, trustedClient: str
 	if (result.status === "password") {
 		const lang = result.locale;
 		const wrongPassword = new URL(request.url).searchParams.has("wrong-password");
-		return html(renderPasswordDocument({ lang, messages: webPageMessages(lang), wrongPassword }), 401);
+		// The address as the visitor reached it, so they can check the link; nothing about the owner shows yet.
+		const { pathname } = new URL(request.url);
+		const address = `${options.customDomain ?? new URL(env.APP_URL).host}${pathname === "/" ? "" : pathname}`;
+		return html(
+			renderPasswordDocument({
+				creditUrl: origin(),
+				lang,
+				messages: webPageMessages(lang),
+				wrongPassword,
+				address,
+				fontMirrorUrl: env.FONT_MIRROR_URL,
+			}),
+			401,
+			{},
+			PASSWORD_PAGE_SCRIPT,
+		);
 	}
 
 	const { data } = result;
@@ -166,6 +192,8 @@ async function showPage(request: Request, match: ResumeMatch, trustedClient: str
 	const body = renderWebPageDocument({
 		page,
 		messages: webPageMessages(data.metadata.page.locale),
+		owner: { name: data.basics.name, headline: data.basics.headline, location: data.basics.location },
+		fontMirrorUrl: env.FONT_MIRROR_URL,
 		head: {
 			title: social.title,
 			description: social.description,
@@ -178,6 +206,7 @@ async function showPage(request: Request, match: ResumeMatch, trustedClient: str
 		downloadUrl: result.showDownloadButtons ? `/api/resumes${own}/pdf?download` : undefined,
 		wordDownloadUrl: result.allowWordDownload ? `/api/resumes${own}/docx` : undefined,
 		creditUrl: data.metadata.web?.showCredit === false ? undefined : origin(),
+		css: data.metadata.web?.css,
 	});
 	return html(
 		body,

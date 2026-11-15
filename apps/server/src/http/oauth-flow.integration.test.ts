@@ -229,6 +229,230 @@ describe.skipIf(!databaseURL)("MCP OAuth flow with PostgreSQL", () => {
 		);
 		expect(refreshed.status).toBe(400);
 	}, 30_000);
+	it("asks for consent from a client that uses upstream's app callback, since the fork trusts no app (fork)", async () => {
+		if (!databaseURL) return;
+		process.env.DATABASE_URL = databaseURL;
+		process.env.APP_URL = "http://localhost:33920";
+		process.env.AUTH_SECRET = "oauth-integration-test-secret-only";
+		const { handleAuth } = await import("./auth");
+		const origin = process.env.APP_URL;
+		const appCallback = "https://rxresu.me/auth/native-callback";
+		const post = (path: string, body: object, cookie = "") =>
+			handleAuth(
+				new Request(`${origin}/api/auth/${path}`, {
+					method: "POST",
+					headers: { "content-type": "application/json", origin, cookie },
+					body: JSON.stringify(body),
+				}),
+			);
+		const register = async (redirect_uris: string[]) => {
+			const response = await post("oauth2/register", {
+				client_name: "Reactive Resume for Android",
+				redirect_uris,
+				token_endpoint_auth_method: "none",
+				application_type: "native",
+			});
+			expect(response.status, await response.clone().text()).toBe(201);
+			return (await response.json()).client_id as string;
+		};
+		const unique = randomBytes(6).toString("hex");
+		const signup = await post("sign-up/email", {
+			name: "App Test",
+			email: `app-${unique}@example.com`,
+			username: `app-${unique}`,
+			password: "password123",
+		});
+		expect(signup.status).toBe(200);
+		const cookie = signup.headers
+			.getSetCookie()
+			.map((value) => value.split(";", 1)[0])
+			.join("; ");
+		const verifier = randomBytes(32).toString("base64url");
+		const authorize = async (clientId: string) =>
+			new URL(
+				(
+					await handleAuth(
+						new Request(
+							`${origin}/api/auth/oauth2/authorize?${new URLSearchParams({
+								client_id: clientId,
+								redirect_uri: appCallback,
+								response_type: "code",
+								scope: "openid offline_access api:read api:write",
+								code_challenge: createHash("sha256").update(verifier).digest("base64url"),
+								code_challenge_method: "S256",
+								resource: origin,
+								state: "app-state",
+							})}`,
+							{ headers: { cookie } },
+						),
+					)
+				).headers.get("location") ?? "",
+				origin,
+			);
+		const consents = async () =>
+			(await handleAuth(new Request(`${origin}/api/auth/oauth2/get-consents`, { headers: { cookie } }))).json();
+
+		const mixed = await register([appCallback, "https://elsewhere.example/callback"]);
+		expect((await authorize(mixed)).pathname).toBe("/auth/consent");
+
+		// Upstream skips consent for a client whose only callback is its app's; the fork ships no app and trusts none.
+		const app = await register([appCallback]);
+		expect((await authorize(app)).pathname).toBe("/auth/consent");
+		expect(await consents()).toEqual([]);
+	}, 30_000);
+
+	it("asks for consent once an owned client's callback changes", async () => {
+		if (!databaseURL) return;
+		process.env.DATABASE_URL = databaseURL;
+		process.env.APP_URL = "http://localhost:33920";
+		process.env.AUTH_SECRET = "oauth-integration-test-secret-only";
+		const { handleAuth } = await import("./auth");
+		const origin = process.env.APP_URL;
+		const appCallback = "https://rxresu.me/auth/native-callback";
+		const other = "https://elsewhere.example/callback";
+		const post = (path: string, body: object, cookie = "") =>
+			handleAuth(
+				new Request(`${origin}/api/auth/${path}`, {
+					method: "POST",
+					headers: { "content-type": "application/json", origin, cookie },
+					body: JSON.stringify(body),
+				}),
+			);
+		const unique = randomBytes(6).toString("hex");
+		const signup = await post("sign-up/email", {
+			name: "Owner Test",
+			email: `owner-${unique}@example.com`,
+			username: `owner-${unique}`,
+			password: "password123",
+		});
+		expect(signup.status).toBe(200);
+		const cookie = signup.headers
+			.getSetCookie()
+			.map((value) => value.split(";", 1)[0])
+			.join("; ");
+
+		const registration = await post(
+			"oauth2/register",
+			{
+				client_name: "Owned app client",
+				redirect_uris: [appCallback],
+				token_endpoint_auth_method: "none",
+				application_type: "native",
+			},
+			cookie,
+		);
+		expect(registration.status, await registration.clone().text()).toBe(201);
+		const clientId = (await registration.json()).client_id as string;
+
+		const updated = await post(
+			"oauth2/update-client",
+			{ client_id: clientId, update: { redirect_uris: [other] } },
+			cookie,
+		);
+		expect(updated.status, await updated.clone().text()).toBe(200);
+		const { db } = await import("@reactive-resume/db/client");
+		const schema = await import("@reactive-resume/db/schema");
+		const { eq } = await import("drizzle-orm");
+		const [row] = await db
+			.select({ skipConsent: schema.oauthClient.skipConsent })
+			.from(schema.oauthClient)
+			.where(eq(schema.oauthClient.clientId, clientId));
+		expect(row?.skipConsent).toBe(false);
+
+		const verifier = randomBytes(32).toString("base64url");
+		const authorize = await handleAuth(
+			new Request(
+				`${origin}/api/auth/oauth2/authorize?${new URLSearchParams({
+					client_id: clientId,
+					redirect_uri: other,
+					response_type: "code",
+					scope: "openid offline_access api:read api:write",
+					code_challenge: createHash("sha256").update(verifier).digest("base64url"),
+					code_challenge_method: "S256",
+					resource: origin,
+					state: "owned-state",
+				})}`,
+				{ headers: { cookie } },
+			),
+		);
+		const location = authorize.headers.get("location") ?? "";
+		expect(new URL(location, origin).pathname, location).toBe("/auth/consent");
+		expect(location.startsWith(other)).toBe(false);
+	}, 30_000);
+
+	it("asks for consent for a client whose stored callback no longer matches", async () => {
+		if (!databaseURL) return;
+		process.env.DATABASE_URL = databaseURL;
+		process.env.APP_URL = "http://localhost:33920";
+		process.env.AUTH_SECRET = "oauth-integration-test-secret-only";
+		const { handleAuth } = await import("./auth");
+		const { db } = await import("@reactive-resume/db/client");
+		const schema = await import("@reactive-resume/db/schema");
+		const { eq } = await import("drizzle-orm");
+		const origin = process.env.APP_URL;
+		const appCallback = "https://rxresu.me/auth/native-callback";
+		const other = "https://elsewhere.example/callback";
+		const post = (path: string, body: object, cookie = "") =>
+			handleAuth(
+				new Request(`${origin}/api/auth/${path}`, {
+					method: "POST",
+					headers: { "content-type": "application/json", origin, cookie },
+					body: JSON.stringify(body),
+				}),
+			);
+		const unique = randomBytes(6).toString("hex");
+		const signup = await post("sign-up/email", {
+			name: "Drift Test",
+			email: `drift-${unique}@example.com`,
+			username: `drift-${unique}`,
+			password: "password123",
+		});
+		expect(signup.status).toBe(200);
+		const cookie = signup.headers
+			.getSetCookie()
+			.map((value) => value.split(";", 1)[0])
+			.join("; ");
+
+		const registration = await post("oauth2/register", {
+			client_name: "Reactive Resume for Android",
+			redirect_uris: [appCallback],
+			token_endpoint_auth_method: "none",
+			application_type: "native",
+		});
+		expect(registration.status, await registration.clone().text()).toBe(201);
+		const clientId = (await registration.json()).client_id as string;
+
+		await db
+			.update(schema.oauthClient)
+			.set({ redirectUris: [other] })
+			.where(eq(schema.oauthClient.clientId, clientId));
+
+		const verifier = randomBytes(32).toString("base64url");
+		const authorize = await handleAuth(
+			new Request(
+				`${origin}/api/auth/oauth2/authorize?${new URLSearchParams({
+					client_id: clientId,
+					redirect_uri: other,
+					response_type: "code",
+					scope: "openid offline_access api:read api:write",
+					code_challenge: createHash("sha256").update(verifier).digest("base64url"),
+					code_challenge_method: "S256",
+					resource: origin,
+					state: "drift-state",
+				})}`,
+				{ headers: { cookie } },
+			),
+		);
+		const location = authorize.headers.get("location") ?? "";
+		expect(new URL(location, origin).pathname, location).toBe("/auth/consent");
+
+		const [row] = await db
+			.select({ skipConsent: schema.oauthClient.skipConsent })
+			.from(schema.oauthClient)
+			.where(eq(schema.oauthClient.clientId, clientId));
+		expect(row?.skipConsent).toBe(false);
+	}, 30_000);
+
 	it("refuses authorization without a resource, reporting to the registered callback only", async () => {
 		if (!databaseURL) return;
 		process.env.DATABASE_URL = databaseURL;

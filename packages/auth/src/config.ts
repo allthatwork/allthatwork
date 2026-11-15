@@ -58,7 +58,6 @@ import {
 } from "./oauth-profile";
 import { authRateLimitStorage } from "./rate-limit";
 import { getTrustedOrigins } from "./trusted-origins";
-import { recordUsernameChange } from "./username-redirect";
 
 /** Better Auth's verification tokens carry `updateTo` when they move the account to a new address. */
 export function isEmailChangeToken(token: string): boolean {
@@ -232,6 +231,38 @@ async function revokeTokensFromBeforeGrant(oauthQuery: string, headers: Headers 
 				isNull(schema.oauthRefreshToken.revoked),
 			),
 		);
+}
+
+/**
+ * A grant without the consent screen still needs a consent row: tokens carry its ID, Connected apps lists it and
+ * disconnecting deletes it. Only a new code records one, so a refresh can't bring back a disconnected grant.
+ */
+async function recordTrustedGrant(input: {
+	userId: string;
+	clientId: string;
+	scopes: string[];
+	resources?: string[] | undefined;
+	referenceId?: string | undefined;
+}) {
+	const [existing] = await db
+		.select()
+		.from(schema.oauthConsent)
+		.where(and(eq(schema.oauthConsent.clientId, input.clientId), eq(schema.oauthConsent.userId, input.userId)))
+		.limit(1);
+	if (!existing) {
+		await db.insert(schema.oauthConsent).values({
+			clientId: input.clientId,
+			userId: input.userId,
+			scopes: input.scopes,
+			resources: input.resources?.length ? input.resources : null,
+			referenceId: input.referenceId ?? null,
+		});
+		return;
+	}
+	const scopes = [...new Set([...existing.scopes, ...input.scopes])];
+	const resources = [...new Set([...(existing.resources ?? []), ...(input.resources ?? [])])];
+	if (scopes.length !== existing.scopes.length || resources.length !== (existing.resources ?? []).length)
+		await db.update(schema.oauthConsent).set({ scopes, resources }).where(eq(schema.oauthConsent.id, existing.id));
 }
 
 export function isCustomOAuthProviderEnabled() {
@@ -481,6 +512,51 @@ export async function linkAnonymousAccount({
 				.where(and(eq(schema.application.id, application.id), eq(schema.application.userId, fromUserId)));
 		}
 
+		// A guest fact the account already holds stays behind and is deleted with the guest, so moved work cites the
+		// account's copy. Fact ids are UUIDs: replacing their quoted form changes nothing else.
+		const facts = await tx
+			.select({ id: schema.careerFact.id, userId: schema.careerFact.userId, sourceKey: schema.careerFact.sourceKey })
+			.from(schema.careerFact)
+			.where(inArray(schema.careerFact.userId, [fromUserId, toUserId]));
+		const accountFacts = new Map(
+			facts.filter((fact) => fact.userId === toUserId).map((fact) => [fact.sourceKey, fact.id]),
+		);
+		const citeAccountFacts = (column: unknown) =>
+			sql`cast(${facts.reduce(
+				(text, fact) => {
+					const accountFact = fact.userId === fromUserId && accountFacts.get(fact.sourceKey);
+					return accountFact ? sql`replace(${text}, ${`"${fact.id}"`}, ${`"${accountFact}"`})` : text;
+				},
+				sql`cast(${column} as text)`,
+			)} as jsonb)`;
+
+		// Moved answers and documents cite these by operation id, and saving them checks the account owns each one.
+		await tx.update(schema.aiRequest).set({ userId: toUserId }).where(eq(schema.aiRequest.userId, fromUserId));
+
+		await tx
+			.update(schema.careerWorkspace)
+			.set({
+				userId: toUserId,
+				data: citeAccountFacts(schema.careerWorkspace.data),
+				updatedAt: schema.careerWorkspace.updatedAt,
+			})
+			.where(eq(schema.careerWorkspace.userId, fromUserId));
+
+		await tx
+			.update(schema.careerArtifact)
+			.set({
+				userId: toUserId,
+				data: citeAccountFacts(schema.careerArtifact.data),
+				evidence: citeAccountFacts(schema.careerArtifact.evidence),
+				updatedAt: schema.careerArtifact.updatedAt,
+			})
+			.where(eq(schema.careerArtifact.userId, fromUserId));
+
+		await tx
+			.update(schema.careerTranscript)
+			.set({ userId: toUserId, updatedAt: schema.careerTranscript.updatedAt })
+			.where(eq(schema.careerTranscript.userId, fromUserId));
+
 		const sourceAnswers = await tx.select().from(schema.careerAnswer).where(eq(schema.careerAnswer.userId, fromUserId));
 		const targetAnswers = await tx.select().from(schema.careerAnswer).where(eq(schema.careerAnswer.userId, toUserId));
 		if (sourceAnswers.some((answer) => targetAnswers.some((target) => target.duplicateKey === answer.duplicateKey)))
@@ -491,21 +567,34 @@ export async function linkAnonymousAccount({
 		// Preserve wording; the Knowledge facts the answers cite move with them below.
 		await tx
 			.update(schema.careerAnswer)
-			.set({ userId: toUserId, updatedAt: schema.careerAnswer.updatedAt })
+			.set({
+				userId: toUserId,
+				factIds: citeAccountFacts(schema.careerAnswer.factIds),
+				evidence: citeAccountFacts(schema.careerAnswer.evidence),
+				updatedAt: schema.careerAnswer.updatedAt,
+			})
 			.where(eq(schema.careerAnswer.userId, fromUserId));
 
 		// The guest was invited to build Knowledge like any user: facts, stories and the career profile move too. A fact
 		// the account already holds from the same source stays the account's; the guest's copy goes with the guest.
+		// Saved answers' evidence revisions include fact and story timestamps, so the moves keep them.
 		await tx
 			.update(schema.careerFact)
-			.set({ userId: toUserId })
+			.set({ userId: toUserId, updatedAt: schema.careerFact.updatedAt })
 			.where(
 				and(
 					eq(schema.careerFact.userId, fromUserId),
 					sql`not exists (select 1 from career_fact f where f.user_id = ${toUserId} and f.source_key = career_fact.source_key)`,
 				),
 			);
-		await tx.update(schema.careerStory).set({ userId: toUserId }).where(eq(schema.careerStory.userId, fromUserId));
+		await tx
+			.update(schema.careerStory)
+			.set({
+				userId: toUserId,
+				data: citeAccountFacts(schema.careerStory.data),
+				updatedAt: schema.careerStory.updatedAt,
+			})
+			.where(eq(schema.careerStory.userId, fromUserId));
 		await tx
 			.update(schema.careerProfile)
 			.set({ userId: toUserId })
@@ -742,13 +831,6 @@ const getAuthConfig = () => {
 						// Guests sign in without a username. The tail of a UUIDv7 is random; its head is a timestamp.
 						const username = `guest-${generateId().slice(-12)}`;
 						return { data: { ...data, username, displayUsername: username } };
-					},
-				},
-				update: {
-					// A new username keeps the old one's public links working for 30 days.
-					before: async (user, context) => {
-						const id = context?.context.session?.user.id;
-						if (typeof user.username === "string" && id) await recordUsernameChange(id, toUsername(user.username));
 					},
 				},
 			},
@@ -1178,10 +1260,18 @@ const getAuthConfig = () => {
 								}
 								return {};
 							},
-							accessToken: async ({ user, client }) => {
+							accessToken: async ({ user, client, grantType, scopes, resources, referenceId }) => {
 								if (!user) return {};
 								if (user.isAnonymous)
 									throw new APIError("FORBIDDEN", { message: "Guest accounts cannot connect apps." });
+								if (client.skipConsent && grantType === "authorization_code")
+									await recordTrustedGrant({
+										userId: user.id,
+										clientId: client.clientId,
+										scopes,
+										resources,
+										referenceId,
+									});
 								const [consent] = await db
 									.select({ id: schema.oauthConsent.id })
 									.from(schema.oauthConsent)

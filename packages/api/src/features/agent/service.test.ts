@@ -55,6 +55,14 @@ const aiProvidersServiceMock = {
 vi.mock("../applications/service", () => ({ assertApplicationVersion: vi.fn() }));
 
 vi.mock("@reactive-resume/db/client", () => ({ db: dbMock }));
+// Deliberately different from the defaults, so the tests prove the configured budgets are used.
+vi.mock("@reactive-resume/env/server", () => ({
+	env: {
+		AUTH_SECRET: "test-auth-secret",
+		AI_AGENT_STEP_TIMEOUT_MS: 45_000,
+		AI_AGENT_RUN_TIMEOUT_MS: 90_000,
+	},
+}));
 vi.mock("@reactive-resume/db/redis", () => ({
 	getRedis: () => cancellationRedisMock,
 	redisKey: (...parts: string[]) => ["test", ...parts].join(":"),
@@ -1801,6 +1809,8 @@ describe("agentService.messages.stop", () => {
 
 			expect(capturedSignal).toBeDefined();
 			expect(capturedSignal?.aborted).toBe(false);
+			// The step limit comes from the account's AI limits (Settings → AI limits), not the server-wide env value.
+			expect(vi.mocked(ToolLoopAgent)).toHaveBeenCalledWith(expect.objectContaining({ timeout: { stepMs: 120_000 } }));
 
 			if (action === "stop") {
 				await agentService.messages.stop({

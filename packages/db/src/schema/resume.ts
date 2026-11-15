@@ -77,6 +77,8 @@ export const resume = pg.pgTable(
 			.index()
 			.on(t.trashedAt)
 			.where(sql`${t.trashedAt} is not null`),
+		// Looked up when the row it points to is deleted.
+		pg.index().on(t.applicationId),
 	],
 );
 
@@ -130,6 +132,8 @@ export const resumeVersion = pg.pgTable(
 			.uniqueIndex("resume_version_session_unique")
 			.on(t.resumeId, t.sessionId)
 			.where(sql`${t.kind} = 'auto'`),
+		// Looked up when the row it points to is deleted.
+		pg.index().on(t.userId),
 	],
 );
 
@@ -203,21 +207,6 @@ export const resumeStatisticsDaily = pg.pgTable(
 			.$onUpdate(() => /* @__PURE__ */ new Date()),
 	},
 	(t) => [pg.unique().on(t.resumeId, t.date), pg.index().on(t.resumeId, t.date.desc())],
-);
-
-/** A user's previous username, kept for 30 days after a change so shared public links keep working. */
-export const usernameRedirect = pg.pgTable(
-	"username_redirect",
-	{
-		username: pg.text("username").primaryKey(),
-		userId: pg
-			.text("user_id")
-			.notNull()
-			.references(() => user.id, { onDelete: "cascade" }),
-		expiresAt: pg.timestamp("expires_at", { withTimezone: true }).notNull(),
-		createdAt: pg.timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-	},
-	(t) => [pg.index().on(t.userId)],
 );
 
 /** One paid writing review per resume, kept independently of the editable document revision. */

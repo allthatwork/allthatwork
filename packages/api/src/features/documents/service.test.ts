@@ -12,7 +12,11 @@ const applicationServiceMock = vi.hoisted(() => ({ update: vi.fn() }));
 const insertApplicationMock = vi.hoisted(() => vi.fn());
 vi.mock("@reactive-resume/db/client", () => ({ db: dbMock }));
 const writeResumeFieldsMock = vi.hoisted(() => vi.fn(async () => ({ id: "new", updatedAt: new Date() })));
-vi.mock("../resume/service", () => ({ resumeService: resumeServiceMock, writeResumeFields: writeResumeFieldsMock }));
+vi.mock("../resume/service", () => ({
+	resumeService: resumeServiceMock,
+	writeResumeFields: writeResumeFieldsMock,
+	notifyResumeUpdated: vi.fn(),
+}));
 vi.mock("../cover-letters/service", () => ({ coverLetterService: { getById: vi.fn(), update: vi.fn() } }));
 vi.mock("../applications/service", () => ({
 	applicationService: applicationServiceMock,
@@ -26,7 +30,7 @@ const rows = (result: unknown[]) => ({ from: () => ({ where: () => Promise.resol
 
 const updates = () => {
 	const set = vi.fn((_changes: Record<string, unknown>) => ({
-		where: () => ({ returning: async () => [{ id: "copy" }] }),
+		where: () => ({ returning: async () => [{ id: "copy", updatedAt: new Date() }] }),
 	}));
 	dbMock.update.mockReturnValue({ set });
 	return set;
@@ -104,7 +108,7 @@ describe("copyForJob", () => {
 
 		expect(id).toBe("copy");
 		expect(resumeServiceMock.create).toHaveBeenCalledWith(
-			expect.objectContaining({ name: "Product Designer — Orbital", tags: ["design"] }),
+			expect.objectContaining({ name: "Product Designer · Orbital", tags: ["design"] }),
 		);
 		expect(set).toHaveBeenCalledWith({ applicationId: "a1" });
 		expect(applicationServiceMock.update).toHaveBeenCalledWith({ userId: "u1", id: "a1", resumeId: "copy" });

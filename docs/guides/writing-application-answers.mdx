@@ -9,13 +9,13 @@ Questions and answers are kept locally while you type, including before the auto
 
 ## Prepare the application together
 
-In **Apply**, **Prepare application** puts pending resume tailoring proposals, a letter draft, and drafts for pasted form questions in one review. Link an owned resume and save a posting or requirements first. Separate questions with a blank line: up to five questions, each at most 2,000 characters. The existing manual preparation and individual editors remain available.
+In **Apply**, **Prepare drafts** puts pending resume tailoring proposals, a letter draft, and drafts for pasted form questions in one review. Link an owned resume and save a posting or requirements first. Separate questions with a blank line: up to five questions, each at most 2,000 characters. The existing manual preparation and individual editors remain available.
 
-Choose **Prepare drafts for review**. It sends the combined context to your default AI connection: resume and posting; for answers, the letter, career preferences, application notes and contacts, and enabled Knowledge facts and stories. Context can be excerpted. Web access is off. Tool steps and each answer are separate request attempts, not one request for the whole button.
+Choose **Prepare drafts**, then review the form before generating. It sends the combined context to your default AI connection: resume and posting; for answers, the letter, career preferences, application notes and contacts, and enabled Knowledge facts and stories. Context can be excerpted. Web access is off. Tool steps and each answer are separate request attempts, not one request for the whole button.
 
 Review proposals with the existing **Accept**, **Edit**, and **Reject** controls. **Keep letter** saves the edited letter body; **Keep answer** appends that edited answer without replacing your other answers. **Undo** reverses only the last saved change and refuses to overwrite newer document or answer changes. The original base resume stays unchanged; tailoring uses a job copy. The letter body and answers remain unsaved until you keep them. Nothing submits an employer application or records a submission.
 
-**Stop** cancels generation. A section that fails is listed while completed sections remain reviewable. Keep completed drafts before discarding the review and retrying. Review drafts recover in this browser tab or on the native device, scoped to the account; recovery needs available local storage. Saved assistant proposals remain in their conversation. A newer server/document revision can refuse an old recovered draft instead of overwriting it. **Discard** removes this local review, not already saved documents or answers.
+**Stop** cancels generation. A section that fails is listed while completed sections remain reviewable. Keep completed drafts before discarding the review and retrying. Review drafts recover in this browser tab, scoped to the account; recovery needs available local storage. Saved assistant proposals remain in their conversation. A newer server/document revision can refuse an old recovered draft instead of overwriting it. **Discard** removes this local review, not already saved documents or answers.
 
 <Frame caption="One fictional application review holds pending resume edits, an editable letter and two pasted-question drafts.">
   <img
@@ -26,14 +26,14 @@ Review proposals with the existing **Accept**, **Edit**, and **Reject** controls
 
 ## Add the employer's question
 
-Saved jobs start in **Apply**, where the preparation card names your current step and keeps the posting and selected documents with this job. You can copy a base resume, open either editor with **Edit**, and download the selected PDFs from each row's options menu without an AI connection. Complete only the letter and form answers the employer requires.
+For saved jobs, open **Apply** from **Work on it**, where the preparation card names your current step and keeps the posting and selected documents with this job. You can copy a base resume, open either editor with **Edit**, and download the selected PDFs from each row's options menu without an AI connection. Complete only the letter and form answers the employer requires.
 
 1. Open the application's workspace and choose **Apply**.
-2. Select **Add a question from the form**.
+2. Select **Add a question**.
 3. Paste the question, including any limit such as “Maximum 200 words.”
 4. Press Enter or leave the question field to finish editing it.
 
-Use **Question options → Edit question** to change it later. **Remove question** offers **Undo** once the removal is ready. Leaving the page or backgrounding the native app commits the pending removal. Undo reads the saved workspace before showing the question again; a question removed elsewhere stays removed. If that read fails, **Retry** checks again without recreating the answer.
+Use **Question options → Edit question** to change it later. **Remove question** offers **Undo** once the removal is ready. Leaving the page commits the pending removal. Undo reads the saved workspace before showing the question again; a question removed elsewhere stays removed. If that read fails, **Retry** checks again without recreating the answer.
 
 Removal affects only that current draft question and answer. Other answers, recorded submission copies and first-submission review checks stay intact. If the target question changes on another device before removal commits, its newer wording is kept; review it before trying again.
 
@@ -63,10 +63,10 @@ You can type or edit an answer yourself. Question and answer edits save as you w
 
 An answer can contain up to 6,000 characters. If your draft exceeds that storage limit, it stays visible with a warning; shorten it before saving or recording submission. This is separate from the employer's limit. If another tab changes the same answers, the app reports a conflict instead of silently overwriting them.
 
-<Frame caption="Current drafts remain editable after submission is recorded. What you sent and View recorded answers open the saved submission copies; each document's options menu edits or downloads the current draft.">
+<Frame caption="Review documents and answers before sending">
   <img
     src="/images/guides/career/apply.jpg"
-    alt="Recorded fictional Harbor Labs application with sent resume and cover letter versions, editable form answer, read-only review checks, View recorded answers, Edit profile, Interview prep and Library"
+    alt="Kiln Studio Apply screen with selected documents, Before you send checklist, form answers and Employer-form packet"
   />
 </Frame>
 
@@ -132,7 +132,7 @@ The counter shows your answer's length; it does not block submission or guarante
 
 Approval saves named resume/letter versions and renders their exact PDFs. Changes during preparation reject the packet; missing or trashed documents produce an error instead of a substitute. **Download approved PDF** retains the approved bytes even if the draft later changes. **Download reviewed packet** includes those PDFs, copied answers and provenance in a private JSON file. Keep it private; downloaded copies do not expire or refresh. Packets are limited to 2 MiB of combined PDFs; larger documents require manual downloads.
 
-On desktop Chromium, import that JSON into the installed posting-capture helper, review its destination and versions, and explicitly approve **Fill this page** while that exact page is active. On iPhone and Android, use **Open employer form in browser**, copy your reviewed answers and attach the approved PDFs manually. Mobile autofill is not offered. Temporary packet/PDF share files use workspace cache cleanup on the next share and account/session transitions; copies saved elsewhere remain yours.
+On desktop Chromium, import that JSON into the installed posting-capture helper, review its destination and versions, and explicitly approve **Fill this page** while that exact page is active.
 
 Desktop autofill is an experimental standard-control subset, tested only with fictional Greenhouse-, Lever- and Ashby-shaped forms. Current employer compatibility is not verified. Custom/framework controls, additional pages, login and captcha require manual completion. A filled report means a DOM value or file is present; it does not prove employer upload acceptance. Review every result and file yourself. Existing values remain unchanged; errors require the exact approved download, never another resume.
 
@@ -147,7 +147,7 @@ Unknown authorization and sensitive questions remain unanswered unless you expli
 
 ## Submit and record what you sent
 
-Use **Review checks** to review the linked resume and letter, check claims, and complete required answers. Make sure the application links to the actual document versions you intend to send. See [Managing an application](/guides/managing-an-application#seeing-what-you-sent).
+Use **Before you send** to review the linked resume and letter, check claims, and complete required answers. Make sure the application links to the actual document versions you intend to send. See [Managing an application](/guides/managing-an-application#seeing-what-you-sent).
 
 Submit on the employer's website yourself. Then choose **Mark as applied** in Apply. The line under the button names the documents and answers it records. This keeps a saved copy of your written answers and the linked documents' versions, and moves the application to Applied.
 
@@ -155,7 +155,7 @@ The current answer text, submitted answer copy, document versions and stage chan
 
 Marking it applied records your submission; it does not submit a form for you. Later edits in Apply do not change the copy you kept at submission.
 
-After submission is recorded from Apply, application details or another tracker entry point, **Review checks** shows a read-only record of your relevant manual checks at the first recorded submission. It has no unfinished count or outstanding submission step. Checks for absent documents or form answers are hidden; recording submission never checks anything for you. Later draft edits, document changes or stage moves do not replace this record, on web and native. Older submissions and saved answer versions without matching review history say **Historical review checks unavailable.** Copy and download actions appear only when written answers exist.
+After submission is recorded from Apply, application details or another tracker entry point, **Before you send** shows a read-only record of your relevant manual checks at the first recorded submission. It has no unfinished count or outstanding submission step. Checks for absent documents or form answers are hidden; recording submission never checks anything for you. Later draft edits, document changes or stage moves do not replace this record. Older submissions and saved answer versions without matching review history say **Historical review checks unavailable.** Copy and download actions appear only when written answers exist.
 
 <Frame caption="The fictional application has two relevant answer-review checks. The first-submission record preserves one checked and one unchecked item, with no unfinished count or document check.">
   <img
@@ -174,6 +174,6 @@ For a later interview, the same facts and stories can support your [opening and 
 
 ## Reuse private application details
 
-**Edit profile** beside **Form answers** opens **Settings → Profile** on web and native mobile. Keep application-only contact details, links, address, country-specific authorization and sponsorship, relocation, requested salary and references there without AI. [See the profile controls](/guides/building-career-knowledge#keep-application-details-private).
+**Edit profile** beside **Form answers** opens **Settings → Application profile**. Keep application-only contact details, links, address, country-specific authorization and sponsorship, relocation, requested salary and references there without AI. [See the profile controls](/guides/building-career-knowledge#keep-application-details-private).
 
 Copy only the details you intend to use into an application answer. Changes to that answer stay with the application; they do not update your private profile or global Career preferences. **Mark as applied** preserves the entered answers as a snapshot, even if the profile later changes. Private fields are not automatically shared with the coach or inserted into documents.

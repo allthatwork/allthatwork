@@ -27,7 +27,7 @@ export function PaletteTiles() {
 	const { palette, setPalette, resolvedTheme } = useTheme();
 
 	return (
-		<fieldset className="grid gap-2.5 sm:grid-cols-2">
+		<fieldset className="mt-3 grid gap-3 sm:grid-cols-2">
 			<legend className="sr-only">{t`Palette`}</legend>
 			{PALETTES.map((option) => {
 				const checked = palette === option;
@@ -36,8 +36,9 @@ export function PaletteTiles() {
 					<label
 						key={option}
 						className={cn(
-							"grid cursor-pointer gap-2.5 rounded-xl border border-line-2 bg-surface p-2.5 transition-[background-color,border-color,box-shadow,scale] duration-quick ease-enter hover:bg-hover active:scale-[0.98] has-focus-visible:outline-2 has-focus-visible:outline-accent",
-							checked && "border-accent shadow-[0_0_0_3px_var(--accent-soft)]",
+							// The theme tiles' look (Calm): a raised tile with an inset hairline, accent-soft with a 2px ring when chosen.
+							"grid cursor-pointer gap-2.5 rounded-lg bg-raised p-3 shadow-[inset_0_0_0_1px_var(--line-2)] transition-[background-color,box-shadow] duration-quick hover:bg-hover has-focus-visible:outline-2 has-focus-visible:outline-accent",
+							checked && "bg-accent-soft shadow-[inset_0_0_0_2px_var(--accent)] hover:bg-accent-soft",
 						)}
 					>
 						<input
@@ -50,8 +51,8 @@ export function PaletteTiles() {
 						/>
 						<PalettePreview colors={colors} />
 						<span className="grid gap-0.5 px-0.5">
-							<span className="text-sm font-medium">{i18n.t(paletteMap[option].name)}</span>
-							<span className="text-[13px] text-ink-3">{i18n.t(paletteMap[option].description)}</span>
+							<span className="text-sm/5 font-semibold text-ink">{i18n.t(paletteMap[option].name)}</span>
+							<span className="text-[13px]/[18px] text-ink-3">{i18n.t(paletteMap[option].description)}</span>
 						</span>
 					</label>
 				);
@@ -67,7 +68,7 @@ function PalettePreview({ colors }: PalettePreviewProps) {
 	return (
 		<span
 			aria-hidden="true"
-			className="flex h-16 overflow-hidden rounded-lg border"
+			className="flex h-16 overflow-hidden rounded-md border"
 			style={{ backgroundColor: colors.bg, borderColor: colors.line }}
 		>
 			<span className="w-1/5 border-e" style={{ backgroundColor: colors.sunken, borderColor: colors.line }} />
