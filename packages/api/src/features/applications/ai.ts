@@ -157,7 +157,7 @@ export const aiRouter = {
 			operationId: "searchApplicationPostings",
 			summary: "Search job postings",
 			description:
-				"Searches through the server's SearXNG when it has one, otherwise the selected Firecrawl, Tavily or Exa connection. Returns up to five public links to review and import. Requires authentication.",
+				"Searches through the server's SearXNG when it has one, otherwise the selected Firecrawl, Tavily or Exa connection, otherwise, when the server allows it and nothing is set up, the built-in DuckDuckGo search. Returns up to five public links to review and import. Requires authentication.",
 			...reserved,
 		})
 		.input(z.object({ query: z.string().trim().min(2).max(500), aiProviderId: z.string().min(1).optional() }))
@@ -186,7 +186,8 @@ export const aiRouter = {
 				webAccessService.resolve(context.user.id, provider !== null),
 				searchScope(context.user.id, context.reqHeaders.get("x-client-timezone") ?? undefined),
 			]);
-			if (!webAccessService.canSearch(connection !== null)) throw new ORPCError("SEARCH_UNAVAILABLE", { status: 503 });
+			if (!(await webAccessService.canSearch(context.user.id, connection !== null)))
+				throw new ORPCError("SEARCH_UNAVAILABLE", { status: 503 });
 			try {
 				return await searchJobPostings(input.query, {
 					connection,

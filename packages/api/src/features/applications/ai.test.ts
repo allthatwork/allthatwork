@@ -336,10 +336,18 @@ describe("posting search", () => {
 		locale: "en-US" as const,
 		reqHeaders: new Headers(),
 	};
-	const serverEnv = env as { WEB_SEARCH_SEARXNG_URL?: string };
+	const serverEnv = env as { WEB_SEARCH_SEARXNG_URL?: string; WEB_SEARCH_BUILTIN: boolean };
 	beforeEach(() => {
 		vi.mocked(searchJobPostings).mockReset();
 		delete serverEnv.WEB_SEARCH_SEARXNG_URL;
+		serverEnv.WEB_SEARCH_BUILTIN = true;
+	});
+
+	it("searches through the built-in search with nothing set up", async () => {
+		const found = [{ url: "https://jobs.example.com/designer", title: "Designer", description: "Berlin" }];
+		vi.mocked(searchJobPostings).mockResolvedValue(found);
+		await expect(call(aiRouter.searchPostings, { query: "designer" }, { context })).resolves.toEqual(found);
+		expect(searchJobPostings).toHaveBeenCalledWith("designer", expect.objectContaining({ connection: null }));
 	});
 
 	it("searches through the server's SearXNG without a saved web connection", async () => {
@@ -353,7 +361,8 @@ describe("posting search", () => {
 		);
 	});
 
-	it("reports search unavailable with neither SearXNG nor a web connection", async () => {
+	it("reports search unavailable with neither SearXNG nor a web connection and the built-in search off", async () => {
+		serverEnv.WEB_SEARCH_BUILTIN = false;
 		await expect(call(aiRouter.searchPostings, { query: "designer" }, { context })).rejects.toMatchObject({
 			code: "SEARCH_UNAVAILABLE",
 		});

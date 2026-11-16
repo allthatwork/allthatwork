@@ -14,7 +14,9 @@ vi.mock("./credentials", () => ({
 	webAccessService: {
 		recordTest: vi.fn(),
 		resolve: vi.fn(),
-		canSearch: vi.fn((hasConnection: boolean) => hasConnection),
+		// The Test button needs a service to test; the built-in search never counts.
+		hasSearchService: vi.fn((hasConnection: boolean) => hasConnection),
+		canSearch: vi.fn(async () => true),
 	},
 }));
 vi.mock("./service", () => ({ probeWebAccess: vi.fn() }));
@@ -47,7 +49,7 @@ describe("web connection probe transport", () => {
 
 	it("tests the server's SearXNG search without a web connection", async () => {
 		vi.mocked(webAccessService.resolve).mockResolvedValue(null);
-		vi.mocked(webAccessService.canSearch).mockReturnValueOnce(true);
+		vi.mocked(webAccessService.hasSearchService).mockReturnValueOnce(true);
 		vi.mocked(searchScope).mockResolvedValue({ regions: ["AU"], locations: [] });
 		const result = { search: { success: true }, read: { success: false, error: "unavailable" as const } };
 		vi.mocked(probeWebAccess).mockResolvedValue(result);
@@ -55,11 +57,11 @@ describe("web connection probe transport", () => {
 			context: { user: { id: "alice" }, reqHeaders: new Headers() } as never,
 		});
 		await expect(client.test()).resolves.toEqual(result);
-		expect(webAccessService.canSearch).toHaveBeenCalledWith(false);
+		expect(webAccessService.hasSearchService).toHaveBeenCalledWith(false);
 		expect(probeWebAccess).toHaveBeenLastCalledWith(null, expect.objectContaining({ userId: "alice", region: "AU" }));
 	});
 
-	it("refuses the test with neither SearXNG nor a web connection", async () => {
+	it("refuses the test with neither SearXNG nor a web connection, even when the built-in search applies", async () => {
 		vi.mocked(webAccessService.resolve).mockResolvedValue(null);
 		vi.mocked(searchScope).mockResolvedValue({ regions: [], locations: [] });
 		vi.mocked(probeWebAccess).mockClear();

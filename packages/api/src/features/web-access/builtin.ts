@@ -35,11 +35,19 @@ export async function assertPublicTarget(input: string, signal: AbortSignal) {
 	return url;
 }
 
-export function readBuiltinPage(
+type BuiltinPage = { html: string; resolvedUrl: string };
+
+export async function readBuiltinPage(input: string, signal: AbortSignal): Promise<BuiltinPage> {
+	const { html, resolvedUrl } = await fetchBuiltinPage(input, signal);
+	return { html, resolvedUrl };
+}
+
+/** The built-in reader's fetch, with the final status as well: a 2xx such as 202 can mean the page wasn't served. */
+export function fetchBuiltinPage(
 	input: string,
 	signal: AbortSignal,
 	redirects = 0,
-): Promise<{ html: string; resolvedUrl: string }> {
+): Promise<BuiltinPage & { status: number }> {
 	signal.throwIfAborted();
 	const url = assertPublicPageUrl(input);
 	if (process.env.CLOUDFLARE === "1") return readWorkerPage(url, signal);
@@ -63,7 +71,7 @@ export function readBuiltinPage(
 					res.resume();
 					if (redirects >= 3) return reject(new WebAccessError("unreachable"));
 					try {
-						resolve(readBuiltinPage(new URL(location, url).toString(), signal, redirects + 1));
+						resolve(fetchBuiltinPage(new URL(location, url).toString(), signal, redirects + 1));
 					} catch (error) {
 						reject(error);
 					}
@@ -89,6 +97,7 @@ export function readBuiltinPage(
 					resolve({
 						html: Buffer.concat(chunks).toString("utf8"),
 						resolvedUrl: url.toString(),
+						status,
 					});
 				});
 				res.on("error", reject);
@@ -123,7 +132,7 @@ export async function readCapped(body: ReadableStream<Uint8Array>, signal: Abort
 	}
 }
 
-async function readWorkerPage(url: URL, signal: AbortSignal): Promise<{ html: string; resolvedUrl: string }> {
+async function readWorkerPage(url: URL, signal: AbortSignal): Promise<BuiltinPage & { status: number }> {
 	try {
 		const response = await fetchWorkerPublicUrl(url, {
 			signal,
@@ -139,7 +148,7 @@ async function readWorkerPage(url: URL, signal: AbortSignal): Promise<{ html: st
 		}
 		if (!response.body) throw new WebAccessError("not-a-page");
 		const html = (await readCapped(response.body, signal)).toString("utf8");
-		return { html, resolvedUrl: response.url || url.href };
+		return { html, resolvedUrl: response.url || url.href, status: response.status };
 	} catch (error) {
 		signal.throwIfAborted();
 		if (error instanceof WebAccessError) throw error;

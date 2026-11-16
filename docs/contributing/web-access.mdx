@@ -28,6 +28,15 @@ their services because an initial URL check cannot enforce a remote reader's net
 unsafe URLs stop immediately. Recoverable external read failures may use the built-in reader within the same budget;
 search never silently changes to another paid provider.
 
+Search picks one backend in `searchBackend()`: the operator's SearXNG, then the server's or the user's connection, then
+the built-in search (`builtin-search.ts`), then none (`unavailable`). The built-in search applies only when
+`WEB_SEARCH_BUILTIN` is on and no service is set up at all (`webAccessService.usesBuiltInSearch`), so a saved
+connection that is failing never falls back to it. It fetches DuckDuckGo's HTML results page through the built-in
+reader's fetch (`fetchBuiltinPage`, which also returns the status), decodes its `uddg` redirect links and skips ads.
+HTTP 202 and the `anomaly` bot check page become `rate-limit`; a page without results is an empty result. Its region
+searches run one after another with a one second gap, and stop at the first block. Its parser tests use a recorded
+results page in `fixtures/`; never call DuckDuckGo from tests.
+
 The shared HTTP transport reports `401`/`403` as authentication failure, `402` as exhausted quota and `429` as a temporary request limit. Provider error bodies are discarded. A request limit does not mark saved credentials as invalid. Search clients refresh saved status after a failure and offer personal connection repair in place; operator-provided search names administrator recovery instead.
 
 The shared web/native chat owners refresh web status on completion and failure within the requesting account. Coach and document messages decode recorded web-tool failures and built-in-reader fallback results; model prose cannot create a repair notice. A personal reader failure stays separate from a working operator search service. Repair keeps the unsent composer draft.

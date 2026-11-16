@@ -10,6 +10,7 @@ import { rateLimitConfig } from "@reactive-resume/utils/rate-limit";
 import { abortable } from "@reactive-resume/utils/url-security.node";
 import { createRateLimiter } from "../../redis";
 import { assertPublicTarget, htmlToText, readBuiltinPage } from "./builtin";
+import { BUILTIN_SEARCH_GAP_MS, searchBuiltin } from "./builtin-search";
 import { MAX_SEARCH_QUERY_CHARS, WebAccessError } from "./contracts";
 import { webAccessService } from "./credentials";
 import { readExa, searchExa } from "./exa";
@@ -101,18 +102,38 @@ function interleave<T extends { url: string }>(lists: T[][], maxResults: number)
 type SearchResults = Awaited<ReturnType<typeof externalSearch>>;
 type WebLimits = Awaited<ReturnType<typeof webLimits>>;
 
-/** Where searches go: the operator's SearXNG when set, otherwise the web connection's provider. */
-function searchBackend(context: WebAccessContext, signal: AbortSignal, limits: WebLimits) {
+type SearchBackend = {
+	name: string;
+	/** Regions run one after another with a gap instead of in parallel. */
+	paced?: boolean;
+	search: (query: string, region?: string) => Promise<SearchResults>;
+};
+
+/**
+ * Where searches go: the operator's SearXNG when set, otherwise the web connection's provider, otherwise, with no
+ * service set up at all, the built-in DuckDuckGo search. A service that is set up but failing never falls back to it.
+ */
+async function searchBackend(
+	context: WebAccessContext,
+	signal: AbortSignal,
+	limits: WebLimits,
+): Promise<SearchBackend | null> {
 	const maxResults = limits.searchResults;
 	const baseUrl = env.WEB_SEARCH_SEARXNG_URL;
 	if (baseUrl)
 		return {
 			name: "searxng",
-			search: (query: string, region?: string): Promise<SearchResults> =>
-				searchSearxng(query, { baseUrl, region, signal, maxResults }),
+			search: (query, region) => searchSearxng(query, { baseUrl, region, signal, maxResults }),
 		};
 	const connection = context.connection;
-	if (!connection) return null;
+	if (!connection)
+		return (await webAccessService.usesBuiltInSearch(context.userId))
+			? {
+					name: "builtin",
+					paced: true,
+					search: (query, region) => searchBuiltin(query, { region, signal, maxResults }),
+				}
+			: null;
 	const request = {
 		connection,
 		signal,
@@ -122,20 +143,53 @@ function searchBackend(context: WebAccessContext, signal: AbortSignal, limits: W
 	};
 	return {
 		name: connection.provider,
-		search: (query: string, region?: string) => externalSearch(query, region ? { ...request, region } : request),
+		search: (query, region) => externalSearch(query, region ? { ...request, region } : request),
 	};
+}
+
+function pause(ms: number, signal: AbortSignal) {
+	return new Promise<void>((resolve, reject) => {
+		const timer = setTimeout(() => {
+			signal.removeEventListener("abort", stop);
+			resolve();
+		}, ms);
+		const stop = () => {
+			clearTimeout(timer);
+			reject(signal.reason);
+		};
+		signal.addEventListener("abort", stop, { once: true });
+	});
+}
+
+/**
+ * Region searches one after another with a gap between them. Once one is blocked (`rate-limit`) the rest are
+ * skipped, since they would be blocked too.
+ */
+async function inSequence<T>(tasks: (() => Promise<T>)[], gapMs: number, signal: AbortSignal) {
+	const settled: PromiseSettledResult<T>[] = [];
+	for (const [index, task] of tasks.entries()) {
+		if (index > 0) await pause(gapMs, signal);
+		try {
+			settled.push({ status: "fulfilled", value: await task() });
+		} catch (reason) {
+			settled.push({ status: "rejected", reason });
+			if (reason instanceof WebAccessError && reason.reason === "rate-limit") break;
+		}
+	}
+	return settled;
 }
 
 /**
  * One rate-limited search. Each region gets its own search call, with `queryFor(region)` as its query when given,
- * in parallel under one deadline. A failed region drops out unless every region fails.
+ * in parallel under one deadline (one after another for the built-in search). A failed region drops out unless every
+ * region fails.
  */
 export async function searchWeb(query: string, context: WebAccessContext, queryFor?: (region: string) => string) {
 	const limits = await webLimits(context.userId);
 	const signal = deadline(limits.timeoutMs, context.signal);
 	const started = Date.now();
-	const backend = searchBackend(context, signal, limits);
-	const provider = backend?.name ?? "builtin";
+	// Chosen inside the try below: finding out whether the built-in search applies reads the database.
+	let provider = context.connection?.provider ?? "builtin";
 	let usedFallback = false;
 	let failureRecorded: Promise<void> | undefined;
 	const rememberFailure = async (error: unknown) => {
@@ -152,6 +206,8 @@ export async function searchWeb(query: string, context: WebAccessContext, queryF
 		}
 	};
 	try {
+		const backend = await searchBackend(context, signal, limits);
+		provider = backend?.name ?? "builtin";
 		await consume(context.userId, signal);
 		if (!backend) throw new WebAccessError("unavailable");
 		const search = async (query: string, region?: string) => {
@@ -180,11 +236,15 @@ export async function searchWeb(query: string, context: WebAccessContext, queryF
 		let partial: string | undefined;
 		if (searches.length === 0) results = await search(input);
 		else {
-			const settled = await Promise.allSettled(searches.map((entry) => search(entry.query, entry.region)));
+			const tasks = searches.map((entry) => () => search(entry.query, entry.region));
+			const settled = backend.paced
+				? await inSequence(tasks, BUILTIN_SEARCH_GAP_MS, signal)
+				: await Promise.allSettled(tasks.map((task) => task()));
 			const lists = settled.flatMap((outcome) => (outcome.status === "fulfilled" ? [outcome.value] : []));
 			if (lists.length === 0) throw (settled[0] as PromiseRejectedResult).reason;
-			const failed = settled.length - lists.length;
-			if (failed) partial = `${failed}/${settled.length}-regions-failed`;
+			// A paced search stops at a block, so the regions it skipped count as failed.
+			const failed = searches.length - lists.length;
+			if (failed) partial = `${failed}/${searches.length}-regions-failed`;
 			results = interleave(lists, limits.searchResults);
 		}
 		signal.throwIfAborted();

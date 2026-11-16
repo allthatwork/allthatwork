@@ -176,6 +176,8 @@ export default defineConfig({
 			"**/reports/**",
 			"**/routeTree.gen.ts",
 			"packages/pdf/src/semantic/__fixtures__/**/*.css",
+			// Recorded DuckDuckGo pages, kept as served.
+			"packages/api/src/features/web-access/fixtures/*.html",
 			"pnpm-lock.yaml",
 			"migrations/**",
 			"docs/spec.json",

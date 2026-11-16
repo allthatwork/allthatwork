@@ -10,6 +10,7 @@ beforeEach(() => {
 		"WEB_ACCESS_API_KEY",
 		"WEB_ACCESS_API_URL",
 		"WEB_SEARCH_SEARXNG_URL",
+		"WEB_SEARCH_BUILTIN",
 		"AI_PROVIDER",
 		"AI_MODEL",
 		"AI_API_KEY",
@@ -137,6 +138,17 @@ describe("SearXNG search configuration", () => {
 		vi.stubEnv("WEB_SEARCH_SEARXNG_URL", "http://searxng:8080");
 		vi.stubEnv("WEB_ACCESS_PROVIDER", "tavily");
 		await expect(import("./server")).rejects.toThrow("Web access requires WEB_ACCESS_PROVIDER");
+	});
+});
+
+describe("built-in search setting", () => {
+	it.each([undefined, ""])("is on when unset or blank (%s)", async (value) => {
+		vi.stubEnv("WEB_SEARCH_BUILTIN", value);
+		expect((await import("./server")).env.WEB_SEARCH_BUILTIN).toBe(true);
+	});
+	it("turns off with false", async () => {
+		vi.stubEnv("WEB_SEARCH_BUILTIN", "false");
+		expect((await import("./server")).env.WEB_SEARCH_BUILTIN).toBe(false);
 	});
 });
 
