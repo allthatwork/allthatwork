@@ -17,7 +17,7 @@ import { getClientCall, json, text, withErrorHandling } from "./results";
 import { TOOL_META } from "./tool-meta";
 
 // MCP clients send dates as ISO strings; the API DTOs take Dates.
-const APPLICATION_DATE_FIELDS = ["followUpAt", "searchAt", "targetingAt"] as const;
+const APPLICATION_DATE_FIELDS = ["followUpAt", "searchAt", "targetingAt", "closesAt"] as const;
 
 function coerceApplicationDates(input: Record<string, unknown>): Record<string, unknown> {
 	const output = { ...input };

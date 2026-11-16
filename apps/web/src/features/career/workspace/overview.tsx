@@ -27,7 +27,7 @@ import { ViewPostingButton } from "@/features/applications/components/posting-di
 import { buildIcs } from "@/features/applications/ics";
 import { interviewKindOf } from "@/features/applications/interviews";
 import { getDisplayLane, getLaneLabel, isCurrentLaneEvent } from "@/features/applications/lanes";
-import { describeNextStep, getNextStep, useNoReplyDays } from "@/features/applications/next-step";
+import { deadlineDate, describeNextStep, getNextStep, useNoReplyDays } from "@/features/applications/next-step";
 import { offerHintFor, useOfferHints } from "@/features/applications/queries";
 import { getStageLabel, PIPELINE } from "@/features/applications/stages";
 import { useApplicationLanes } from "@/features/applications/use-application-lanes";
@@ -75,6 +75,13 @@ export function ApplicationOverview({
 	const hints = useOfferHints(application.status === "offer");
 	const noReplyDays = useNoReplyDays();
 	const step = getNextStep(application, now, time.timeZone, offerHintFor(hints, application.id), noReplyDays);
+	const deadline = application.closesAt && deadlineDate(application.closesAt, time.locale, time.timeZone, now);
+	const closes =
+		application.closesAt && deadline
+			? new Date(application.closesAt).getTime() < now.getTime()
+				? t` · closed ${deadline}`
+				: t` · closes ${deadline}`
+			: null;
 	const text = describeNextStep(step, application, time.locale, time.timeZone);
 	const heroInterview = step.kind === "interview" ? step.interview : undefined;
 	const fit = latest(saved, "fit");
@@ -279,9 +286,13 @@ export function ApplicationOverview({
 											</span>
 											{" · "}
 											{t`saved ${time.date(application.createdAt)}`}
+											{closes}
 										</>
 									) : (
-										t`Add a posting`
+										<>
+											{t`Add a posting`}
+											{closes}
+										</>
 									)
 								}
 								caret

@@ -307,7 +307,9 @@ function useStarters(): Starter[] {
 						.map((item) =>
 							item.step.kind === "offer"
 								? t`reply to ${item.application.company}`
-								: t`follow up with ${item.application.company}`,
+								: item.step.kind === "closing"
+									? t`apply to ${item.application.company}`
+									: t`follow up with ${item.application.company}`,
 						),
 				);
 				return {

@@ -92,6 +92,7 @@ const saved: Application = {
 	resumeId: "resume-1",
 	jobDescription: null,
 	postingSource: null,
+	closesAt: null,
 	matchScore: null,
 	aiMetadata: null,
 	resumeFileUrl: "https://files.example/resume.pdf",
@@ -172,4 +173,19 @@ it("moves later stages the same way", async () => {
 	fireEvent.click(await screen.findByRole("button", { name: /Move to/ }));
 	await waitFor(() => expect(api.update).toHaveBeenCalledTimes(1));
 	expect(api.update.mock.calls[0]?.[0]).toEqual({ id: saved.id, status: "screening" });
+});
+
+it("shows the posting's deadline under About the job, Closed once it has passed, and no row without one", async () => {
+	const closesRow = () => screen.queryByText("Closes", { selector: "dt" })?.nextElementSibling?.textContent;
+	const view = mount({ ...saved, closesAt: new Date("2099-03-05T23:59:59Z") });
+	await screen.findByText("About the job");
+	expect(closesRow()).toBe("Mar 5, 2099");
+	view.unmount();
+	const past = mount({ ...saved, closesAt: new Date("2020-01-15T23:59:59Z") });
+	await screen.findByText("About the job");
+	expect(closesRow()).toBe("Closed Jan 15, 2020");
+	past.unmount();
+	mount(saved);
+	await screen.findByText("About the job");
+	expect(closesRow()).toBeUndefined();
 });

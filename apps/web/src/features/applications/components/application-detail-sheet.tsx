@@ -24,7 +24,7 @@ import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { cn } from "@reactive-resume/utils/style";
 import { isInterview, interviewKindOf } from "../interviews";
 import { getCategoryLane, getDisplayLane, getLaneLabel, getNextLane, getStageDisplay, laneDotColor } from "../lanes";
-import { daysInLane } from "../next-step";
+import { daysInLane, deadlineDate } from "../next-step";
 import { applicationDetailQueryOptions, applicationsListQueryOptions, getInitialApplicationDetail } from "../queries";
 import { getClosedReasonLabel } from "../stages";
 import { foundBySuggestions, foundOnSuggestions } from "../suggestions";
@@ -378,6 +378,7 @@ function Detail({ application, targetingNotes, onEditDetails, onDeleted }: Detai
 						</SheetSection>
 						<Facts
 							application={application}
+							now={now}
 							foundOn={foundOnSuggestions(applications)}
 							foundBy={foundBySuggestions(applications)}
 						/>
@@ -518,10 +519,12 @@ function ContactSection({ application }: { application: Application }) {
 	);
 }
 
-type FactsProps = { application: Application; foundOn: string[]; foundBy: string[] };
+type FactsProps = { application: Application; now: Date; foundOn: string[]; foundBy: string[] };
 
-/** Posting, Found on, Found by, Salary and Tags (`.kv`). All but the posting edit in place. */
-function Facts({ application, foundOn, foundBy }: FactsProps) {
+/** Posting, its deadline, Found on, Found by, Salary and Tags (`.kv`). All but the posting and deadline edit in place. */
+function Facts({ application, now, foundOn, foundBy }: FactsProps) {
+	const time = useCareerTime();
+	const closes = application.closesAt && deadlineDate(application.closesAt, time.locale, time.timeZone, now);
 	const invalidate = useInvalidateApplications();
 	const update = useMutation({
 		...orpc.applications.update.mutationOptions(),
@@ -548,6 +551,16 @@ function Facts({ application, foundOn, foundBy }: FactsProps) {
 							<span className="truncate">{application.sourceUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
 							<Icon name="arrow-square-out" size={16} className="shrink-0 text-ink-3" />
 						</a>
+					</dd>
+				</div>
+			)}
+			{application.closesAt && closes && (
+				<div className={factRowClassName}>
+					<dt className={factLabelClassName}>
+						<Trans>Closes</Trans>
+					</dt>
+					<dd className="min-w-0 truncate tabular-nums">
+						{new Date(application.closesAt).getTime() < now.getTime() ? t`Closed ${closes}` : closes}
 					</dd>
 				</div>
 			)}

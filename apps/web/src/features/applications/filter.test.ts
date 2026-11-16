@@ -62,6 +62,7 @@ const app = (patch: Partial<Application> = {}): Application => ({
 	resumeId: null,
 	jobDescription: null,
 	postingSource: null,
+	closesAt: null,
 	matchScore: null,
 	aiMetadata: null,
 	resumeFileUrl: null,
@@ -296,6 +297,16 @@ describe("each filter on its own", () => {
 		expect(attentionOf(noReply, { now: NOW, noReplyDays: 0 })).toEqual([]);
 	});
 
+	it("attention finds a saved job whose posting closes within 3 days, never a closed posting or a sent application", () => {
+		const closing = app({ closesAt: daysAgo(-2) });
+		const later = app({ closesAt: daysAgo(-5) });
+		const closed = app({ closesAt: daysAgo(1) });
+		const applied = app({ status: "applied", closesAt: daysAgo(-1) });
+		const all = [closing, later, closed, applied];
+		expect(run(all, f({ attention: ["closing"] }))).toEqual([closing.id]);
+		expect(attentionOf(closing, context)).toEqual(["closing"]);
+	});
+
 	it("dates count days back from now", () => {
 		const fresh = app({ createdAt: daysAgo(2), updatedAt: daysAgo(1) });
 		const older = app({ createdAt: daysAgo(20), updatedAt: daysAgo(10) });
@@ -403,8 +414,9 @@ describe("options", () => {
 			"Follow-up due",
 			"Interview coming",
 			"Questions to answer",
+			"Posting closes soon",
 		]);
-		expect(off.map((option) => option.value)).toEqual(["follow-up", "interview", "questions"]);
+		expect(off.map((option) => option.value)).toEqual(["follow-up", "interview", "questions", "closing"]);
 	});
 });
 

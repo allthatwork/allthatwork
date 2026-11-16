@@ -63,6 +63,7 @@ const archive = {
 		resumeId: "old-resume",
 		coverLetterId: "old-letter",
 		sentResumeVersionId: "old-version",
+		closesAt: "2026-03-01T23:59:59.000Z",
 		appliedAt: "2026-02-01T00:00:00.000Z",
 		createdAt: "2026-02-01T00:00:00.000Z",
 		updatedAt: "2026-02-02T00:00:00.000Z",
@@ -136,6 +137,7 @@ const archive = {
 		role: "SRE",
 		company: "Lumen",
 		snippet: "Run things.",
+		closesAt: "2026-03-01T23:59:59.000Z",
 		trackedApplicationId: "old-application",
 	},
 	schedule: {
@@ -253,6 +255,7 @@ describe.skipIf(!databaseUrl)("account import", () => {
 			.from(tables.application)
 			.where(eq(tables.application.id, applicationId ?? ""));
 		expect(application).toMatchObject({ userId, resumeId, coverLetterId: letterId, sentResumeVersionId: null });
+		expect(application?.closesAt?.toISOString()).toBe("2026-03-01T23:59:59.000Z");
 		const [linkedLetter] = await getDb()
 			.select()
 			.from(tables.coverLetter)
@@ -330,6 +333,7 @@ describe.skipIf(!databaseUrl)("account import", () => {
 			.from(tables.careerOpportunity)
 			.where(eq(tables.careerOpportunity.userId, userId));
 		expect(opportunity?.trackedApplicationId).toBe(applicationId);
+		expect(opportunity?.closesAt?.toISOString()).toBe("2026-03-01T23:59:59.000Z");
 
 		const coach = await service.run(userId, {
 			area: "coach",

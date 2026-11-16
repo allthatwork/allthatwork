@@ -7,6 +7,14 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: km-KH\n"
 
+#: src/features/career/workspace/overview.tsx
+msgid " · closed {deadline}"
+msgstr ""
+
+#: src/features/career/workspace/overview.tsx
+msgid " · closes {deadline}"
+msgstr ""
+
 #: src/features/career/workspace/fit.tsx
 msgid " · from the posting"
 msgstr " · ពីការប្រកាសការងារ"
@@ -1615,6 +1623,10 @@ msgstr "{days, plural, other {# ថ្ងៃនៅការិយាល័យ �
 #: src/features/career/knowledge/preferences.tsx
 msgid "{days, plural, one {at most # office day a week} other {at most # office days a week}}"
 msgstr "{days, plural, other {ទៅការិយាល័យច្រើនបំផុត # ថ្ងៃក្នុងមួយសប្ដាហ៍}}"
+
+#: src/features/applications/next-step.ts
+msgid "{days, plural, one {Posting closes in # day} other {Posting closes in # days}}"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "{deadlineDays, plural, one {in # day} other {in # days}}"
@@ -4155,6 +4167,15 @@ msgstr "ដាក់ពាក្យ · ពិពណ៌នាអំពីកា�
 msgid "Apply 1 change"
 msgstr "អនុវត្តការផ្លាស់ប្តូរ 1"
 
+#. placeholder {0}: item.application.company
+#: src/features/career/career-page.tsx
+msgid "apply to {0}"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Apply to {company}"
+msgstr ""
+
 #: src/features/career/workspace/application-packet.tsx
 msgid "Approve and create packet"
 msgstr "យល់ព្រម និងបង្កើតកញ្ចប់ឯកសារ"
@@ -5914,6 +5935,10 @@ msgstr "បិទ"
 msgid "Closed {closed}"
 msgstr "បានបិទ {closed}"
 
+#: src/features/applications/components/application-detail-sheet.tsx
+msgid "Closed {closes}"
+msgstr ""
+
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as {label}"
 msgstr "បានបិទជា {label}"
@@ -5921,6 +5946,11 @@ msgstr "បានបិទជា {label}"
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as Accepted offer"
 msgstr "បានបិទជា បានទទួលយកការផ្តល់ការងារ"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Closes"
+msgstr ""
 
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Closing {company} · {role}. "
@@ -16870,6 +16900,18 @@ msgstr "ការប្រកាសការងារ"
 #: src/features/homepage/tailor.tsx
 msgid "Posting"
 msgstr "ប្រកាសការងារ"
+
+#: src/features/applications/filter.ts
+msgid "Posting closes soon"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes today"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes tomorrow"
+msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Posting in each action"

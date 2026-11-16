@@ -2490,6 +2490,7 @@ export const careerService = {
 							location: opportunity.location || null,
 							sourceUrl: opportunity.url,
 							jobDescription: opportunity.description || null,
+							closesAt: opportunity.closesAt,
 							...values,
 							foundBy: FOUND_BY_IN_APP_SEARCH,
 							...(matches.length ? { searchNotes: `Matched: ${matches.join(" · ")}`, searchAt: new Date() } : {}),

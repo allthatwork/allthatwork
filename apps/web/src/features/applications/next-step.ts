@@ -42,6 +42,14 @@ export const daysInLane = (application: StageSource, now = new Date()) => {
 
 export type NextStepText = { icon: IconName; title: string; sub: string; tone: "normal" | "warn" | "muted" };
 
+/** "Posting closes today", "Posting closes tomorrow", "Posting closes in 3 days". */
+export const closingTitle = (days: number) =>
+	days <= 0
+		? t`Posting closes today`
+		: days === 1
+			? t`Posting closes tomorrow`
+			: plural(days, { one: "Posting closes in # day", other: "Posting closes in # days" });
+
 const formatWhen = (date: Date, locale: string, timeZone: string, withTime: boolean) =>
 	date.toLocaleString(locale, {
 		weekday: "short",
@@ -150,6 +158,13 @@ export function describeNextStep(
 			};
 		case "not-applied":
 			return { icon: "bookmark-simple", title: t`Not applied yet`, sub: "", tone: "muted" };
+		case "closing":
+			return {
+				icon: "clock",
+				title: closingTitle(step.days),
+				sub: formatWhen(step.at, locale, timeZone, false),
+				tone: "warn",
+			};
 		case "closed":
 			return {
 				icon: "check",
@@ -185,6 +200,18 @@ export function stepTime(date: Date | string, locale: string, timeZone: string) 
 	return new Intl.DateTimeFormat(locale, { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
 		new Date(date),
 	);
+}
+
+/** A posting deadline's date: "1 Dec", or "1 Dec 2027" when it isn't this year, in the account's timezone. */
+export function deadlineDate(value: Date | string, locale: string, timeZone: string, now = new Date()) {
+	const year = (date: Date | string) =>
+		new Intl.DateTimeFormat("en", { timeZone, year: "numeric" }).format(new Date(date));
+	return new Intl.DateTimeFormat(locale, {
+		timeZone,
+		day: "numeric",
+		month: "short",
+		...(year(value) === year(now) ? {} : { year: "numeric" }),
+	}).format(new Date(value));
 }
 
 /** What an interview is called in a next step: "Screening call", "Technical interview". */
@@ -257,6 +284,8 @@ export function describeNextStepLine(
 				needsYou: false,
 				muted: true,
 			};
+		case "closing":
+			return { title: closingTitle(step.days), sub: day(step.at, true), needsYou: owed, muted: false };
 		case "closed": {
 			const closedAt = application.activity
 				.filter((entry) => entry.type === "stage" && entry.stage === "closed" && !entry.dateUnknown)

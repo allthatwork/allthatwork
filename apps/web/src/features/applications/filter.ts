@@ -59,7 +59,10 @@ export const resumeLinked = (application: ApplicationSummary) =>
 export const letterLinked = (application: ApplicationSummary) =>
 	Boolean(application.coverLetterId || application.coverLetterUrl);
 
-/** What needs the user on this application: a reply that's late, a follow-up that's due, an interview, open questions. */
+/**
+ * What needs the user on this application: a reply that's late, a follow-up that's due, an interview, open questions, a
+ * saved job whose posting closes soon.
+ */
 export function attentionOf(
 	application: ApplicationSummary,
 	{ now, noReplyDays, timeZone }: FilterContext,
@@ -69,6 +72,7 @@ export function attentionOf(
 	if (step.kind === "no-reply") kinds.push("no-reply");
 	if (step.kind === "follow-up" && step.overdue) kinds.push("follow-up");
 	if (step.kind === "interview") kinds.push("interview");
+	if (step.kind === "closing") kinds.push("closing");
 	if (application.targetingQuestions.some((question) => question.status === "open")) kinds.push("questions");
 	return kinds;
 }
@@ -441,6 +445,7 @@ export const getAttentionLabel = (kind: AttentionKind, noReplyDays: number = NO_
 		"follow-up": t`Follow-up due`,
 		interview: t`Interview coming`,
 		questions: t`Questions to answer`,
+		closing: t`Posting closes soon`,
 	})[kind];
 
 /** "Not set" for Found by and Found on; the value itself otherwise. */

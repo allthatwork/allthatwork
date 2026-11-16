@@ -81,6 +81,7 @@ const application: Application = {
 	status: "saved",
 	closedReason: null,
 	postingSource: null,
+	closesAt: null,
 	coverLetterId: null,
 	sentResumeVersionId: null,
 	sentCoverLetterVersionId: null,

@@ -112,6 +112,7 @@ const application: Application = {
 	resumeId: null,
 	jobDescription: null,
 	postingSource: null,
+	closesAt: null,
 	matchScore: null,
 	aiMetadata: null,
 	resumeFileUrl: null,

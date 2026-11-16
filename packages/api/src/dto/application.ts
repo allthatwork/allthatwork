@@ -134,6 +134,12 @@ const applicationSchema = createSelectSchema(schema.application, {
 	sourceUrl: httpUrlSchema.nullable(),
 	jobDescription: z.string().max(MAX_APPLICATION_JOB_DESCRIPTION_CHARS).nullable(),
 	postingSource: postingSourceSchema.nullable(),
+	closesAt: z
+		.date()
+		.nullable()
+		.describe(
+			"When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days.",
+		),
 	matchScore: z.number().int().min(0).max(100).nullable(),
 	aiMetadata: aiMetadataSchema.nullable(),
 	notes: z.string().nullable().describe("The user's own notes. Search and targeting output has its own fields."),
@@ -208,6 +214,7 @@ const applicationSummarySchema = applicationSchema.pick({
 	source: true,
 	tags: true,
 	sourceUrl: true,
+	closesAt: true,
 	matchScore: true,
 	followUpAt: true,
 	followUpNote: true,
@@ -252,6 +259,7 @@ const editableSchema = applicationSchema.pick({
 	sourceUrl: true,
 	jobDescription: true,
 	postingSource: true,
+	closesAt: true,
 	notes: true,
 	foundBy: true,
 	searchFit: true,

@@ -12,7 +12,7 @@ export const OPEN_STAGES = ["saved", "applied", "screening", "interview", "offer
 /** `none` is an application that isn't queued (`targetingBuildStatus` null). */
 export const BUILD_FILTER_VALUES = ["none", "build", "building", "built", "failed"] as const;
 export const DOCUMENT_FILTER_VALUES = ["any", "linked", "none"] as const;
-export const ATTENTION_FILTER_VALUES = ["no-reply", "follow-up", "interview", "questions"] as const;
+export const ATTENTION_FILTER_VALUES = ["no-reply", "follow-up", "interview", "questions", "closing"] as const;
 /** The highest fit a filter can ask for, and the most days the date filters reach back. */
 export const FIT_FILTER_MAX = 100;
 export const DAYS_FILTER_MAX = 365;

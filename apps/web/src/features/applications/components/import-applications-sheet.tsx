@@ -56,6 +56,7 @@ const fieldLabel = (field: CsvField) =>
 		status: t`Stage`,
 		stageEnteredAt: t`Stage date`,
 		applicationDate: t`Application date`,
+		closesAt: t`Closes`,
 		location: t`Location`,
 		salary: t`Salary`,
 		source: t`Found on`,
@@ -504,7 +505,7 @@ export function ImportApplicationsSheet({ open, onOpenChange }: ImportSheetProps
 										<ul className="grid gap-1.5 pt-1">
 											{result.invalidValues.map(({ row, field, value }) => (
 												<li key={`${row}:${field}`}>
-													{field === "stageEnteredAt" || field === "applicationDate" ? (
+													{field === "stageEnteredAt" || field === "applicationDate" || field === "closesAt" ? (
 														<Trans>
 															Row {row}: couldn't read the date “{value}”. Use a date like 2026-10-15.
 														</Trans>

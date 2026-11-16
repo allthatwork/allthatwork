@@ -37,7 +37,7 @@ import { Columns } from "@/components/calm/page";
 import { SectionHeading } from "@/components/calm/section-heading";
 import { StageDot } from "@/components/calm/stage-dot";
 import { interviewCalendarAction } from "@/features/applications/calendar";
-import { interviewStepTitle } from "@/features/applications/next-step";
+import { closingTitle, interviewStepTitle } from "@/features/applications/next-step";
 import { applicationsListQueryOptions, savedOffersQueryOptions } from "@/features/applications/queries";
 import { useApplicationActions } from "@/features/applications/use-application-actions";
 import { DocumentStatusBadge } from "@/features/documents/document-status";
@@ -321,6 +321,7 @@ function useNeedLine() {
 				subtitle: !by ? t`Offer` : step.overdue ? t`Offer · was due ${by}` : t`Offer · by ${by}`,
 			};
 		}
+		if (step.kind === "closing") return { title: t`Apply to ${company}`, subtitle: closingTitle(step.days) };
 		if (step.kind === "follow-up" || step.kind === "no-reply") {
 			const overdue = step.kind === "no-reply" || step.overdue;
 			const due = step.kind === "follow-up" ? long(step.at) : "";
@@ -388,7 +389,8 @@ function NeedsYou({ now, compact = false, first = false, readCount = 0, onShowRe
 					{attention.map(({ application, step }) => {
 						const { title, subtitle } = line(application, step, compact);
 						const leading = <StageDot status={application.status}>{null}</StageDot>;
-						if (step.kind === "offer" || compact || phone)
+						// A closing posting asks for the application itself: no follow-up to log or note to draft.
+						if (step.kind === "offer" || step.kind === "closing" || compact || phone)
 							return (
 								<ListRow
 									key={application.id}
@@ -399,6 +401,11 @@ function NeedsYou({ now, compact = false, first = false, readCount = 0, onShowRe
 									render={
 										step.kind === "offer" ? (
 											<Link to="/dashboard/career/offers" />
+										) : step.kind === "closing" ? (
+											<Link
+												to="/dashboard/applications/$applicationId/{-$tab}"
+												params={{ applicationId: application.id }}
+											/>
 										) : (
 											<Link
 												to="/dashboard/applications/$applicationId/{-$tab}"

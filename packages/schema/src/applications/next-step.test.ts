@@ -1,6 +1,12 @@
 import type { ApplicationStatus, ApplicationTimelineEntry } from "./data";
-import { expect, it } from "vite-plus/test";
-import { applicationStageSince, compareNextStepSortKeys, getNextStep, nextStepSortKey } from "./next-step";
+import { describe, expect, it } from "vite-plus/test";
+import {
+	applicationStageSince,
+	compareNextStepSortKeys,
+	getNextStep,
+	needsAttention,
+	nextStepSortKey,
+} from "./next-step";
 import { computeOutcomes } from "./outcomes";
 
 const now = new Date("2026-10-31T12:00:00Z");
@@ -278,4 +284,73 @@ it("uses the account's no-reply days in place of the default ten, and 0 never su
 	expect(getNextStep(interviewed, now, "UTC", null, 20)).toEqual({ kind: "interview-feedback", days: 30 });
 	expect(getNextStep(interviewed, now, "UTC", null, 0)).toEqual({ kind: "interview-feedback", days: 30 });
 	expect(getNextStep(interviewed, now, "UTC", null, 14)).toEqual({ kind: "no-reply", days: 16, after: "interview" });
+});
+
+describe("a saved job whose posting closes soon", () => {
+	// 2026-10-31 12:00 UTC is 05:00 in Los Angeles: still the 31st there.
+	const zone = "America/Los_Angeles";
+	const saved = (closesAt: string | null, extra: object = {}) => ({
+		...app("S", "saved", "2026-10-20", "2026-10-20"),
+		closesAt,
+		...extra,
+	});
+
+	it.each([
+		["today", "2026-10-31T23:59:59Z", 0],
+		["tomorrow", "2026-11-01T23:59:59Z", 1],
+		["in 3 days", "2026-11-03T23:59:59Z", 3],
+	])("flags a deadline %s", (_name, closesAt, days) => {
+		const step = getNextStep(saved(closesAt), now, zone);
+		expect(step).toEqual({ kind: "closing", at: new Date(closesAt), days });
+		expect(needsAttention(step, now)).toBe(true);
+		expect(nextStepSortKey(saved(closesAt), now, zone)).toEqual([0, new Date(closesAt).getTime()]);
+	});
+
+	it("leaves a deadline 4 days out, one already past, and a stored junk value alone", () => {
+		expect(getNextStep(saved("2026-11-04T23:59:59Z"), now, zone).kind).toBe("not-applied");
+		expect(getNextStep(saved("2026-10-31T11:00:00Z"), now, zone).kind).toBe("not-applied");
+		expect(getNextStep(saved("2026-10-24T23:59:59Z"), now, zone).kind).toBe("not-applied");
+		expect(getNextStep(saved("not a date"), now, zone).kind).toBe("not-applied");
+		expect(getNextStep(saved(null), now, zone).kind).toBe("not-applied");
+	});
+
+	it("counts calendar days in the account's time zone", () => {
+		// 23:00 UTC on Nov 1 is still Nov 1 in Los Angeles (today the 31st) but Nov 2 in Tokyo (today the 31st too).
+		const late = saved("2026-11-01T23:00:00Z");
+		expect(getNextStep(late, now, zone)).toMatchObject({ kind: "closing", days: 1 });
+		expect(getNextStep(late, now, "Asia/Tokyo")).toMatchObject({ kind: "closing", days: 2 });
+		expect(getNextStep(saved("2026-11-03T16:00:00Z"), now, "Asia/Tokyo").kind).toBe("not-applied");
+		expect(getNextStep(saved("2026-11-03T16:00:00Z"), now, zone)).toMatchObject({ days: 3 });
+		expect(getNextStep(saved("2026-11-01T23:00:00Z"), now, "Not/A_Zone")).toMatchObject({ days: 1 });
+	});
+
+	it("never flags an application past Saved", () => {
+		for (const status of ["applied", "screening", "interview", "offer", "closed"] as const)
+			expect(getNextStep({ ...saved("2026-11-01T23:59:59Z"), status }, now, zone).kind).not.toBe("closing");
+	});
+
+	it("lets an upcoming interview and a due follow-up win, and goes ahead of a follow-up that isn't due", () => {
+		const interview: ApplicationTimelineEntry = {
+			id: "i",
+			type: "interview",
+			kind: "phone",
+			at: new Date("2026-11-02T17:00:00Z"),
+			durationMinutes: 30,
+			participants: [],
+		} as unknown as ApplicationTimelineEntry;
+		const withInterview = saved("2026-11-01T23:59:59Z");
+		withInterview.activity = [...withInterview.activity, interview];
+		expect(getNextStep(withInterview, now, zone).kind).toBe("interview");
+		const due = saved("2026-11-01T23:59:59Z", { followUpAt: new Date("2026-10-31T20:00:00Z"), followUpNote: "Ping" });
+		expect(getNextStep(due, now, zone).kind).toBe("follow-up");
+		const later = saved("2026-11-01T23:59:59Z", { followUpAt: new Date("2026-11-10T20:00:00Z"), followUpNote: "" });
+		expect(getNextStep(later, now, zone).kind).toBe("closing");
+		// Once the posting has closed, the later follow-up is the next step again.
+		expect(getNextStep(later, new Date("2026-11-02T12:00:00Z"), zone).kind).toBe("follow-up");
+	});
+
+	it("stops needing attention once the deadline passes", () => {
+		const step = getNextStep(saved("2026-10-31T23:59:59Z"), now, zone);
+		expect(needsAttention(step, new Date("2026-11-01T00:00:00Z"))).toBe(false);
+	});
 });

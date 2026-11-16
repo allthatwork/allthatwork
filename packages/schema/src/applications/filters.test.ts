@@ -67,6 +67,11 @@ describe("applicationFiltersSchema", () => {
 		expect(parsed.data).toMatchObject({ fit: "100", tfit: "any", added: "365", updated: "any" });
 	});
 
+	it("keeps every Needs attention value saved views hold, with Posting closes soon added", () => {
+		const attention = ["no-reply", "follow-up", "interview", "questions", "closing"];
+		expect(applicationFiltersSchema.parse({ attention }).attention).toEqual(attention);
+	});
+
 	it("defaults to any", () => {
 		expect(applicationFiltersSchema.parse({})).toMatchObject({ fit: "any", tfit: "any", added: "any", updated: "any" });
 	});

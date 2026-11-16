@@ -171,6 +171,13 @@ const applicationDateFields = {
 		.nullable()
 		.optional()
 		.describe("When the resume was targeted, ISO 8601. Defaults to now when targeting fields are written."),
+	closesAt: z.iso
+		.datetime({ offset: true })
+		.nullable()
+		.optional()
+		.describe(
+			"When the posting stops taking applications, ISO 8601. A Saved application is flagged in its last 3 days.",
+		),
 };
 // Shared DTOs keep fields, validation and limits aligned with API contracts.
 // Directories show annotations.title as the tool's name, so every tool repeats its title there.

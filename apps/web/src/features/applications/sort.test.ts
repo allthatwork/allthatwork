@@ -21,6 +21,7 @@ type Row = Pick<
 	| "updatedAt"
 	| "followUpAt"
 	| "followUpNote"
+	| "closesAt"
 	| "searchFit"
 	| "targetingFit"
 >;
@@ -37,6 +38,7 @@ const row = (patch: Partial<Row> = {}): Row => ({
 	updatedAt: daysAgo(3),
 	followUpAt: null,
 	followUpNote: null,
+	closesAt: null,
 	searchFit: null,
 	targetingFit: null,
 	...patch,
@@ -85,6 +87,14 @@ describe("sortApplications", () => {
 		const waiting = row({ id: "waiting", status: "applied" });
 		expect(order([waiting, later, sooner], { sort: "next", dir: "asc" })).toEqual(["sooner", "later", "waiting"]);
 		expect(order([waiting, later, sooner], { sort: "next", dir: "desc" })).toEqual(["later", "sooner", "waiting"]);
+	});
+
+	it("sorts a saved job whose posting closes soon by its deadline", () => {
+		// The sort reads the next step at the real time, so these dates count from now.
+		const later = row({ id: "later", status: "screening", followUpAt: new Date(Date.now() + 5 * 86_400_000) });
+		const closing = row({ id: "closing", status: "saved", closesAt: new Date(Date.now() + 2 * 86_400_000) });
+		const saved = row({ id: "saved", status: "saved" });
+		expect(order([saved, later, closing], { sort: "next", dir: "asc" })).toEqual(["closing", "later", "saved"]);
 	});
 
 	it("sorts role and company A to Z ignoring case, with ties by role then company", () => {

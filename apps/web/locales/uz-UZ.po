@@ -7,6 +7,14 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: uz-UZ\n"
 
+#: src/features/career/workspace/overview.tsx
+msgid " · closed {deadline}"
+msgstr ""
+
+#: src/features/career/workspace/overview.tsx
+msgid " · closes {deadline}"
+msgstr ""
+
 #: src/features/career/workspace/fit.tsx
 msgid " · from the posting"
 msgstr " · e'londan"
@@ -1615,6 +1623,10 @@ msgstr "{days, plural, one {# ofis kuni, chegarangizga teng} other {# ofis kuni,
 #: src/features/career/knowledge/preferences.tsx
 msgid "{days, plural, one {at most # office day a week} other {at most # office days a week}}"
 msgstr "{days, plural, one {haftada ko'pi bilan # kun ofisda} other {haftada ko'pi bilan # kun ofisda}}"
+
+#: src/features/applications/next-step.ts
+msgid "{days, plural, one {Posting closes in # day} other {Posting closes in # days}}"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "{deadlineDays, plural, one {in # day} other {in # days}}"
@@ -4155,6 +4167,15 @@ msgstr "Topshirish · O'zingiz boshqargan mahsulot yaxshilanishini tasvirlab ber
 msgid "Apply 1 change"
 msgstr "1 ta o'zgarishni qo'llash"
 
+#. placeholder {0}: item.application.company
+#: src/features/career/career-page.tsx
+msgid "apply to {0}"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Apply to {company}"
+msgstr ""
+
 #: src/features/career/workspace/application-packet.tsx
 msgid "Approve and create packet"
 msgstr "Tasdiqlash va paket yaratish"
@@ -5914,6 +5935,10 @@ msgstr "Yopiq"
 msgid "Closed {closed}"
 msgstr "Yopildi: {closed}"
 
+#: src/features/applications/components/application-detail-sheet.tsx
+msgid "Closed {closes}"
+msgstr ""
+
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as {label}"
 msgstr "{label} sifatida yopildi"
@@ -5921,6 +5946,11 @@ msgstr "{label} sifatida yopildi"
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as Accepted offer"
 msgstr "«Taklif qabul qilindi» deb yopilgan"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Closes"
+msgstr ""
 
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Closing {company} · {role}. "
@@ -16870,6 +16900,18 @@ msgstr "e'lon"
 #: src/features/homepage/tailor.tsx
 msgid "Posting"
 msgstr "Ish e’loni"
+
+#: src/features/applications/filter.ts
+msgid "Posting closes soon"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes today"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes tomorrow"
+msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Posting in each action"

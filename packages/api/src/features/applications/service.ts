@@ -805,6 +805,7 @@ const applicationSummarySelect = {
 	targetingSecondaryLane: schema.application.targetingSecondaryLane,
 	targetingAt: schema.application.targetingAt,
 	targetingQuestions: schema.application.targetingQuestions,
+	closesAt: schema.application.closesAt,
 };
 
 export const applicationService = {

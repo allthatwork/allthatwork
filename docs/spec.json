@@ -20089,6 +20089,19 @@
 													}
 												]
 											},
+											"closesAt": {
+												"anyOf": [
+													{
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													},
+													{
+														"type": "null"
+													}
+												],
+												"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+											},
 											"requirements": {
 												"type": "array",
 												"items": {
@@ -20865,6 +20878,7 @@
 											"sourceUrl",
 											"jobDescription",
 											"postingSource",
+											"closesAt",
 											"requirements",
 											"matchScore",
 											"aiMetadata",
@@ -21136,6 +21150,19 @@
 												"type": "null"
 											}
 										]
+									},
+									"closesAt": {
+										"anyOf": [
+											{
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
 									},
 									"notes": {
 										"anyOf": [
@@ -21809,6 +21836,19 @@
 												"type": "null"
 											}
 										]
+									},
+									"closesAt": {
+										"anyOf": [
+											{
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
 									},
 									"notes": {
 										"anyOf": [
@@ -23013,6 +23053,19 @@
 													}
 												]
 											},
+											"closesAt": {
+												"anyOf": [
+													{
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													},
+													{
+														"type": "null"
+													}
+												],
+												"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+											},
 											"matchScore": {
 												"anyOf": [
 													{
@@ -23947,6 +24000,19 @@
 															}
 														]
 													},
+													"closesAt": {
+														"anyOf": [
+															{
+																"type": "string",
+																"format": "date-time",
+																"x-native-type": "date"
+															},
+															{
+																"type": "null"
+															}
+														],
+														"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+													},
 													"requirements": {
 														"type": "array",
 														"items": {
@@ -24723,6 +24789,7 @@
 													"sourceUrl",
 													"jobDescription",
 													"postingSource",
+													"closesAt",
 													"requirements",
 													"matchScore",
 													"aiMetadata",
@@ -24768,6 +24835,7 @@
 											"source",
 											"tags",
 											"sourceUrl",
+											"closesAt",
 											"matchScore",
 											"followUpAt",
 											"followUpNote",
@@ -25155,6 +25223,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -25931,6 +26012,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -26192,6 +26274,19 @@
 												"type": "null"
 											}
 										]
+									},
+									"closesAt": {
+										"anyOf": [
+											{
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
 									},
 									"notes": {
 										"anyOf": [
@@ -26857,6 +26952,19 @@
 												"type": "null"
 											}
 										]
+									},
+									"closesAt": {
+										"anyOf": [
+											{
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
 									},
 									"notes": {
 										"anyOf": [
@@ -27646,6 +27754,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -28422,6 +28543,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -28756,6 +28878,19 @@
 											}
 										]
 									},
+									"closesAt": {
+										"anyOf": [
+											{
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+									},
 									"notes": {
 										"anyOf": [
 											{
@@ -29420,6 +29555,19 @@
 												"type": "null"
 											}
 										]
+									},
+									"closesAt": {
+										"anyOf": [
+											{
+												"type": "string",
+												"format": "date-time",
+												"x-native-type": "date"
+											},
+											{
+												"type": "null"
+											}
+										],
+										"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
 									},
 									"notes": {
 										"anyOf": [
@@ -30209,6 +30357,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -30985,6 +31146,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -31245,6 +31407,19 @@
 															"type": "null"
 														}
 													]
+												},
+												"closesAt": {
+													"anyOf": [
+														{
+															"type": "string",
+															"format": "date-time",
+															"x-native-type": "date"
+														},
+														{
+															"type": "null"
+														}
+													],
+													"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
 												},
 												"notes": {
 													"anyOf": [
@@ -32264,6 +32439,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -33040,6 +33228,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -33412,6 +33601,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -34188,6 +34390,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -34619,6 +34822,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -35395,6 +35611,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -35791,6 +36008,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -36567,6 +36797,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -36940,6 +37171,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -37716,6 +37960,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -38110,6 +38355,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -38886,6 +39144,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -39363,6 +39622,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -40139,6 +40411,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -40615,6 +40888,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -41391,6 +41677,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -41864,6 +42151,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -42640,6 +42940,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -43042,6 +43343,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -43818,6 +44132,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -44197,6 +44512,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -44973,6 +45301,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -45372,6 +45701,19 @@
 												}
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string",
+													"format": "date-time",
+													"x-native-type": "date"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+										},
 										"requirements": {
 											"type": "array",
 											"items": {
@@ -46148,6 +46490,7 @@
 										"sourceUrl",
 										"jobDescription",
 										"postingSource",
+										"closesAt",
 										"requirements",
 										"matchScore",
 										"aiMetadata",
@@ -47356,6 +47699,17 @@
 												"completeness"
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications (ISO), when its page says; null for pasted text."
+										},
 										"enrichmentWarning": {
 											"anyOf": [
 												{
@@ -47388,6 +47742,7 @@
 										"jobDescription",
 										"sourceUrl",
 										"postingSource",
+										"closesAt",
 										"enrichmentWarning",
 										"filledBy"
 									]
@@ -54827,7 +55182,8 @@
 																"no-reply",
 																"follow-up",
 																"interview",
-																"questions"
+																"questions",
+																"closing"
 															],
 															"type": "string"
 														},
@@ -55163,7 +55519,8 @@
 														"no-reply",
 														"follow-up",
 														"interview",
-														"questions"
+														"questions",
+														"closing"
 													],
 													"type": "string"
 												},
@@ -55416,7 +55773,8 @@
 															"no-reply",
 															"follow-up",
 															"interview",
-															"questions"
+															"questions",
+															"closing"
 														],
 														"type": "string"
 													},
@@ -55766,7 +56124,8 @@
 														"no-reply",
 														"follow-up",
 														"interview",
-														"questions"
+														"questions",
+														"closing"
 													],
 													"type": "string"
 												},
@@ -56013,7 +56372,8 @@
 															"no-reply",
 															"follow-up",
 															"interview",
-															"questions"
+															"questions",
+															"closing"
 														],
 														"type": "string"
 													},
@@ -56342,7 +56702,8 @@
 															"no-reply",
 															"follow-up",
 															"interview",
-															"questions"
+															"questions",
+															"closing"
 														],
 														"type": "string"
 													},
@@ -56687,7 +57048,8 @@
 																"no-reply",
 																"follow-up",
 																"interview",
-																"questions"
+																"questions",
+																"closing"
 															],
 															"type": "string"
 														},
@@ -64064,6 +64426,19 @@
 															}
 														]
 													},
+													"closesAt": {
+														"anyOf": [
+															{
+																"type": "string",
+																"format": "date-time",
+																"x-native-type": "date"
+															},
+															{
+																"type": "null"
+															}
+														],
+														"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
+													},
 													"requirements": {
 														"type": "array",
 														"items": {
@@ -64853,6 +65228,7 @@
 													"sourceUrl",
 													"jobDescription",
 													"postingSource",
+													"closesAt",
 													"requirements",
 													"matchScore",
 													"aiMetadata",
@@ -65006,7 +65382,8 @@
 																		"no-reply",
 																		"follow-up",
 																		"interview",
-																		"questions"
+																		"questions",
+																		"closing"
 																	],
 																	"type": "string"
 																},
@@ -68809,6 +69186,18 @@
 																	}
 																]
 															},
+															"closesAt": {
+																"anyOf": [
+																	{
+																		"type": "string",
+																		"format": "date-time",
+																		"x-native-type": "date"
+																	},
+																	{
+																		"type": "null"
+																	}
+																]
+															},
 															"closedAt": {
 																"anyOf": [
 																	{
@@ -68844,6 +69233,7 @@
 															"pay",
 															"remote",
 															"postedAt",
+															"closesAt",
 															"closedAt"
 														]
 													}
@@ -74914,6 +75304,18 @@
 													}
 												]
 											},
+											"closesAt": {
+												"anyOf": [
+													{
+														"type": "string",
+														"format": "date-time",
+														"x-native-type": "date"
+													},
+													{
+														"type": "null"
+													}
+												]
+											},
 											"closedAt": {
 												"anyOf": [
 													{
@@ -74992,6 +75394,7 @@
 											"pay",
 											"remote",
 											"postedAt",
+											"closesAt",
 											"closedAt",
 											"contacts",
 											"matches",
@@ -196395,6 +196798,17 @@
 												"completeness"
 											]
 										},
+										"closesAt": {
+											"anyOf": [
+												{
+													"type": "string"
+												},
+												{
+													"type": "null"
+												}
+											],
+											"description": "When the posting stops taking applications (ISO), when its page says; null for pasted text."
+										},
 										"enrichmentWarning": {
 											"anyOf": [
 												{
@@ -196427,6 +196841,7 @@
 										"jobDescription",
 										"sourceUrl",
 										"postingSource",
+										"closesAt",
 										"enrichmentWarning",
 										"filledBy"
 									]
@@ -198275,6 +198690,19 @@
 															"type": "null"
 														}
 													]
+												},
+												"closesAt": {
+													"anyOf": [
+														{
+															"type": "string",
+															"format": "date-time",
+															"x-native-type": "date"
+														},
+														{
+															"type": "null"
+														}
+													],
+													"description": "When the posting stops taking applications. Filled from the posting when it gives a deadline; a Saved application is flagged in the last 3 days."
 												},
 												"notes": {
 													"anyOf": [

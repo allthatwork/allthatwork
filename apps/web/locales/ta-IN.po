@@ -7,6 +7,14 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ta-IN\n"
 
+#: src/features/career/workspace/overview.tsx
+msgid " · closed {deadline}"
+msgstr ""
+
+#: src/features/career/workspace/overview.tsx
+msgid " · closes {deadline}"
+msgstr ""
+
 #: src/features/career/workspace/fit.tsx
 msgid " · from the posting"
 msgstr " · வேலை அறிவிப்பிலிருந்து"
@@ -1615,6 +1623,10 @@ msgstr "{days, plural, one {# அலுவலக நாள், உங்கள�
 #: src/features/career/knowledge/preferences.tsx
 msgid "{days, plural, one {at most # office day a week} other {at most # office days a week}}"
 msgstr "{days, plural, one {வாரத்திற்கு அதிகபட்சம் # அலுவலக நாள்} other {வாரத்திற்கு அதிகபட்சம் # அலுவலக நாட்கள்}}"
+
+#: src/features/applications/next-step.ts
+msgid "{days, plural, one {Posting closes in # day} other {Posting closes in # days}}"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "{deadlineDays, plural, one {in # day} other {in # days}}"
@@ -4155,6 +4167,15 @@ msgstr "விண்ணப்பம் · நீங்கள் வழிநட�
 msgid "Apply 1 change"
 msgstr "1 மாற்றத்தைப் பயன்படுத்து"
 
+#. placeholder {0}: item.application.company
+#: src/features/career/career-page.tsx
+msgid "apply to {0}"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Apply to {company}"
+msgstr ""
+
 #: src/features/career/workspace/application-packet.tsx
 msgid "Approve and create packet"
 msgstr "ஒப்புதல் அளித்துத் தொகுப்பை உருவாக்கு"
@@ -5914,6 +5935,10 @@ msgstr "மூடப்பட்டது"
 msgid "Closed {closed}"
 msgstr "{closed} மூடப்பட்டது"
 
+#: src/features/applications/components/application-detail-sheet.tsx
+msgid "Closed {closes}"
+msgstr ""
+
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as {label}"
 msgstr "{label} என மூடப்பட்டது"
@@ -5921,6 +5946,11 @@ msgstr "{label} என மூடப்பட்டது"
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as Accepted offer"
 msgstr "ஆஃபர் ஏற்றுக்கொள்ளப்பட்டதாக மூடப்பட்டது"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Closes"
+msgstr ""
 
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Closing {company} · {role}. "
@@ -16870,6 +16900,18 @@ msgstr "வேலை அறிவிப்பு"
 #: src/features/homepage/tailor.tsx
 msgid "Posting"
 msgstr "வேலை அறிவிப்பு"
+
+#: src/features/applications/filter.ts
+msgid "Posting closes soon"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes today"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes tomorrow"
+msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Posting in each action"

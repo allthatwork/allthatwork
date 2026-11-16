@@ -4,7 +4,7 @@ import { i18n } from "@lingui/core";
 
 i18n.load("en", {});
 i18n.activate("en");
-import { daysInLane, describeNextStep, getNextStep, needsAttention } from "./next-step";
+import { daysInLane, describeNextStep, describeNextStepLine, getNextStep, needsAttention } from "./next-step";
 
 const NOW = new Date("2026-09-28T12:00:00Z");
 const day = (offset: number) => new Date(NOW.getTime() + offset * 86_400_000);
@@ -220,4 +220,38 @@ it("resolves a legacy selected day at 09:00 while an explicit midnight remains e
 	expect(
 		getNextStep({ ...source, followUpDateOnly: false }, new Date("2030-01-03T12:00:00Z"), "Pacific/Honolulu"),
 	).toMatchObject({ kind: "follow-up", at: source.followUpAt, overdue: true });
+});
+
+describe("a posting that closes soon", () => {
+	const saved = (closesAt: Date) =>
+		application({ status: "saved", activity: [{ id: "s", type: "stage", stage: "saved", at: day(-4) }], closesAt });
+	const line = (closesAt: Date) =>
+		describeNextStepLine(
+			getNextStep(saved(closesAt), NOW),
+			{ status: "saved", closedReason: null, createdAt: day(-4), appliedAt: day(-4), activity: [] },
+			"en-GB",
+			"UTC",
+			NOW,
+		);
+
+	it.each([
+		[0, "Posting closes today"],
+		[1, "Posting closes tomorrow"],
+		[2, "Posting closes in 2 days"],
+		[3, "Posting closes in 3 days"],
+	])("reads %i days out as “%s” and needs you", (days, title) => {
+		const closesAt = new Date(Date.UTC(2026, 8, 28 + days, 23, 59, 59));
+		expect(line(closesAt)).toMatchObject({ title, needsYou: true, muted: false });
+		expect(
+			describeNextStep(getNextStep(saved(closesAt), NOW), { status: "saved", closedReason: null }, "en-GB", "UTC"),
+		).toMatchObject({
+			title,
+			tone: "warn",
+		});
+	});
+
+	it("dates the line, and goes back to Not applied yet once the posting has closed", () => {
+		expect(line(new Date("2026-09-30T23:59:59Z")).sub).toBe("Wednesday 30 Sept");
+		expect(line(day(-1))).toMatchObject({ title: "Not applied yet", needsYou: false });
+	});
 });

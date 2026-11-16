@@ -264,6 +264,8 @@ export const careerOpportunity = pg.pgTable(
 		pay: pg.jsonb("pay").notNull().$type<BoardPay[]>().default([]),
 		remote: pg.boolean("remote").notNull().default(false),
 		postedAt: pg.timestamp("posted_at", { withTimezone: true }),
+		/** The posting's own deadline, when its page gives one; Track copies it to the application. */
+		closesAt: pg.timestamp("closes_at", { withTimezone: true }),
 		/** Its posting disappeared from the board: out of New roles. Tracked applications aren't touched. */
 		closedAt: pg.timestamp("closed_at", { withTimezone: true }),
 	},
