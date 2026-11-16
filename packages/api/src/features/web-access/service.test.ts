@@ -3,6 +3,7 @@ import type { LookupFunction } from "node:net";
 import { lookup as socketLookup } from "node:dns";
 import { lookup } from "node:dns/promises";
 import { EventEmitter } from "node:events";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { searchJobPostings } from "../applications/posting";
@@ -18,9 +19,12 @@ const fixtures = vi.hoisted(() => ({
 	directLocation: "",
 	directDelay: 0,
 	directContentType: "text/html",
+	directStatus: 200,
 	env: { FLAG_DISABLE_API_RATE_LIMIT: false } as {
 		FLAG_DISABLE_API_RATE_LIMIT: boolean;
 		WEB_SEARCH_SEARXNG_URL?: string;
+		WEB_SEARCH_BUILTIN?: boolean;
+		WEB_ACCESS_PROVIDER?: WebAccessProvider;
 	},
 }));
 vi.mock("../../redis", () => ({
@@ -55,7 +59,7 @@ vi.mock("node:https", async (original) => ({
 					if (error) return req.destroy(error);
 					const send = () => {
 						const response = Object.assign(new EventEmitter(), {
-							statusCode: fixtures.directLocation ? 302 : 200,
+							statusCode: fixtures.directLocation ? 302 : fixtures.directStatus,
 							headers: {
 								"content-type": fixtures.directContentType,
 								location: fixtures.directLocation || undefined,
@@ -251,7 +255,10 @@ beforeEach(() => {
 	fixtures.directLocation = "";
 	fixtures.directDelay = 0;
 	fixtures.directContentType = "text/html";
+	fixtures.directStatus = 200;
 	delete fixtures.env.WEB_SEARCH_SEARXNG_URL;
+	delete fixtures.env.WEB_SEARCH_BUILTIN;
+	delete fixtures.env.WEB_ACCESS_PROVIDER;
 });
 afterEach(() => {
 	vi.restoreAllMocks();
@@ -925,5 +932,86 @@ describe("explicit alternate search", () => {
 		});
 		expect(requests).toHaveLength(0);
 		expect(fallbackSearch).not.toHaveBeenCalled();
+	});
+});
+
+describe("built-in DuckDuckGo search when no search service is set up", () => {
+	const resultsPage = readFileSync(new globalThis.URL("./fixtures/duckduckgo-results.html", import.meta.url), "utf8");
+	const ddg = () => fixtures.direct.mock.calls.map(([url]) => new globalThis.URL(String(url)));
+	beforeEach(() => {
+		fixtures.env.WEB_SEARCH_BUILTIN = true;
+		fixtures.directHtml = resultsPage;
+	});
+
+	it("searches DuckDuckGo with no SearXNG and no connection, and logs it as builtin", async () => {
+		const results = await searchWeb("software engineer", { userId: "user", connection: null });
+		expect(results).toHaveLength(5);
+		expect(results[0]?.url).toBe("https://www.indeed.com/q-Software-Engineer-jobs.html");
+		expect(ddg().map((url) => url.origin + url.pathname)).toEqual(["https://html.duckduckgo.com/html/"]);
+		expect(requests).toHaveLength(0);
+		expect(console.info).toHaveBeenLastCalledWith(
+			"[web-access]",
+			expect.objectContaining({ provider: "builtin", operation: "search", outcome: "success" }),
+		);
+	});
+
+	it("leaves search off when the server turns it off", async () => {
+		fixtures.env.WEB_SEARCH_BUILTIN = false;
+		await expect(searchWeb("designer", { userId: "user", connection: null })).rejects.toMatchObject({
+			reason: "unavailable",
+		});
+		expect(fixtures.direct).not.toHaveBeenCalled();
+	});
+
+	it("comes after SearXNG", async () => {
+		fixtures.env.WEB_SEARCH_SEARXNG_URL = `${endpoint}/searxng`;
+		respond = () => ({ body: { results: [{ url: URL, title: "Designer" }] } });
+		await searchWeb("designer", { userId: "user", connection: null });
+		expect(requests.map((request) => request.provider)).toEqual(["searxng"]);
+		expect(fixtures.direct).not.toHaveBeenCalled();
+	});
+
+	it.each(PROVIDERS)("comes after a %s connection, the server's or the user's", async (provider) => {
+		await searchWeb("designer", context(provider));
+		expect(requests.map((request) => request.provider)).toEqual([provider]);
+		expect(fixtures.direct).not.toHaveBeenCalled();
+	});
+
+	it("doesn't stand in for a connection that is set up but failing", async () => {
+		respond = () => ({ status: 500 });
+		await expect(searchWeb("designer", context("tavily"))).rejects.toMatchObject({ reason: "unreachable" });
+		expect(fixtures.direct).not.toHaveBeenCalled();
+
+		// The server's connection is set up, but this search has none to use.
+		fixtures.env.WEB_ACCESS_PROVIDER = "tavily";
+		await expect(searchWeb("designer", { userId: "user", connection: null })).rejects.toMatchObject({
+			reason: "unavailable",
+		});
+		expect(fixtures.direct).not.toHaveBeenCalled();
+	});
+
+	it("runs regions one after another, a second apart, each with its kl", async () => {
+		const started: number[] = [];
+		fixtures.direct.mockImplementation(() => started.push(Date.now()));
+		fixtures.directDelay = 50;
+		await searchWeb("designer", { userId: "user", connection: null, regions: ["DE", "FR"] });
+		expect(ddg().map((url) => url.searchParams.get("kl"))).toEqual(["de-de", "fr-fr"]);
+		expect((started[1] ?? 0) - (started[0] ?? 0)).toBeGreaterThanOrEqual(1_000);
+	});
+
+	it("reports a block as the rate limit and skips the regions after it", async () => {
+		fixtures.directStatus = 202;
+		await expect(
+			searchWeb("designer", { userId: "user", connection: null, regions: ["DE", "FR", "AU"] }),
+		).rejects.toMatchObject({ reason: "rate-limit" });
+		expect(fixtures.direct).toHaveBeenCalledTimes(1);
+	});
+
+	it("still refuses the settings test without a service, since it tests services only", async () => {
+		expect(await probeWebAccess(null, { userId: "user" })).toEqual({
+			search: { success: false, error: "unavailable" },
+			read: { success: false, error: "unavailable" },
+		});
+		expect(fixtures.direct).not.toHaveBeenCalled();
 	});
 });

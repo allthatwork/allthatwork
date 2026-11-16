@@ -516,7 +516,12 @@ export function useWebSearch(provider: RouterOutput["aiProviders"]["list"][numbe
 
 type WebResearchChipProps = {
 	fallbackLabel?: string | undefined;
-	status: { data?: { search: boolean } | undefined; isPending: boolean; isError: boolean; refetch: () => unknown };
+	status: {
+		data?: { search: boolean; builtInSearch?: boolean } | undefined;
+		isPending: boolean;
+		isError: boolean;
+		refetch: () => unknown;
+	};
 	pressed: boolean;
 	onPressedChange: (pressed: boolean) => void;
 	/** "on" in the workspace sheet (W12). */
@@ -524,8 +529,9 @@ type WebResearchChipProps = {
 };
 
 /**
- * Web research needs a search service. Without one the chip is a way to set it up, not a switch that claims to send
- * searches anywhere; reading links the user pastes doesn't need it.
+ * Web research needs a search service, or the server's built-in search when nothing is set up. Without either the chip
+ * is a way to set it up, not a switch that claims to send searches anywhere; reading links the user pastes doesn't
+ * need it.
  */
 export function WebResearchChip({ status, pressed, onPressedChange, fallbackLabel, tone }: WebResearchChipProps) {
 	const nativeSearchLabel = fallbackLabel ?? "";
@@ -538,7 +544,9 @@ export function WebResearchChip({ status, pressed, onPressedChange, fallbackLabe
 				tooltip={
 					fallbackLabel
 						? t`Retry with ${nativeSearchLabel}`
-						: t`Lets the coach search public pages through your web search service`
+						: status.data?.builtInSearch
+							? t`Lets the coach search public pages through DuckDuckGo`
+							: t`Lets the coach search public pages through your web search service`
 				}
 				offIcon="globe-simple"
 				icon="globe-simple"

@@ -46861,7 +46861,7 @@
 			"post": {
 				"operationId": "searchApplicationPostings",
 				"summary": "Search job postings",
-				"description": "Searches through the server's SearXNG when it has one, otherwise the selected Firecrawl, Tavily or Exa connection. Returns up to five public links to review and import. Requires authentication.",
+				"description": "Searches through the server's SearXNG when it has one, otherwise the selected Firecrawl, Tavily or Exa connection, otherwise, when the server allows it and nothing is set up, the built-in DuckDuckGo search. Returns up to five public links to review and import. Requires authentication.",
 				"deprecated": true,
 				"tags": [
 					"Applications",
@@ -167828,6 +167828,9 @@
 										"searxng": {
 											"type": "boolean"
 										},
+										"builtInSearch": {
+											"type": "boolean"
+										},
 										"read": {
 											"const": true
 										}
@@ -167843,6 +167846,7 @@
 										"canSave",
 										"search",
 										"searxng",
+										"builtInSearch",
 										"read"
 									]
 								}
@@ -195898,7 +195902,7 @@
 			"post": {
 				"operationId": "createPostingSearch",
 				"summary": "Search job postings",
-				"description": "Searches through the server's SearXNG when it has one, otherwise the selected Firecrawl, Tavily or Exa connection. Returns up to five public links to review and import. Requires authentication.",
+				"description": "Searches through the server's SearXNG when it has one, otherwise the selected Firecrawl, Tavily or Exa connection, otherwise, when the server allows it and nothing is set up, the built-in DuckDuckGo search. Returns up to five public links to review and import. Requires authentication.",
 				"tags": [
 					"Applications",
 					"AI"

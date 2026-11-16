@@ -129,7 +129,7 @@ export const careerJobs = {
 		if (
 			input.kind === "discovery" &&
 			input.enabled &&
-			!webAccessService.canSearch(Boolean(await webAccessService.resolve(userId)))
+			!(await webAccessService.canSearch(userId, Boolean(await webAccessService.resolve(userId))))
 		)
 			throw new ORPCError("PRECONDITION_FAILED", {
 				message: "Set up web search in Settings before enabling discovery. AI is not required.",

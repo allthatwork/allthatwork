@@ -964,12 +964,18 @@ function AddApplicationForm({ onClose, onAdded, initialCapture }: AddApplication
 									<Trans>Search</Trans>
 								</Button>
 							</div>
-							{searchService && (
+							{webAccess?.builtInSearch ? (
 								<p className="text-xs/4 text-ink-3">
-									<Trans>
-										Searches public job pages through {searchService}, your search service. Only these words are sent.
-									</Trans>
+									<Trans>Searches public job pages through DuckDuckGo. Only these words are sent.</Trans>
 								</p>
+							) : (
+								searchService && (
+									<p className="text-xs/4 text-ink-3">
+										<Trans>
+											Searches public job pages through {searchService}, your search service. Only these words are sent.
+										</Trans>
+									</p>
+								)
 							)}
 						</div>
 					) : (

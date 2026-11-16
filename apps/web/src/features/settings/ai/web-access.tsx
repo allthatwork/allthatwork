@@ -75,8 +75,9 @@ export function WebAccessSection() {
 	const pending = remove.isPending || test.isPending;
 	const failure = error || remove.error || test.error;
 	const connectedProvider = status?.provider ? PROVIDERS[status.provider] : null;
-	// Older servers leave `searxng` out.
+	// Older servers leave `searxng` and `builtInSearch` out.
 	const serverSearch = status?.searxng === true;
+	const builtInSearch = status?.builtInSearch === true;
 	const tile = (icon: "link" | "magnifying-glass") => (
 		<IconTile className="bg-raised shadow-[inset_0_0_0_1px_var(--line)]">
 			<Icon name={icon} />
@@ -169,6 +170,19 @@ export function WebAccessSection() {
 						</Badge>
 					}
 				/>
+				{builtInSearch && (
+					<ListRow
+						leading={tile("magnifying-glass")}
+						title={<Trans>Built-in search</Trans>}
+						subtitle={<Trans>Searches through DuckDuckGo · no account needed</Trans>}
+						trailing={
+							<Badge variant="accent">
+								<Icon name="check" />
+								<Trans>Active</Trans>
+							</Badge>
+						}
+					/>
+				)}
 				{isLoading ? (
 					<ListRow
 						leading={tile("magnifying-glass")}
@@ -290,7 +304,11 @@ export function WebAccessSection() {
 						title={<Trans>Search provider</Trans>}
 						subtitle={
 							status.canSave ? (
-								<Trans>Not connected · finds roles and reads pages the reader can't</Trans>
+								builtInSearch ? (
+									<Trans>Not connected · gives more reliable search and reads pages the reader can't</Trans>
+								) : (
+									<Trans>Not connected · finds roles and reads pages the reader can't</Trans>
+								)
 							) : (
 								<Trans>
 									Ask your server administrator to enable credential encryption or configure a shared web connection.
@@ -500,6 +518,8 @@ export function WebAccessAttention({ failure, operation = "search" }: WebAccessA
 	const failed = status?.testResult && (!status.testResult.search.success || !status.testResult.read.success);
 	if (!failure && !failed) return null;
 	const serverSearch = operation === "search" && failure && status?.searxng;
+	// A search through the built-in DuckDuckGo search, which has no service of its own to fix.
+	const builtInSearch = operation === "search" && failure && status?.builtInSearch;
 	const managedSearch = status?.managed || serverSearch;
 	return (
 		<div
@@ -507,8 +527,9 @@ export function WebAccessAttention({ failure, operation = "search" }: WebAccessA
 			className="grid justify-items-start gap-2 rounded-lg bg-warn-soft p-3 text-xs text-warn-text"
 		>
 			<span>
-				{serverSearch ? "SearXNG" : status?.provider} ·{" "}
+				{serverSearch ? "SearXNG" : builtInSearch ? "DuckDuckGo" : status?.provider} ·{" "}
 				{testFailureMessage(failure ?? status?.testResult?.search.error ?? status?.testResult?.read.error)}
+				{builtInSearch && failure === "rate-limit" && <> {t`A search service gives more reliable results.`}</>}
 			</span>
 			<span>
 				<Trans>Paste the posting text or a public link to continue. The built-in reader remains available.</Trans>

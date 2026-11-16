@@ -121,3 +121,51 @@ it("keeps the connection's wording without SearXNG", async () => {
 	expect(await screen.findByText("Key stored encrypted · tested just now")).toBeTruthy();
 	expect(screen.queryByText(/Search was tested/)).toBeNull();
 });
+
+it("shows the built-in search as active above the search provider when nothing is set up", async () => {
+	api.status.mockResolvedValue(status({ searxng: false, builtInSearch: true }));
+	renderSection();
+
+	expect(await screen.findByText("Built-in search")).toBeTruthy();
+	expect(screen.getByText("Searches through DuckDuckGo · no account needed")).toBeTruthy();
+	expect(screen.getAllByText("Active")).toHaveLength(2);
+	expect(screen.getByText("Not connected · gives more reliable search and reads pages the reader can't")).toBeTruthy();
+	expect(screen.getByRole("button", { name: "Set up" })).toBeTruthy();
+	expect(screen.queryByRole("button", { name: "Test" })).toBeNull();
+});
+
+it("hides the built-in search once a service is set up", async () => {
+	api.status.mockResolvedValue(status({ configured: true, provider: "tavily", searxng: false, builtInSearch: false }));
+	renderSection();
+
+	expect(await screen.findByText("Search and reading · Tavily")).toBeTruthy();
+	expect(screen.queryByText("Built-in search")).toBeNull();
+});
+
+it("keeps today's search provider line when the server turns the built-in search off", async () => {
+	api.status.mockResolvedValue(status({ search: false, searxng: false, builtInSearch: false }));
+	renderSection();
+
+	expect(await screen.findByText("Not connected · finds roles and reads pages the reader can't")).toBeTruthy();
+	expect(screen.queryByText("Built-in search")).toBeNull();
+});
+
+it("points a blocked built-in search at a search service", async () => {
+	api.status.mockResolvedValue(status({ searxng: false, builtInSearch: true }));
+	render(
+		<I18nProvider i18n={i18n}>
+			<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+				<ConfirmDialogProvider>
+					<WebAccessAttention failure="rate-limit" />
+				</ConfirmDialogProvider>
+			</QueryClientProvider>
+		</I18nProvider>,
+	);
+
+	expect(
+		await screen.findByText(
+			/DuckDuckGo · Too many requests. Try again later. A search service gives more reliable results./,
+		),
+	).toBeTruthy();
+	expect(screen.getByRole("button", { name: "Set up web access" })).toBeTruthy();
+});

@@ -7,16 +7,26 @@ Users can save pasted job descriptions, read supported public links and prepare 
 API accounts. This guide adds optional keyword search, enhanced page reading and AI assistance to a working
 [Docker](/self-hosting/docker), [Kubernetes](/self-hosting/kubernetes) or [Vercel](/self-hosting/vercel) deployment.
 
-| Service                  | What it does                                                                      | Required for                                  |
-| ------------------------ | --------------------------------------------------------------------------------- | --------------------------------------------- |
-| Built-in reader          | Reads supported public pages.                                                     | Active without credentials.                   |
-| Firecrawl, Tavily or Exa | One selected connection supplies search and enhanced reading.                     | Optional keyword search and enhanced reading. |
-| SearXNG                  | Searches the web for Reactive Resume directly, or for your self-hosted Firecrawl. | Optional alternative search backend.          |
-| AI provider              | Extracts role, company, salary, requirements and other details from posting text. | AI extraction and other AI features.          |
+| Service                  | What it does                                                                      | Required for                                            |
+| ------------------------ | --------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Built-in reader          | Reads supported public pages.                                                     | Active without credentials.                             |
+| Built-in search          | Searches through DuckDuckGo's HTML results page when no search service is set up. | On by default; `WEB_SEARCH_BUILTIN=false` turns it off. |
+| Firecrawl, Tavily or Exa | One selected connection supplies search and enhanced reading.                     | Optional keyword search and enhanced reading.           |
+| SearXNG                  | Searches the web for Reactive Resume directly, or for your self-hosted Firecrawl. | Optional alternative search backend.                    |
+| AI provider              | Extracts role, company, salary, requirements and other details from posting text. | AI extraction and other AI features.                    |
 
-Reactive Resume calls the selected web service, SearXNG and the AI provider separately. Assistant web search
-requires a configured Firecrawl, Tavily or Exa connection, or a SearXNG search URL. Without either, the assistant can
+Reactive Resume calls the selected web service, SearXNG and the AI provider separately. Search goes to SearXNG when
+`WEB_SEARCH_SEARXNG_URL` is set, otherwise to the server's or the user's Firecrawl, Tavily or Exa connection, otherwise
+to the built-in search. With the built-in search turned off and none of the others, search is off: the assistant can
 read supplied public URLs with the built-in reader or work from pasted text.
+
+The built-in search lets a self-hosted instance search with no account, key or setup. It requests DuckDuckGo's HTML
+results page from the server, which isn't an official API: DuckDuckGo rate-limits it, can change the page without
+notice, and doesn't sanction it in its terms. It suits one person's or a small group's instance. Turn it off with
+`WEB_SEARCH_BUILTIN=false` on a hosted service where many users share one server address. It is used only when no
+search service is set up; a connection that is set up but failing never falls back to it. When DuckDuckGo blocks a
+search (HTTP 202 or its bot check page), users see the usual request-limit message and a pointer to setting up a
+search service. Searches across several countries run one after another, a second apart.
 
 ## 1. Choose shared services or personal keys
 
@@ -191,7 +201,7 @@ and restart or redeploy it. Keep keys in server configuration or secret storage,
 
 | Symptom                       | Check                                                                                                                                                                                                                 |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No keyword search             | Configure one shared connection, save a personal key in Web access, or set `WEB_SEARCH_SEARXNG_URL`.                                                                                                                  |
+| No keyword search             | Configure one shared connection, save a personal key in Web access, set `WEB_SEARCH_SEARXNG_URL`, or leave `WEB_SEARCH_BUILTIN` on.                                                                                   |
 | Enhanced access fails         | Test search and reading separately. Check provider credentials, quota and service support. For Firecrawl, also check its network address and [self-hosting guide](https://docs.firecrawl.dev/contributing/self-host). |
 | SearXNG returns HTML or `403` | Enable JSON and check proxy/access rules against its [search API](https://docs.searxng.org/dev/search_api.html).                                                                                                      |
 | AI extraction fails           | Check provider billing, key and model access; verify all required [AI variables](/self-hosting/environment-variables#ai-and-redis).                                                                                   |

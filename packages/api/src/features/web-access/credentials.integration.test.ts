@@ -13,6 +13,8 @@ const env = vi.hoisted(() => ({
 	WEB_ACCESS_API_KEY: "",
 	WEB_ACCESS_API_URL: "",
 	WEB_SEARCH_SEARXNG_URL: "",
+	// Off by default here, so these cases cover the services; the built-in search is turned on where it's tested.
+	WEB_SEARCH_BUILTIN: false,
 	AI_PROVIDER: "",
 	AI_MODEL: "",
 	AI_API_KEY: "",
@@ -63,6 +65,7 @@ describe.skipIf(!process.env.INTEGRATIONS_TEST_DATABASE_URL)("integration creden
 			WEB_ACCESS_API_KEY: "",
 			WEB_ACCESS_API_URL: "",
 			WEB_SEARCH_SEARXNG_URL: "",
+			WEB_SEARCH_BUILTIN: false,
 			AI_PROVIDER: "",
 			AI_MODEL: "",
 			AI_API_KEY: "",
@@ -103,6 +106,13 @@ describe.skipIf(!process.env.INTEGRATIONS_TEST_DATABASE_URL)("integration creden
 		env.WEB_SEARCH_SEARXNG_URL = "http://searxng:8080";
 		expect(await web.status("alice")).toMatchObject({ configured: false, provider: null, search: true });
 		env.WEB_SEARCH_SEARXNG_URL = "";
+		// With nothing saved, alice searches through the built-in search; bob's saved connection keeps it out.
+		env.WEB_SEARCH_BUILTIN = true;
+		expect(await web.status("alice")).toMatchObject({ provider: null, search: true, builtInSearch: true });
+		expect(await web.usesBuiltInSearch("alice")).toBe(true);
+		expect(await web.status("bob")).toMatchObject({ provider: "firecrawl", builtInSearch: false });
+		expect(await web.usesBuiltInSearch("bob")).toBe(false);
+		env.WEB_SEARCH_BUILTIN = false;
 		env.ENCRYPTION_SECRET = "";
 		expect(await web.status("alice")).toMatchObject({ managed: false, configured: false, canSave: false });
 		await expect(web.save("alice", "firecrawl", "secret")).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });

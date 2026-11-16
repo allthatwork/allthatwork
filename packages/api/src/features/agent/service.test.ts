@@ -171,7 +171,7 @@ vi.mock("../ai-providers/service", () => ({
 	aiProvidersService: aiProvidersServiceMock,
 }));
 vi.mock("../web-access/credentials", () => ({
-	webAccessService: { resolve: vi.fn(async () => null), canSearch: vi.fn(() => false) },
+	webAccessService: { resolve: vi.fn(async () => null), canSearch: vi.fn(async () => false) },
 }));
 vi.mock("../web-access/service", () => ({
 	searchWeb: vi.fn(),
@@ -573,12 +573,12 @@ describe("agentService.messages.send", () => {
 		).rejects.toThrow("Read only retrieved URLs");
 		expect(readPage).not.toHaveBeenCalled();
 
-		// The server's SearXNG gives the assistant web search without a web connection.
+		// The server's SearXNG, or the built-in search, gives the assistant web search without a web connection.
 		expect(vi.mocked(buildAgentTools).mock.calls[0]?.[0]).toMatchObject({ externalSearch: false });
 		const { webAccessService } = await import("../web-access/credentials");
-		vi.mocked(webAccessService.canSearch).mockReturnValueOnce(true);
+		vi.mocked(webAccessService.canSearch).mockResolvedValueOnce(true);
 		await send();
-		expect(webAccessService.canSearch).toHaveBeenLastCalledWith(false);
+		expect(webAccessService.canSearch).toHaveBeenLastCalledWith(expect.any(String), false);
 		expect(vi.mocked(buildAgentTools).mock.calls[2]?.[0]).toMatchObject({ externalSearch: true });
 
 		// A link the user wrote still reads, however the sentence around it ends or the model spells it.
@@ -704,7 +704,7 @@ describe("agentService.messages.send", () => {
 		const [{ convertToModelMessages, ToolLoopAgent }, { agentStreamLifecycle }, { buildAgentTools }, { agentService }] =
 			await Promise.all([import("ai"), import("./streams"), import("./tools"), import("./service")]);
 		const { webAccessService } = await import("../web-access/credentials");
-		vi.mocked(webAccessService.canSearch).mockReturnValueOnce(true);
+		vi.mocked(webAccessService.canSearch).mockResolvedValueOnce(true);
 		vi.mocked(convertToModelMessages).mockResolvedValue([]);
 		class MockToolLoopAgent {
 			stream = vi.fn(async () => ({ toUIMessageStream: vi.fn(() => new ReadableStream()) }));

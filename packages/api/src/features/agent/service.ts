@@ -1784,7 +1784,7 @@ export const agentService = {
 				// Only approved searches retry failed credentials; page reading keeps normal resolution.
 				const searchConnection =
 					connection ?? (nativeSearchApproved ? await webAccessService.resolve(input.userId, true) : null);
-				const search = webAccessService.canSearch(searchConnection !== null);
+				const search = await webAccessService.canSearch(input.userId, searchConnection !== null);
 				const modelMessages = await convertToModelMessages(
 					replay.map((message) =>
 						toModelInputMessage(

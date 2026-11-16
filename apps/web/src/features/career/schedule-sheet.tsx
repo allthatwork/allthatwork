@@ -636,7 +636,12 @@ export function ScheduleSheet({ schedule, onScheduleChange, onDelete }: Schedule
 							)}
 							{draft.kind === "discovery" && (
 								<p className="text-xs/4 text-ink-3">
-									{searchService ? (
+									{webAccess?.builtInSearch ? (
+										<Trans>
+											Searches through DuckDuckGo. Your resume and Knowledge are not sent. Results wait in Today;
+											nothing is applied for or created.
+										</Trans>
+									) : searchService ? (
 										<Trans>
 											Searches through {searchService}, which may charge. Your resume and Knowledge are not sent.
 											Results wait in Today; nothing is applied for or created.

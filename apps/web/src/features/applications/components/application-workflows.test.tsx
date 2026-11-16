@@ -193,6 +193,31 @@ afterEach(() => {
 	clients.splice(0).forEach((client) => client.clear());
 });
 
+it("searches through the built-in DuckDuckGo search when nothing is set up, and points a block at a service", async () => {
+	api.webStatus.mockResolvedValue({
+		search: true,
+		builtInSearch: true,
+		provider: null,
+		managed: false,
+		canSave: true,
+		searxng: false,
+	});
+	api.searchPostings.mockRejectedValue(new ORPCError("RATE_LIMIT_EXCEEDED"));
+	mount(<AddApplicationDialog open onOpenChange={vi.fn()} onAdded={vi.fn()} />);
+	fireEvent.click(await screen.findByRole("tab", { name: "Search postings" }));
+	const query = await screen.findByRole("textbox", { name: "Role, company or location" });
+	expect(screen.getByText("Searches public job pages through DuckDuckGo. Only these words are sent.")).toBeTruthy();
+	fireEvent.change(query, { target: { value: "Fictional engineer" } });
+	fireEvent.click(screen.getByRole("button", { name: /^Search$/ }));
+
+	expect(
+		await screen.findByText(
+			/DuckDuckGo · Too many requests\. Try again later\. A search service gives more reliable results\./,
+		),
+	).toBeTruthy();
+	expect(screen.getByRole("button", { name: "Set up web access" })).toBeTruthy();
+});
+
 it("refreshes a rejected search connection in place without losing the query", async () => {
 	const connection = { search: true, provider: "firecrawl", managed: false, canSave: true, searxng: false };
 	api.webStatus.mockResolvedValue(connection);

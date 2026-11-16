@@ -72,7 +72,7 @@ export const webAccessRouter = {
 				searchScope(context.user.id, context.reqHeaders.get("x-client-timezone") ?? undefined),
 			]);
 			// The server's SearXNG can be tested without a connection; reading then reports the built-in reader only.
-			if (!webAccessService.canSearch(connection !== null))
+			if (!webAccessService.hasSearchService(connection !== null))
 				throw new ORPCError("PRECONDITION_FAILED", {
 					message: "Set up web access in Settings → AI & developer first.",
 				});

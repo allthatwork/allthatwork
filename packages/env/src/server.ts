@@ -217,6 +217,9 @@ export const env = createEnv({
 		WEB_ACCESS_API_URL: z.url({ protocol: /^https?$/ }).optional(),
 		// Optional operator-controlled SearXNG that takes over web search only; reading still uses the connection above.
 		WEB_SEARCH_SEARXNG_URL: z.url({ protocol: /^https?$/ }).optional(),
+		// With no search service set up, search goes through DuckDuckGo's HTML results page. Self-hosted only: it isn't an
+		// official API and many users behind one server address get blocked, so a hosted service turns it off.
+		WEB_SEARCH_BUILTIN: z.stringbool().default(true),
 		AI_PROVIDER: aiProviderSchema.optional(),
 		AI_MODEL: z.string().trim().min(1).optional(),
 		AI_API_KEY: z.string().trim().min(1).optional(),

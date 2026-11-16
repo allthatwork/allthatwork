@@ -17,6 +17,8 @@ export const webAccessDto = {
 			search: z.boolean(),
 			/** Searches go to the server's SearXNG rather than the connection. Older servers leave it out. */
 			searxng: z.boolean(),
+			/** Searches go to the built-in DuckDuckGo search, since no search service is set up. */
+			builtInSearch: z.boolean(),
 			read: z.literal(true),
 		}),
 	},
