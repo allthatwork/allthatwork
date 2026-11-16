@@ -5835,6 +5835,7 @@ msgstr ""
 #: src/features/applications/components/manage-lanes-sheet.tsx
 #: src/features/applications/components/posting-dialog.tsx
 #: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/assistant/translate-resume.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/knowledge/facts.tsx
@@ -6260,6 +6261,7 @@ msgstr ""
 msgid "Connected applications"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Connected on"
 msgstr ""
@@ -8115,7 +8117,10 @@ msgstr ""
 msgid "Delete “{0}” permanently?"
 msgstr ""
 
+#. placeholder {0}: company.name
+#. placeholder {0}: contact.name
 #. placeholder {0}: provider.label
+#: src/features/directory/page.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Delete “{0}”?"
 msgstr ""
@@ -8244,6 +8249,10 @@ msgstr ""
 
 #: src/features/career/workspace/answer-library.tsx
 msgid "Delete this library answer? Application drafts and submitted copies are kept."
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "Delete this note?"
 msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
@@ -9197,6 +9206,7 @@ msgstr ""
 msgid "Email address won't be recognized"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Email addresses"
 msgstr ""
@@ -11082,6 +11092,7 @@ msgstr ""
 msgid "How well do I fit this role?"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "How you know them"
 msgstr ""
@@ -11825,6 +11836,10 @@ msgstr ""
 msgid "Its connection is unavailable. Choose a connection before enabling this schedule."
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Its contacts and applications are kept, without their link to this company. Applications keep the company's name."
+msgstr ""
+
 #: src/features/homepage/footer.tsx
 msgid "Its documentation"
 msgstr ""
@@ -12000,9 +12015,17 @@ msgstr ""
 msgid "Keep both"
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Keep company"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 #: src/features/settings/ai/web-access.tsx
 msgid "Keep connection"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "Keep contact"
 msgstr ""
 
 #: src/features/resume/share/custom-domain-field.tsx
@@ -12046,6 +12069,10 @@ msgstr ""
 
 #: src/features/settings/account/backup-codes.tsx
 msgid "Keep my codes"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "Keep note"
 msgstr ""
 
 #. Layout editor toggle that prevents a section from splitting across pages
@@ -12365,6 +12392,7 @@ msgstr ""
 msgid "Last contact"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -15146,7 +15174,7 @@ msgstr ""
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/career/offers.tsx
-#: src/features/directory/page.tsx
+#: src/features/directory/details.tsx
 msgid "Not recorded"
 msgstr ""
 
@@ -15253,6 +15281,7 @@ msgstr ""
 #: src/features/applications/components/application-notes.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/workspace/overview.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/libs/resume/section.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -16627,6 +16656,7 @@ msgstr ""
 msgid "Phone (optional)"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Phone numbers"
 msgstr ""
@@ -17275,6 +17305,7 @@ msgstr ""
 msgid "Profile link of person {0}"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Profile links"
 msgstr ""
@@ -21962,6 +21993,7 @@ msgstr ""
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -22726,6 +22758,10 @@ msgstr ""
 msgid "The new letter keeps its own recipient, date and history."
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "The note is deleted for good."
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "The offer doesn't mention a bonus."
 msgstr ""
@@ -22998,6 +23034,10 @@ msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "The version sent to {company} on {sentOn} · it never changes"
+msgstr ""
+
+#: src/features/directory/page.tsx
+msgid "Their notes and company history go with them, and they are removed from the applications and interviews they are linked to."
 msgstr ""
 
 #: src/features/command-palette/pages/navigation.tsx
@@ -23402,10 +23442,6 @@ msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
-msgstr ""
-
-#: src/features/directory/page.tsx
-msgid "This permanently deletes the selected records."
 msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx

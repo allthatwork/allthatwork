@@ -59,7 +59,7 @@ type SaveViewDialogProps = {
 export function SaveViewDialog({ open, onOpenChange, ...props }: SaveViewDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent showCloseButton={false}>
+			<DialogContent closeLabel={t`Close`}>
 				{/* A fresh form each time it opens. */}
 				{open && <SaveViewForm {...props} onClose={() => onOpenChange(false)} />}
 			</DialogContent>
