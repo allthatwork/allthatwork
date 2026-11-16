@@ -5837,6 +5837,7 @@ msgstr "閉じる"
 #: src/features/applications/components/manage-lanes-sheet.tsx
 #: src/features/applications/components/posting-dialog.tsx
 #: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/assistant/translate-resume.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/knowledge/facts.tsx
@@ -6262,6 +6263,7 @@ msgstr "{0} に接続"
 msgid "Connected applications"
 msgstr "接続されたアプリケーション"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Connected on"
 msgstr ""
@@ -8117,7 +8119,10 @@ msgstr "削除"
 msgid "Delete “{0}” permanently?"
 msgstr "「{0}」を完全に削除しますか？"
 
+#. placeholder {0}: company.name
+#. placeholder {0}: contact.name
 #. placeholder {0}: provider.label
+#: src/features/directory/page.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Delete “{0}”?"
 msgstr "「{0}」を削除しますか？"
@@ -8247,6 +8252,10 @@ msgstr "このエントリを削除しますか?"
 #: src/features/career/workspace/answer-library.tsx
 msgid "Delete this library answer? Application drafts and submitted copies are kept."
 msgstr "ライブラリのこの回答を削除しますか?応募の下書きと提出済みのコピーは残ります。"
+
+#: src/features/directory/page.tsx
+msgid "Delete this note?"
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Delete version"
@@ -9199,6 +9208,7 @@ msgstr "メールアドレス"
 msgid "Email address won't be recognized"
 msgstr "メールアドレスが認識されません"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Email addresses"
 msgstr ""
@@ -11085,6 +11095,7 @@ msgstr "ファイルの見せ方"
 msgid "How well do I fit this role?"
 msgstr "私はこの役割にどの程度適していますか?"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "How you know them"
 msgstr ""
@@ -11828,6 +11839,10 @@ msgstr "アイテムは 30 日間保管されます"
 msgid "Its connection is unavailable. Choose a connection before enabling this schedule."
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Its contacts and applications are kept, without their link to this company. Applications keep the company's name."
+msgstr ""
+
 #: src/features/homepage/footer.tsx
 msgid "Its documentation"
 msgstr ""
@@ -12003,10 +12018,18 @@ msgstr "回答を保存"
 msgid "Keep both"
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Keep company"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 #: src/features/settings/ai/web-access.tsx
 msgid "Keep connection"
 msgstr "接続を保持"
+
+#: src/features/directory/page.tsx
+msgid "Keep contact"
+msgstr ""
 
 #: src/features/resume/share/custom-domain-field.tsx
 msgid "Keep domain"
@@ -12050,6 +12073,10 @@ msgstr "私のものを保管してください"
 #: src/features/settings/account/backup-codes.tsx
 msgid "Keep my codes"
 msgstr "今のコードを使い続ける"
+
+#: src/features/directory/page.tsx
+msgid "Keep note"
+msgstr ""
 
 #. Layout editor toggle that prevents a section from splitting across pages
 #: src/features/resume/editor/write/section-view.tsx
@@ -12368,6 +12395,7 @@ msgstr "最終確認 {lastChecked}"
 msgid "Last contact"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -15149,7 +15177,7 @@ msgstr "読み取られず、どこにも送信されません"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/career/offers.tsx
-#: src/features/directory/page.tsx
+#: src/features/directory/details.tsx
 msgid "Not recorded"
 msgstr "未記録"
 
@@ -15256,6 +15284,7 @@ msgstr "情報"
 #: src/features/applications/components/application-notes.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/workspace/overview.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/libs/resume/section.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -16630,6 +16659,7 @@ msgstr "電話番号"
 msgid "Phone (optional)"
 msgstr "電話番号（任意）"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Phone numbers"
 msgstr ""
@@ -17278,6 +17308,7 @@ msgstr "プロフィールリンク（任意）"
 msgid "Profile link of person {0}"
 msgstr "{0}人目のプロフィールリンク"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Profile links"
 msgstr ""
@@ -21965,6 +21996,7 @@ msgstr "タグ"
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -22729,6 +22761,10 @@ msgstr "面接当日の朝を過ぎているため、ブリーフィングを今
 msgid "The new letter keeps its own recipient, date and history."
 msgstr "新しいレターは独自の宛先、日付、履歴を持ちます。"
 
+#: src/features/directory/page.tsx
+msgid "The note is deleted for good."
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "The offer doesn't mention a bonus."
 msgstr "オファーにボーナスの記載はありません。"
@@ -23002,6 +23038,10 @@ msgstr "{sentOn} に送信したバージョン · 変更されません"
 #: src/features/resume/share/history-tab.tsx
 msgid "The version sent to {company} on {sentOn} · it never changes"
 msgstr "{sentOn} に {company} へ送信したバージョン · 変更されません"
+
+#: src/features/directory/page.tsx
+msgid "Their notes and company history go with them, and they are removed from the applications and interviews they are linked to."
+msgstr ""
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/preferences/theme.tsx
@@ -23405,10 +23445,6 @@ msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
-msgstr ""
-
-#: src/features/directory/page.tsx
-msgid "This permanently deletes the selected records."
 msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx

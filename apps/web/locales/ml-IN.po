@@ -5837,6 +5837,7 @@ msgstr "അടയ്ക്കുക"
 #: src/features/applications/components/manage-lanes-sheet.tsx
 #: src/features/applications/components/posting-dialog.tsx
 #: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/assistant/translate-resume.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/knowledge/facts.tsx
@@ -6262,6 +6263,7 @@ msgstr "കണക്ട് ചെയ്തത് {0}"
 msgid "Connected applications"
 msgstr "ബന്ധിപ്പിച്ച ആപ്ലിക്കേഷനുകൾ"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Connected on"
 msgstr ""
@@ -8117,7 +8119,10 @@ msgstr "ഡിലീറ്റ് ചെയ്യുക"
 msgid "Delete “{0}” permanently?"
 msgstr "“{0}” ശാശ്വതമായി ഡിലീറ്റ് ചെയ്യണോ?"
 
+#. placeholder {0}: company.name
+#. placeholder {0}: contact.name
 #. placeholder {0}: provider.label
+#: src/features/directory/page.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Delete “{0}”?"
 msgstr "“{0}” ഇല്ലാതാക്കണോ?"
@@ -8247,6 +8252,10 @@ msgstr "ഈ എൻട്രി ഇല്ലാതാക്കണോ?"
 #: src/features/career/workspace/answer-library.tsx
 msgid "Delete this library answer? Application drafts and submitted copies are kept."
 msgstr "ഈ ലൈബ്രറി ഉത്തരം ഡിലീറ്റ് ചെയ്യണോ? അപേക്ഷാ ഡ്രാഫ്റ്റുകളും സമർപ്പിച്ച കോപ്പികളും നിലനിർത്തും."
+
+#: src/features/directory/page.tsx
+msgid "Delete this note?"
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Delete version"
@@ -9199,6 +9208,7 @@ msgstr "ഇമെയിൽ വിലാസം"
 msgid "Email address won't be recognized"
 msgstr "ഇമെയിൽ വിലാസം തിരിച്ചറിയപ്പെടില്ല"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Email addresses"
 msgstr ""
@@ -11085,6 +11095,7 @@ msgstr "ഫയൽ എങ്ങനെ കാണിക്കും"
 msgid "How well do I fit this role?"
 msgstr "ഈ റോളിൽ ഞാൻ എത്രത്തോളം യോജിക്കും?"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "How you know them"
 msgstr ""
@@ -11828,6 +11839,10 @@ msgstr "ഇനങ്ങൾ 30 ദിവസം സൂക്ഷിക്കും"
 msgid "Its connection is unavailable. Choose a connection before enabling this schedule."
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Its contacts and applications are kept, without their link to this company. Applications keep the company's name."
+msgstr ""
+
 #: src/features/homepage/footer.tsx
 msgid "Its documentation"
 msgstr ""
@@ -12003,10 +12018,18 @@ msgstr "ഉത്തരം സൂക്ഷിക്കുക"
 msgid "Keep both"
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Keep company"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 #: src/features/settings/ai/web-access.tsx
 msgid "Keep connection"
 msgstr "കണക്ഷൻ നിലനിർത്തുക"
+
+#: src/features/directory/page.tsx
+msgid "Keep contact"
+msgstr ""
 
 #: src/features/resume/share/custom-domain-field.tsx
 msgid "Keep domain"
@@ -12050,6 +12073,10 @@ msgstr "എൻ്റേത് സൂക്ഷിക്കുക"
 #: src/features/settings/account/backup-codes.tsx
 msgid "Keep my codes"
 msgstr "എൻ്റെ കോഡുകൾ നിലനിർത്തുക"
+
+#: src/features/directory/page.tsx
+msgid "Keep note"
+msgstr ""
 
 #. Layout editor toggle that prevents a section from splitting across pages
 #: src/features/resume/editor/write/section-view.tsx
@@ -12368,6 +12395,7 @@ msgstr "അവസാനം പരിശോധിച്ചത് {lastChecked}"
 msgid "Last contact"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -15149,7 +15177,7 @@ msgstr "വായിച്ചിട്ടില്ല, എങ്ങോട്ട�
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/career/offers.tsx
-#: src/features/directory/page.tsx
+#: src/features/directory/details.tsx
 msgid "Not recorded"
 msgstr "രേഖപ്പെടുത്തിയിട്ടില്ല"
 
@@ -15256,6 +15284,7 @@ msgstr "വിവരങ്ങൾ"
 #: src/features/applications/components/application-notes.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/workspace/overview.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/libs/resume/section.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -16630,6 +16659,7 @@ msgstr "ഫോൺ"
 msgid "Phone (optional)"
 msgstr "ഫോൺ (ഓപ്ഷണൽ)"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Phone numbers"
 msgstr ""
@@ -17278,6 +17308,7 @@ msgstr "പ്രൊഫൈൽ ലിങ്ക് (ഓപ്ഷണൽ)"
 msgid "Profile link of person {0}"
 msgstr "വ്യക്തി {0}-ന്റെ പ്രൊഫൈൽ ലിങ്ക്"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Profile links"
 msgstr ""
@@ -21965,6 +21996,7 @@ msgstr "ടാഗ് ചെയ്യുക"
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -22729,6 +22761,10 @@ msgstr "അഭിമുഖ ദിവസത്തെ രാവിലെ കഴി
 msgid "The new letter keeps its own recipient, date and history."
 msgstr "പുതിയ ലെറ്റർ സ്വന്തം സ്വീകർത്താവും തീയതിയും ചരിത്രവും നിലനിർത്തും."
 
+#: src/features/directory/page.tsx
+msgid "The note is deleted for good."
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "The offer doesn't mention a bonus."
 msgstr "ഓഫറിൽ ബോണസിനെക്കുറിച്ച് പറയുന്നില്ല."
@@ -23002,6 +23038,10 @@ msgstr "{sentOn}-ന് അയച്ച പതിപ്പ് · ഇത് ഒ�
 #: src/features/resume/share/history-tab.tsx
 msgid "The version sent to {company} on {sentOn} · it never changes"
 msgstr "{sentOn}-ന് {company}-ലേക്ക് അയച്ച പതിപ്പ് · ഇത് ഒരിക്കലും മാറില്ല"
+
+#: src/features/directory/page.tsx
+msgid "Their notes and company history go with them, and they are removed from the applications and interviews they are linked to."
+msgstr ""
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/preferences/theme.tsx
@@ -23405,10 +23445,6 @@ msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
-msgstr ""
-
-#: src/features/directory/page.tsx
-msgid "This permanently deletes the selected records."
 msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx

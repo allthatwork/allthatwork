@@ -5837,6 +5837,7 @@ msgstr "إغلاق"
 #: src/features/applications/components/manage-lanes-sheet.tsx
 #: src/features/applications/components/posting-dialog.tsx
 #: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/assistant/translate-resume.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/knowledge/facts.tsx
@@ -6262,6 +6263,7 @@ msgstr "متصل {0}"
 msgid "Connected applications"
 msgstr "التطبيقات المتصلة"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Connected on"
 msgstr ""
@@ -8117,7 +8119,10 @@ msgstr "حذف"
 msgid "Delete “{0}” permanently?"
 msgstr "حذف “{0}” نهائيًا؟"
 
+#. placeholder {0}: company.name
+#. placeholder {0}: contact.name
 #. placeholder {0}: provider.label
+#: src/features/directory/page.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Delete “{0}”?"
 msgstr "حذف “{0}”؟"
@@ -8247,6 +8252,10 @@ msgstr "هل تريد حذف هذا الإدخال؟"
 #: src/features/career/workspace/answer-library.tsx
 msgid "Delete this library answer? Application drafts and submitted copies are kept."
 msgstr "حذف إجابة المكتبة هذه؟ تبقى مسودات الطلبات والنسخ المُرسلة."
+
+#: src/features/directory/page.tsx
+msgid "Delete this note?"
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Delete version"
@@ -9199,6 +9208,7 @@ msgstr "عنوان البريد الإلكتروني"
 msgid "Email address won't be recognized"
 msgstr "لن يتم التعرف على عنوان البريد الإلكتروني"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Email addresses"
 msgstr ""
@@ -11085,6 +11095,7 @@ msgstr "كيفية اظهار الملف"
 msgid "How well do I fit this role?"
 msgstr "إلى أي درجة أتناسب مع هذا الدور؟"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "How you know them"
 msgstr ""
@@ -11828,6 +11839,10 @@ msgstr "يُحتفظ بالعناصر 30 يومًا"
 msgid "Its connection is unavailable. Choose a connection before enabling this schedule."
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Its contacts and applications are kept, without their link to this company. Applications keep the company's name."
+msgstr ""
+
 #: src/features/homepage/footer.tsx
 msgid "Its documentation"
 msgstr ""
@@ -12003,10 +12018,18 @@ msgstr "الاحتفاظ بالإجابة"
 msgid "Keep both"
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Keep company"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 #: src/features/settings/ai/web-access.tsx
 msgid "Keep connection"
 msgstr "إبقاء الاتصال"
+
+#: src/features/directory/page.tsx
+msgid "Keep contact"
+msgstr ""
 
 #: src/features/resume/share/custom-domain-field.tsx
 msgid "Keep domain"
@@ -12050,6 +12073,10 @@ msgstr "احتفظ بالألغام"
 #: src/features/settings/account/backup-codes.tsx
 msgid "Keep my codes"
 msgstr "الاحتفاظ برموزي"
+
+#: src/features/directory/page.tsx
+msgid "Keep note"
+msgstr ""
 
 #. Layout editor toggle that prevents a section from splitting across pages
 #: src/features/resume/editor/write/section-view.tsx
@@ -12368,6 +12395,7 @@ msgstr "آخر فحص {lastChecked}"
 msgid "Last contact"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -15149,7 +15177,7 @@ msgstr "لم يُقرأ، ولم يُرسل إلى أي مكان"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/career/offers.tsx
-#: src/features/directory/page.tsx
+#: src/features/directory/details.tsx
 msgid "Not recorded"
 msgstr "غير مسجل"
 
@@ -15256,6 +15284,7 @@ msgstr "معلومة"
 #: src/features/applications/components/application-notes.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/workspace/overview.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/libs/resume/section.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -16630,6 +16659,7 @@ msgstr "الهاتف"
 msgid "Phone (optional)"
 msgstr "الهاتف (اختياري)"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Phone numbers"
 msgstr ""
@@ -17278,6 +17308,7 @@ msgstr "رابط الملف الشخصي (اختياري)"
 msgid "Profile link of person {0}"
 msgstr "رابط الملف الشخصي للشخص {0}"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Profile links"
 msgstr ""
@@ -21965,6 +21996,7 @@ msgstr "علامة"
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -22729,6 +22761,10 @@ msgstr "مضى صباح يوم المقابلة، لذا تُعدّ الإحاط
 msgid "The new letter keeps its own recipient, date and history."
 msgstr "يحتفظ الخطاب الجديد بمستلمه وتاريخه وسجله الخاص."
 
+#: src/features/directory/page.tsx
+msgid "The note is deleted for good."
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "The offer doesn't mention a bonus."
 msgstr "لا يذكر العرض مكافأة."
@@ -23002,6 +23038,10 @@ msgstr "النسخة المرسلة في {sentOn} · لا تتغير أبدًا"
 #: src/features/resume/share/history-tab.tsx
 msgid "The version sent to {company} on {sentOn} · it never changes"
 msgstr "النسخة المرسلة إلى {company} في {sentOn} · لا تتغير أبدًا"
+
+#: src/features/directory/page.tsx
+msgid "Their notes and company history go with them, and they are removed from the applications and interviews they are linked to."
+msgstr ""
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/preferences/theme.tsx
@@ -23405,10 +23445,6 @@ msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
-msgstr ""
-
-#: src/features/directory/page.tsx
-msgid "This permanently deletes the selected records."
 msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx

@@ -42,7 +42,7 @@ test("Directory edits preserve shared contacts and their company history", async
 	await page.getByRole("button", { name: "Add note", exact: true }).click();
 	await expect(page.getByText("Introduced by a former teammate.", { exact: true })).toBeVisible();
 	await page.getByRole("button", { name: "Delete contact", exact: true }).click();
-	await page.getByRole("button", { name: "Delete contact", exact: true }).click();
+	await page.getByRole("alertdialog").getByRole("button", { name: "Delete contact", exact: true }).click();
 	await expect.poll(() => new URL(page.url()).searchParams.has("contact")).toBe(false);
 	await expect(page).toHaveURL(/tab=contacts/);
 	const erased = await (await page.request.get(`/api/openapi/applications/${applicationId}`)).json();

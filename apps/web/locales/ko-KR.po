@@ -5837,6 +5837,7 @@ msgstr "닫기"
 #: src/features/applications/components/manage-lanes-sheet.tsx
 #: src/features/applications/components/posting-dialog.tsx
 #: src/features/applications/components/views/manage-views-sheet.tsx
+#: src/features/applications/components/views/save-view-dialog.tsx
 #: src/features/assistant/translate-resume.tsx
 #: src/features/career/coach.tsx
 #: src/features/career/knowledge/facts.tsx
@@ -6262,6 +6263,7 @@ msgstr "{0}에 연결됨"
 msgid "Connected applications"
 msgstr "연결된 애플리케이션"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Connected on"
 msgstr ""
@@ -8117,7 +8119,10 @@ msgstr "삭제"
 msgid "Delete “{0}” permanently?"
 msgstr "“{0}”을(를) 영구 삭제할까요?"
 
+#. placeholder {0}: company.name
+#. placeholder {0}: contact.name
 #. placeholder {0}: provider.label
+#: src/features/directory/page.tsx
 #: src/features/settings/ai/providers.tsx
 msgid "Delete “{0}”?"
 msgstr "“{0}”을(를) 삭제할까요?"
@@ -8247,6 +8252,10 @@ msgstr "이 항목을 삭제하시겠습니까?"
 #: src/features/career/workspace/answer-library.tsx
 msgid "Delete this library answer? Application drafts and submitted copies are kept."
 msgstr "이 라이브러리 답변을 삭제할까요? 지원 초안과 제출된 사본은 유지됩니다."
+
+#: src/features/directory/page.tsx
+msgid "Delete this note?"
+msgstr ""
 
 #: src/features/resume/share/history-tab.tsx
 msgid "Delete version"
@@ -9199,6 +9208,7 @@ msgstr "이메일 주소"
 msgid "Email address won't be recognized"
 msgstr "이메일 주소가 인식되지 않습니다"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Email addresses"
 msgstr ""
@@ -11085,6 +11095,7 @@ msgstr "파일을 표시하는 방법"
 msgid "How well do I fit this role?"
 msgstr "나는 이 역할에 얼마나 잘 맞는가?"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "How you know them"
 msgstr ""
@@ -11828,6 +11839,10 @@ msgstr "항목은 30일 동안 보관됩니다"
 msgid "Its connection is unavailable. Choose a connection before enabling this schedule."
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Its contacts and applications are kept, without their link to this company. Applications keep the company's name."
+msgstr ""
+
 #: src/features/homepage/footer.tsx
 msgid "Its documentation"
 msgstr ""
@@ -12003,10 +12018,18 @@ msgstr "답변 보관"
 msgid "Keep both"
 msgstr ""
 
+#: src/features/directory/page.tsx
+msgid "Keep company"
+msgstr ""
+
 #: src/features/settings/ai/providers.tsx
 #: src/features/settings/ai/web-access.tsx
 msgid "Keep connection"
 msgstr "연결 유지"
+
+#: src/features/directory/page.tsx
+msgid "Keep contact"
+msgstr ""
 
 #: src/features/resume/share/custom-domain-field.tsx
 msgid "Keep domain"
@@ -12050,6 +12073,10 @@ msgstr "내 것을 지켜라"
 #: src/features/settings/account/backup-codes.tsx
 msgid "Keep my codes"
 msgstr "내 코드 유지"
+
+#: src/features/directory/page.tsx
+msgid "Keep note"
+msgstr ""
 
 #. Layout editor toggle that prevents a section from splitting across pages
 #: src/features/resume/editor/write/section-view.tsx
@@ -12368,6 +12395,7 @@ msgstr "마지막 확인 {lastChecked}"
 msgid "Last contact"
 msgstr ""
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Last contacted"
 msgstr ""
@@ -15149,7 +15177,7 @@ msgstr "읽지 않으며 어디에도 전송하지 않음"
 #: src/features/applications/components/application-detail-sheet.tsx
 #: src/features/applications/components/detail/activity.tsx
 #: src/features/career/offers.tsx
-#: src/features/directory/page.tsx
+#: src/features/directory/details.tsx
 msgid "Not recorded"
 msgstr "기록되지 않음"
 
@@ -15256,6 +15284,7 @@ msgstr "정보"
 #: src/features/applications/components/application-notes.tsx
 #: src/features/applications/components/import-applications-sheet.tsx
 #: src/features/career/workspace/overview.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/libs/resume/section.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -16630,6 +16659,7 @@ msgstr "전화"
 msgid "Phone (optional)"
 msgstr "전화번호(선택)"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Phone numbers"
 msgstr ""
@@ -17278,6 +17308,7 @@ msgstr "프로필 링크(선택 사항)"
 msgid "Profile link of person {0}"
 msgstr "{0}번째 사람 프로필 링크"
 
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 msgid "Profile links"
 msgstr ""
@@ -21965,6 +21996,7 @@ msgstr "꼬리표"
 #: src/features/applications/components/list-columns.tsx
 #: src/features/applications/filter.ts
 #: src/features/career/knowledge/stories.tsx
+#: src/features/directory/details.tsx
 #: src/features/directory/page.tsx
 #: src/features/documents/document-actions.tsx
 #: src/routes/builder/$resumeId/-components/document-menu.tsx
@@ -22729,6 +22761,10 @@ msgstr "면접 당일 아침이 지났으므로 브리핑을 지금 실행합니
 msgid "The new letter keeps its own recipient, date and history."
 msgstr "새 레터는 별도의 받는 사람, 날짜, 기록을 가집니다."
 
+#: src/features/directory/page.tsx
+msgid "The note is deleted for good."
+msgstr ""
+
 #: src/features/career/offers.tsx
 msgid "The offer doesn't mention a bonus."
 msgstr "오퍼에 보너스 언급이 없습니다."
@@ -23002,6 +23038,10 @@ msgstr "{sentOn}에 보낸 버전 · 변경되지 않음"
 #: src/features/resume/share/history-tab.tsx
 msgid "The version sent to {company} on {sentOn} · it never changes"
 msgstr "{sentOn}에 {company}에 보낸 버전 · 변경되지 않음"
+
+#: src/features/directory/page.tsx
+msgid "Their notes and company history go with them, and they are removed from the applications and interviews they are linked to."
+msgstr ""
 
 #: src/features/command-palette/pages/navigation.tsx
 #: src/features/command-palette/pages/preferences/theme.tsx
@@ -23405,10 +23445,6 @@ msgstr ""
 
 #: src/features/directory/page.tsx
 msgid "This permanently deletes 1 contact, its notes and history, and removes it from your applications' contacts and interviews' participants. Companies and applications stay."
-msgstr ""
-
-#: src/features/directory/page.tsx
-msgid "This permanently deletes the selected records."
 msgstr ""
 
 #: src/features/resume/editor/write/picture-settings.tsx

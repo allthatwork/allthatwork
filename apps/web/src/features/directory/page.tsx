@@ -37,6 +37,7 @@ import { Tabs, TabsList, TabsTrigger } from "@reactive-resume/ui/components/tabs
 import { Textarea } from "@reactive-resume/ui/components/textarea";
 import { useBreakpoint } from "@reactive-resume/ui/hooks/use-breakpoint";
 import { CompanyBoards, WatchSuggestions } from "./boards";
+import { ContactDetails, DeleteAction } from "./details";
 import {
 	CompaniesHead,
 	CompanyLogo,
@@ -150,38 +151,6 @@ function LoadState({ pending, error, retry }: LoadStateProps) {
 			<Trans>Loading…</Trans>
 		</p>
 	) : null;
-}
-
-type DeleteActionProps = { label: string; onDelete: () => Promise<unknown> };
-function DeleteAction({ label, onDelete }: DeleteActionProps) {
-	const [armed, setArmed] = useState(false);
-	const mutation = useMutation({ mutationFn: onDelete });
-	return (
-		<div className="grid justify-items-start gap-2">
-			{armed ? (
-				<div className="flex flex-wrap items-center gap-2">
-					<span className="text-sm text-ink-2">
-						<Trans>This permanently deletes the selected records.</Trans>
-					</span>
-					<Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
-						{label}
-					</Button>
-					<Button variant="ghost" onClick={() => setArmed(false)}>
-						<Trans>Cancel</Trans>
-					</Button>
-				</div>
-			) : (
-				<Button variant="secondary" onClick={() => setArmed(true)}>
-					{label}
-				</Button>
-			)}
-			{mutation.isError && (
-				<p role="alert" className="text-sm text-danger-text">
-					{mutation.error.message}
-				</p>
-			)}
-		</div>
-	);
 }
 
 function useRefreshDirectory() {
@@ -487,6 +456,9 @@ function CompanyPage({ id, onDeleted }: DetailProps) {
 			<div className="pt-8">
 				<DeleteAction
 					label={t`Delete company`}
+					title={t`Delete “${company.name}”?`}
+					description={t`Its contacts and applications are kept, without their link to this company. Applications keep the company's name.`}
+					keep={t`Keep company`}
 					onDelete={async () => {
 						await client.directory.deleteCompany({ id });
 						await onDeleted();
@@ -590,41 +562,7 @@ function ContactPage({ id, onDeleted }: DetailProps) {
 					<Trans>Edit contact</Trans>
 				</Button>
 			</div>
-			<div className="grid gap-2 pt-6 text-sm">
-				{contact.profileLinks.map((url) => (
-					<a
-						key={url}
-						href={url}
-						target="_blank"
-						rel="noreferrer"
-						className="w-fit break-all text-accent-text underline-offset-2 hover:underline"
-					>
-						{url}
-					</a>
-				))}
-				{contact.emails.map((email) => (
-					<a key={email} href={`mailto:${email}`} className="w-fit text-accent-text underline-offset-2 hover:underline">
-						{email}
-					</a>
-				))}
-				{contact.phones.map((phone) => (
-					<a key={phone} href={`tel:${phone}`} className="w-fit text-accent-text underline-offset-2 hover:underline">
-						{phone}
-					</a>
-				))}
-				{contact.tags.length > 0 && <p>{contact.tags.join(" · ")}</p>}
-				{contact.relationship && <p className="whitespace-pre-wrap">{contact.relationship}</p>}
-				{contact.notes && <p className="whitespace-pre-wrap">{contact.notes}</p>}
-				{contact.connectedOn && (
-					<p>
-						<Trans>Connected on</Trans>: {contact.connectedOn}
-					</p>
-				)}
-				<p>
-					<Trans>Last contacted</Trans>:{" "}
-					{contact.lastContactedAt ? new Date(contact.lastContactedAt).toISOString().slice(0, 10) : t`Not recorded`}
-				</p>
-			</div>
+			<ContactDetails contact={contact} />
 			{employment.length > 0 && (
 				<>
 					<SectionHeading>
@@ -687,6 +625,9 @@ function ContactPage({ id, onDeleted }: DetailProps) {
 								{row.note && (
 									<DeleteAction
 										label={t`Delete note`}
+										title={t`Delete this note?`}
+										description={t`The note is deleted for good.`}
+										keep={t`Keep note`}
 										onDelete={async () => {
 											await client.directory.deleteNote({ id: row.id });
 											await refresh();
@@ -706,6 +647,9 @@ function ContactPage({ id, onDeleted }: DetailProps) {
 			<div className="pt-8">
 				<DeleteAction
 					label={t`Delete contact`}
+					title={t`Delete “${contact.name}”?`}
+					description={t`Their notes and company history go with them, and they are removed from the applications and interviews they are linked to.`}
+					keep={t`Keep contact`}
 					onDelete={async () => {
 						await client.directory.deleteContact({ id });
 						await onDeleted();
