@@ -114,6 +114,7 @@ function summaryRow(id: string) {
 		null,
 		null,
 		[],
+		null, // the posting's deadline
 	];
 }
 

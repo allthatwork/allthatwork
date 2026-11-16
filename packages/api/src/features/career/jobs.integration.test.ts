@@ -92,6 +92,7 @@ const posting = {
 		closesAt: "",
 	},
 	text: "Maintain reliable services.",
+	closesAt: null as Date | null,
 	company: "",
 };
 
@@ -1849,6 +1850,23 @@ AND NOT EXISTS(SELECT 1 FROM career_schedule s WHERE s.user_id=a.user_id AND s.a
 			{ id: saved.id, enabled: false, nextRunAt: new Date(moved.getTime() - 2 * 3_600_000), lastQueuedAt: null },
 		]);
 		expect(await jobs.notifications("alice")).toEqual([]);
+	});
+
+	it("keeps a found role's posting deadline and copies it to the application Track makes", async () => {
+		const careers = (await import("./service")).careerService;
+		const closesAt = new Date("2099-12-01T23:59:59.000Z");
+		fixture.read.mockResolvedValue({ ...posting, closesAt });
+		await schedule();
+		await run();
+		const [opportunity] = await getDb().select().from(tables.careerOpportunity);
+		expect(opportunity?.closesAt).toEqual(closesAt);
+		if (!opportunity) throw new Error("Expected a discovered role.");
+		const { applicationId } = await careers.trackOpportunity("alice", opportunity.id);
+		const [application] = await getDb()
+			.select({ closesAt: tables.application.closesAt })
+			.from(tables.application)
+			.where(eq(tables.application.id, applicationId));
+		expect(application?.closesAt).toEqual(closesAt);
 	});
 
 	it("tracks a discovered role once, and a tracked role stays quiet in later searches", async () => {

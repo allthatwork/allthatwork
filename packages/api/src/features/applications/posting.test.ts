@@ -138,6 +138,27 @@ describe("readOpenPosting", () => {
 		});
 		expect((await readOpenPosting(url, { connection: null, userId: "user" }))?.company ?? null).toBe(expected);
 	});
+
+	it.each([
+		["a bare date", "2999-12-01", "2999-12-01T23:59:59.000Z"],
+		["a date and time", "2999-12-01T17:00:00Z", "2999-12-01T17:00:00.000Z"],
+		["junk", "until filled", null],
+		["no deadline", undefined, null],
+	])("keeps the deadline of an open posting: %s", async (_name, validThrough, expected) => {
+		const url = "https://lumen.example/careers/designer";
+		vi.mocked(readPage).mockResolvedValue({
+			requestedUrl: url,
+			content: "Page text",
+			html: `<script type="application/ld+json">${JSON.stringify(posting({ validThrough }))}</script>`,
+			format: "text",
+			retrievedAt: "2026-09-30T12:00:00.000Z",
+			method: "builtin",
+			truncated: false,
+			completeness: "unknown",
+		});
+		const read = await readOpenPosting(url, { connection: null, userId: "user" });
+		expect(read?.closesAt?.toISOString() ?? null).toBe(expected);
+	});
 });
 
 describe("posting retrieval", () => {

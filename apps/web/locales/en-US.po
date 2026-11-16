@@ -7,6 +7,14 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: en-US\n"
 
+#: src/features/career/workspace/overview.tsx
+msgid " · closed {deadline}"
+msgstr " · closed {deadline}"
+
+#: src/features/career/workspace/overview.tsx
+msgid " · closes {deadline}"
+msgstr " · closes {deadline}"
+
 #: src/features/career/workspace/fit.tsx
 msgid " · from the posting"
 msgstr " · from the posting"
@@ -1615,6 +1623,10 @@ msgstr "{days, plural, one {# office day, your limit} other {# office days, your
 #: src/features/career/knowledge/preferences.tsx
 msgid "{days, plural, one {at most # office day a week} other {at most # office days a week}}"
 msgstr "{days, plural, one {at most # office day a week} other {at most # office days a week}}"
+
+#: src/features/applications/next-step.ts
+msgid "{days, plural, one {Posting closes in # day} other {Posting closes in # days}}"
+msgstr "{days, plural, one {Posting closes in # day} other {Posting closes in # days}}"
 
 #: src/features/career/workspace/messages.tsx
 msgid "{deadlineDays, plural, one {in # day} other {in # days}}"
@@ -4155,6 +4167,15 @@ msgstr "Apply · Describe a product improvement you led."
 msgid "Apply 1 change"
 msgstr "Apply 1 change"
 
+#. placeholder {0}: item.application.company
+#: src/features/career/career-page.tsx
+msgid "apply to {0}"
+msgstr "apply to {0}"
+
+#: src/features/career/today.tsx
+msgid "Apply to {company}"
+msgstr "Apply to {company}"
+
 #: src/features/career/workspace/application-packet.tsx
 msgid "Approve and create packet"
 msgstr "Approve and create packet"
@@ -5914,6 +5935,10 @@ msgstr "Closed"
 msgid "Closed {closed}"
 msgstr "Closed {closed}"
 
+#: src/features/applications/components/application-detail-sheet.tsx
+msgid "Closed {closes}"
+msgstr "Closed {closes}"
+
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as {label}"
 msgstr "Closed as {label}"
@@ -5921,6 +5946,11 @@ msgstr "Closed as {label}"
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as Accepted offer"
 msgstr "Closed as Accepted offer"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Closes"
+msgstr "Closes"
 
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Closing {company} · {role}. "
@@ -16870,6 +16900,18 @@ msgstr "posting"
 #: src/features/homepage/tailor.tsx
 msgid "Posting"
 msgstr "Posting"
+
+#: src/features/applications/filter.ts
+msgid "Posting closes soon"
+msgstr "Posting closes soon"
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes today"
+msgstr "Posting closes today"
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes tomorrow"
+msgstr "Posting closes tomorrow"
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Posting in each action"

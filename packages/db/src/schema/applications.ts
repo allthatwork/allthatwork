@@ -96,6 +96,8 @@ export const application = pg.pgTable(
 		sourceUrl: pg.text("source_url"),
 		jobDescription: pg.text("job_description"),
 		postingSource: pg.jsonb("posting_source").$type<PostingSource>(),
+		/** When the posting stops taking applications, as it says (schema.org validThrough) or as set through the API. */
+		closesAt: pg.timestamp("closes_at", { withTimezone: true }),
 		// What the posting asks for, as read from it when the application was added.
 		requirements: pg.jsonb("requirements").notNull().$type<string[]>().default([]),
 		matchScore: pg.integer("match_score"),

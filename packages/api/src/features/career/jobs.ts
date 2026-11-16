@@ -824,6 +824,7 @@ async function execute(job: typeof tables.careerJob.$inferSelect) {
 				location: (posting?.page?.location ?? "").slice(0, 200),
 				snippet: plainSnippet(hit.description || posting?.text || ""),
 				description: posting?.text ?? "",
+				closesAt: posting?.closesAt ?? null,
 				discoverySource: posting ? { query: schedule.query, checkedAt: new Date().toISOString() } : null,
 				// Not a posting: kept out of New roles, and never read again.
 				...(posting ? {} : { dismissedAt: new Date() }),
@@ -839,6 +840,7 @@ async function execute(job: typeof tables.careerJob.$inferSelect) {
 						location: values.location,
 						snippet: values.snippet,
 						description: values.description,
+						closesAt: values.closesAt,
 						discoverySource: values.discoverySource,
 						lastSeenAt: new Date(),
 						...(posting ? {} : { dismissedAt: new Date() }),

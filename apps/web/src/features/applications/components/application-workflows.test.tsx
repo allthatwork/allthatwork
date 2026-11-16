@@ -145,6 +145,7 @@ const application = (id: string, status: Application["status"]): Application => 
 	resumeId: null,
 	jobDescription: null,
 	postingSource: null,
+	closesAt: null,
 	matchScore: null,
 	aiMetadata: null,
 	resumeFileUrl: null,
@@ -865,5 +866,32 @@ it("edits a timeline note separately from its date without dropping either value
 			{ id: "timeline", entryId: "note", date: "2026-11-06" },
 			expect.anything(),
 		),
+	);
+});
+
+it("saves the deadline the posting gives with the new job", async () => {
+	api.parsePosting.mockResolvedValue({
+		role: "Engineer",
+		company: "Fictional",
+		location: "",
+		salary: "",
+		requirements: [],
+		jobDescription: "Build tools",
+		filledBy: "ai",
+		closesAt: "2026-12-01T23:59:59.000Z",
+		postingSource: { method: "fetch", format: "text", truncated: false, completeness: "unknown" },
+	});
+	api.create.mockResolvedValue("saved");
+	mount(<AddApplicationDialog open onOpenChange={vi.fn()} onAdded={vi.fn()} />);
+	fireEvent.change(await screen.findByRole("textbox", { name: "Job link or posting text" }), {
+		target: { value: "https://jobs.example.test/role" },
+	});
+	fireEvent.click(screen.getByRole("button", { name: "Read it" }));
+	await waitFor(() =>
+		expect((screen.getByRole("textbox", { name: "Role" }) as HTMLInputElement).value).toBe("Engineer"),
+	);
+	fireEvent.click(screen.getByRole("button", { name: "Save job" }));
+	await waitFor(() =>
+		expect(api.create.mock.calls[0]?.[0]).toMatchObject({ closesAt: new Date("2026-12-01T23:59:59.000Z") }),
 	);
 });

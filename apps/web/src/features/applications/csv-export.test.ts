@@ -41,6 +41,7 @@ const application: Application = {
 	resumeId: null,
 	jobDescription: null,
 	postingSource: null,
+	closesAt: null,
 	matchScore: null,
 	aiMetadata: null,
 	resumeFileUrl: null,
@@ -105,6 +106,13 @@ describe("application CSV export", () => {
 			targetingSecondaryLane: "AI agents",
 		});
 		expect(exportApplicationsCsv([value])).toContain(',"0",');
+	});
+
+	it("round-trips the posting deadline with its time", () => {
+		const value = { ...application, closesAt: new Date("2026-12-01T17:00:00.000Z") };
+		expect(exportedRecord(value).Closes).toBe("2026-12-01T17:00:00.000Z");
+		expect(mapCsvToApplications(parseCsv(exportApplicationsCsv([value]))).rows[0]?.closesAt).toEqual(value.closesAt);
+		expect(exportedRecord(application).Closes).toBe("");
 	});
 
 	it("round-trips quoted Unicode, commas and multiline notes through existing import fields", () => {

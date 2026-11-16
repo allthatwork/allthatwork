@@ -18,6 +18,7 @@ type SortSource = Pick<
 	| "updatedAt"
 	| "followUpAt"
 	| "followUpNote"
+	| "closesAt"
 	| "searchFit"
 	| "targetingFit"
 >;
@@ -35,10 +36,10 @@ export function appliedDate(application: Pick<ApplicationSummary, "status" | "ac
 	return new Date(application.appliedAt);
 }
 
-/** The next interview or follow-up; the other next steps have no date. */
+/** The next interview, follow-up or closing posting; the other next steps have no date. */
 function nextStepTime(application: SortSource) {
 	const step = getNextStep(application);
-	return step.kind === "interview" || step.kind === "follow-up" ? step.at.getTime() : null;
+	return step.kind === "interview" || step.kind === "follow-up" || step.kind === "closing" ? step.at.getTime() : null;
 }
 
 const VALUE: Record<ApplicationSortKey, (application: SortSource) => number | string | null> = {

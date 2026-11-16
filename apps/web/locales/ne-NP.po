@@ -7,6 +7,14 @@ msgstr ""
 "X-Generator: @lingui/cli\n"
 "Language: ne-NP\n"
 
+#: src/features/career/workspace/overview.tsx
+msgid " · closed {deadline}"
+msgstr ""
+
+#: src/features/career/workspace/overview.tsx
+msgid " · closes {deadline}"
+msgstr ""
+
 #: src/features/career/workspace/fit.tsx
 msgid " · from the posting"
 msgstr " · पोस्टिङबाट"
@@ -1615,6 +1623,10 @@ msgstr "{days, plural, one {# दिन अफिस, तपाईंको स�
 #: src/features/career/knowledge/preferences.tsx
 msgid "{days, plural, one {at most # office day a week} other {at most # office days a week}}"
 msgstr "{days, plural, one {हप्तामा बढीमा # दिन अफिस} other {हप्तामा बढीमा # दिन अफिस}}"
+
+#: src/features/applications/next-step.ts
+msgid "{days, plural, one {Posting closes in # day} other {Posting closes in # days}}"
+msgstr ""
 
 #: src/features/career/workspace/messages.tsx
 msgid "{deadlineDays, plural, one {in # day} other {in # days}}"
@@ -4155,6 +4167,15 @@ msgstr "आवेदन · तपाईंले नेतृत्व गरे
 msgid "Apply 1 change"
 msgstr "१ परिवर्तन लागू गर्नुहोस्"
 
+#. placeholder {0}: item.application.company
+#: src/features/career/career-page.tsx
+msgid "apply to {0}"
+msgstr ""
+
+#: src/features/career/today.tsx
+msgid "Apply to {company}"
+msgstr ""
+
 #: src/features/career/workspace/application-packet.tsx
 msgid "Approve and create packet"
 msgstr "स्वीकृत गरेर प्याकेट बनाउनुहोस्"
@@ -5914,6 +5935,10 @@ msgstr "बन्द"
 msgid "Closed {closed}"
 msgstr "{closed} मा बन्द"
 
+#: src/features/applications/components/application-detail-sheet.tsx
+msgid "Closed {closes}"
+msgstr ""
+
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as {label}"
 msgstr "{label} का रूपमा बन्द गरियो"
@@ -5921,6 +5946,11 @@ msgstr "{label} का रूपमा बन्द गरियो"
 #: src/features/applications/use-application-actions.ts
 msgid "Closed as Accepted offer"
 msgstr "स्वीकार गरिएको प्रस्ताव भनी बन्द भयो"
+
+#: src/features/applications/components/application-detail-sheet.tsx
+#: src/features/applications/components/import-applications-sheet.tsx
+msgid "Closes"
+msgstr ""
 
 #: src/features/applications/components/detail/close-dialog.tsx
 msgid "Closing {company} · {role}. "
@@ -16870,6 +16900,18 @@ msgstr "जागिर पोस्टिङ"
 #: src/features/homepage/tailor.tsx
 msgid "Posting"
 msgstr "जागिर पोस्टिङ"
+
+#: src/features/applications/filter.ts
+msgid "Posting closes soon"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes today"
+msgstr ""
+
+#: src/features/applications/next-step.ts
+msgid "Posting closes tomorrow"
+msgstr ""
 
 #: src/features/settings/ai/ai-limits.tsx
 msgid "Posting in each action"

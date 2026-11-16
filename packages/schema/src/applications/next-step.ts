@@ -1,4 +1,5 @@
 import type { ApplicationStatus, ApplicationTimelineEntry, InterviewTimelineEntry } from "./data";
+import { POSTING_CLOSES_SOON_DAYS } from "@reactive-resume/utils/reminders";
 import { latestStageEntryId } from "./data";
 import { followUpInstant } from "./follow-up";
 
@@ -15,6 +16,8 @@ type NextStepSource = ApplicationStageSource & {
 	followUpAt: Date | string | null;
 	followUpNote: string | null;
 	followUpDateOnly?: boolean | undefined;
+	/** When the posting stops taking applications. Optional for callers (and older servers) that don't send it. */
+	closesAt?: Date | string | null | undefined;
 };
 
 /**
@@ -54,6 +57,8 @@ export type NextStep =
 	/** Offer stage: the user decides. */
 	| { kind: "offer"; days: number | null; respondBy: Date | null; overdue: boolean; terms: boolean }
 	| { kind: "not-applied" }
+	/** Saved, and the posting closes today or within the next few calendar days (`days`: 0 is today). */
+	| { kind: "closing"; at: Date; days: number }
 	| { kind: "closed" };
 
 /** The latest canonical category entry. Lane-only moves never restart the employer-reply clock. */
@@ -64,6 +69,32 @@ export function applicationStageSince(application: ApplicationStageSource): Date
 	const latest = entries.toSorted((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())[0];
 	if (latest?.type === "stage" && latest.dateUnknown) return null;
 	return new Date(latest?.at ?? application.appliedAt);
+}
+
+/** The calendar day a moment falls on in a time zone, as a day count; an unknown zone reads as UTC. */
+function zonedDay(at: Date, timeZone: string): number {
+	let parts: Intl.DateTimeFormatPart[];
+	try {
+		parts = new Intl.DateTimeFormat("en-US", {
+			timeZone,
+			year: "numeric",
+			month: "numeric",
+			day: "numeric",
+		}).formatToParts(at);
+	} catch {
+		return Math.floor(at.getTime() / DAY_MS);
+	}
+	const part = (type: string) => Number(parts.find((item) => item.type === type)?.value);
+	return Date.UTC(part("year"), part("month") - 1, part("day")) / DAY_MS;
+}
+
+/** A Saved application's posting deadline, when it hasn't passed and falls within the closing-soon days. */
+function closingSoon(application: NextStepSource, now: Date, timeZone: string): NextStep | null {
+	if (application.status !== "saved" || !application.closesAt) return null;
+	const at = new Date(application.closesAt);
+	if (Number.isNaN(at.getTime()) || at.getTime() < now.getTime()) return null;
+	const days = zonedDay(at, timeZone) - zonedDay(now, timeZone);
+	return days <= POSTING_CLOSES_SOON_DAYS ? { kind: "closing", at, days } : null;
 }
 
 const daysBetween = (from: Date, to: Date) => Math.max(0, Math.floor((to.getTime() - from.getTime()) / DAY_MS));
@@ -105,10 +136,14 @@ export function getNextStep(
 		.sort((a, b) => a.at.getTime() - b.at.getTime())[0];
 	if (upcoming) return { kind: "interview", ...upcoming };
 
+	// A closing posting comes before a follow-up that isn't due yet; a due one keeps its place.
+	const closing = closingSoon(application, now, timeZone);
 	if (application.followUpAt) {
 		const at = followUpInstant(application, timeZone) ?? new Date(application.followUpAt);
-		return { kind: "follow-up", at, note: application.followUpNote ?? "", overdue: at.getTime() < now.getTime() };
+		if (!closing || at.getTime() - now.getTime() <= DAY_MS)
+			return { kind: "follow-up", at, note: application.followUpNote ?? "", overdue: at.getTime() < now.getTime() };
 	}
+	if (closing) return closing;
 
 	if (application.status === "saved") return { kind: "not-applied" };
 
@@ -163,7 +198,7 @@ const INTERVIEW_ATTENTION_MS = 7 * DAY_MS;
 
 /**
  * Whether a next step needs the user: an interview within a week, a follow-up due within a day or overdue, no reply
- * after the account's no-reply days, or an offer to decide. Career → Today and the Applications banner both read this.
+ * after the account's no-reply days, an offer to decide, or a saved job whose posting is about to close. Career → Today and the Applications banner both read this.
  */
 export function needsAttention(step: NextStep, now = new Date()): boolean {
 	switch (step.kind) {
@@ -171,6 +206,9 @@ export function needsAttention(step: NextStep, now = new Date()): boolean {
 			return step.at.getTime() - now.getTime() <= INTERVIEW_ATTENTION_MS;
 		case "follow-up":
 			return step.at.getTime() - now.getTime() <= DAY_MS;
+		case "closing":
+			// Only made inside the closing-soon days; once the deadline passes it no longer needs anything.
+			return step.at.getTime() >= now.getTime();
 		case "no-reply":
 		case "offer":
 			return true;
@@ -195,7 +233,7 @@ export function nextStepSortKey(
 	noReplyDays = FOLLOW_UP_AFTER_DAYS,
 ): [rank: number, time: number] {
 	const step = getNextStep(application, now, timeZone, offer, noReplyDays);
-	if (step.kind === "interview" || step.kind === "follow-up") return [0, step.at.getTime()];
+	if (step.kind === "interview" || step.kind === "follow-up" || step.kind === "closing") return [0, step.at.getTime()];
 	if (step.kind === "offer" && step.respondBy) return [0, step.respondBy.getTime()];
 	return [1, applicationStageSince(application)?.getTime() ?? Infinity];
 }

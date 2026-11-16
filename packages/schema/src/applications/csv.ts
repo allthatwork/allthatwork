@@ -93,6 +93,8 @@ type ParsedApplication = {
 	postingSource?: PostingSource;
 	stageEnteredAt?: string;
 	applicationDate?: string;
+	/** When the posting stops taking applications; a bare date is the end of that day (UTC). */
+	closesAt?: Date;
 	tags?: string[];
 	contacts?: Contact[];
 };
@@ -146,6 +148,18 @@ function readCsvDate(value: string, dayFirst = false) {
 	return dayFirst ? dateOnly(`${year}-${pad(second)}-${pad(first)}`) : dateOnly(`${year}-${pad(first)}-${pad(second)}`);
 }
 
+/**
+ * A posting's deadline: a date as other trackers write it, meaning the end of that day (UTC, as a posting's own bare
+ * date reads), or a full ISO date and time as the export writes it.
+ */
+function readCsvDeadline(value: string, dayFirst: boolean) {
+	const day = readCsvDate(value, dayFirst);
+	if (day) return new Date(`${day}T23:59:59.000Z`);
+	if (!/^\d{4}-\d{2}-\d{2}T/.test(value) || !dateOnly(value.slice(0, 10))) return undefined;
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 /** Stage names other trackers use, as a stage and, for a closed one, its outcome. */
 const STAGE_ALIASES: Record<string, { status: ApplicationStatus; closedReason?: ApplicationClosedReason }> = {
 	wishlist: { status: "saved" },
@@ -187,6 +201,12 @@ const HEADER_ALIASES: Record<string, CsvField> = {
 	"closed reason": "closedReason",
 	"stage date": "stageEnteredAt",
 	"stage entered at": "stageEnteredAt",
+	closes: "closesAt",
+	"closes at": "closesAt",
+	"closing date": "closesAt",
+	deadline: "closesAt",
+	"application deadline": "closesAt",
+	"apply by": "closesAt",
 	location: "location",
 	salary: "salary",
 	"salary range": "salary",
@@ -230,6 +250,7 @@ export const CSV_FIELDS: readonly CsvField[] = [
 	"closedReason",
 	"stageEnteredAt",
 	"applicationDate",
+	"closesAt",
 	"location",
 	"salary",
 	"source",
@@ -311,6 +332,7 @@ export type CsvMapResult = {
 			| "status"
 			| "stageEnteredAt"
 			| "applicationDate"
+			| "closesAt"
 			| "postingSource"
 			| "searchFit"
 			| "targetingBuildStatus"
@@ -361,7 +383,7 @@ export function mapCsvToApplications(
 	// Slash dates are read the same way down each column: day-first when any of them can only be.
 	const dayFirst = new Map(
 		fieldFor.flatMap((field, column) =>
-			field === "stageEnteredAt" || field === "applicationDate"
+			field === "stageEnteredAt" || field === "applicationDate" || field === "closesAt"
 				? [[column, slashDatesDayFirst(dataRows.map((row) => row[column] ?? ""))] as const]
 				: [],
 		),
@@ -409,6 +431,10 @@ export function mapCsvToApplications(
 			else if (field === "stageEnteredAt" || field === "applicationDate") {
 				const date = readCsvDate(value, dayFirst.get(i) ?? false);
 				if (date !== undefined) record[field] = date;
+				else invalid.push({ row: index + 2, field, value });
+			} else if (field === "closesAt") {
+				const date = readCsvDeadline(value, dayFirst.get(i) ?? false);
+				if (date) record.closesAt = date;
 				else invalid.push({ row: index + 2, field, value });
 			} else if (field === "postingSource") {
 				try {

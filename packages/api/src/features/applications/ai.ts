@@ -32,6 +32,7 @@ import {
 	isPostingLink,
 	MAX_POSTING_CHARS,
 	PostingFetchError,
+	postingDeadline,
 	postingSearchResult,
 	searchJobPostings,
 } from "./posting";
@@ -135,6 +136,10 @@ const parsePostingOutput = z.object({
 	jobDescription: z.string().describe("The posting's text, to save with the application."),
 	sourceUrl: z.string().nullable().describe("The link, when a link was given."),
 	postingSource: postingSourceSchema,
+	closesAt: z
+		.string()
+		.nullable()
+		.describe("When the posting stops taking applications (ISO), when its page says; null for pasted text."),
 	enrichmentWarning: z.enum(["ai-unavailable"]).nullable(),
 	filledBy: z
 		.enum(["ai", "page", "none"])
@@ -301,6 +306,7 @@ export const aiRouter = {
 				jobDescription,
 				sourceUrl: link,
 				postingSource: { ...postingSource, ...(pageLanguage ? { language: pageLanguage } : {}) },
+				closesAt: postingDeadline(page?.closesAt)?.toISOString() ?? null,
 				enrichmentWarning: null,
 			};
 
@@ -357,6 +363,8 @@ export const aiRouter = {
 							? { language: pageLanguage || canonicalLanguage(fields.language) }
 							: {}),
 					},
+					// Only the page's own data gives a deadline; the AI never guesses one.
+					closesAt: fromPage.closesAt,
 					enrichmentWarning: null,
 					filledBy: "ai" as const,
 				};

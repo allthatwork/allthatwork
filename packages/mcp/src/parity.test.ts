@@ -98,6 +98,7 @@ it("exposes answering a targeting question", async () => {
 		sourceUrl: null,
 		jobDescription: null,
 		postingSource: null,
+		closesAt: null,
 		requirements: [],
 		matchScore: null,
 		aiMetadata: null,

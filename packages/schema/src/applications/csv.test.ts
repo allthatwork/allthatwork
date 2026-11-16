@@ -39,6 +39,25 @@ describe("mapCsvToApplications", () => {
 		expect(result.invalidValues).toEqual([{ row: 3, field: "targetingBuildStatus", value: "maybe" }]);
 	});
 
+	it("reads a posting deadline as a date (end of that day, UTC) or the export's full time, and refuses junk", () => {
+		const table = parseCsv(
+			"Company,Role,Closes\nA,SRE,2026-12-01\nB,SRE,2026-12-01T17:00:00.000Z\nC,SRE,31/12/2026\nD,SRE,until filled\nE,SRE,2026-02-31T10:00:00Z",
+		);
+		const result = mapCsvToApplications(table);
+		expect(result.rows.map((row) => [row.company, row.closesAt?.toISOString()])).toEqual([
+			["A", "2026-12-01T23:59:59.000Z"],
+			["B", "2026-12-01T17:00:00.000Z"],
+			["C", "2026-12-31T23:59:59.000Z"],
+		]);
+		expect(result.invalidValues).toEqual([
+			{ row: 5, field: "closesAt", value: "until filled" },
+			{ row: 6, field: "closesAt", value: "2026-02-31T10:00:00Z" },
+		]);
+		expect(
+			mapCsvToApplications(parseCsv("Company,Role,Application Deadline\nA,SRE,2026-12-01")).rows[0]?.closesAt,
+		).toEqual(new Date("2026-12-01T23:59:59.000Z"));
+	});
+
 	it("imports ragged rows without materializing the missing header-width cells", () => {
 		const rows = mapCsvToApplications([
 			["Company", "Role", ...Array.from({ length: 10_000 }, () => "Unused")],

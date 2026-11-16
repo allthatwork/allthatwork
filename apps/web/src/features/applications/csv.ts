@@ -41,6 +41,7 @@ export function exportApplicationsCsv(
 		"Lane Closed Reason",
 		"Stage Date",
 		"Application Date",
+		"Closes",
 		"Location",
 		"Salary",
 		"Source",
@@ -89,6 +90,8 @@ export function exportApplicationsCsv(
 			lane?.closedReason ?? "",
 			currentStage && !currentStage.dateUnknown ? dateOnly(currentStage.at) : "",
 			sent ? dateOnly(application.appliedAt) : "",
+			// The full time: a posting can close at a given hour, and the import reads it back exactly.
+			application.closesAt ? new Date(application.closesAt).toISOString() : "",
 			application.location ?? "",
 			application.salary ?? "",
 			application.source ?? "",

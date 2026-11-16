@@ -396,6 +396,7 @@ function AddApplicationForm({ onClose, onAdded, initialCapture }: AddApplication
 			...(salary.trim() ? { salary: salary.trim() } : {}),
 			...(parsed?.requirements.length ? { requirements: parsed.requirements } : {}),
 			...(sourceLink ? { sourceUrl: sourceLink } : {}),
+			...(parsed?.closesAt ? { closesAt: new Date(parsed.closesAt) } : {}),
 			...(stage !== "saved" && stageDate ? { stageEnteredAt: stageDate } : {}),
 			// A saved job names no documents: preparing a resume is the Fit screen's step. Applied records what was sent.
 			...(stage !== "saved" && resumeId ? { resumeId } : {}),
@@ -450,6 +451,8 @@ function AddApplicationForm({ onClose, onAdded, initialCapture }: AddApplication
 				...(location.trim() ? { location: location.trim() } : {}),
 				sourceUrl: sourceLink,
 				...(postingDescription.trim() ? { jobDescription: postingDescription, postingSource } : {}),
+				// The posting's deadline as it reads now; one it doesn't give leaves the saved date alone.
+				...(parsed?.closesAt ? { closesAt: new Date(parsed.closesAt) } : {}),
 			});
 			kept.clear();
 			invalidate();

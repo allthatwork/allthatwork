@@ -1,13 +1,17 @@
 import type { WebAccessContext } from "../web-access/contracts";
 import { z } from "zod";
-import { jobPostingsIn, readJobPosting as readStructuredPosting } from "@reactive-resume/import/job-posting";
+import {
+	jobPostingsIn,
+	postingDeadline,
+	readJobPosting as readStructuredPosting,
+} from "@reactive-resume/import/job-posting";
 import { countryName } from "@reactive-resume/utils/region";
 import { htmlToText } from "../web-access/builtin";
 import { MAX_SEARCH_QUERY_CHARS, WebAccessError } from "../web-access/contracts";
 import { readPage, searchWeb } from "../web-access/service";
 
 export { htmlToText } from "../web-access/builtin";
-export { decodeEscapedNewlines } from "@reactive-resume/import/job-posting";
+export { decodeEscapedNewlines, postingDeadline } from "@reactive-resume/import/job-posting";
 export { WebAccessError as PostingFetchError } from "../web-access/contracts";
 
 /** The applications feature's cap on a saved posting. Fixed, apart from "Text kept from one page": it's storage. */
@@ -126,12 +130,15 @@ export async function readOpenPosting(url: string, context: WebAccessContext) {
 	const page = postings.length === 1 && postings[0] ? readJobPosting(html) : null;
 	const address = POSTING_URLS.map((pattern) => pattern.exec(resolvedUrl ?? url)).find(Boolean);
 	if (postings.length > 1 || (!page && !address)) return null;
-	if (page?.closesAt && new Date(page.closesAt).getTime() < Date.now()) return null;
+	const closesAt = postingDeadline(page?.closesAt);
+	if (closesAt && closesAt.getTime() < Date.now()) return null;
 	// ponytail: without JobPosting data, only the page's own words say a role closed; common English phrasings only.
 	if (!page && CLOSED.test(content)) return null;
 	return {
 		page,
 		text: (page?.description || content).slice(0, MAX_POSTING_CHARS),
+		/** When the posting stops taking applications, if it says. */
+		closesAt,
 		/** The company as its address names it ("simpleclub"), for pages without JobPosting data. */
 		company: address?.[1]?.replaceAll(/[-_]+/g, " ") ?? "",
 	};

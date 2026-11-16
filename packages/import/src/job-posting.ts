@@ -12,6 +12,23 @@ export type PagePosting = {
 const asText = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
 /**
+ * A posting's deadline (schema.org `validThrough`) as a moment, or null. A bare date means the end of that day in UTC,
+ * so a posting that closes "2026-12-01" still counts as open all that day. Anything unparseable is no deadline.
+ */
+export function postingDeadline(value: string | null | undefined): Date | null {
+	const text = value?.trim() ?? "";
+	if (!text) return null;
+	// schema.org dates are ISO 8601; anything else ("ASAP", "2026", "Dec 1") is too loose to act on.
+	const day = /^\d{4}-\d{2}-\d{2}/.exec(text)?.[0];
+	if (!day) return null;
+	const date = new Date(text === day ? `${day}T23:59:59.000Z` : text);
+	if (Number.isNaN(date.getTime())) return null;
+	// Date rolls "2026-02-31" over into March; the day must be a real one.
+	if (new Date(`${day}T00:00:00.000Z`).toISOString().slice(0, 10) !== day) return null;
+	return date;
+}
+
+/**
  * JSON-LD from some boards keeps the escape as two characters, so prose contains a literal "\n". Decode only those
  * outside inline code and not themselves escaped, so a posting about `printf("\n")` keeps its example intact.
  */
